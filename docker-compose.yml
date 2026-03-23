@@ -30,6 +30,7 @@ x-superset-volumes: &superset-volumes
   - ./docker:/app/docker
   - ./superset:/app/superset
   - ./superset-frontend:/app/superset-frontend
+  - ../my-plugins:/app/my-plugins
   - superset_home:/app/superset_home
   - ./tests:/app/tests
 x-common-build: &common-build
