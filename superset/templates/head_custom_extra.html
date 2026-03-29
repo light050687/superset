@@ -17,9 +17,62 @@
     under the License.
   #}
 
-  {#
-    This file may be overridden in your custom deployment.
-    It will be included in every view in superset and is a
-    good place to include your custom frontend code, such as
-    scripts to initialize google analytics, intercom, segment, etc.
-  #}
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+
+<style nonce="{{ csp_nonce() }}">
+/* ═══════════════════════════════════════════════════════════════
+   Samberi BI v2.0 — Responsive UI (global, all dashboards)
+   Selectors use .dashboard-content prefix for higher specificity
+   to override both Emotion and Dashboard CssEditor CSS.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Desktop Small (≤1280px) ── */
+@media only screen and (max-width: 1280px) {
+  .dashboard-content .grid-container { margin: 12px !important; }
+}
+
+/* ── Tablet (≤1024px) ── */
+@media only screen and (max-width: 1024px) {
+  .dashboard-content .grid-container { margin: 8px !important; }
+  .dashboard-content .grid-row { flex-wrap: wrap !important; }
+  .dashboard-content .dragdroppable-column {
+    min-width: calc(50% - 8px) !important;
+    max-width: calc(50% - 8px) !important;
+    margin-bottom: 12px !important;
+  }
+  .dashboard-content .resizable-container {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* ── Mobile (≤768px) ── */
+@media only screen and (max-width: 768px) {
+  .dashboard-content .grid-container { margin: 4px !important; }
+  .dashboard-content .grid-row { flex-wrap: wrap !important; }
+  .dashboard-content .dragdroppable-column {
+    min-width: 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-right: 0 !important;
+    margin-bottom: 4px !important;
+  }
+  .dashboard-content .resizable-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 120px !important;
+  }
+  .dashboard-content .grid-column {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+}
+
+/* ── Phone (≤428px) ── */
+@media only screen and (max-width: 428px) {
+  .dashboard-content .grid-container { margin: 2px !important; }
+  .dashboard-content .dragdroppable-column { margin-bottom: 2px !important; }
+  .dashboard-content .resizable-container { min-height: 100px !important; }
+}
+</style>

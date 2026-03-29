@@ -106,6 +106,16 @@ const ChartHolder = ({
   const { chartId } = component.meta;
   const isFullSize = fullSizeChartId === chartId;
 
+  // Responsive: track viewport width for chart size recalculation
+  const MOBILE_BREAKPOINT = 768;
+  const TABLET_BREAKPOINT = 1024;
+  const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   const focusHighlightStyles = useFilterFocusHighlightStyles(chartId);
   const directPathToChild = useSelector(
     (state: RootState) => state.dashboardState.directPathToChild,
@@ -191,6 +201,26 @@ const ChartHolder = ({
     if (isFullSize) {
       width = window.innerWidth - CHART_MARGIN;
       height = window.innerHeight - CHART_MARGIN;
+    } else if (viewportWidth <= MOBILE_BREAKPOINT && !editMode) {
+      // Mobile: full container width (single column)
+      const containerEl = document.querySelector('.grid-container');
+      const containerWidth = containerEl
+        ? containerEl.clientWidth
+        : viewportWidth;
+      width = Math.floor(containerWidth - CHART_MARGIN - 16);
+      height = Math.floor(
+        component.meta.height * GRID_BASE_UNIT - CHART_MARGIN,
+      );
+    } else if (viewportWidth <= TABLET_BREAKPOINT && !editMode) {
+      // Tablet: half container width (two columns)
+      const containerEl = document.querySelector('.grid-container');
+      const containerWidth = containerEl
+        ? containerEl.clientWidth
+        : viewportWidth;
+      width = Math.floor(containerWidth / 2 - CHART_MARGIN - 8);
+      height = Math.floor(
+        component.meta.height * GRID_BASE_UNIT - CHART_MARGIN,
+      );
     } else {
       width = Math.floor(
         widthMultiple * columnWidth +
@@ -206,7 +236,7 @@ const ChartHolder = ({
       chartWidth: width,
       chartHeight: height,
     };
-  }, [columnWidth, component, isFullSize, widthMultiple]);
+  }, [columnWidth, component, editMode, isFullSize, viewportWidth, widthMultiple]);
 
   const handleDeleteComponent = useCallback(() => {
     deleteComponent(id, parentId);
