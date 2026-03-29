@@ -67,6 +67,44 @@
     width: 100% !important;
     min-width: 100% !important;
   }
+
+  /* ── Dashboard header: adaptive multi-line layout ── */
+  /* Remove FilterBar -32px compensation */
+  .dragdroppable-column { margin-left: 0 !important; }
+
+  /* Header: allow wrapping to multiple lines */
+  .header-with-actions {
+    flex-wrap: wrap !important;
+    height: auto !important;
+    padding: 4px 8px !important;
+    gap: 4px !important;
+  }
+
+  /* Title panel: full width + internal wrapping */
+  .header-with-actions .title-panel {
+    flex: 1 1 100% !important;
+    flex-wrap: wrap !important;
+    margin-right: 0 !important;
+    min-width: 0 !important;
+  }
+
+  /* Title input wrapper: own line, full width */
+  .header-with-actions .title-panel > div:first-child {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Title input: visible, not clipped */
+  .dynamic-title-input {
+    font-size: 16px !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Buttons: align right on their own line */
+  .header-with-actions .right-button-panel {
+    margin-left: auto !important;
+  }
 }
 
 /* ── Phone (≤428px) ── */
