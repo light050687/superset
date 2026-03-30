@@ -489,7 +489,8 @@ const DashboardBuilder = () => {
         dashboardFiltersOpen ||
         editMode ||
         !nativeFiltersEnabled ||
-        filterBarOrientation === FilterBarOrientation.Horizontal
+        filterBarOrientation === FilterBarOrientation.Horizontal ||
+        isMobile
           ? 0
           : -32,
     }),
@@ -498,6 +499,7 @@ const DashboardBuilder = () => {
       editMode,
       filterBarOrientation,
       nativeFiltersEnabled,
+      isMobile,
     ],
   );
 
@@ -620,9 +622,8 @@ const DashboardBuilder = () => {
 
   const isVerticalFilterBarVisible =
     showFilterBar && filterBarOrientation === FilterBarOrientation.Vertical;
-  const headerFilterBarWidth = isVerticalFilterBarVisible
-    ? currentFilterBarWidth
-    : 0;
+  const headerFilterBarWidth =
+    isVerticalFilterBarVisible && !isMobile ? currentFilterBarWidth : 0;
 
   return (
     <DashboardWrapper>

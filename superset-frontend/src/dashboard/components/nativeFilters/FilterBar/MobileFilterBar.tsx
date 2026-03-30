@@ -69,6 +69,100 @@ const FilterButton = styled.button`
   `}
 `;
 
+/**
+ * Styled wrapper that overrides FilterBar vertical styles
+ * for proper display inside a mobile bottom-sheet Drawer.
+ */
+const DrawerContent = styled.div`
+  ${({ theme }) => css`
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    /* BarWrapper — full width, remove fixed width */
+    & [data-test='filter-bar'] {
+      width: 100% !important;
+
+      &.open {
+        width: 100% !important;
+      }
+    }
+
+    /* Bar — relative positioning, full width, always visible */
+    & [data-test='filter-bar'] > div:nth-of-type(2) {
+      position: relative !important;
+      width: 100% !important;
+      min-height: auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      border-right: none !important;
+      border-bottom: none !important;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Hide collapsed bar (not needed in drawer) */
+    & [data-test='filter-bar-collapsable'] {
+      display: none !important;
+    }
+
+    /* 4. Hide collapse arrow button (drawer has its own close) */
+    & [data-test='filter-bar-collapse-button'] {
+      display: none !important;
+    }
+
+    /* 2. Action buttons — horizontal row, space-between */
+    & [data-test='filterbar-action-buttons'] {
+      position: static !important;
+      width: 100% !important;
+      flex-direction: row !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      padding: ${theme.sizeUnit * 3}px ${theme.sizeUnit * 4}px !important;
+      background: ${theme.colorBgContainer} !important;
+      border-top: 1px solid ${theme.colorBorderSecondary};
+
+      .filter-apply-button {
+        margin-bottom: 0 !important;
+        flex: 1;
+        margin-right: ${theme.sizeUnit * 2}px;
+      }
+
+      .filter-clear-all-button {
+        flex: 0 0 auto;
+      }
+    }
+
+    /* 3. Empty state — center text, no divider */
+    & .ant-empty {
+      text-align: center;
+    }
+
+    /* Scrollable filter content area */
+    & .ant-tabs-tabpane {
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* 5. Border-radius per design system: 6px for controls */
+    & .ant-select .ant-select-selector {
+      border-radius: 6px !important;
+    }
+
+    & .ant-input {
+      border-radius: 6px !important;
+    }
+
+    & .ant-picker {
+      border-radius: 6px !important;
+    }
+
+    & .ant-btn {
+      border-radius: 6px !important;
+    }
+  `}
+`;
+
 const MobileFilterBar = ({ children }: MobileFilterBarProps) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -89,9 +183,9 @@ const MobileFilterBar = ({ children }: MobileFilterBarProps) => {
         onClose={closeDrawer}
         open={drawerOpen}
         height="70%"
-        styles={{ body: { padding: 0, overflow: 'auto' } }}
+        styles={{ body: { padding: 0, overflow: 'hidden' } }}
       >
-        {children}
+        <DrawerContent>{children}</DrawerContent>
       </Drawer>
     </>
   );
