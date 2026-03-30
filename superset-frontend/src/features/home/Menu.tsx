@@ -16,11 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { styled, css, useTheme } from '@superset-ui/core';
 import { getUrlParam } from 'src/utils/urlUtils';
 import { MainNav, MenuItem } from '@superset-ui/core/components/Menu';
-import { Tooltip, Grid, Row, Col, Image } from '@superset-ui/core/components';
+import { Menu as AntdMenu } from 'antd';
+import {
+  Tooltip,
+  Grid,
+  Row,
+  Col,
+  Image,
+  Drawer,
+} from '@superset-ui/core/components';
 import { GenericLink } from 'src/components';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Icons } from '@superset-ui/core/components/Icons';
@@ -53,6 +61,26 @@ const StyledHeader = styled.header`
 
     .caret {
       display: none;
+    }
+
+    @media (max-width: 768px) {
+      padding: 0 ${theme.sizeUnit * 2}px;
+
+      /* Hide Settings submenu on mobile (available in drawer) */
+      .submenu-with-caret:last-child {
+        display: none;
+      }
+
+      /* Hide Development tag on mobile */
+      .ant-tag {
+        display: none;
+      }
+
+      /* Compact right menu */
+      .ant-menu-horizontal {
+        line-height: normal;
+        border-bottom: none;
+      }
     }
   `}
 `;
@@ -168,13 +196,80 @@ const StyledBrandLink = styled(Typography.Link)`
 
 const StyledRow = styled(Row)`
   height: 100%;
+
+  @media (max-width: 768px) {
+    flex-wrap: nowrap !important;
+    align-items: center;
+  }
 `;
 
 const StyledCol = styled(Col)`
   ${({ theme }) => css`
     display: flex;
     gap: ${theme.sizeUnit * 4}px;
+
+    @media (max-width: 768px) {
+      flex: 0 0 auto !important;
+      max-width: none !important;
+      width: auto !important;
+    }
   `}
+`;
+
+const StyledRightCol = styled(Col)`
+  ${({ theme }) => css`
+    @media (max-width: 768px) {
+      flex: 1 1 auto !important;
+      max-width: none !important;
+      width: auto !important;
+      display: flex !important;
+      align-items: center;
+      justify-content: flex-end;
+      gap: ${theme.sizeUnit}px;
+    }
+  `}
+`;
+
+const HamburgerButton = styled.button`
+  ${({ theme }) => css`
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: ${theme.sizeUnit}px;
+    margin-left: auto;
+    color: ${theme.colorText};
+    font-size: 20px;
+    line-height: 1;
+    align-items: center;
+    justify-content: center;
+
+    @media (max-width: 768px) {
+      display: flex;
+    }
+
+    &:hover {
+      color: ${theme.colorPrimary};
+    }
+  `}
+`;
+
+const drawerMenuStyles = css`
+  &.ant-menu {
+    border-inline-end: none !important;
+  }
+
+  .ant-menu-item {
+    height: 48px;
+    line-height: 48px;
+    font-size: 15px;
+  }
+
+  .ant-menu-submenu-title {
+    height: 48px;
+    line-height: 48px;
+    font-size: 15px;
+  }
 `;
 
 const StyledImage = styled(Image)`
@@ -208,7 +303,12 @@ export function Menu({
 
   const defaultTabSelection: string[] = [];
   const [activeTabs, setActiveTabs] = useState(defaultTabSelection);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
+  const isMobile = !screens.md;
+
+  // Close drawer on navigation
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   useEffect(() => {
     const path = location.pathname;
     switch (true) {
@@ -320,6 +420,44 @@ export function Menu({
     // ---------------------------------------------------------------------------------
     return <>{link}</>;
   };
+  const menuItems = menu.map(item => {
+    const props = {
+      ...item,
+      isFrontendRoute: isFrontendRoute(item.url),
+      childs: item.childs?.map(c => {
+        if (typeof c === 'string') {
+          return c;
+        }
+        return {
+          ...c,
+          isFrontendRoute: isFrontendRoute(c.url),
+        };
+      }),
+    };
+    return buildMenuItem(props);
+  });
+
+  // Build drawer items: main menu + settings (vertical)
+  const drawerMenuItems = [
+    ...menuItems,
+    ...(settings || []).map(item => {
+      const props = {
+        ...item,
+        isFrontendRoute: isFrontendRoute(item.url),
+        childs: item.childs?.map(c => {
+          if (typeof c === 'string') {
+            return c;
+          }
+          return {
+            ...c,
+            isFrontendRoute: isFrontendRoute(c.url),
+          };
+        }),
+      };
+      return buildMenuItem(props);
+    }),
+  ];
+
   return (
     <StyledHeader className="top" id="main-menu" role="navigation">
       <StyledRow>
@@ -337,33 +475,18 @@ export function Menu({
               <span>{brand.text}</span>
             </StyledBrandText>
           )}
-          <StyledMainNav
-            mode="horizontal"
-            data-test="navbar-top"
-            className="main-nav"
-            selectedKeys={activeTabs}
-            disabledOverflow
-            items={menu.map(item => {
-              const props = {
-                ...item,
-                isFrontendRoute: isFrontendRoute(item.url),
-                childs: item.childs?.map(c => {
-                  if (typeof c === 'string') {
-                    return c;
-                  }
-
-                  return {
-                    ...c,
-                    isFrontendRoute: isFrontendRoute(c.url),
-                  };
-                }),
-              };
-
-              return buildMenuItem(props);
-            })}
-          />
+          {!isMobile && (
+            <StyledMainNav
+              mode="horizontal"
+              data-test="navbar-top"
+              className="main-nav"
+              selectedKeys={activeTabs}
+              disabledOverflow
+              items={menuItems}
+            />
+          )}
         </StyledCol>
-        <Col md={8} xs={24}>
+        <StyledRightCol md={8} xs={24}>
           <RightMenu
             align={screens.md ? 'flex-end' : 'flex-start'}
             settings={settings}
@@ -371,8 +494,34 @@ export function Menu({
             isFrontendRoute={isFrontendRoute}
             environmentTag={environmentTag}
           />
-        </Col>
+          {isMobile && (
+            <HamburgerButton
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Open menu"
+            >
+              <Icons.MenuOutlined />
+            </HamburgerButton>
+          )}
+        </StyledRightCol>
       </StyledRow>
+      {isMobile && (
+        <Drawer
+          title={brand.alt || 'Menu'}
+          placement="top"
+          onClose={closeDrawer}
+          open={drawerOpen}
+          height="100%"
+          styles={{ body: { padding: 0 } }}
+        >
+          <AntdMenu
+            css={drawerMenuStyles}
+            mode="inline"
+            selectedKeys={activeTabs}
+            onClick={closeDrawer}
+            items={drawerMenuItems}
+          />
+        </Drawer>
+      )}
     </StyledHeader>
   );
 }
