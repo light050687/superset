@@ -46,6 +46,7 @@ interface VerticalBarConfig {
   offset: number;
   toggleFiltersBar: any;
   width: number;
+  isMobile?: boolean;
 }
 
 export interface FiltersBarProps {

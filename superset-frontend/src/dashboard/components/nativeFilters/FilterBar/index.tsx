@@ -337,6 +337,7 @@ const FilterBar: FC<FiltersBarProps> = ({
         dataMaskSelected={dataMaskSelected}
         dataMaskApplied={dataMaskApplied}
         isApplyDisabled={isApplyDisabled}
+        isMobile={verticalConfig?.isMobile}
       />
     ),
     [
@@ -372,6 +373,7 @@ const FilterBar: FC<FiltersBarProps> = ({
         filterValues={filterValues}
         isInitialized={isInitialized}
         height={verticalConfig.height}
+        isMobile={verticalConfig.isMobile}
         offset={verticalConfig.offset}
         onSelectionChange={handleFilterSelectionChange}
         toggleFiltersBar={verticalConfig.toggleFiltersBar}

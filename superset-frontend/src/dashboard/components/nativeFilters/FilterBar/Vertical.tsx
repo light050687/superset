@@ -39,35 +39,36 @@ import Header from './Header';
 import FilterControls from './FilterControls/FilterControls';
 import CrossFiltersVertical from './CrossFilters/Vertical';
 
-const BarWrapper = styled.div<{ width: number }>`
-  width: ${({ theme }) => theme.sizeUnit * 8}px;
+const BarWrapper = styled.div<{ width: number; isMobile?: boolean }>`
+  width: ${({ theme, isMobile }) => (isMobile ? '100%' : `${theme.sizeUnit * 8}px`)};
 
   & .ant-tabs-top > .ant-tabs-nav {
     margin: 0;
   }
   &.open {
-    width: ${({ width }) => width}px; // arbitrary...
+    width: ${({ width, isMobile }) => (isMobile ? '100%' : `${width}px`)};
   }
 `;
 
-const Bar = styled.div<{ width: number }>`
-  ${({ theme, width }) => `
+const Bar = styled.div<{ width: number; isMobile?: boolean }>`
+  ${({ theme, width, isMobile }) => `
     & .ant-typography-edit-content {
       left: 0;
       margin-top: 0;
       width: 100%;
     }
-    position: absolute;
-    top: 0;
-    left: 0;
+    position: ${isMobile ? 'relative' : 'absolute'};
+    top: ${isMobile ? 'auto' : '0'};
+    left: ${isMobile ? 'auto' : '0'};
     flex-direction: column;
     flex-grow: 1;
-    width: ${width}px;
+    width: ${isMobile ? '100%' : `${width}px`};
     background: ${theme.colorBgContainer};
-    border-right: 1px solid ${theme.colorSplit};
-    border-bottom: 1px solid ${theme.colorSplit};
-    min-height: 100%;
-    display: none;
+    ${isMobile ? '' : `border-right: 1px solid ${theme.colorSplit};`}
+    ${isMobile ? '' : `border-bottom: 1px solid ${theme.colorSplit};`}
+    min-height: ${isMobile ? 'auto' : '100%'};
+    display: ${isMobile ? 'flex' : 'none'};
+    ${isMobile ? 'flex: 1; overflow: hidden;' : ''}
     &.open {
       display: flex;
     }
@@ -120,6 +121,7 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
   filterValues,
   height,
   isInitialized,
+  isMobile,
   offset,
   onSelectionChange,
   toggleFiltersBar,
@@ -156,8 +158,17 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
   }, [onScroll]);
 
   const tabPaneStyle = useMemo(
-    () => ({ overflow: 'auto', height, overscrollBehavior: 'contain' }),
-    [height],
+    () =>
+      isMobile
+        ? {
+            overflow: 'auto',
+            flex: 1,
+            overscrollBehavior: 'contain',
+            width: '100%',
+            boxSizing: 'border-box' as const,
+          }
+        : { overflow: 'auto', height, overscrollBehavior: 'contain' },
+    [height, isMobile],
   );
 
   const filterControls = useMemo(
@@ -195,32 +206,39 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
         {...getFilterBarTestId()}
         className={cx({ open: filtersOpen })}
         width={width}
+        isMobile={isMobile}
       >
-        <CollapsedBar
-          {...getFilterBarTestId('collapsable')}
-          className={cx({ open: !filtersOpen })}
-          onClick={openFiltersBar}
-          role="button"
-          offset={offset}
+        {!isMobile && (
+          <CollapsedBar
+            {...getFilterBarTestId('collapsable')}
+            className={cx({ open: !filtersOpen })}
+            onClick={openFiltersBar}
+            role="button"
+            offset={offset}
+          >
+            <Icons.VerticalAlignTopOutlined
+              iconSize="l"
+              css={{
+                transform: 'rotate(90deg)',
+                marginBottom: `${theme.sizeUnit * 3}px`,
+              }}
+              className="collapse-icon"
+              iconColor={theme.colorPrimary}
+              {...getFilterBarTestId('expand-button')}
+            />
+            <Icons.FilterOutlined
+              {...getFilterBarTestId('filter-icon')}
+              iconColor={theme.colorTextTertiary}
+              iconSize="l"
+            />
+          </CollapsedBar>
+        )}
+        <Bar
+          className={cx({ open: filtersOpen })}
+          width={width}
+          isMobile={isMobile}
         >
-          <Icons.VerticalAlignTopOutlined
-            iconSize="l"
-            css={{
-              transform: 'rotate(90deg)',
-              marginBottom: `${theme.sizeUnit * 3}px`,
-            }}
-            className="collapse-icon"
-            iconColor={theme.colorPrimary}
-            {...getFilterBarTestId('expand-button')}
-          />
-          <Icons.FilterOutlined
-            {...getFilterBarTestId('filter-icon')}
-            iconColor={theme.colorTextTertiary}
-            iconSize="l"
-          />
-        </CollapsedBar>
-        <Bar className={cx({ open: filtersOpen })} width={width}>
-          <Header toggleFiltersBar={toggleFiltersBar} />
+          <Header toggleFiltersBar={toggleFiltersBar} isMobile={isMobile} />
           {!isInitialized ? (
             <div css={{ height }}>
               <Loading />

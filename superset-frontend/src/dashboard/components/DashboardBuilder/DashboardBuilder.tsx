@@ -97,6 +97,8 @@ const StickyPanel = styled.div<{ width: number }>`
 `;
 
 // @z-index-above-dashboard-popovers (99) + 1 = 100
+const MOBILE_HEADER_BREAKPOINT = 768;
+
 const StyledHeader = styled.div<{ filterBarWidth: number }>`
   ${({ theme, filterBarWidth }) => css`
     grid-column: 2;
@@ -105,6 +107,11 @@ const StyledHeader = styled.div<{ filterBarWidth: number }>`
     top: 0;
     z-index: 99;
     max-width: calc(100vw - ${filterBarWidth}px);
+
+    @media (max-width: ${MOBILE_HEADER_BREAKPOINT}px) {
+      position: static;
+      z-index: auto;
+    }
 
     .empty-droptarget:before {
       position: absolute;
@@ -741,9 +748,10 @@ const DashboardBuilder = () => {
             verticalConfig={{
               filtersOpen: true,
               toggleFiltersBar: toggleDashboardFiltersOpen,
-              width: window.innerWidth,
+              width: 0,
               height: '100%',
               offset: 0,
+              isMobile: true,
             }}
           />
         </MobileFilterBar>

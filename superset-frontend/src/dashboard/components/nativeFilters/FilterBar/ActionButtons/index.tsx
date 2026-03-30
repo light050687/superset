@@ -40,6 +40,7 @@ interface ActionButtonsProps {
   dataMaskApplied: DataMaskStateWithId;
   isApplyDisabled: boolean;
   filterBarOrientation?: FilterBarOrientation;
+  isMobile?: boolean;
 }
 
 const containerStyle = (theme: SupersetTheme) => css`
@@ -91,10 +92,43 @@ const horizontalStyle = (theme: SupersetTheme) => css`
   }
 `;
 
-const ButtonsContainer = styled.div<{ isVertical: boolean; width: number }>`
-  ${({ theme, isVertical, width }) => css`
+const mobileStyle = (theme: SupersetTheme) => css`
+  flex-direction: row;
+  align-items: center;
+  position: static;
+  width: 100%;
+  box-sizing: border-box;
+  padding: ${theme.sizeUnit * 2}px ${theme.sizeUnit * 2}px;
+  border-top: 1px solid ${theme.colorBorderSecondary};
+  background: ${theme.colorBgContainer};
+  gap: ${theme.sizeUnit}px;
+  flex-shrink: 0;
+
+  & > .filter-apply-button {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+  }
+
+  & > .filter-clear-all-button {
+    flex: 0 0 auto;
+    margin: 0;
+    white-space: nowrap;
+  }
+`;
+
+const ButtonsContainer = styled.div<{
+  isVertical: boolean;
+  width: number;
+  isMobile?: boolean;
+}>`
+  ${({ theme, isVertical, width, isMobile }) => css`
     ${containerStyle(theme)};
-    ${isVertical ? verticalStyle(theme, width) : horizontalStyle(theme)};
+    ${isMobile
+      ? mobileStyle(theme)
+      : isVertical
+        ? verticalStyle(theme, width)
+        : horizontalStyle(theme)};
   `}
 `;
 
@@ -106,6 +140,7 @@ const ActionButtons = ({
   dataMaskSelected,
   isApplyDisabled,
   filterBarOrientation = FilterBarOrientation.Vertical,
+  isMobile,
 }: ActionButtonsProps) => {
   const isClearAllEnabled = useMemo(
     () =>
@@ -123,6 +158,7 @@ const ActionButtons = ({
     <ButtonsContainer
       isVertical={isVertical}
       width={width}
+      isMobile={isMobile}
       data-test="filterbar-action-buttons"
     >
       <Button

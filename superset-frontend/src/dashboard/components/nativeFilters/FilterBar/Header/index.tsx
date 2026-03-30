@@ -63,26 +63,29 @@ const Wrapper = styled.div`
 
 type HeaderProps = {
   toggleFiltersBar: (arg0: boolean) => void;
+  isMobile?: boolean;
 };
 
-const Header: FC<HeaderProps> = ({ toggleFiltersBar }) => (
+const Header: FC<HeaderProps> = ({ toggleFiltersBar, isMobile }) => (
   <Wrapper>
     <TitleArea>
       <span>{t('Filters')}</span>
       <FilterBarSettings />
-      <HeaderButton
-        {...getFilterBarTestId('collapse-button')}
-        buttonStyle="link"
-        buttonSize="xsmall"
-        onClick={() => toggleFiltersBar(false)}
-      >
-        <Icons.VerticalAlignTopOutlined
-          iconSize="xl"
-          css={css`
-            transform: rotate(-90deg);
-          `}
-        />
-      </HeaderButton>
+      {!isMobile && (
+        <HeaderButton
+          {...getFilterBarTestId('collapse-button')}
+          buttonStyle="link"
+          buttonSize="xsmall"
+          onClick={() => toggleFiltersBar(false)}
+        >
+          <Icons.VerticalAlignTopOutlined
+            iconSize="xl"
+            css={css`
+              transform: rotate(-90deg);
+            `}
+          />
+        </HeaderButton>
+      )}
     </TitleArea>
   </Wrapper>
 );

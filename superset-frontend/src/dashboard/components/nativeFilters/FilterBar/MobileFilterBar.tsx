@@ -78,85 +78,97 @@ const DrawerContent = styled.div`
     height: 100%;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 
-    /* BarWrapper — full width, remove fixed width */
-    & [data-test='filter-bar'] {
+    /* BarWrapper — full width */
+    & > div {
       width: 100% !important;
-
-      &.open {
-        width: 100% !important;
-      }
-    }
-
-    /* Bar — relative positioning, full width, always visible */
-    & [data-test='filter-bar'] > div:nth-of-type(2) {
-      position: relative !important;
-      width: 100% !important;
-      min-height: auto !important;
+      height: 100% !important;
       display: flex !important;
       flex-direction: column !important;
-      border-right: none !important;
-      border-bottom: none !important;
-      flex: 1;
-      overflow: hidden;
     }
 
-    /* Hide collapsed bar (not needed in drawer) */
+    /* Force open state */
+    & > div.open,
+    & [data-test='filter-bar'] {
+      width: 100% !important;
+    }
+
+    /* Hide collapsed bar */
     & [data-test='filter-bar-collapsable'] {
       display: none !important;
     }
 
-    /* 4. Hide collapse arrow button (drawer has its own close) */
+    /* Bar — fill drawer, no absolute positioning */
+    & > div > div:last-child {
+      position: relative !important;
+      width: 100% !important;
+      min-height: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      flex: 1 !important;
+      border-right: none !important;
+      border-bottom: none !important;
+      overflow: hidden !important;
+    }
+
+    /* Scrollable filter content */
+    & > div > div:last-child > div:nth-child(2) {
+      flex: 1 !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      padding-bottom: ${theme.sizeUnit * 2}px !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+    }
+
+    /* All nested content — constrain width */
+    & * {
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* Hide collapse arrow button (the VerticalAlignTop icon) */
     & [data-test='filter-bar-collapse-button'] {
       display: none !important;
     }
 
-    /* 2. Action buttons — horizontal row, space-between */
-    & [data-test='filterbar-action-buttons'] {
+    /* Action buttons — one row, full width, Apply left / Clear right */
+    && [data-test='filterbar-action-buttons'],
+    & div[data-test='filterbar-action-buttons'] {
       position: static !important;
       width: 100% !important;
       flex-direction: row !important;
       justify-content: space-between !important;
       align-items: center !important;
-      padding: ${theme.sizeUnit * 3}px ${theme.sizeUnit * 4}px !important;
+      padding: ${theme.sizeUnit * 2}px ${theme.sizeUnit * 3}px !important;
       background: ${theme.colorBgContainer} !important;
       border-top: 1px solid ${theme.colorBorderSecondary};
+      flex-shrink: 0 !important;
 
-      .filter-apply-button {
+      & > button.filter-apply-button,
+      & > .filter-apply-button {
         margin-bottom: 0 !important;
-        flex: 1;
-        margin-right: ${theme.sizeUnit * 2}px;
+        flex: 1 !important;
+        margin-right: ${theme.sizeUnit * 2}px !important;
       }
 
-      .filter-clear-all-button {
-        flex: 0 0 auto;
+      & > button.filter-clear-all-button,
+      & > .filter-clear-all-button {
+        flex: 0 0 auto !important;
+        margin-bottom: 0 !important;
       }
     }
 
-    /* 3. Empty state — center text, no divider */
+    /* Empty state — center */
     & .ant-empty {
       text-align: center;
     }
 
-    /* Scrollable filter content area */
-    & .ant-tabs-tabpane {
-      overflow-y: auto;
-      flex: 1;
-    }
-
-    /* 5. Border-radius per design system: 6px for controls */
-    & .ant-select .ant-select-selector {
-      border-radius: 6px !important;
-    }
-
-    & .ant-input {
-      border-radius: 6px !important;
-    }
-
-    & .ant-picker {
-      border-radius: 6px !important;
-    }
-
+    /* Border-radius: 6px for controls */
+    & .ant-select .ant-select-selector,
+    & .ant-input,
+    & .ant-picker,
     & .ant-btn {
       border-radius: 6px !important;
     }
@@ -178,12 +190,15 @@ const MobileFilterBar = ({ children }: MobileFilterBarProps) => {
         </FilterButton>
       </BottomBar>
       <Drawer
-        title={t('Filters')}
         placement="bottom"
         onClose={closeDrawer}
         open={drawerOpen}
         height="70%"
-        styles={{ body: { padding: 0, overflow: 'hidden' } }}
+        closable={false}
+        styles={{
+          header: { display: 'none' },
+          body: { padding: 0, overflow: 'hidden' },
+        }}
       >
         <DrawerContent>{children}</DrawerContent>
       </Drawer>
