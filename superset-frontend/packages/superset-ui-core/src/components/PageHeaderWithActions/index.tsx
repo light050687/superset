@@ -80,6 +80,49 @@ const headerStyles = (theme: SupersetTheme) => css`
     display: flex;
     align-items: center;
   }
+
+  .metadata-panel {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    flex-wrap: wrap;
+    height: auto;
+    padding: ${theme.sizeUnit * 2}px ${theme.sizeUnit * 3}px;
+    gap: ${theme.sizeUnit}px;
+
+    .title-panel {
+      flex: 1 1 100%;
+      margin-right: 0;
+
+      /* Push Draft badge to the right edge */
+      .ant-tag {
+        margin-left: auto;
+      }
+    }
+
+    .metadata-panel {
+      display: flex;
+      flex: 1 1 100%;
+      align-items: center;
+    }
+
+    .right-button-panel {
+      flex: 1 1 100%;
+      display: flex;
+      gap: ${theme.sizeUnit * 2}px;
+
+      > .button-container {
+        flex: 1;
+        display: flex;
+      }
+
+      /* Menu (...) button stays compact */
+      > div:last-child {
+        flex: 0 0 auto;
+      }
+    }
+  }
 `;
 
 const buttonsStyles = (theme: SupersetTheme) => css`
@@ -92,6 +135,15 @@ const buttonsStyles = (theme: SupersetTheme) => css`
 
     &:first-of-type {
       padding-left: 0;
+    }
+  }
+
+  @media (max-width: 768px) {
+    flex: 1;
+
+    /* Push Draft/Published badge to the right */
+    > div:last-child {
+      margin-left: auto;
     }
   }
 `;
@@ -108,6 +160,8 @@ export type PageHeaderWithActionsProps = {
   showMenuDropdown?: boolean;
   faveStarProps: FaveStarProps;
   titlePanelAdditionalItems: ReactNode;
+  /** Metadata bar rendered as a separate row (for responsive layout) */
+  metadataBar?: ReactNode;
   rightPanelAdditionalItems: ReactNode;
   additionalActionsMenu: ReactElement;
   menuDropdownProps: Omit<DropdownProps, 'overlay'>;
@@ -124,6 +178,7 @@ export const PageHeaderWithActions = ({
   showFaveStar,
   faveStarProps,
   titlePanelAdditionalItems,
+  metadataBar,
   rightPanelAdditionalItems,
   additionalActionsMenu,
   menuDropdownProps,
@@ -145,6 +200,11 @@ export const PageHeaderWithActions = ({
           </div>
         )}
       </div>
+      {metadataBar && (
+        <div className="metadata-panel" data-test="metadata-panel">
+          {metadataBar}
+        </div>
+      )}
       <div className="right-button-panel">
         {rightPanelAdditionalItems}
         <div css={additionalActionsContainerStyles}>

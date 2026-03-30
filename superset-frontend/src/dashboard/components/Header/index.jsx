@@ -105,11 +105,19 @@ const headerContainerStyle = theme => css`
 
 const editButtonStyle = theme => css`
   color: ${theme.colorPrimary};
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
 `;
 
 const actionButtonsStyle = theme => css`
   display: flex;
   align-items: center;
+
+  @media (max-width: 768px) {
+    flex: 1;
+  }
 
   .action-schedule-report {
     margin-left: ${theme.sizeUnit * 2}px;
@@ -516,6 +524,18 @@ const Header = () => {
 
   const metadataBar = useDashboardMetadataBar(dashboardInfo);
 
+  // Responsive: track mobile breakpoint for header layout
+  const MOBILE_BREAKPOINT = 768;
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT,
+  );
+  useEffect(() => {
+    const onResize = () =>
+      setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   const userCanEdit =
     dashboardInfo.dash_edit_perm && !dashboardInfo.is_managed_externally;
   const userCanShare = dashboardInfo.dash_share_perm;
@@ -607,18 +627,26 @@ const Header = () => {
           visible={!editMode}
         />
       ),
-      !editMode && !isEmbedded && metadataBar,
+      // On mobile, metadata is shown in separate metadata-panel (not here)
+      !editMode && !isEmbedded && !isMobile && metadataBar,
     ],
     [
       boundActionCreators.savePublished,
       dashboardInfo.id,
       editMode,
+      isMobile,
       metadataBar,
       isEmbedded,
       isPublished,
       userCanEdit,
       userCanSaveAs,
     ],
+  );
+
+  // Metadata bar as separate element for responsive 3-row layout
+  const metadataBarSeparate = useMemo(
+    () => (!editMode && !isEmbedded ? metadataBar : null),
+    [editMode, isEmbedded, metadataBar],
   );
 
   const rightPanelAdditionalItems = useMemo(
@@ -795,6 +823,7 @@ const Header = () => {
         certificatiedBadgeProps={certifiedBadgeProps}
         faveStarProps={faveStarProps}
         titlePanelAdditionalItems={titlePanelAdditionalItems}
+        metadataBar={metadataBarSeparate}
         rightPanelAdditionalItems={rightPanelAdditionalItems}
         menuDropdownProps={{
           open: isDropdownVisible,

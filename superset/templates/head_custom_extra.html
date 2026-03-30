@@ -21,17 +21,14 @@
 
 <style nonce="{{ csp_nonce() }}">
 /* ═══════════════════════════════════════════════════════════════
-   Samberi BI v2.0 — Responsive UI (global, all dashboards)
-   Selectors use .dashboard-content prefix for higher specificity
-   to override both Emotion and Dashboard CssEditor CSS.
+   Samberi BI v2.0 — Responsive grid reflow (global)
+   Header responsive layout handled by PageHeaderWithActions component.
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Desktop Small (≤1280px) ── */
 @media only screen and (max-width: 1280px) {
   .dashboard-content .grid-container { margin: 12px !important; }
 }
 
-/* ── Tablet (≤1024px) ── */
 @media only screen and (max-width: 1024px) {
   .dashboard-content .grid-container { margin: 8px !important; }
   .dashboard-content .grid-row { flex-wrap: wrap !important; }
@@ -46,7 +43,6 @@
   }
 }
 
-/* ── Mobile (≤768px) ── */
 @media only screen and (max-width: 768px) {
   .dashboard-content .grid-container { margin: 4px !important; }
   .dashboard-content .grid-row { flex-wrap: wrap !important; }
@@ -67,47 +63,10 @@
     width: 100% !important;
     min-width: 100% !important;
   }
-
-  /* ── Dashboard header: adaptive multi-line layout ── */
-  /* Remove FilterBar -32px compensation */
+  [data-test="dashboard-filters-panel"] { display: none !important; }
   .dragdroppable-column { margin-left: 0 !important; }
-
-  /* Header: allow wrapping to multiple lines */
-  .header-with-actions {
-    flex-wrap: wrap !important;
-    height: auto !important;
-    padding: 4px 8px !important;
-    gap: 4px !important;
-  }
-
-  /* Title panel: full width + internal wrapping */
-  .header-with-actions .title-panel {
-    flex: 1 1 100% !important;
-    flex-wrap: wrap !important;
-    margin-right: 0 !important;
-    min-width: 0 !important;
-  }
-
-  /* Title input wrapper: own line, full width */
-  .header-with-actions .title-panel > div:first-child {
-    flex: 1 1 100% !important;
-    min-width: 0 !important;
-  }
-
-  /* Title input: visible, not clipped */
-  .dynamic-title-input {
-    font-size: 16px !important;
-    max-width: 100% !important;
-    width: 100% !important;
-  }
-
-  /* Buttons: align right on their own line */
-  .header-with-actions .right-button-panel {
-    margin-left: auto !important;
-  }
 }
 
-/* ── Phone (≤428px) ── */
 @media only screen and (max-width: 428px) {
   .dashboard-content .grid-container { margin: 2px !important; }
   .dashboard-content .dragdroppable-column { margin-bottom: 2px !important; }
