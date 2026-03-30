@@ -95,6 +95,10 @@ const headerStyles = (theme: SupersetTheme) => css`
       flex: 1 1 100%;
       margin-right: 0;
       padding-right: 0;
+
+      .ant-tag {
+        margin-inline-end: 0;
+      }
     }
 
     .metadata-panel {
