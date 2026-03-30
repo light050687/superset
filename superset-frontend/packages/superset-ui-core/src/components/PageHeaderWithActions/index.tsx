@@ -88,17 +88,13 @@ const headerStyles = (theme: SupersetTheme) => css`
   @media (max-width: 768px) {
     flex-wrap: wrap;
     height: auto;
-    padding: ${theme.sizeUnit * 2}px ${theme.sizeUnit * 3}px;
+    padding: ${theme.sizeUnit * 2}px ${theme.sizeUnit * 2}px;
     gap: ${theme.sizeUnit}px;
 
     .title-panel {
       flex: 1 1 100%;
       margin-right: 0;
-
-      /* Push Draft badge to the right edge */
-      .ant-tag {
-        margin-left: auto;
-      }
+      padding-right: 0;
     }
 
     .metadata-panel {
