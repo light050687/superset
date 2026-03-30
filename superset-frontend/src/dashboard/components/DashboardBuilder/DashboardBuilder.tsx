@@ -62,6 +62,7 @@ import {
   DashboardStandaloneMode,
 } from 'src/dashboard/util/constants';
 import FilterBar from 'src/dashboard/components/nativeFilters/FilterBar';
+import MobileFilterBar from 'src/dashboard/components/nativeFilters/FilterBar/MobileFilterBar';
 import { useUiConfig } from 'src/components/UiConfigContext';
 import ResizableSidebar from 'src/components/ResizableSidebar';
 import {
@@ -463,6 +464,18 @@ const DashboardBuilder = () => {
 
   const showFilterBar = !editMode && nativeFiltersEnabled;
 
+  // Responsive: mobile breakpoint for filter bar layout
+  const MOBILE_BREAKPOINT = 768;
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT,
+  );
+  useEffect(() => {
+    const onResize = () =>
+      setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   const offset =
     FILTER_BAR_HEADER_HEIGHT +
     (isSticky || standaloneMode ? 0 : MAIN_HEADER_HEIGHT);
@@ -613,7 +626,7 @@ const DashboardBuilder = () => {
 
   return (
     <DashboardWrapper>
-      {isVerticalFilterBarVisible && (
+      {isVerticalFilterBarVisible && !isMobile && (
         <ResizableSidebar
           id={`dashboard:${dashboardId}`}
           enable={dashboardFiltersOpen}
@@ -719,6 +732,20 @@ const DashboardBuilder = () => {
             }
           `}
         />
+      )}
+      {showFilterBar && isMobile && (
+        <MobileFilterBar>
+          <FilterBar
+            orientation={FilterBarOrientation.Vertical}
+            verticalConfig={{
+              filtersOpen: true,
+              toggleFiltersBar: toggleDashboardFiltersOpen,
+              width: window.innerWidth,
+              height: '100%',
+              offset: 0,
+            }}
+          />
+        </MobileFilterBar>
       )}
     </DashboardWrapper>
   );
