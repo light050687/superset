@@ -52,7 +52,7 @@ const StyledHeader = styled.header`
   ${({ theme }) => css`
     background-color: ${theme.colorBgContainer};
     border-bottom: 1px solid ${theme.colorBorderSecondary};
-    padding: 0 ${theme.sizeUnit * 4}px;
+    padding: 0 ${theme.sizeUnit * 2}px;
     z-index: 10;
 
     &:nth-last-of-type(2) nav {
@@ -85,30 +85,13 @@ const StyledHeader = styled.header`
   `}
 `;
 
-const StyledBrandText = styled.div`
+const StyledBrandName = styled.span`
   ${({ theme }) => css`
-    border-left: 1px solid ${theme.colorBorderSecondary};
-    border-right: 1px solid ${theme.colorBorderSecondary};
-    height: 100%;
+    font-size: 20px;
+    font-weight: 700;
     color: ${theme.colorText};
-    padding-left: ${theme.sizeUnit * 4}px;
-    padding-right: ${theme.sizeUnit * 4}px;
-    font-size: ${theme.fontSizeLG}px;
-    float: left;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-
-    span {
-      max-width: ${theme.sizeUnit * 58}px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    @media (max-width: 1127px) {
-      display: none;
-    }
+    letter-spacing: 0.5px;
+    white-space: nowrap;
   `}
 `;
 
@@ -206,7 +189,7 @@ const StyledRow = styled(Row)`
 const StyledCol = styled(Col)`
   ${({ theme }) => css`
     display: flex;
-    gap: ${theme.sizeUnit * 4}px;
+    gap: ${theme.sizeUnit * 2}px;
 
     @media (max-width: 768px) {
       flex: 0 0 auto !important;
@@ -383,6 +366,30 @@ export function Menu({
     };
   };
   const renderBrand = () => {
+    const brandLabel = brand.text || brand.alt || 'МРТС';
+    // If brand.text is set via LOGO_RIGHT_TEXT config, show text instead of logo image
+    if (brand.text) {
+      const brandContent = <StyledBrandName>{brandLabel}</StyledBrandName>;
+      return (
+        <>
+          {isFrontendRoute(window.location.pathname) ? (
+            <GenericLink className="navbar-brand" to={brand.path}>
+              {brandContent}
+            </GenericLink>
+          ) : (
+            <Typography.Link
+              className="navbar-brand"
+              href={brand.path}
+              tabIndex={-1}
+            >
+              {brandContent}
+            </Typography.Link>
+          )}
+        </>
+      );
+    }
+
+    // Default: render logo image
     let link;
     if (theme.brandLogoUrl) {
       link = (
@@ -398,9 +405,6 @@ export function Menu({
         </StyledBrandWrapper>
       );
     } else if (isFrontendRoute(window.location.pathname)) {
-      // ---------------------------------------------------------------------------------
-      // TODO: deprecate this once Theme is fully rolled out
-      // Kept as is for backwards compatibility with the old theme system / superset_config.py
       link = (
         <GenericLink className="navbar-brand" to={brand.path}>
           <StyledImage preview={false} src={brand.icon} alt={brand.alt} />
@@ -417,7 +421,6 @@ export function Menu({
         </Typography.Link>
       );
     }
-    // ---------------------------------------------------------------------------------
     return <>{link}</>;
   };
   const menuItems = menu.map(item => {
@@ -470,11 +473,7 @@ export function Menu({
           >
             {renderBrand()}
           </Tooltip>
-          {brand.text && (
-            <StyledBrandText>
-              <span>{brand.text}</span>
-            </StyledBrandText>
-          )}
+          {/* brand.text is now rendered inside renderBrand() as StyledBrandName */}
           {!isMobile && (
             <StyledMainNav
               mode="horizontal"
