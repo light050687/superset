@@ -372,6 +372,7 @@ const StyledDashboardContent = styled.div<{
       &.dashboard-content .grid-row {
         flex-wrap: wrap !important;
         gap: ${theme.sizeUnit * 2}px !important;
+        align-items: stretch !important;
 
         & > :not(:last-child):not(.hover-menu) {
           margin-right: 0 !important;
@@ -382,11 +383,30 @@ const StyledDashboardContent = styled.div<{
         flex: 1 1 calc(50% - ${theme.sizeUnit}px) !important;
         min-width: calc(50% - ${theme.sizeUnit}px) !important;
         max-width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
       }
 
       &.dashboard-content .resizable-container {
         width: 100% !important;
         max-width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+
+      &.dashboard-content .dashboard-component-chart-holder {
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+
+      &.dashboard-content .dashboard-chart {
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
       }
     }
 

@@ -106,9 +106,10 @@ const ChartHolder = ({
   const { chartId } = component.meta;
   const isFullSize = fullSizeChartId === chartId;
 
-  // Responsive: measure actual container width via ResizeObserver
+  // Responsive: measure actual container size via ResizeObserver
   const chartHolderRef = useRef<HTMLDivElement>(null) as React.MutableRefObject<HTMLDivElement | null>;
   const [measuredWidth, setMeasuredWidth] = useState(0);
+  const [measuredHeight, setMeasuredHeight] = useState(0);
 
   useEffect(() => {
     if (editMode || !chartHolderRef.current) return undefined;
@@ -117,6 +118,7 @@ const ChartHolder = ({
       const entry = entries[0];
       if (entry) {
         setMeasuredWidth(Math.floor(entry.contentRect.width));
+        setMeasuredHeight(Math.floor(entry.contentRect.height));
       }
     });
     observer.observe(el);
@@ -212,31 +214,35 @@ const ChartHolder = ({
         CHART_MARGIN,
     );
 
+    const gridHeight = Math.floor(
+      component.meta.height * GRID_BASE_UNIT - CHART_MARGIN,
+    );
+    const isResponsive =
+      !editMode &&
+      measuredWidth > 0 &&
+      Math.abs(measuredWidth - CHART_MARGIN - gridWidth) > GRID_BASE_UNIT;
+
     if (isFullSize) {
       width = window.innerWidth - CHART_MARGIN;
       height = window.innerHeight - CHART_MARGIN;
-    } else if (
-      !editMode &&
-      measuredWidth > 0 &&
-      Math.abs(measuredWidth - CHART_MARGIN - gridWidth) > GRID_BASE_UNIT
-    ) {
-      // Responsive: CSS overrides changed container width, use measured value
+    } else if (isResponsive) {
+      // Responsive: CSS overrides changed container size, use measured values
       width = measuredWidth - CHART_MARGIN;
-      height = Math.floor(
-        component.meta.height * GRID_BASE_UNIT - CHART_MARGIN,
-      );
+      // Use measured height if container was stretched by flex (align-items: stretch)
+      height =
+        measuredHeight > 0 && measuredHeight > gridHeight + CHART_MARGIN
+          ? measuredHeight - CHART_MARGIN
+          : gridHeight;
     } else {
       width = gridWidth;
-      height = Math.floor(
-        component.meta.height * GRID_BASE_UNIT - CHART_MARGIN,
-      );
+      height = gridHeight;
     }
 
     return {
       chartWidth: width,
       chartHeight: height,
     };
-  }, [columnWidth, component, editMode, isFullSize, measuredWidth, widthMultiple]);
+  }, [columnWidth, component, editMode, isFullSize, measuredWidth, measuredHeight, widthMultiple]);
 
   const handleDeleteComponent = useCallback(() => {
     deleteComponent(id, parentId);
