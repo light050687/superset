@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useState, useMemo, useCallback, useEffect, memo } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react';
 
 import { ResizeCallback, ResizeStartCallback } from 're-resizable';
 import cx from 'classnames';
@@ -106,15 +106,22 @@ const ChartHolder = ({
   const { chartId } = component.meta;
   const isFullSize = fullSizeChartId === chartId;
 
-  // Responsive: track viewport width for chart size recalculation
-  const MOBILE_BREAKPOINT = 768;
-  const TABLET_BREAKPOINT = 1024;
-  const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
+  // Responsive: measure actual container width via ResizeObserver
+  const chartHolderRef = useRef<HTMLDivElement>(null) as React.MutableRefObject<HTMLDivElement | null>;
+  const [measuredWidth, setMeasuredWidth] = useState(0);
+
   useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
+    if (editMode || !chartHolderRef.current) return undefined;
+    const el = chartHolderRef.current;
+    const observer = new ResizeObserver(entries => {
+      const entry = entries[0];
+      if (entry) {
+        setMeasuredWidth(Math.floor(entry.contentRect.width));
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [editMode]);
 
   const focusHighlightStyles = useFilterFocusHighlightStyles(chartId);
   const directPathToChild = useSelector(
@@ -198,35 +205,28 @@ const ChartHolder = ({
     let width = 0;
     let height = 0;
 
+    // Standard grid calculation
+    const gridWidth = Math.floor(
+      widthMultiple * columnWidth +
+        (widthMultiple - 1) * GRID_GUTTER_SIZE -
+        CHART_MARGIN,
+    );
+
     if (isFullSize) {
       width = window.innerWidth - CHART_MARGIN;
       height = window.innerHeight - CHART_MARGIN;
-    } else if (viewportWidth <= MOBILE_BREAKPOINT && !editMode) {
-      // Mobile: full container width (single column)
-      const containerEl = document.querySelector('.grid-container');
-      const containerWidth = containerEl
-        ? containerEl.clientWidth
-        : viewportWidth;
-      width = Math.floor(containerWidth - CHART_MARGIN - 16);
-      height = Math.floor(
-        component.meta.height * GRID_BASE_UNIT - CHART_MARGIN,
-      );
-    } else if (viewportWidth <= TABLET_BREAKPOINT && !editMode) {
-      // Tablet: half container width (two columns)
-      const containerEl = document.querySelector('.grid-container');
-      const containerWidth = containerEl
-        ? containerEl.clientWidth
-        : viewportWidth;
-      width = Math.floor(containerWidth / 2 - CHART_MARGIN - 8);
+    } else if (
+      !editMode &&
+      measuredWidth > 0 &&
+      Math.abs(measuredWidth - CHART_MARGIN - gridWidth) > GRID_BASE_UNIT
+    ) {
+      // Responsive: CSS overrides changed container width, use measured value
+      width = measuredWidth - CHART_MARGIN;
       height = Math.floor(
         component.meta.height * GRID_BASE_UNIT - CHART_MARGIN,
       );
     } else {
-      width = Math.floor(
-        widthMultiple * columnWidth +
-          (widthMultiple - 1) * GRID_GUTTER_SIZE -
-          CHART_MARGIN,
-      );
+      width = gridWidth;
       height = Math.floor(
         component.meta.height * GRID_BASE_UNIT - CHART_MARGIN,
       );
@@ -236,7 +236,7 @@ const ChartHolder = ({
       chartWidth: width,
       chartHeight: height,
     };
-  }, [columnWidth, component, editMode, isFullSize, viewportWidth, widthMultiple]);
+  }, [columnWidth, component, editMode, isFullSize, measuredWidth, widthMultiple]);
 
   const handleDeleteComponent = useCallback(() => {
     deleteComponent(id, parentId);
@@ -287,14 +287,20 @@ const ChartHolder = ({
         editMode={editMode}
       >
         <div
-          ref={dragSourceRef}
+          ref={(node: HTMLDivElement | null) => {
+            if (typeof dragSourceRef === 'function') {
+              dragSourceRef(node);
+            } else if (dragSourceRef) {
+              (dragSourceRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+            }
+            chartHolderRef.current = node;
+          }}
           data-test="dashboard-component-chart-holder"
           style={focusHighlightStyles}
           css={isFullSize ? fullSizeStyle : undefined}
           className={cx(
             'dashboard-component',
             'dashboard-component-chart-holder',
-            // The following class is added to support custom dashboard styling via the CSS editor
             `dashboard-chart-id-${chartId}`,
             outlinedComponentId ? 'fade-in' : 'fade-out',
           )}

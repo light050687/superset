@@ -362,6 +362,42 @@ const StyledDashboardContent = styled.div<{
         }
       }
     }
+
+    /* Responsive: 2-column layout on medium screens */
+    @media only screen and (max-width: 1024px) {
+      &.dashboard-content .grid-container {
+        margin: ${theme.sizeUnit}px !important;
+      }
+
+      &.dashboard-content .grid-row {
+        flex-wrap: wrap !important;
+        gap: ${theme.sizeUnit * 2}px !important;
+
+        & > :not(:last-child):not(.hover-menu) {
+          margin-right: 0 !important;
+        }
+      }
+
+      &.dashboard-content .dragdroppable-column {
+        flex: 1 1 calc(50% - ${theme.sizeUnit}px) !important;
+        min-width: calc(50% - ${theme.sizeUnit}px) !important;
+        max-width: 100% !important;
+      }
+
+      &.dashboard-content .resizable-container {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+
+    /* Responsive: single-column on small screens */
+    @media only screen and (max-width: 768px) {
+      &.dashboard-content .dragdroppable-column {
+        flex: 1 1 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
   `}
 `;
 
