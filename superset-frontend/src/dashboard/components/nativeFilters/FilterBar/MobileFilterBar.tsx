@@ -193,11 +193,12 @@ const MobileFilterBar = ({ children }: MobileFilterBarProps) => {
         placement="bottom"
         onClose={closeDrawer}
         open={drawerOpen}
-        height="70%"
+        height="85vh"
         closable={false}
         styles={{
           header: { display: 'none' },
-          body: { padding: 0, overflow: 'hidden' },
+          body: { padding: 0, overflow: 'hidden', maxHeight: '85vh' },
+          wrapper: { maxHeight: '85vh' },
         }}
       >
         <DrawerContent>{children}</DrawerContent>
