@@ -76,6 +76,7 @@ const PresetButton = ({
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [editPreset, setEditPreset] = useState<FilterPreset | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const user = useSelector((state: RootState) => state.user);
   const isAdmin = !!(user?.roles && 'Admin' in user.roles);
@@ -113,6 +114,12 @@ const PresetButton = ({
   const handleModalClose = useCallback(() => {
     setCreateModalOpen(false);
     setEditPreset(null);
+    setRefreshKey(k => k + 1);
+  }, []);
+
+  const handleImportClose = useCallback(() => {
+    setImportModalOpen(false);
+    setRefreshKey(k => k + 1);
   }, []);
 
   return (
@@ -124,8 +131,10 @@ const PresetButton = ({
         placement="bottomRight"
         arrow={false}
         overlayInnerStyle={{ padding: 0 }}
+        destroyTooltipOnHide
         content={
           <PresetDropdown
+            key={refreshKey}
             dashboardId={dashboardId}
             onApplyPreset={handleApplyPreset}
             onClearAll={handleClearAll}
@@ -159,7 +168,7 @@ const PresetButton = ({
       {importModalOpen && (
         <ImportPresetModal
           dashboardId={dashboardId}
-          onClose={() => setImportModalOpen(false)}
+          onClose={handleImportClose}
         />
       )}
     </>

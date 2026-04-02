@@ -151,15 +151,10 @@ const CreatePresetModal = ({
 
     setSaving(true);
     try {
-      // Build filter_data only for selected filters
+      // Build filter_data from current filter values (always use live state)
       const filterData: DataMaskState = {};
-      // In edit mode, preserve saved values; for new use current selection
-      const source = isEditMode ? editPreset!.filterData : dataMaskSelected;
       for (const filterId of selectedFilterIds) {
-        if (source[filterId]) {
-          filterData[filterId] = source[filterId];
-        } else if (dataMaskSelected[filterId]) {
-          // Fallback to current values for newly added filters
+        if (dataMaskSelected[filterId]) {
           filterData[filterId] = dataMaskSelected[filterId];
         }
       }
