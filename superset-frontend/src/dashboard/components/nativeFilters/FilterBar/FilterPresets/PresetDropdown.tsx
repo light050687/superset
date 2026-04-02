@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { css, styled, t, useTheme } from '@superset-ui/core';
 import { Input, Tooltip } from 'antd';
-import Icons from 'src/components/Icons';
+import { Icons } from '@superset-ui/core/components/Icons';
 import { FilterPreset } from './types';
 import {
   deletePreset,
@@ -272,9 +272,8 @@ const PresetDropdown = ({
                 }}
                 aria-label={t('Назначить по умолчанию')}
               >
-                <Icons.FavoriteLarge
-                  iconSize="m"
-                  css={css`
+                <Icons.StarFilled
+                                   css={css`
                     color: ${preset.isDefault
                       ? theme.colorWarning
                       : theme.colorTextSecondary};
@@ -295,7 +294,7 @@ const PresetDropdown = ({
                 }}
                 aria-label={t('Экспорт')}
               >
-                <Icons.Share iconSize="m" />
+                <Icons.ShareAltOutlined />
               </IconButton>
             </Tooltip>
 
@@ -308,7 +307,7 @@ const PresetDropdown = ({
                   }}
                   aria-label={t('Удалить пресет')}
                 >
-                  <Icons.Trash iconSize="m" />
+                  <Icons.DeleteOutlined />
                 </IconButton>
               </Tooltip>
             )}
@@ -322,7 +321,7 @@ const PresetDropdown = ({
                   }}
                   aria-label={t('Скрыть пресет')}
                 >
-                  <Icons.EyeSlash iconSize="m" />
+                  <Icons.EyeInvisibleOutlined />
                 </IconButton>
               </Tooltip>
             )}
@@ -339,14 +338,14 @@ const PresetDropdown = ({
           onClick={onCreateClick}
           aria-label={t('Создать пресет')}
         >
-          <Icons.PlusLarge iconSize="m" />
+          <Icons.PlusOutlined />
           {t('Создать пресет')}
         </FooterButton>
         <FooterButton
           onClick={onImportClick}
           aria-label={t('Импорт пресета')}
         >
-          <Icons.Download iconSize="m" />
+          <Icons.DownloadOutlined />
           {t('Импорт пресета')}
         </FooterButton>
       </FooterActions>

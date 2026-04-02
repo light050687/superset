@@ -17,9 +17,9 @@
  * under the License.
  */
 import { useCallback, useState } from 'react';
-import { css, DataMaskState, Filter, styled, t } from '@superset-ui/core';
+import { css, DataMaskState, Filters, styled, t } from '@superset-ui/core';
 import { Popover } from 'antd';
-import Icons from 'src/components/Icons';
+import { Icons } from '@superset-ui/core/components/Icons';
 import { FilterPreset } from './types';
 import PresetDropdown from './PresetDropdown';
 import CreatePresetModal from './CreatePresetModal';
@@ -52,7 +52,7 @@ const StyledButton = styled.button`
 interface PresetButtonProps {
   dashboardId: number;
   dataMaskSelected: DataMaskState;
-  filters: Record<string, Filter>;
+  filters: Filters;
   onApplyPreset: (
     filterData: DataMaskState,
     includedFilters: string[],
@@ -118,7 +118,7 @@ const PresetButton = ({
           aria-haspopup="listbox"
           aria-expanded={popoverOpen}
         >
-          <Icons.BookmarkFilled iconSize="m" />
+          <Icons.SaveOutlined />
         </StyledButton>
       </Popover>
 

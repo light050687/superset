@@ -45,7 +45,7 @@ const PreviewRow = styled.div`
 const PreviewLabel = styled.span`
   ${({ theme }) => css`
     color: ${theme.colorTextSecondary};
-    font-weight: ${theme.fontWeightMedium};
+    font-weight: ${theme.fontWeightStrong};
   `}
 `;
 

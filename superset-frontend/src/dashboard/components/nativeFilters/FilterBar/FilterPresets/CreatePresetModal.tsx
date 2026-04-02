@@ -17,7 +17,7 @@
  * under the License.
  */
 import { useCallback, useState } from 'react';
-import { css, DataMaskState, Filter, styled, t } from '@superset-ui/core';
+import { css, DataMaskState, Filters, styled, t } from '@superset-ui/core';
 import { Checkbox, Input, Modal, Switch, message } from 'antd';
 import { createPreset, setDefaultPreset } from './api';
 
@@ -31,7 +31,7 @@ const Label = styled.label`
   ${({ theme }) => css`
     display: block;
     font-size: ${theme.fontSizeSM}px;
-    font-weight: ${theme.fontWeightMedium};
+    font-weight: ${theme.fontWeightStrong};
     color: ${theme.colorText};
     margin-bottom: ${theme.sizeUnit}px;
   `}
@@ -80,7 +80,7 @@ const ToggleRow = styled.div`
 interface CreatePresetModalProps {
   dashboardId: number;
   dataMaskSelected: DataMaskState;
-  filters: Record<string, Filter>;
+  filters: Filters;
   onClose: () => void;
 }
 
