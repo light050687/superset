@@ -59,6 +59,12 @@ const StyledHeader = styled.header`
       margin-bottom: 2px;
     }
 
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      height: 100%;
+    }
+
     .caret {
       display: none;
     }
@@ -92,6 +98,9 @@ const StyledBrandName = styled.span`
     color: ${theme.colorText};
     letter-spacing: 0.5px;
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    height: 100%;
   `}
 `;
 

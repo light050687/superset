@@ -439,8 +439,8 @@ const StyledDashboardContent = styled.div<{
      * 571px+: scales from 12px to 24px via 1vw
      */
 
-    /* === Responsive layout (≤1279px): 2-col wrapping === */
-    @media only screen and (max-width: 1279px) {
+    /* === Responsive layout (≤1440px): flex wrapping === */
+    @media only screen and (max-width: 1440px) {
       &.dashboard-content .grid-row {
         flex-wrap: wrap !important;
         align-items: stretch !important;
@@ -472,8 +472,8 @@ const StyledDashboardContent = styled.div<{
       }
     }
 
-    /* === Tablet: 2 columns, proportional gap === */
-    @media only screen and (min-width: 571px) and (max-width: 1279px) {
+    /* === Tablet: 2 columns, proportional gap (571–1159px) === */
+    @media only screen and (min-width: 571px) and (max-width: 1159px) {
       &.dashboard-content .grid-container {
         margin: clamp(12px, 1vw, 24px) !important;
       }
@@ -493,8 +493,29 @@ const StyledDashboardContent = styled.div<{
       }
     }
 
-    /* === Desktop ≥1280px: proportional gap (native grid, no wrapping) === */
-    @media only screen and (min-width: 1280px) {
+    /* === Pre-desktop: 3 columns, proportional gap (1160–1440px) === */
+    @media only screen and (min-width: 1160px) and (max-width: 1440px) {
+      &.dashboard-content .grid-container {
+        margin: clamp(14px, 1.1vw, 28px) !important;
+      }
+
+      &.dashboard-content .grid-content > div:not(:last-child):not(.empty-droptarget),
+      &.dashboard-content .dashboard-component-tabs-content > div:not(:last-child):not(.empty-droptarget) {
+        margin-bottom: clamp(14px, 1.1vw, 28px) !important;
+      }
+
+      &.dashboard-content .grid-row {
+        gap: clamp(14px, 1.1vw, 28px) !important;
+      }
+
+      &.dashboard-content .dragdroppable-column {
+        flex: 1 1 calc(33.333% - clamp(10px, 0.8vw, 20px)) !important;
+        min-width: calc(33.333% - clamp(10px, 0.8vw, 20px)) !important;
+      }
+    }
+
+    /* === Desktop ≥1441px: proportional gap (native grid, no wrapping) === */
+    @media only screen and (min-width: 1441px) {
       &.dashboard-content .grid-container {
         margin: clamp(16px, 1.2vw, 32px) !important;
       }
