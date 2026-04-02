@@ -231,7 +231,8 @@ const CreatePresetModal = ({
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder={t('Например: Продовольствие, текущий месяц')}
-          maxLength={256}
+          maxLength={50}
+          showCount
           autoFocus
         />
       </FormGroup>
