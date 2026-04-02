@@ -96,6 +96,7 @@ const PresetButton = ({
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [editPreset, setEditPreset] = useState<FilterPreset | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [activePresetId, setActivePresetId] = useState<number | null>(null);
   const [activePresetName, setActivePresetName] = useState<string | null>(null);
 
   const user = useSelector((state: RootState) => state.user);
@@ -105,6 +106,7 @@ const PresetButton = ({
   useEffect(() => {
     if (dashboardId) {
       fetchDefaultPreset(dashboardId).then(preset => {
+        setActivePresetId(preset?.id ?? null);
         setActivePresetName(preset?.name ?? null);
       });
     }
@@ -113,6 +115,7 @@ const PresetButton = ({
   const handleApplyPreset = useCallback(
     (preset: FilterPreset) => {
       onApplyPreset(preset.filterData, preset.includedFilters);
+      setActivePresetId(preset.id);
       setActivePresetName(preset.name);
       setPopoverOpen(false);
     },
@@ -121,6 +124,7 @@ const PresetButton = ({
 
   const handleClearAll = useCallback(() => {
     onClearAll();
+    setActivePresetId(null);
     setActivePresetName(null);
     setPopoverOpen(false);
   }, [onClearAll]);
@@ -167,6 +171,7 @@ const PresetButton = ({
           <PresetDropdown
             key={refreshKey}
             dashboardId={dashboardId}
+            activePresetId={activePresetId}
             onApplyPreset={handleApplyPreset}
             onClearAll={handleClearAll}
             onCreateClick={handleCreateClick}
