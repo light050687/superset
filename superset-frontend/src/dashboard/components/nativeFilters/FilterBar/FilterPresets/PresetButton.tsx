@@ -59,12 +59,17 @@ const ActivePresetLabel = styled.div`
   ${({ theme }) => css`
     width: 100%;
     text-align: center;
-    font-size: ${theme.fontSizeXS}px;
-    color: ${theme.colorTextTertiary};
-    padding: ${theme.sizeUnit}px 0 0;
+    font-size: ${theme.fontSizeSM}px;
+    color: ${theme.colorPrimary};
+    background: ${theme.colorPrimaryBg};
+    border: 1px solid ${theme.colorPrimaryBorder};
+    border-radius: ${theme.borderRadiusSM}px;
+    padding: ${theme.sizeUnit * 1.5}px ${theme.sizeUnit * 2}px;
+    margin-top: ${theme.sizeUnit}px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-weight: ${theme.fontWeightStrong};
   `}
 `;
 
