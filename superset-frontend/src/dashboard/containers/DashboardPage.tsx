@@ -187,9 +187,8 @@ export const DashboardPage: FC<PageProps> = ({ idOrSlug }: PageProps) => {
         dataMask = isOldRison;
       }
 
-      // Load default preset when dashboard opens without any filter URL params
-      const hasUrlFilters = !!(permalinkKey || nativeFilterKeyValue || isOldRison);
-      if (!hasUrlFilters && id) {
+      // Load default preset on first dashboard hydration (overrides cached filters)
+      if (!isDashboardHydrated.current && !permalinkKey && id) {
         const defaultPreset = await fetchDefaultPreset(id);
         if (defaultPreset?.filterData) {
           dataMask = defaultPreset.filterData;

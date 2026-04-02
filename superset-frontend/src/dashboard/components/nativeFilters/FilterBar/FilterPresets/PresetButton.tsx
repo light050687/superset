@@ -16,13 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { css, DataMaskState, Filters, styled, t } from '@superset-ui/core';
 import { Popover } from 'antd';
 import { useSelector } from 'react-redux';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { RootState } from 'src/dashboard/types';
 import { FilterPreset } from './types';
+import { fetchDefaultPreset } from './api';
 import PresetDropdown from './PresetDropdown';
 import CreatePresetModal from './CreatePresetModal';
 import ImportPresetModal from './ImportPresetModal';
@@ -54,6 +55,19 @@ const StyledButton = styled.button`
   `}
 `;
 
+const ActivePresetLabel = styled.div`
+  ${({ theme }) => css`
+    width: 100%;
+    text-align: center;
+    font-size: ${theme.fontSizeXS}px;
+    color: ${theme.colorTextTertiary};
+    padding: ${theme.sizeUnit}px 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `}
+`;
+
 interface PresetButtonProps {
   dashboardId: number;
   dataMaskSelected: DataMaskState;
@@ -77,13 +91,24 @@ const PresetButton = ({
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [editPreset, setEditPreset] = useState<FilterPreset | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [activePresetName, setActivePresetName] = useState<string | null>(null);
 
   const user = useSelector((state: RootState) => state.user);
   const isAdmin = !!(user?.roles && 'Admin' in user.roles);
 
+  // Load active (default) preset name on mount and after changes
+  useEffect(() => {
+    if (dashboardId) {
+      fetchDefaultPreset(dashboardId).then(preset => {
+        setActivePresetName(preset?.name ?? null);
+      });
+    }
+  }, [dashboardId, refreshKey]);
+
   const handleApplyPreset = useCallback(
     (preset: FilterPreset) => {
       onApplyPreset(preset.filterData, preset.includedFilters);
+      setActivePresetName(preset.name);
       setPopoverOpen(false);
     },
     [onApplyPreset],
@@ -91,6 +116,7 @@ const PresetButton = ({
 
   const handleClearAll = useCallback(() => {
     onClearAll();
+    setActivePresetName(null);
     setPopoverOpen(false);
   }, [onClearAll]);
 
@@ -153,6 +179,12 @@ const PresetButton = ({
           {t('Пресеты')}
         </StyledButton>
       </Popover>
+
+      {activePresetName && (
+        <ActivePresetLabel title={activePresetName}>
+          {activePresetName}
+        </ActivePresetLabel>
+      )}
 
       {createModalOpen && (
         <CreatePresetModal
