@@ -62,6 +62,7 @@ import {
 } from './state';
 import { createFilterKey, updateFilterKey } from './keyValue';
 import ActionButtons from './ActionButtons';
+import { PresetButton } from './FilterPresets';
 import Horizontal from './Horizontal';
 import Vertical from './Vertical';
 import { useSelectFiltersInScope } from '../state';
@@ -319,6 +320,33 @@ const FilterBar: FC<FiltersBarProps> = ({
     });
   }, []);
 
+  const handleApplyPreset = useCallback(
+    (filterData: DataMaskStateWithId, includedFilters: string[]) => {
+      setDataMaskSelected(draft => {
+        includedFilters.forEach(filterId => {
+          if (filterData[filterId]) {
+            draft[filterId] = {
+              ...(getInitialDataMask(filterId) as DataMaskWithId),
+              ...filterData[filterId],
+            };
+          }
+        });
+      });
+      // Auto-apply after preset selection
+      setTimeout(() => {
+        dispatch(logEvent(LOG_ACTIONS_CHANGE_DASHBOARD_FILTER, {}));
+        setUpdateKey(1);
+        includedFilters.forEach(filterId => {
+          const mask = filterData[filterId];
+          if (mask) {
+            dispatch(updateDataMask(filterId, mask));
+          }
+        });
+      }, 0);
+    },
+    [dispatch, setDataMaskSelected],
+  );
+
   useFilterUpdates(dataMaskSelected, setDataMaskSelected);
   const isApplyDisabled = checkIsApplyDisabled(
     dataMaskSelected,
@@ -326,6 +354,16 @@ const FilterBar: FC<FiltersBarProps> = ({
     filtersInScope.filter(isNativeFilter),
   );
   const isInitialized = useInitialization();
+
+  const presetButton = dashboardId ? (
+    <PresetButton
+      dashboardId={dashboardId}
+      dataMaskSelected={dataMaskSelected}
+      filters={filters}
+      onApplyPreset={handleApplyPreset}
+      onClearAll={handleClearAll}
+    />
+  ) : undefined;
 
   const actions = useMemo(
     () => (
@@ -380,6 +418,7 @@ const FilterBar: FC<FiltersBarProps> = ({
         width={verticalConfig.width}
         clearAllTriggers={clearAllTriggers}
         onClearAllComplete={handleClearAllComplete}
+        presetButton={presetButton}
       />
     ) : null;
 

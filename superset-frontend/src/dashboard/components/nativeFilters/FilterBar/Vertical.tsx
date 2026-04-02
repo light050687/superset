@@ -128,6 +128,7 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
   width,
   clearAllTriggers,
   onClearAllComplete,
+  presetButton,
 }) => {
   const theme = useTheme();
   const [isScrolling, setIsScrolling] = useState(false);
@@ -239,6 +240,16 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
           isMobile={isMobile}
         >
           <Header toggleFiltersBar={toggleFiltersBar} isMobile={isMobile} />
+          {presetButton && (
+            <div
+              css={{
+                padding: `0 ${theme.sizeUnit * 4}px`,
+                marginBottom: theme.sizeUnit,
+              }}
+            >
+              {presetButton}
+            </div>
+          )}
           {!isInitialized ? (
             <div css={{ height }}>
               <Loading />

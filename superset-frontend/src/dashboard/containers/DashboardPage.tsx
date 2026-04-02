@@ -45,6 +45,7 @@ import {
   getFilterValue,
   getPermalinkValue,
 } from 'src/dashboard/components/nativeFilters/FilterBar/keyValue';
+import { fetchDefaultPreset } from 'src/dashboard/components/nativeFilters/FilterBar/FilterPresets';
 import DashboardContainer from 'src/dashboard/containers/Dashboard';
 import CrudThemeProvider from 'src/components/CrudThemeProvider';
 
@@ -184,6 +185,14 @@ export const DashboardPage: FC<PageProps> = ({ idOrSlug }: PageProps) => {
       }
       if (isOldRison) {
         dataMask = isOldRison;
+      }
+
+      // Load default preset on first dashboard hydration (overrides cached filters)
+      if (!isDashboardHydrated.current && !permalinkKey && id) {
+        const defaultPreset = await fetchDefaultPreset(id);
+        if (defaultPreset?.filterData) {
+          dataMask = defaultPreset.filterData;
+        }
       }
 
       if (readyToRender) {

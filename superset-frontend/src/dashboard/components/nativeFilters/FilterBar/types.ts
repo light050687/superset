@@ -61,4 +61,6 @@ export type HorizontalBarProps = CommonFiltersBarProps & {
 
 export type VerticalBarProps = Omit<FiltersBarProps, 'orientation'> &
   CommonFiltersBarProps &
-  VerticalBarConfig;
+  VerticalBarConfig & {
+    presetButton?: ReactNode;
+  };
