@@ -19,7 +19,9 @@
 import { useCallback, useState } from 'react';
 import { css, DataMaskState, Filters, styled, t } from '@superset-ui/core';
 import { Popover } from 'antd';
+import { useSelector } from 'react-redux';
 import { Icons } from '@superset-ui/core/components/Icons';
+import { RootState } from 'src/dashboard/types';
 import { FilterPreset } from './types';
 import PresetDropdown from './PresetDropdown';
 import CreatePresetModal from './CreatePresetModal';
@@ -73,6 +75,10 @@ const PresetButton = ({
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [editPreset, setEditPreset] = useState<FilterPreset | null>(null);
+
+  const user = useSelector((state: RootState) => state.user);
+  const isAdmin = !!(user?.roles && 'Admin' in user.roles);
 
   const handleApplyPreset = useCallback(
     (preset: FilterPreset) => {
@@ -89,12 +95,24 @@ const PresetButton = ({
 
   const handleCreateClick = useCallback(() => {
     setPopoverOpen(false);
+    setEditPreset(null);
+    setCreateModalOpen(true);
+  }, []);
+
+  const handleEditClick = useCallback((preset: FilterPreset) => {
+    setPopoverOpen(false);
+    setEditPreset(preset);
     setCreateModalOpen(true);
   }, []);
 
   const handleImportClick = useCallback(() => {
     setPopoverOpen(false);
     setImportModalOpen(true);
+  }, []);
+
+  const handleModalClose = useCallback(() => {
+    setCreateModalOpen(false);
+    setEditPreset(null);
   }, []);
 
   return (
@@ -113,6 +131,7 @@ const PresetButton = ({
             onClearAll={handleClearAll}
             onCreateClick={handleCreateClick}
             onImportClick={handleImportClick}
+            onEditClick={handleEditClick}
           />
         }
       >
@@ -131,7 +150,9 @@ const PresetButton = ({
           dashboardId={dashboardId}
           dataMaskSelected={dataMaskSelected}
           filters={filters}
-          onClose={() => setCreateModalOpen(false)}
+          isAdmin={isAdmin}
+          editPreset={editPreset}
+          onClose={handleModalClose}
         />
       )}
 

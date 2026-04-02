@@ -78,7 +78,12 @@ export async function createPreset(
       jsonPayload: data,
     });
     return json as { id: number; uuid: string };
-  } catch (err) {
+  } catch (err: unknown) {
+    // Extract status from SupersetClient error
+    const status = (err as { status?: number })?.status;
+    if (status === 409) {
+      throw new Error('Пресет с таким названием уже существует');
+    }
     logging.error('Error creating preset', err);
     throw err;
   }

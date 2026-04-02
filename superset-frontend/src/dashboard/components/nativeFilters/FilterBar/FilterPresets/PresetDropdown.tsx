@@ -16,9 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { css, styled, t, useTheme } from '@superset-ui/core';
-import { Input, Tooltip } from 'antd';
+import { Input, Tooltip, message } from 'antd';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { FilterPreset } from './types';
 import {
@@ -50,21 +50,35 @@ const SearchWrapper = styled.div`
 `;
 
 const PresetList = styled.div`
+  flex: 1;
+  overflow-y: auto;
+`;
+
+const SectionLabel = styled.div`
   ${({ theme }) => css`
-    flex: 1;
-    overflow-y: auto;
-    padding: ${theme.sizeUnit}px 0;
+    font-size: ${theme.fontSizeXS}px;
+    color: ${theme.colorTextTertiary};
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: ${theme.sizeUnit * 2}px ${theme.sizeUnit * 3}px ${theme.sizeUnit}px;
   `}
 `;
 
-const PresetItem = styled.div<{ isActive?: boolean }>`
-  ${({ theme, isActive }) => css`
+const SectionDivider = styled.div`
+  ${({ theme }) => css`
+    height: 1px;
+    background: ${theme.colorBorderSecondary};
+    margin: ${theme.sizeUnit}px ${theme.sizeUnit * 3}px;
+  `}
+`;
+
+const PresetItem = styled.div`
+  ${({ theme }) => css`
     display: flex;
     align-items: center;
     padding: ${theme.sizeUnit * 2}px ${theme.sizeUnit * 3}px;
     cursor: pointer;
-    gap: ${theme.sizeUnit * 2}px;
-    background: ${isActive ? theme.colorBgTextHover : 'transparent'};
+    gap: ${theme.sizeUnit}px;
     &:hover {
       background: ${theme.colorBgTextHover};
     }
@@ -79,16 +93,6 @@ const PresetName = styled.span`
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  `}
-`;
-
-const AdminBadge = styled.span`
-  ${({ theme }) => css`
-    font-size: ${theme.fontSizeXS}px;
-    color: ${theme.colorWarning};
-    background: ${theme.colorWarningBg};
-    padding: 1px ${theme.sizeUnit}px;
-    border-radius: ${theme.borderRadiusSM}px;
   `}
 `;
 
@@ -130,9 +134,10 @@ const IconButton = styled.button`
     border: none;
     background: transparent;
     cursor: pointer;
-    padding: ${theme.sizeUnit}px;
+    padding: 2px;
     border-radius: ${theme.borderRadiusSM}px;
-    color: ${theme.colorTextSecondary};
+    color: ${theme.colorTextTertiary};
+    font-size: 14px;
     &:hover {
       background: ${theme.colorBgTextHover};
       color: ${theme.colorText};
@@ -155,6 +160,7 @@ interface PresetDropdownProps {
   onClearAll: () => void;
   onCreateClick: () => void;
   onImportClick: () => void;
+  onEditClick: (preset: FilterPreset) => void;
 }
 
 const PresetDropdown = ({
@@ -163,6 +169,7 @@ const PresetDropdown = ({
   onClearAll,
   onCreateClick,
   onImportClick,
+  onEditClick,
 }: PresetDropdownProps) => {
   const theme = useTheme();
   const [presets, setPresets] = useState<FilterPreset[]>([]);
@@ -217,6 +224,7 @@ const PresetDropdown = ({
       if (data) {
         const jsonStr = JSON.stringify(data, null, 2);
         await navigator.clipboard.writeText(jsonStr);
+        message.success(t('Скопировано в буфер'));
       }
     },
     [dashboardId],
@@ -229,6 +237,109 @@ const PresetDropdown = ({
     },
     [dashboardId, loadPresets, searchQuery],
   );
+
+  const adminPresets = useMemo(
+    () => presets.filter(p => p.isAdminPreset),
+    [presets],
+  );
+  const personalPresets = useMemo(
+    () => presets.filter(p => !p.isAdminPreset),
+    [presets],
+  );
+
+  const renderPresetItem = (preset: FilterPreset) => (
+    <PresetItem
+      key={preset.id}
+      role="option"
+      onClick={() => onApplyPreset(preset)}
+      aria-label={preset.name}
+    >
+      <Tooltip
+        title={
+          preset.isDefault
+            ? t('Убрать из основного')
+            : t('Назначить по умолчанию')
+        }
+      >
+        <IconButton
+          onClick={e => {
+            e.stopPropagation();
+            handleToggleDefault(preset);
+          }}
+          aria-label={t('По умолчанию')}
+        >
+          <Icons.StarFilled
+            css={css`
+              color: ${preset.isDefault
+                ? theme.colorWarning
+                : theme.colorTextTertiary};
+            `}
+          />
+        </IconButton>
+      </Tooltip>
+
+      <PresetName>{preset.name}</PresetName>
+
+      {/* Edit — only own or admin can edit admin presets */}
+      {(preset.isOwn || preset.isAdminPreset) && (
+        <Tooltip title={t('Редактировать')}>
+          <IconButton
+            onClick={e => {
+              e.stopPropagation();
+              onEditClick(preset);
+            }}
+            aria-label={t('Редактировать')}
+          >
+            <Icons.EditOutlined />
+          </IconButton>
+        </Tooltip>
+      )}
+
+      <Tooltip title={t('Экспорт в буфер')}>
+        <IconButton
+          onClick={e => {
+            e.stopPropagation();
+            handleExport(preset.id);
+          }}
+          aria-label={t('Экспорт')}
+        >
+          <Icons.ShareAltOutlined />
+        </IconButton>
+      </Tooltip>
+
+      {/* Delete — own presets */}
+      {preset.isOwn && (
+        <Tooltip title={t('Удалить')}>
+          <IconButton
+            onClick={e => {
+              e.stopPropagation();
+              handleDelete(preset.id);
+            }}
+            aria-label={t('Удалить')}
+          >
+            <Icons.DeleteOutlined />
+          </IconButton>
+        </Tooltip>
+      )}
+
+      {/* Hide — admin presets that are not own */}
+      {preset.isAdminPreset && !preset.isOwn && (
+        <Tooltip title={t('Скрыть')}>
+          <IconButton
+            onClick={e => {
+              e.stopPropagation();
+              handleHide(preset.id);
+            }}
+            aria-label={t('Скрыть')}
+          >
+            <Icons.EyeInvisibleOutlined />
+          </IconButton>
+        </Tooltip>
+      )}
+    </PresetItem>
+  );
+
+  const hasAny = presets.length > 0;
 
   return (
     <DropdownContainer role="listbox" aria-label={t('Пресеты фильтров')}>
@@ -244,89 +355,31 @@ const PresetDropdown = ({
       </SearchWrapper>
 
       <PresetList>
-        {presets.length === 0 && !loading && (
+        {!hasAny && !loading && (
           <EmptyState>
             {searchQuery
               ? t('Пресеты не найдены')
               : t('Нет сохранённых пресетов')}
           </EmptyState>
         )}
-        {presets.map(preset => (
-          <PresetItem
-            key={preset.id}
-            role="option"
-            onClick={() => onApplyPreset(preset)}
-            aria-label={preset.name}
-          >
-            <Tooltip
-              title={
-                preset.isDefault
-                  ? t('Убрать из основного')
-                  : t('Назначить по умолчанию')
-              }
-            >
-              <IconButton
-                onClick={e => {
-                  e.stopPropagation();
-                  handleToggleDefault(preset);
-                }}
-                aria-label={t('Назначить по умолчанию')}
-              >
-                <Icons.StarFilled
-                                   css={css`
-                    color: ${preset.isDefault
-                      ? theme.colorWarning
-                      : theme.colorTextSecondary};
-                  `}
-                />
-              </IconButton>
-            </Tooltip>
 
-            <PresetName>{preset.name}</PresetName>
+        {adminPresets.length > 0 && (
+          <>
+            <SectionLabel>{t('Корпоративные')}</SectionLabel>
+            {adminPresets.map(renderPresetItem)}
+          </>
+        )}
 
-            {preset.isAdminPreset && <AdminBadge>{t('Админ')}</AdminBadge>}
+        {adminPresets.length > 0 && personalPresets.length > 0 && (
+          <SectionDivider />
+        )}
 
-            <Tooltip title={t('Экспорт в буфер')}>
-              <IconButton
-                onClick={e => {
-                  e.stopPropagation();
-                  handleExport(preset.id);
-                }}
-                aria-label={t('Экспорт')}
-              >
-                <Icons.ShareAltOutlined />
-              </IconButton>
-            </Tooltip>
-
-            {preset.isOwn && !preset.isAdminPreset && (
-              <Tooltip title={t('Удалить')}>
-                <IconButton
-                  onClick={e => {
-                    e.stopPropagation();
-                    handleDelete(preset.id);
-                  }}
-                  aria-label={t('Удалить пресет')}
-                >
-                  <Icons.DeleteOutlined />
-                </IconButton>
-              </Tooltip>
-            )}
-
-            {preset.isAdminPreset && !preset.isOwn && (
-              <Tooltip title={t('Скрыть')}>
-                <IconButton
-                  onClick={e => {
-                    e.stopPropagation();
-                    handleHide(preset.id);
-                  }}
-                  aria-label={t('Скрыть пресет')}
-                >
-                  <Icons.EyeInvisibleOutlined />
-                </IconButton>
-              </Tooltip>
-            )}
-          </PresetItem>
-        ))}
+        {personalPresets.length > 0 && (
+          <>
+            <SectionLabel>{t('Личные')}</SectionLabel>
+            {personalPresets.map(renderPresetItem)}
+          </>
+        )}
       </PresetList>
 
       <FooterActions>

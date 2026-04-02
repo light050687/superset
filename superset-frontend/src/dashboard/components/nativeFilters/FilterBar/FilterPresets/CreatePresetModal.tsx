@@ -19,7 +19,8 @@
 import { useCallback, useState } from 'react';
 import { css, DataMaskState, Filters, styled, t } from '@superset-ui/core';
 import { Checkbox, Input, Modal, Switch, message } from 'antd';
-import { createPreset, setDefaultPreset } from './api';
+import { createPreset, setDefaultPreset, updatePreset } from './api';
+import { FilterPreset } from './types';
 
 const FormGroup = styled.div`
   ${({ theme }) => css`
@@ -81,6 +82,8 @@ interface CreatePresetModalProps {
   dashboardId: number;
   dataMaskSelected: DataMaskState;
   filters: Filters;
+  isAdmin?: boolean;
+  editPreset?: FilterPreset | null;
   onClose: () => void;
 }
 
@@ -99,15 +102,24 @@ const CreatePresetModal = ({
   dashboardId,
   dataMaskSelected,
   filters,
+  isAdmin = false,
+  editPreset = null,
   onClose,
 }: CreatePresetModalProps) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedFilterIds, setSelectedFilterIds] = useState<string[]>(
-    Object.keys(filters),
+  const isEditMode = !!editPreset;
+
+  const [name, setName] = useState(editPreset?.name ?? '');
+  const [description, setDescription] = useState(
+    editPreset?.description ?? '',
   );
-  const [isDefault, setIsDefault] = useState(false);
-  const [isShared, setIsShared] = useState(true);
+  const [selectedFilterIds, setSelectedFilterIds] = useState<string[]>(
+    editPreset?.includedFilters ?? Object.keys(filters),
+  );
+  const [isDefault, setIsDefault] = useState(editPreset?.isDefault ?? false);
+  const [isShared, setIsShared] = useState(editPreset?.isShared ?? true);
+  const [isAdminPreset, setIsAdminPreset] = useState(
+    editPreset?.isAdminPreset ?? false,
+  );
   const [saving, setSaving] = useState(false);
 
   const handleToggleFilter = useCallback(
@@ -139,26 +151,45 @@ const CreatePresetModal = ({
 
     setSaving(true);
     try {
+      // Build filter_data only for selected filters
       const filterData: DataMaskState = {};
+      // In edit mode, preserve saved values; for new use current selection
+      const source = isEditMode ? editPreset!.filterData : dataMaskSelected;
       for (const filterId of selectedFilterIds) {
-        if (dataMaskSelected[filterId]) {
+        if (source[filterId]) {
+          filterData[filterId] = source[filterId];
+        } else if (dataMaskSelected[filterId]) {
+          // Fallback to current values for newly added filters
           filterData[filterId] = dataMaskSelected[filterId];
         }
       }
 
-      const result = await createPreset(dashboardId, {
-        name: name.trim(),
-        description: description.trim() || undefined,
-        filter_data: filterData,
-        included_filters: selectedFilterIds,
-        is_shared: isShared,
-      });
-
-      if (result && isDefault) {
-        await setDefaultPreset(dashboardId, result.id);
+      if (isEditMode) {
+        await updatePreset(dashboardId, editPreset!.id, {
+          name: name.trim(),
+          description: description.trim() || undefined,
+          filter_data: filterData,
+          included_filters: selectedFilterIds,
+          is_shared: isShared,
+        });
+        if (isDefault && !editPreset!.isDefault) {
+          await setDefaultPreset(dashboardId, editPreset!.id);
+        }
+        message.success(t('Пресет обновлён'));
+      } else {
+        const result = await createPreset(dashboardId, {
+          name: name.trim(),
+          description: description.trim() || undefined,
+          filter_data: filterData,
+          included_filters: selectedFilterIds,
+          is_admin_preset: isAdmin ? isAdminPreset : false,
+          is_shared: isShared,
+        });
+        if (result && isDefault) {
+          await setDefaultPreset(dashboardId, result.id);
+        }
+        message.success(t('Пресет сохранён'));
       }
-
-      message.success(t('Пресет сохранён'));
       onClose();
     } catch (err: unknown) {
       const errMsg =
@@ -175,6 +206,10 @@ const CreatePresetModal = ({
     dashboardId,
     isDefault,
     isShared,
+    isAdmin,
+    isAdminPreset,
+    isEditMode,
+    editPreset,
     onClose,
   ]);
 
@@ -183,10 +218,10 @@ const CreatePresetModal = ({
   return (
     <Modal
       open
-      title={t('Создать пресет')}
+      title={isEditMode ? t('Редактировать пресет') : t('Создать пресет')}
       onCancel={onClose}
       onOk={handleSave}
-      okText={t('Сохранить')}
+      okText={isEditMode ? t('Обновить') : t('Сохранить')}
       cancelText={t('Отмена')}
       confirmLoading={saving}
       okButtonProps={{
@@ -289,6 +324,17 @@ const CreatePresetModal = ({
         <span>{t('Доступен всем')}</span>
         <Switch checked={isShared} onChange={setIsShared} size="small" />
       </ToggleRow>
+
+      {isAdmin && !isEditMode && (
+        <ToggleRow>
+          <span>{t('Корпоративный пресет')}</span>
+          <Switch
+            checked={isAdminPreset}
+            onChange={setIsAdminPreset}
+            size="small"
+          />
+        </ToggleRow>
+      )}
     </Modal>
   );
 };
