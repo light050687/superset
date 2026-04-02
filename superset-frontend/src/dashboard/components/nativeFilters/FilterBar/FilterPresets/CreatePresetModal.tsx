@@ -315,6 +315,27 @@ const CreatePresetModal = ({
         </FilterCheckboxList>
       </FormGroup>
 
+      {isAdmin && (
+        <ToggleRow
+          css={css`
+            background: var(--ant-color-warning-bg, #fffbe6);
+            margin: 0 -24px;
+            padding: 12px 24px;
+            border-top: 1px solid var(--ant-color-warning-border, #ffe58f);
+            border-bottom: 1px solid var(--ant-color-warning-border, #ffe58f);
+          `}
+        >
+          <span css={css`font-weight: 600;`}>
+            {t('Корпоративный пресет')}
+          </span>
+          <Switch
+            checked={isAdminPreset}
+            onChange={setIsAdminPreset}
+            size="small"
+          />
+        </ToggleRow>
+      )}
+
       <ToggleRow>
         <span>{t('Назначить по умолчанию')}</span>
         <Switch checked={isDefault} onChange={setIsDefault} size="small" />
@@ -324,17 +345,6 @@ const CreatePresetModal = ({
         <span>{t('Доступен всем')}</span>
         <Switch checked={isShared} onChange={setIsShared} size="small" />
       </ToggleRow>
-
-      {isAdmin && !isEditMode && (
-        <ToggleRow>
-          <span>{t('Корпоративный пресет')}</span>
-          <Switch
-            checked={isAdminPreset}
-            onChange={setIsAdminPreset}
-            size="small"
-          />
-        </ToggleRow>
-      )}
     </Modal>
   );
 };
