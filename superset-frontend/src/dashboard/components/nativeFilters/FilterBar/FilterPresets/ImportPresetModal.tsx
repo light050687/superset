@@ -71,12 +71,24 @@ const ImportPresetModal = ({
     if (!value.trim()) return;
 
     try {
-      const data = JSON.parse(value) as FilterPresetExport;
-      if (!data.version || !data.name || !data.filterData) {
+      const data = JSON.parse(value) as FilterPresetExport & {
+        filter_data?: FilterPresetExport['filterData'];
+        included_filters?: string[];
+      };
+      // Accept both camelCase and snake_case from export
+      const filterData = data.filterData ?? data.filter_data;
+      const includedFilters =
+        data.includedFilters ?? data.included_filters;
+      if (!data.version || !data.name || !filterData) {
         setParseError(t('Неверный формат JSON пресета'));
         return;
       }
-      setParsed(data);
+      // Normalize to camelCase
+      setParsed({
+        ...data,
+        filterData,
+        includedFilters: includedFilters ?? [],
+      });
     } catch {
       setParseError(t('Невалидный JSON'));
     }

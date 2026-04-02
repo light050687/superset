@@ -61,6 +61,11 @@ class DashboardFilterPresetRestApi(BaseSupersetApi):
     resource_name = "dashboard"
     openapi_spec_tag = "Dashboard Filter Presets"
 
+    @staticmethod
+    def _is_admin() -> bool:
+        """Check if current user has Admin role."""
+        return any(r.name == "Admin" for r in g.user.roles)
+
     def _check_dashboard_access(self, dashboard_id: int | str) -> None:
         """Validate dashboard exists and user has access."""
         DashboardDAO.get_by_id_or_slug(str(dashboard_id))
@@ -149,7 +154,7 @@ class DashboardFilterPresetRestApi(BaseSupersetApi):
             data = schema.load(request.json)
 
             # Only admins can create admin presets
-            if data.get("is_admin_preset") and not g.user.is_admin:
+            if data.get("is_admin_preset") and not self._is_admin():
                 return self.response(
                     403,
                     message="Only administrators can create admin presets",
@@ -219,11 +224,11 @@ class DashboardFilterPresetRestApi(BaseSupersetApi):
                 return self.response(404, message="Preset not found")
 
             # Only owner can update (admin presets can't be updated by non-admins)
-            if preset.is_admin_preset and not g.user.is_admin:
+            if preset.is_admin_preset and not self._is_admin():
                 return self.response(
                     403, message="Cannot modify admin presets"
                 )
-            if preset.created_by_fk != g.user.id and not g.user.is_admin:
+            if preset.created_by_fk != g.user.id and not self._is_admin():
                 return self.response(
                     403, message="Can only modify your own presets"
                 )
@@ -273,7 +278,7 @@ class DashboardFilterPresetRestApi(BaseSupersetApi):
             preset = FilterPresetDAO.find_by_id(preset_id)
             if not preset:
                 return self.response(404, message="Preset not found")
-            if preset.created_by_fk != g.user.id and not g.user.is_admin:
+            if preset.created_by_fk != g.user.id and not self._is_admin():
                 return self.response(
                     403, message="Can only delete your own presets"
                 )

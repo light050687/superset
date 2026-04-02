@@ -209,9 +209,18 @@ export async function importPreset(
   data: FilterPresetExport,
 ): Promise<{ id: number; uuid: string } | null> {
   try {
+    // Convert camelCase to snake_case for backend
+    const payload = {
+      version: data.version,
+      name: data.name,
+      description: data.description,
+      filter_data: data.filterData,
+      included_filters: data.includedFilters,
+      metadata: data.metadata,
+    };
     const { json } = await SupersetClient.post({
       endpoint: `${BASE(dashboardId)}/import`,
-      jsonPayload: data,
+      jsonPayload: payload,
     });
     return json as { id: number; uuid: string };
   } catch (err) {
