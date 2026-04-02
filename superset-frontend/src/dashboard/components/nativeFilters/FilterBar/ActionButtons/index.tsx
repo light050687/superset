@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useMemo } from 'react';
+import { ReactNode, useMemo } from 'react';
 import {
   css,
   DataMaskState,
@@ -41,6 +41,7 @@ interface ActionButtonsProps {
   isApplyDisabled: boolean;
   filterBarOrientation?: FilterBarOrientation;
   isMobile?: boolean;
+  extra?: ReactNode;
 }
 
 const containerStyle = (theme: SupersetTheme) => css`
@@ -141,6 +142,7 @@ const ActionButtons = ({
   isApplyDisabled,
   filterBarOrientation = FilterBarOrientation.Vertical,
   isMobile,
+  extra,
 }: ActionButtonsProps) => {
   const isClearAllEnabled = useMemo(
     () =>
@@ -180,6 +182,7 @@ const ActionButtons = ({
       >
         {t('Clear all')}
       </Button>
+      {extra}
     </ButtonsContainer>
   );
 };

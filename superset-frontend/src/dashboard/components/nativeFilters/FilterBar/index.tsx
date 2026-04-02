@@ -355,29 +355,29 @@ const FilterBar: FC<FiltersBarProps> = ({
   );
   const isInitialized = useInitialization();
 
+  const presetButton = dashboardId ? (
+    <PresetButton
+      dashboardId={dashboardId}
+      dataMaskSelected={dataMaskSelected}
+      filters={filters}
+      onApplyPreset={handleApplyPreset}
+      onClearAll={handleClearAll}
+    />
+  ) : undefined;
+
   const actions = useMemo(
     () => (
-      <>
-        <ActionButtons
-          filterBarOrientation={orientation}
-          width={verticalConfig?.width}
-          onApply={handleApply}
-          onClearAll={handleClearAll}
-          dataMaskSelected={dataMaskSelected}
-          dataMaskApplied={dataMaskApplied}
-          isApplyDisabled={isApplyDisabled}
-          isMobile={verticalConfig?.isMobile}
-        />
-        {dashboardId && (
-          <PresetButton
-            dashboardId={dashboardId}
-            dataMaskSelected={dataMaskSelected}
-            filters={filters}
-            onApplyPreset={handleApplyPreset}
-            onClearAll={handleClearAll}
-          />
-        )}
-      </>
+      <ActionButtons
+        filterBarOrientation={orientation}
+        width={verticalConfig?.width}
+        onApply={handleApply}
+        onClearAll={handleClearAll}
+        dataMaskSelected={dataMaskSelected}
+        dataMaskApplied={dataMaskApplied}
+        isApplyDisabled={isApplyDisabled}
+        isMobile={verticalConfig?.isMobile}
+        extra={presetButton}
+      />
     ),
     [
       orientation,
