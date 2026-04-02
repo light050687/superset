@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 class DashboardFilterPresetRestApi(BaseSupersetApi):
     method_permission_name = MODEL_API_RW_METHOD_PERMISSION_MAP
     allow_browser_login = True
-    class_permission_name = "DashboardFilterPresetRestApi"
+    class_permission_name = "Dashboard"
     resource_name = "dashboard"
     openapi_spec_tag = "Dashboard Filter Presets"
 

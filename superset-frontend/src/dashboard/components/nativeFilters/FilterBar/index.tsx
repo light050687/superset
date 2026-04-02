@@ -376,20 +376,16 @@ const FilterBar: FC<FiltersBarProps> = ({
         dataMaskApplied={dataMaskApplied}
         isApplyDisabled={isApplyDisabled}
         isMobile={verticalConfig?.isMobile}
-        extra={presetButton}
       />
     ),
     [
       orientation,
       verticalConfig?.width,
       handleApply,
-      handleApplyPreset,
       handleClearAll,
       dataMaskSelected,
       dataMaskAppliedText,
       isApplyDisabled,
-      dashboardId,
-      filters,
     ],
   );
 
@@ -422,6 +418,7 @@ const FilterBar: FC<FiltersBarProps> = ({
         width={verticalConfig.width}
         clearAllTriggers={clearAllTriggers}
         onClearAllComplete={handleClearAllComplete}
+        presetButton={presetButton}
       />
     ) : null;
 

@@ -30,12 +30,15 @@ const StyledButton = styled.button`
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid ${theme.colorBorderSecondary};
+    gap: ${theme.sizeUnit}px;
+    width: 100%;
+    border: 1px dashed ${theme.colorBorderSecondary};
     border-radius: ${theme.borderRadiusSM}px;
     background: ${theme.colorBgContainer};
     cursor: pointer;
-    padding: ${theme.sizeUnit}px ${theme.sizeUnit * 2}px;
+    padding: ${theme.sizeUnit * 2}px;
     color: ${theme.colorTextSecondary};
+    font-size: ${theme.fontSizeSM}px;
     transition: all 0.2s;
     &:hover {
       background: ${theme.colorBgTextHover};
@@ -119,6 +122,7 @@ const PresetButton = ({
           aria-expanded={popoverOpen}
         >
           <Icons.SaveOutlined />
+          {t('Пресеты')}
         </StyledButton>
       </Popover>
 
