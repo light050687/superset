@@ -42,7 +42,20 @@ logger = logging.getLogger(__name__)
 
 
 class DashboardFilterPresetRestApi(BaseSupersetApi):
-    method_permission_name = MODEL_API_RW_METHOD_PERMISSION_MAP
+    method_permission_name = {
+        **MODEL_API_RW_METHOD_PERMISSION_MAP,
+        "list_presets": "read",
+        "create_preset": "write",
+        "update_preset": "write",
+        "delete_preset": "write",
+        "set_default": "write",
+        "remove_default": "write",
+        "get_default": "read",
+        "hide_preset": "write",
+        "unhide_preset": "write",
+        "export_preset": "read",
+        "import_preset": "write",
+    }
     allow_browser_login = True
     class_permission_name = "Dashboard"
     resource_name = "dashboard"
