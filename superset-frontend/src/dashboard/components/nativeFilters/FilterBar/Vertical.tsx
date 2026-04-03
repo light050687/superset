@@ -38,6 +38,7 @@ import { VerticalBarProps } from './types';
 import Header from './Header';
 import FilterControls from './FilterControls/FilterControls';
 import CrossFiltersVertical from './CrossFilters/Vertical';
+import PagesPanel from './PagesPanel';
 
 const BarWrapper = styled.div<{ width: number; isMobile?: boolean }>`
   width: ${({ theme, isMobile }) => (isMobile ? '100%' : `${theme.sizeUnit * 8}px`)};
@@ -129,9 +130,14 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
   clearAllTriggers,
   onClearAllComplete,
   presetButton,
+  topLevelPages,
+  editMode,
 }) => {
   const theme = useTheme();
   const [isScrolling, setIsScrolling] = useState(false);
+  const [pagesOpen, setPagesOpen] = useState(false);
+  const pageCount = topLevelPages?.children?.length || 0;
+  const showPagesIcon = pageCount > 1 || editMode;
   const timeout = useRef<any>();
 
   const openFiltersBar = useCallback(
@@ -213,57 +219,80 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
         {!isMobile && (
           <CollapsedBar
             {...getFilterBarTestId('collapsable')}
-            className={cx({ open: !filtersOpen })}
-            onClick={openFiltersBar}
-            role="button"
+            className={cx({ open: !filtersOpen && !pagesOpen })}
+            role="navigation"
             offset={offset}
           >
-            <Icons.VerticalAlignTopOutlined
-              iconSize="l"
-              css={{
-                transform: 'rotate(90deg)',
-                marginBottom: `${theme.sizeUnit * 3}px`,
-              }}
-              className="collapse-icon"
-              iconColor={theme.colorPrimary}
-              {...getFilterBarTestId('expand-button')}
-            />
+            {showPagesIcon && (
+              <Icons.FileOutlined
+                iconSize="l"
+                css={{
+                  marginBottom: `${theme.sizeUnit * 3}px`,
+                  cursor: 'pointer',
+                }}
+                iconColor={theme.colorPrimary}
+                onClick={() => {
+                  setPagesOpen(true);
+                  toggleFiltersBar(true);
+                }}
+                aria-label={t('Страницы')}
+              />
+            )}
             <Icons.FilterOutlined
               {...getFilterBarTestId('filter-icon')}
               iconColor={theme.colorTextTertiary}
               iconSize="l"
+              css={{ cursor: 'pointer' }}
+              onClick={() => {
+                setPagesOpen(false);
+                openFiltersBar();
+              }}
+              aria-label={t('Фильтры')}
             />
           </CollapsedBar>
         )}
         <Bar
-          className={cx({ open: filtersOpen })}
+          className={cx({ open: filtersOpen || pagesOpen })}
           width={width}
           isMobile={isMobile}
         >
-          <Header toggleFiltersBar={toggleFiltersBar} isMobile={isMobile} />
-          {presetButton && (
-            <div
-              css={{
-                padding: `0 ${theme.sizeUnit * 4}px`,
-                marginBottom: theme.sizeUnit,
+          {pagesOpen ? (
+            <PagesPanel
+              topLevelPages={topLevelPages}
+              editMode={editMode}
+              onClose={() => {
+                setPagesOpen(false);
+                toggleFiltersBar(false);
               }}
-            >
-              {presetButton}
-            </div>
-          )}
-          {!isInitialized ? (
-            <div css={{ height }}>
-              <Loading />
-            </div>
+            />
           ) : (
-            <div css={tabPaneStyle} onScroll={onScroll}>
-              <>
-                <CrossFiltersVertical />
-                {filterControls}
-              </>
-            </div>
+            <>
+              <Header toggleFiltersBar={toggleFiltersBar} isMobile={isMobile} />
+              {presetButton && (
+                <div
+                  css={{
+                    padding: `0 ${theme.sizeUnit * 4}px`,
+                    marginBottom: theme.sizeUnit,
+                  }}
+                >
+                  {presetButton}
+                </div>
+              )}
+              {!isInitialized ? (
+                <div css={{ height }}>
+                  <Loading />
+                </div>
+              ) : (
+                <div css={tabPaneStyle} onScroll={onScroll}>
+                  <>
+                    <CrossFiltersVertical />
+                    {filterControls}
+                  </>
+                </div>
+              )}
+              {actions}
+            </>
           )}
-          {actions}
         </Bar>
       </BarWrapper>
     </FilterBarScrollContext.Provider>

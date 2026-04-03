@@ -77,7 +77,6 @@ import {
 } from 'src/dashboard/constants';
 import { getRootLevelTabsComponent, shouldFocusTabs } from './utils';
 import DashboardContainer from './DashboardContainer';
-import PageSwitcherBar from './PageSwitcherBar';
 import { useNativeFilters } from './state';
 import DashboardWrapper from './DashboardWrapper';
 
@@ -821,6 +820,8 @@ const DashboardBuilder = () => {
                   width: filterBarWidth,
                   height: filterBarHeight,
                   offset: filterBarOffset,
+                  topLevelPages,
+                  editMode,
                 }}
               />
             </ErrorBoundary>
@@ -834,6 +835,8 @@ const DashboardBuilder = () => {
       filterBarHeight,
       filterBarOffset,
       isReport,
+      topLevelPages,
+      editMode,
     ],
   );
 
@@ -935,12 +938,6 @@ const DashboardBuilder = () => {
                 </div>
               ) : (
                 <>
-                  {topLevelPages && (
-                    <PageSwitcherBar
-                      pagesComponent={topLevelPages}
-                      editMode={editMode}
-                    />
-                  )}
                   <DashboardContainer
                     topLevelTabs={topLevelTabs}
                     topLevelPages={topLevelPages}
