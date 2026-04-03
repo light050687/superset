@@ -218,6 +218,22 @@ export function handleComponentDrop(dropResult) {
       } else {
         dispatch(createTopLevelTabs(dropResult));
       }
+    } else if (
+      destination &&
+      isNewComponent &&
+      dropResult.dragging?.type === PAGES_TYPE
+    ) {
+      // Pages can be dropped anywhere — always promote to top-level
+      dispatch(
+        createTopLevelPages({
+          ...dropResult,
+          destination: {
+            id: DASHBOARD_ROOT_ID,
+            type: 'ROOT',
+            index: 0,
+          },
+        }),
+      );
     } else if (destination && isNewComponent) {
       dispatch(createComponent(dropResult));
     } else if (

@@ -863,7 +863,7 @@ const DashboardBuilder = () => {
         {/* @ts-ignore */}
         <Droppable
           data-test="top-level-tabs"
-          className={cx(!topLevelTabs && editMode && 'empty-droptarget')}
+          className={cx(!topLevelTabs && !topLevelPages && editMode && 'empty-droptarget')}
           component={dashboardRoot}
           parentComponent={null}
           depth={DASHBOARD_ROOT_DEPTH}
@@ -872,7 +872,7 @@ const DashboardBuilder = () => {
           onDrop={handleDrop}
           editMode={editMode}
           // you cannot drop on/displace tabs if they already exist
-          disableDragDrop={!!topLevelTabs}
+          disableDragDrop={!!topLevelTabs || !!topLevelPages}
           style={draggableStyle}
         >
           {renderDraggableContent}
