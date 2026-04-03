@@ -18,178 +18,73 @@
  */
 import { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { css, t, styled, useTheme } from '@superset-ui/core';
-import { Icons } from '@superset-ui/core/components/Icons';
-import { Tooltip } from '@superset-ui/core/components';
-import { setDirectPathToChild } from 'src/dashboard/actions/dashboardState';
+import { css, t } from '@superset-ui/core';
 import {
   updateComponents,
-  createComponent,
   deleteComponent,
   copyPage,
 } from 'src/dashboard/actions/dashboardLayout';
+import { setDirectPathToChild } from 'src/dashboard/actions/dashboardState';
 import { PAGE_TYPE } from 'src/dashboard/util/componentTypes';
 import { NEW_PAGES_ID } from 'src/dashboard/util/constants';
-import findParentId from 'src/dashboard/util/findParentId';
+import newComponentFactory from 'src/dashboard/util/newComponentFactory';
 import getDirectPathToTabIndex from 'src/dashboard/util/getDirectPathToTabIndex';
-
-const Bar = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 16px;
-  background: ${({ theme }) => theme.colorBgContainer};
-  border-bottom: 1px solid ${({ theme }) => theme.colorBorderSecondary};
-  flex-wrap: wrap;
-  min-height: 44px;
-`;
-
-const PageButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border: 1px solid ${({ theme }) => theme.colorBorderSecondary};
-  border-radius: 6px;
-  background: ${({ theme, active }) =>
-    active ? theme.colorPrimary : theme.colorBgContainer};
-  color: ${({ theme, active }) =>
-    active ? '#fff' : theme.colorText};
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: ${({ theme }) => theme.typography?.families?.sansSerif || 'inherit'};
-  transition: all 0.15s ease;
-  white-space: nowrap;
-
-  &:hover {
-    background: ${({ theme, active }) =>
-      active ? theme.colorPrimary : theme.colorBgTextHover};
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colorPrimary};
-    outline-offset: 2px;
-  }
-`;
-
-const ActionIcon = styled.span`
-  display: inline-flex;
-  align-items: center;
-  cursor: pointer;
-  opacity: 0.6;
-  font-size: 12px;
-
-  &:hover {
-    opacity: 1;
-  }
-`;
-
-const AddButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border: 1px dashed ${({ theme }) => theme.colorBorderSecondary};
-  border-radius: 6px;
-  background: transparent;
-  color: ${({ theme }) => theme.colorTextSecondary};
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.15s ease;
-
-  &:hover {
-    border-color: ${({ theme }) => theme.colorPrimary};
-    color: ${({ theme }) => theme.colorPrimary};
-  }
-`;
-
-const PageNameInput = styled.input`
-  border: none;
-  background: transparent;
-  color: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  outline: none;
-  padding: 0;
-  width: auto;
-  min-width: 60px;
-`;
 
 export default function PageSwitcherBar({ pagesComponent, editMode }) {
   const dispatch = useDispatch();
-  const dashboardLayout = useSelector(
-    state => state.dashboardLayout.present,
-  );
+  const dashboardLayout = useSelector(state => state.dashboardLayout.present);
   const directPathToChild = useSelector(
     state => state.dashboardState.directPathToChild,
   );
-
   const [editingPageId, setEditingPageId] = useState(null);
   const [editingName, setEditingName] = useState('');
 
-  const pageIds = pagesComponent?.children || [];
-  const pagesId = pagesComponent?.id;
+  if (!pagesComponent) return null;
 
-  // Determine active page from directPathToChild
-  const activePageId = pageIds.find(pageId =>
-    directPathToChild?.includes(pageId),
-  ) || pageIds[0];
+  const pageIds = pagesComponent.children || [];
+  const pagesId = pagesComponent.id;
+
+  const activePageId =
+    pageIds.find(pid => directPathToChild?.includes(pid)) || pageIds[0];
 
   const handlePageClick = useCallback(
-    (pageId) => {
-      if (!pagesComponent) return;
-      const pageIndex = pageIds.indexOf(pageId);
-      const pathToPage = getDirectPathToTabIndex(pagesComponent, pageIndex);
-      dispatch(setDirectPathToChild(pathToPage));
+    pageId => {
+      const idx = pageIds.indexOf(pageId);
+      const path = getDirectPathToTabIndex(pagesComponent, idx);
+      dispatch(setDirectPathToChild(path));
     },
     [dispatch, pagesComponent, pageIds],
   );
 
   const handleAddPage = useCallback(() => {
-    if (!pagesId) return;
+    const newPage = newComponentFactory(PAGE_TYPE);
+    newPage.parents = [pagesComponent.id];
+    const nextChildren = [...pageIds, newPage.id];
     dispatch(
-      createComponent({
-        destination: {
-          id: pagesId,
-          type: pagesComponent.type,
-          index: pageIds.length,
-        },
-        dragging: {
-          id: NEW_PAGES_ID,
-          type: PAGE_TYPE,
-        },
+      updateComponents({
+        [newPage.id]: newPage,
+        [pagesId]: { ...pagesComponent, children: nextChildren },
       }),
     );
   }, [dispatch, pagesId, pagesComponent, pageIds]);
 
   const handleDeletePage = useCallback(
-    (pageId) => {
+    pageId => {
       if (pageIds.length <= 1) return;
       dispatch(deleteComponent(pageId, pagesId));
-      // Switch to first remaining page
-      const remaining = pageIds.filter(id => id !== pageId);
-      if (remaining.length > 0) {
-        const pathToPage = getDirectPathToTabIndex(
-          { ...pagesComponent, children: remaining },
-          0,
-        );
-        dispatch(setDirectPathToChild(pathToPage));
-      }
     },
-    [dispatch, pageIds, pagesId, pagesComponent],
+    [dispatch, pageIds, pagesId],
   );
 
   const handleCopyPage = useCallback(
-    (pageId) => {
+    pageId => {
       dispatch(copyPage(pageId, pagesId));
     },
     [dispatch, pagesId],
   );
 
   const handleStartRename = useCallback(
-    (pageId) => {
+    pageId => {
       const page = dashboardLayout[pageId];
       setEditingPageId(pageId);
       setEditingName(page?.meta?.text || '');
@@ -212,96 +107,174 @@ export default function PageSwitcherBar({ pagesComponent, editMode }) {
       }
     }
     setEditingPageId(null);
-    setEditingName('');
   }, [dispatch, editingPageId, editingName, dashboardLayout]);
 
   const handleKeyDown = useCallback(
-    (e) => {
-      if (e.key === 'Enter') {
-        handleFinishRename();
-      } else if (e.key === 'Escape') {
-        setEditingPageId(null);
-        setEditingName('');
-      }
+    e => {
+      if (e.key === 'Enter') handleFinishRename();
+      if (e.key === 'Escape') setEditingPageId(null);
     },
     [handleFinishRename],
   );
 
   return (
-    <Bar role="tablist" aria-label={t('Страницы дашборда')}>
-      {pageIds.map((pageId) => {
+    <div
+      role="tablist"
+      css={css`
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-bottom: 1px solid #e8e8e8;
+        background: #fff;
+        flex-wrap: wrap;
+        min-height: 44px;
+      `}
+    >
+      {pageIds.map(pageId => {
         const page = dashboardLayout[pageId];
-        const pageName = page?.meta?.text || page?.meta?.defaultText || t('Страница');
+        const name =
+          page?.meta?.text || page?.meta?.defaultText || t('Страница');
         const isActive = pageId === activePageId;
         const isEditing = editingPageId === pageId;
 
         return (
-          <PageButton
+          <button
             key={pageId}
+            type="button"
             role="tab"
             aria-selected={isActive}
-            active={isActive}
             onClick={() => handlePageClick(pageId)}
+            css={css`
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              padding: 6px 14px;
+              border: 1px solid ${isActive ? '#1890ff' : '#d9d9d9'};
+              border-radius: 6px;
+              background: ${isActive ? '#1890ff' : '#fff'};
+              color: ${isActive ? '#fff' : '#333'};
+              cursor: pointer;
+              font-size: 13px;
+              font-weight: 500;
+              white-space: nowrap;
+              &:hover {
+                background: ${isActive ? '#1890ff' : '#f5f5f5'};
+              }
+            `}
           >
             {isEditing ? (
-              <PageNameInput
+              <input
                 value={editingName}
                 onChange={e => setEditingName(e.target.value)}
                 onBlur={handleFinishRename}
                 onKeyDown={handleKeyDown}
                 autoFocus
                 onClick={e => e.stopPropagation()}
+                css={css`
+                  border: none;
+                  background: transparent;
+                  color: inherit;
+                  font: inherit;
+                  outline: none;
+                  padding: 0;
+                  width: 80px;
+                `}
               />
             ) : (
-              <span onDoubleClick={() => editMode && handleStartRename(pageId)}>
-                {pageName}
+              <span
+                onDoubleClick={() => editMode && handleStartRename(pageId)}
+              >
+                {name}
               </span>
             )}
             {editMode && !isEditing && (
               <>
-                <Tooltip title={t('Переименовать')}>
-                  <ActionIcon
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleStartRename(pageId);
-                    }}
-                  >
-                    <Icons.EditOutlined iconSize="s" />
-                  </ActionIcon>
-                </Tooltip>
-                <Tooltip title={t('Копировать страницу')}>
-                  <ActionIcon
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleCopyPage(pageId);
-                    }}
-                  >
-                    <Icons.CopyOutlined iconSize="s" />
-                  </ActionIcon>
-                </Tooltip>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={e => {
+                    e.stopPropagation();
+                    handleStartRename(pageId);
+                  }}
+                  css={css`
+                    cursor: pointer;
+                    opacity: 0.6;
+                    font-size: 11px;
+                    &:hover {
+                      opacity: 1;
+                    }
+                  `}
+                >
+                  ✏
+                </span>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={e => {
+                    e.stopPropagation();
+                    handleCopyPage(pageId);
+                  }}
+                  css={css`
+                    cursor: pointer;
+                    opacity: 0.6;
+                    font-size: 11px;
+                    &:hover {
+                      opacity: 1;
+                    }
+                  `}
+                >
+                  📋
+                </span>
                 {pageIds.length > 1 && (
-                  <Tooltip title={t('Удалить страницу')}>
-                    <ActionIcon
-                      onClick={e => {
-                        e.stopPropagation();
-                        handleDeletePage(pageId);
-                      }}
-                    >
-                      <Icons.CloseOutlined iconSize="s" />
-                    </ActionIcon>
-                  </Tooltip>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleDeletePage(pageId);
+                    }}
+                    css={css`
+                      cursor: pointer;
+                      opacity: 0.6;
+                      font-size: 11px;
+                      &:hover {
+                        opacity: 1;
+                      }
+                    `}
+                  >
+                    ✕
+                  </span>
                 )}
               </>
             )}
-          </PageButton>
+          </button>
         );
       })}
       {editMode && (
-        <AddButton onClick={handleAddPage}>
-          <Icons.PlusSmall iconSize="s" />
-          {t('Добавить страницу')}
-        </AddButton>
+        <button
+          type="button"
+          onClick={handleAddPage}
+          css={css`
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border: 1px dashed #d9d9d9;
+            border-radius: 6px;
+            background: transparent;
+            color: #999;
+            cursor: pointer;
+            font-size: 13px;
+            &:hover {
+              border-color: #1890ff;
+              color: #1890ff;
+            }
+          `}
+        >
+          + {t('Добавить страницу')}
+        </button>
       )}
-    </Bar>
+    </div>
   );
 }
