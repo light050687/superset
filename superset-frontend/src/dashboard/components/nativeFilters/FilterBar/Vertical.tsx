@@ -223,13 +223,24 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
             role="navigation"
             offset={offset}
           >
+            <Icons.FilterOutlined
+              {...getFilterBarTestId('filter-icon')}
+              iconColor={theme.colorTextTertiary}
+              iconSize="l"
+              css={{
+                cursor: 'pointer',
+                marginBottom: `${theme.sizeUnit * 3}px`,
+              }}
+              onClick={() => {
+                setPagesOpen(false);
+                openFiltersBar();
+              }}
+              aria-label={t('Фильтры')}
+            />
             {showPagesIcon && (
               <Icons.FileOutlined
                 iconSize="l"
-                css={{
-                  marginBottom: `${theme.sizeUnit * 3}px`,
-                  cursor: 'pointer',
-                }}
+                css={{ cursor: 'pointer' }}
                 iconColor={theme.colorPrimary}
                 onClick={() => {
                   setPagesOpen(true);
@@ -238,17 +249,6 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
                 aria-label={t('Страницы')}
               />
             )}
-            <Icons.FilterOutlined
-              {...getFilterBarTestId('filter-icon')}
-              iconColor={theme.colorTextTertiary}
-              iconSize="l"
-              css={{ cursor: 'pointer' }}
-              onClick={() => {
-                setPagesOpen(false);
-                openFiltersBar();
-              }}
-              aria-label={t('Фильтры')}
-            />
           </CollapsedBar>
         )}
         <Bar

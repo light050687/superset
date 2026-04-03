@@ -840,8 +840,11 @@ const DashboardBuilder = () => {
     ],
   );
 
+  const hasPages = (topLevelPages?.children?.length || 0) > 1;
   const isVerticalFilterBarVisible =
-    showFilterBar && filterBarOrientation === FilterBarOrientation.Vertical;
+    (showFilterBar && filterBarOrientation === FilterBarOrientation.Vertical) ||
+    hasPages ||
+    editMode;
   const headerFilterBarWidth =
     isVerticalFilterBarVisible && !isMobile ? currentFilterBarWidth : 0;
 
