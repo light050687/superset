@@ -737,6 +737,7 @@ const DashboardBuilder = () => {
       <div>
         {!hideDashboardHeader && <DashboardHeader />}
         {showFilterBar &&
+          !isMobile &&
           filterBarOrientation === FilterBarOrientation.Horizontal && (
             <FilterBar
               orientation={FilterBarOrientation.Horizontal}

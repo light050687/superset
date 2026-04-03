@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { styled, t, useTheme, css } from '@superset-ui/core';
 import { MenuProps } from '@superset-ui/core/components/Menu';
@@ -54,9 +54,20 @@ const ADD_EDIT_FILTERS_MENU_KEY = 'add-edit-filters-menu-key';
 const isOrientation = (o: SelectedKey): o is FilterBarOrientation =>
   o === FilterBarOrientation.Vertical || o === FilterBarOrientation.Horizontal;
 
+const MOBILE_BREAKPOINT = 570;
+
 const FilterBarSettings = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT,
+  );
+  useEffect(() => {
+    const onResize = () =>
+      setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
   const isCrossFiltersEnabled = useSelector<RootState, boolean>(
     ({ dashboardInfo }) => dashboardInfo.crossFiltersEnabled,
   );
@@ -186,7 +197,7 @@ const FilterBarSettings = () => {
       });
       items.push({ type: 'divider' });
     }
-    if (canEdit) {
+    if (canEdit && !isMobile) {
       items.push({
         key: 'placement',
         label: t('Orientation of filter bar'),
@@ -235,6 +246,7 @@ const FilterBarSettings = () => {
     crossFiltersMenuItem,
     dashboardId,
     filterValues,
+    isMobile,
   ]);
 
   if (!menuItems.length) {

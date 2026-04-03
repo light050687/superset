@@ -224,12 +224,7 @@ const CreatePresetModal = ({
       }}
       destroyOnClose
       width={typeof window !== 'undefined' && window.innerWidth <= 570 ? '95vw' : 520}
-      styles={{
-        body: {
-          maxHeight: typeof window !== 'undefined' && window.innerWidth <= 570 ? '60vh' : 'none',
-          overflowY: 'auto',
-        },
-      }}
+      centered
     >
       <FormGroup>
         <Label htmlFor="preset-name">{t('Название')}</Label>
