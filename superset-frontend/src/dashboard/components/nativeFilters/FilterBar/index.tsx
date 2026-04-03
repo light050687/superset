@@ -62,7 +62,8 @@ import {
 } from './state';
 import { createFilterKey, updateFilterKey } from './keyValue';
 import ActionButtons from './ActionButtons';
-import { PresetButton } from './FilterPresets';
+import { PresetButton, fetchPresets, fetchDefaultPreset } from './FilterPresets';
+import type { FilterPreset } from './FilterPresets';
 import Horizontal from './Horizontal';
 import Vertical from './Vertical';
 import { useSelectFiltersInScope } from '../state';
@@ -178,6 +179,52 @@ const FilterBar: FC<FiltersBarProps> = ({
   const [initializedFilters, setInitializedFilters] = useState<Set<string>>(
     new Set(),
   );
+
+  // Preset state — lifted from PresetButton for persistence and auto-matching
+  const [activePresetId, setActivePresetId] = useState<number | null>(null);
+  const [activePresetName, setActivePresetName] = useState<string | null>(null);
+  const [allPresets, setAllPresets] = useState<FilterPreset[]>([]);
+  const presetsRefreshKey = useRef(0);
+
+  // Load presets list and default preset on mount
+  useEffect(() => {
+    if (!dashboardId) return;
+    fetchPresets(dashboardId).then(setAllPresets);
+    fetchDefaultPreset(dashboardId).then(preset => {
+      setActivePresetId(preset?.id ?? null);
+      setActivePresetName(preset?.name ?? null);
+    });
+  }, [dashboardId]);
+
+  // Auto-match: compare applied filters with all presets
+  const dataMaskAppliedJson = JSON.stringify(dataMaskApplied);
+  useEffect(() => {
+    if (!allPresets.length) return;
+    const matched = allPresets.find(preset => {
+      const { filterData, includedFilters } = preset;
+      return includedFilters.every(filterId => {
+        const presetValue = filterData[filterId]?.filterState?.value;
+        const currentValue = dataMaskApplied[filterId]?.filterState?.value;
+        return isEqual(presetValue, currentValue);
+      });
+    });
+    if (matched) {
+      setActivePresetId(matched.id);
+      setActivePresetName(matched.name);
+    } else {
+      setActivePresetId(null);
+      setActivePresetName(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataMaskAppliedJson, allPresets]);
+
+  // Refresh presets list (called after create/edit/import/delete)
+  const refreshPresets = useCallback(() => {
+    presetsRefreshKey.current += 1;
+    if (dashboardId) {
+      fetchPresets(dashboardId).then(setAllPresets);
+    }
+  }, [dashboardId]);
 
   const dataMaskSelectedRef = useRef(dataMaskSelected);
   dataMaskSelectedRef.current = dataMaskSelected;
@@ -362,6 +409,13 @@ const FilterBar: FC<FiltersBarProps> = ({
       filters={filters}
       onApplyPreset={handleApplyPreset}
       onClearAll={handleClearAll}
+      activePresetId={activePresetId}
+      activePresetName={activePresetName}
+      onPresetChange={(id, name) => {
+        setActivePresetId(id);
+        setActivePresetName(name);
+      }}
+      onPresetsRefresh={refreshPresets}
     />
   ) : undefined;
 

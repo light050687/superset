@@ -16,14 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { css, DataMaskState, Filters, styled, t } from '@superset-ui/core';
 import { Popover } from 'antd';
 import { useSelector } from 'react-redux';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { RootState } from 'src/dashboard/types';
 import { FilterPreset } from './types';
-import { fetchDefaultPreset } from './api';
 import PresetDropdown from './PresetDropdown';
 import CreatePresetModal from './CreatePresetModal';
 import ImportPresetModal from './ImportPresetModal';
@@ -82,6 +81,10 @@ interface PresetButtonProps {
     includedFilters: string[],
   ) => void;
   onClearAll: () => void;
+  activePresetId: number | null;
+  activePresetName: string | null;
+  onPresetChange: (id: number | null, name: string | null) => void;
+  onPresetsRefresh: () => void;
 }
 
 const PresetButton = ({
@@ -90,42 +93,31 @@ const PresetButton = ({
   filters,
   onApplyPreset,
   onClearAll,
+  activePresetId,
+  activePresetName,
+  onPresetChange,
+  onPresetsRefresh,
 }: PresetButtonProps) => {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [editPreset, setEditPreset] = useState<FilterPreset | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [activePresetId, setActivePresetId] = useState<number | null>(null);
-  const [activePresetName, setActivePresetName] = useState<string | null>(null);
 
   const user = useSelector((state: RootState) => state.user);
   const isAdmin = !!(user?.roles && 'Admin' in user.roles);
 
-  // Load active (default) preset name on mount and after changes
-  useEffect(() => {
-    if (dashboardId) {
-      fetchDefaultPreset(dashboardId).then(preset => {
-        setActivePresetId(preset?.id ?? null);
-        setActivePresetName(preset?.name ?? null);
-      });
-    }
-  }, [dashboardId, refreshKey]);
-
   const handleApplyPreset = useCallback(
     (preset: FilterPreset) => {
       onApplyPreset(preset.filterData, preset.includedFilters);
-      setActivePresetId(preset.id);
-      setActivePresetName(preset.name);
+      onPresetChange(preset.id, preset.name);
       setPopoverOpen(false);
     },
-    [onApplyPreset],
+    [onApplyPreset, onPresetChange],
   );
 
   const handleClearAll = useCallback(() => {
     onClearAll();
-    setActivePresetId(null);
-    setActivePresetName(null);
     setPopoverOpen(false);
   }, [onClearAll]);
 
@@ -150,12 +142,14 @@ const PresetButton = ({
     setCreateModalOpen(false);
     setEditPreset(null);
     setRefreshKey(k => k + 1);
-  }, []);
+    onPresetsRefresh();
+  }, [onPresetsRefresh]);
 
   const handleImportClose = useCallback(() => {
     setImportModalOpen(false);
     setRefreshKey(k => k + 1);
-  }, []);
+    onPresetsRefresh();
+  }, [onPresetsRefresh]);
 
   return (
     <>
