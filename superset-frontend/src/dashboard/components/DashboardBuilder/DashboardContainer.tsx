@@ -68,6 +68,7 @@ import { getRootLevelTabsComponent } from './utils';
 
 type DashboardContainerProps = {
   topLevelTabs?: LayoutItem;
+  topLevelPages?: LayoutItem;
 };
 
 export const renderedChartIdsSelector: (state: RootState) => number[] =
@@ -101,7 +102,7 @@ const useNativeFilterScopes = () => {
 
 const TOP_OF_PAGE_RANGE = 220;
 
-const DashboardContainer: FC<DashboardContainerProps> = ({ topLevelTabs }) => {
+const DashboardContainer: FC<DashboardContainerProps> = ({ topLevelTabs, topLevelPages }) => {
   const nativeFilterScopes = useNativeFilterScopes();
   const nativeFilters = useSelector<RootState, Filters>(
     state => state.nativeFilters?.filters,
@@ -193,8 +194,13 @@ const DashboardContainer: FC<DashboardContainerProps> = ({ topLevelTabs }) => {
   ]);
 
   const childIds: string[] = useMemo(
-    () => (topLevelTabs ? topLevelTabs.children : [DASHBOARD_GRID_ID]),
-    [topLevelTabs],
+    () =>
+      topLevelPages
+        ? topLevelPages.children
+        : topLevelTabs
+          ? topLevelTabs.children
+          : [DASHBOARD_GRID_ID],
+    [topLevelTabs, topLevelPages],
   );
   const min = Math.min(tabIndex, childIds.length - 1);
   const activeKey = min === 0 ? DASHBOARD_GRID_ID : min.toString();

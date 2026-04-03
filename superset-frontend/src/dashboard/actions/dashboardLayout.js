@@ -19,7 +19,7 @@
 import { ActionCreators as UndoActionCreators } from 'redux-undo';
 import { t } from '@superset-ui/core';
 import { addWarningToast } from 'src/components/MessageToasts/actions';
-import { TABS_TYPE, ROW_TYPE } from 'src/dashboard/util/componentTypes';
+import { TABS_TYPE, ROW_TYPE, PAGES_TYPE } from 'src/dashboard/util/componentTypes';
 import {
   DASHBOARD_ROOT_ID,
   NEW_COMPONENTS_SOURCE_ID,
@@ -132,6 +132,25 @@ export const deleteTopLevelTabs = setUnsavedChangesAfterAction(() => ({
   payload: {},
 }));
 
+// Pages ----------------------------------------------------------------------
+export const CREATE_TOP_LEVEL_PAGES = 'CREATE_TOP_LEVEL_PAGES';
+export const createTopLevelPages = setUnsavedChangesAfterAction(dropResult => ({
+  type: CREATE_TOP_LEVEL_PAGES,
+  payload: { dropResult },
+}));
+
+export const DELETE_TOP_LEVEL_PAGES = 'DELETE_TOP_LEVEL_PAGES';
+export const deleteTopLevelPages = setUnsavedChangesAfterAction(() => ({
+  type: DELETE_TOP_LEVEL_PAGES,
+  payload: {},
+}));
+
+export const COPY_PAGE = 'COPY_PAGE';
+export const copyPage = setUnsavedChangesAfterAction((pageId, pagesId) => ({
+  type: COPY_PAGE,
+  payload: { pageId, pagesId },
+}));
+
 // Resize ---------------------------------------------------------------------
 export const RESIZE_COMPONENT = 'RESIZE_COMPONENT';
 export function resizeComponent({ id, width, height }) {
@@ -194,7 +213,11 @@ export function handleComponentDrop(dropResult) {
       dashboardRoot && dashboardRoot.children ? dashboardRoot.children[0] : '';
 
     if (droppedOnRoot) {
-      dispatch(createTopLevelTabs(dropResult));
+      if (dropResult.dragging?.type === PAGES_TYPE) {
+        dispatch(createTopLevelPages(dropResult));
+      } else {
+        dispatch(createTopLevelTabs(dropResult));
+      }
     } else if (destination && isNewComponent) {
       dispatch(createComponent(dropResult));
     } else if (
@@ -234,6 +257,7 @@ export function handleComponentDrop(dropResult) {
       const destinationComponent = layout[destination.id] || {};
       if (
         (sourceComponent.type === TABS_TYPE ||
+          sourceComponent.type === PAGES_TYPE ||
           sourceComponent.type === ROW_TYPE) &&
         sourceComponent.children &&
         sourceComponent.children.length === 0

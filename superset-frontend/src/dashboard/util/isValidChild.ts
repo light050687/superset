@@ -43,6 +43,8 @@ import {
   ROW_TYPE,
   TABS_TYPE,
   TAB_TYPE,
+  PAGES_TYPE,
+  PAGE_TYPE,
   DYNAMIC_TYPE,
 } from './componentTypes';
 
@@ -58,6 +60,7 @@ const depthFive = rootDepth + 5;
 const parentMaxDepthLookup: Record<string, Record<string, number>> = {
   [DASHBOARD_ROOT_TYPE]: {
     [TABS_TYPE]: rootDepth,
+    [PAGES_TYPE]: rootDepth,
     [DASHBOARD_GRID_TYPE]: rootDepth,
   },
 
@@ -100,6 +103,21 @@ const parentMaxDepthLookup: Record<string, Record<string, number>> = {
     [MARKDOWN_TYPE]: depthFive,
     [ROW_TYPE]: depthThree,
     [DIVIDER_TYPE]: depthThree,
+    [TABS_TYPE]: depthThree,
+  },
+
+  [PAGES_TYPE]: {
+    [PAGE_TYPE]: depthThree,
+  },
+
+  [PAGE_TYPE]: {
+    [CHART_TYPE]: depthFive,
+    [DYNAMIC_TYPE]: depthFive,
+    [MARKDOWN_TYPE]: depthFive,
+    [COLUMN_TYPE]: depthThree,
+    [DIVIDER_TYPE]: depthFive,
+    [HEADER_TYPE]: depthFive,
+    [ROW_TYPE]: depthThree,
     [TABS_TYPE]: depthThree,
   },
 

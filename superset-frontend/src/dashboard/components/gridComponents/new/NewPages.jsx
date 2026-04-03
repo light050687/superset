@@ -16,40 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import {
-  DASHBOARD_GRID_TYPE,
-  CHART_TYPE,
-  COLUMN_TYPE,
-  MARKDOWN_TYPE,
-  TAB_TYPE,
-  PAGE_TYPE,
-} from './componentTypes';
+import { t } from '@superset-ui/core';
 
-const typeToWrapChildLookup = {
-  [DASHBOARD_GRID_TYPE]: {
-    [CHART_TYPE]: true,
-    [COLUMN_TYPE]: true,
-    [MARKDOWN_TYPE]: true,
-  },
+import { Icons } from '@superset-ui/core/components';
+import { PAGES_TYPE } from '../../../util/componentTypes';
+import { NEW_PAGES_ID } from '../../../util/constants';
+import DraggableNewComponent from './DraggableNewComponent';
 
-  [TAB_TYPE]: {
-    [CHART_TYPE]: true,
-    [COLUMN_TYPE]: true,
-    [MARKDOWN_TYPE]: true,
-  },
-
-  [PAGE_TYPE]: {
-    [CHART_TYPE]: true,
-    [COLUMN_TYPE]: true,
-    [MARKDOWN_TYPE]: true,
-  },
-};
-
-export default function shouldWrapChildInRow({ parentType, childType }) {
-  if (!parentType || !childType) return false;
-
-  const wrapChildLookup = typeToWrapChildLookup[parentType];
-  if (!wrapChildLookup) return false;
-
-  return Boolean(wrapChildLookup[childType]);
+export default function DraggableNewPages() {
+  return (
+    <DraggableNewComponent
+      id={NEW_PAGES_ID}
+      type={PAGES_TYPE}
+      label={t('Страницы')}
+      IconComponent={Icons.FileOutlined}
+    />
+  );
 }

@@ -683,7 +683,7 @@ function findTabsToRestore(tabId, prevTabId, dashboardState, dashboardLayout) {
       const found =
         prevInactiveTabs?.filter(inactiveTabId =>
           currentLayout[inactiveTabId]?.parents
-            .filter(id => id.startsWith('TAB-'))
+            .filter(id => id.startsWith('TAB-') || id.startsWith('PAGE-'))
             .slice(-1)
             .includes(seek),
         ) ?? [];

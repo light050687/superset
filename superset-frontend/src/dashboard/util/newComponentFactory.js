@@ -28,6 +28,8 @@ import {
   ROW_TYPE,
   TABS_TYPE,
   TAB_TYPE,
+  PAGES_TYPE,
+  PAGE_TYPE,
   DYNAMIC_TYPE,
 } from './componentTypes';
 
@@ -57,6 +59,12 @@ const typeToDefaultMetaData = {
     text: '',
     defaultText: t('Tab title'),
     placeholder: t('Tab title'),
+  },
+  [PAGES_TYPE]: null,
+  [PAGE_TYPE]: {
+    text: '',
+    defaultText: t('Название страницы'),
+    placeholder: t('Название страницы'),
   },
   [DYNAMIC_TYPE]: {
     width: GRID_COLUMN_COUNT,

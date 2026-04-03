@@ -27,6 +27,7 @@ import NewDivider from '../gridComponents/new/NewDivider';
 import NewHeader from '../gridComponents/new/NewHeader';
 import NewRow from '../gridComponents/new/NewRow';
 import NewTabs from '../gridComponents/new/NewTabs';
+import NewPages from '../gridComponents/new/NewPages';
 import NewMarkdown from '../gridComponents/new/NewMarkdown';
 import NewDynamicComponent from '../gridComponents/new/NewDynamicComponent';
 
@@ -92,6 +93,7 @@ const BuilderComponentPane = ({ topOffset = 0 }) => (
             label: t('Layout elements'),
             children: (
               <>
+                <NewPages />
                 <NewTabs />
                 <NewRow />
                 <NewColumn />

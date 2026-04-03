@@ -61,6 +61,7 @@ import {
   DASHBOARD_ROOT_ID,
   DashboardStandaloneMode,
 } from 'src/dashboard/util/constants';
+import { PAGES_TYPE } from 'src/dashboard/util/componentTypes';
 import FilterBar from 'src/dashboard/components/nativeFilters/FilterBar';
 import MobileFilterBar from 'src/dashboard/components/nativeFilters/FilterBar/MobileFilterBar';
 import { useUiConfig } from 'src/components/UiConfigContext';
@@ -76,6 +77,7 @@ import {
 } from 'src/dashboard/constants';
 import { getRootLevelTabsComponent, shouldFocusTabs } from './utils';
 import DashboardContainer from './DashboardContainer';
+import PageSwitcherBar from './PageSwitcherBar';
 import { useNativeFilters } from './state';
 import DashboardWrapper from './DashboardWrapper';
 
@@ -624,7 +626,13 @@ const DashboardBuilder = () => {
   const dashboardRoot = dashboardLayout[DASHBOARD_ROOT_ID];
   const rootChildId = dashboardRoot?.children[0];
   const topLevelTabs =
-    rootChildId !== DASHBOARD_GRID_ID
+    rootChildId !== DASHBOARD_GRID_ID &&
+    dashboardLayout[rootChildId]?.type !== PAGES_TYPE
+      ? dashboardLayout[rootChildId]
+      : undefined;
+  const topLevelPages =
+    rootChildId !== DASHBOARD_GRID_ID &&
+    dashboardLayout[rootChildId]?.type === PAGES_TYPE
       ? dashboardLayout[rootChildId]
       : undefined;
   const standaloneMode = getUrlParam(URL_PARAMS.standalone);
@@ -926,7 +934,18 @@ const DashboardBuilder = () => {
                   />
                 </div>
               ) : (
-                <DashboardContainer topLevelTabs={topLevelTabs} />
+                <>
+                  {topLevelPages && (
+                    <PageSwitcherBar
+                      pagesComponent={topLevelPages}
+                      editMode={editMode}
+                    />
+                  )}
+                  <DashboardContainer
+                    topLevelTabs={topLevelTabs}
+                    topLevelPages={topLevelPages}
+                  />
+                </>
               )
             ) : (
               <Loading />

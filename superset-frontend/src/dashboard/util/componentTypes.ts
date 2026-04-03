@@ -28,6 +28,8 @@ export const NEW_COMPONENT_SOURCE_TYPE = 'NEW_COMPONENT_SOURCE';
 export const ROW_TYPE = 'ROW';
 export const TABS_TYPE = 'TABS';
 export const TAB_TYPE = 'TAB';
+export const PAGES_TYPE = 'PAGES';
+export const PAGE_TYPE = 'PAGE';
 // Dynamic type proposes lazy loading of custom dashboard components that can be added in separate repository
 export const DYNAMIC_TYPE = 'DYNAMIC';
 
@@ -44,5 +46,7 @@ export default {
   ROW_TYPE,
   TABS_TYPE,
   TAB_TYPE,
+  PAGES_TYPE,
+  PAGE_TYPE,
   DYNAMIC_TYPE,
 };
