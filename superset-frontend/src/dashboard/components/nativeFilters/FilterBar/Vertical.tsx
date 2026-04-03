@@ -101,14 +101,14 @@ const FilterBarEmptyStateContainer = styled.div`
   margin-top: ${({ theme }) => theme.sizeUnit * 8}px;
 `;
 
-const FilterControlsWrapper = styled.div`
-  ${({ theme }) => `
+const FilterControlsWrapper = styled.div<{ isMobile?: boolean }>`
+  ${({ theme, isMobile }) => `
     display: flex;
     flex-direction: column;
     gap: ${theme.sizeUnit * 2}px;
     padding: ${theme.sizeUnit * 4}px;
-    // 108px padding to make room for buttons with position: absolute
-    padding-bottom: ${theme.sizeUnit * 27}px;
+    // 108px padding to make room for buttons with position: absolute (desktop only)
+    padding-bottom: ${isMobile ? `${theme.sizeUnit * 2}px` : `${theme.sizeUnit * 27}px`};
   `}
 `;
 
@@ -189,7 +189,7 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
           />
         </FilterBarEmptyStateContainer>
       ) : (
-        <FilterControlsWrapper>
+        <FilterControlsWrapper isMobile={isMobile}>
           <FilterControls
             dataMaskSelected={dataMaskSelected}
             onFilterSelectionChange={onSelectionChange}
@@ -199,7 +199,7 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
           />
         </FilterControlsWrapper>
       ),
-    [canEdit, dataMaskSelected, filterValues.length, onSelectionChange],
+    [canEdit, dataMaskSelected, filterValues.length, onSelectionChange, isMobile],
   );
 
   return (

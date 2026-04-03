@@ -114,19 +114,17 @@ const DrawerContent = styled.div`
       overflow: hidden !important;
     }
 
-    /* Scrollable filter content — takes remaining space */
-    & > div > div:last-child > div:nth-child(2) {
+    /*
+     * Scrollable filter content — align to top.
+     * nth-child(3) because: 1=Header, 2=Presets, 3=scroll area, 4=buttons
+     */
+    & > div > div:last-child > div:nth-child(3) {
       flex: 1 !important;
       overflow-y: auto !important;
       overflow-x: hidden !important;
       width: 100% !important;
       box-sizing: border-box !important;
       -webkit-overflow-scrolling: touch;
-    }
-
-    /* Remove desktop bottom padding (216px for absolute-positioned buttons) */
-    & [class*='FilterControlsWrapper'] {
-      padding-bottom: ${theme.sizeUnit * 2}px !important;
     }
 
     /* All nested content — constrain width */

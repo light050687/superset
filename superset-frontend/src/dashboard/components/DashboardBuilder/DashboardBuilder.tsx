@@ -374,10 +374,25 @@ const StyledDashboardContent = styled.div<{
     }
 
     /*
-     * Equal-height cards: flex chain from grid-row down to chart container.
+     * Equal-height cards: complete flex chain from grid-row down to chart container.
+     * Every level must be display:flex + flex:1 so cards stretch to equal height.
      */
     &[data-view-mode="true"] .grid-row {
       align-items: stretch;
+    }
+
+    &[data-view-mode="true"] .dragdroppable-column {
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    &[data-view-mode="true"] .resizable-container {
+      flex: 1 1 auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      /* Override inline height — let flex chain control height */
+      height: unset !important;
+      min-height: 0 !important;
     }
 
     &[data-view-mode="true"] .dashboard-component-chart-holder {
@@ -468,6 +483,13 @@ const StyledDashboardContent = styled.div<{
       .grid-row > :not(:last-child):not(.hover-menu) {
         margin-right: 0 !important;
       }
+      /* Vertical gap between row wrappers (override GridContent margin-bottom) */
+      .dragdroppable-row {
+        margin-bottom: clamp(8px, 1cqi, 24px) !important;
+      }
+      .dragdroppable-row:last-child {
+        margin-bottom: 0 !important;
+      }
       .dragdroppable-column {
         flex: 1 1 0% !important;
       }
@@ -481,6 +503,12 @@ const StyledDashboardContent = styled.div<{
       }
       .grid-row > :not(:last-child):not(.hover-menu) {
         margin-right: 0 !important;
+      }
+      .dragdroppable-row {
+        margin-bottom: clamp(8px, 1cqi, 24px) !important;
+      }
+      .dragdroppable-row:last-child {
+        margin-bottom: 0 !important;
       }
       .dragdroppable-column {
         flex: 1 1 calc(33.333% - clamp(6px, 0.7cqi, 16px)) !important;
@@ -497,6 +525,12 @@ const StyledDashboardContent = styled.div<{
       .grid-row > :not(:last-child):not(.hover-menu) {
         margin-right: 0 !important;
       }
+      .dragdroppable-row {
+        margin-bottom: clamp(4px, 1cqi, 16px) !important;
+      }
+      .dragdroppable-row:last-child {
+        margin-bottom: 0 !important;
+      }
       .dragdroppable-column {
         flex: 1 1 calc(50% - clamp(2px, 0.5cqi, 8px)) !important;
         min-width: calc(50% - clamp(2px, 0.5cqi, 8px)) !important;
@@ -509,15 +543,17 @@ const StyledDashboardContent = styled.div<{
         flex-wrap: wrap !important;
         gap: clamp(4px, 1cqi, 8px) !important;
       }
+      .dragdroppable-row {
+        margin-bottom: clamp(4px, 1cqi, 8px) !important;
+      }
+      .dragdroppable-row:last-child {
+        margin-bottom: 0 !important;
+      }
       .dragdroppable-column {
         flex: 1 1 100% !important;
         min-width: 100% !important;
         max-width: 100% !important;
         margin-right: 0 !important;
-      }
-      .resizable-container {
-        height: auto !important;
-        min-height: 120px !important;
       }
     }
 
