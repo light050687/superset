@@ -67,6 +67,7 @@ type FilterControlsProps = {
   onFilterSelectionChange: (filter: Filter, dataMask: DataMask) => void;
   clearAllTriggers?: Record<string, boolean>;
   onClearAllComplete?: (filterId: string) => void;
+  isMobile?: boolean;
 };
 
 const FilterControls: FC<FilterControlsProps> = ({
@@ -74,6 +75,7 @@ const FilterControls: FC<FilterControlsProps> = ({
   onFilterSelectionChange,
   clearAllTriggers,
   onClearAllComplete,
+  isMobile = false,
 }) => {
   const filterBarOrientation = useSelector<RootState, FilterBarOrientation>(
     ({ dashboardInfo }) => dashboardInfo.filterBarOrientation,
@@ -309,6 +311,11 @@ const FilterControls: FC<FilterControlsProps> = ({
   );
 
   const overflowedByIndex = useMemo(() => {
+    // On mobile, all filters render inside a drawer — treat as overflowed
+    // so popups (DatePicker, Select) render inside parent, not document.body
+    if (isMobile) {
+      return filtersWithValues.map(() => true);
+    }
     const filtersOutOfScopeIds = new Set(filtersOutOfScope.map(({ id }) => id));
     const overflowedFiltersInScopeIds = new Set(
       overflowedFiltersInScope.map(({ id }) => id),
@@ -319,7 +326,7 @@ const FilterControls: FC<FilterControlsProps> = ({
         filtersOutOfScopeIds.has(filter.id) ||
         overflowedFiltersInScopeIds.has(filter.id),
     );
-  }, [filtersOutOfScope, filtersWithValues, overflowedFiltersInScope]);
+  }, [filtersOutOfScope, filtersWithValues, overflowedFiltersInScope, isMobile]);
 
   useEffect(() => {
     if (outlinedFilterId && overflowedIds.includes(outlinedFilterId)) {

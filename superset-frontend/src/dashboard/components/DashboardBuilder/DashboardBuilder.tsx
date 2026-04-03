@@ -97,7 +97,7 @@ const StickyPanel = styled.div<{ width: number }>`
 `;
 
 // @z-index-above-dashboard-popovers (99) + 1 = 100
-const MOBILE_HEADER_BREAKPOINT = 768;
+const MOBILE_HEADER_BREAKPOINT = 570;
 
 const StyledHeader = styled.div<{ filterBarWidth: number }>`
   ${({ theme, filterBarWidth }) => css`
@@ -363,59 +363,204 @@ const StyledDashboardContent = styled.div<{
       }
     }
 
-    /* Responsive: 2-column layout on medium screens */
-    @media only screen and (max-width: 1024px) {
-      &.dashboard-content .grid-container {
-        margin: ${theme.sizeUnit}px !important;
+    /*
+     * View-mode only responsive layout.
+     * All selectors scoped via data-view-mode attribute (not applied in edit mode).
+     */
+
+    /* Prevent horizontal overflow in responsive view mode */
+    &[data-view-mode="true"] {
+      overflow-x: hidden;
+    }
+
+    /*
+     * Equal-height cards: complete flex chain from grid-row down to chart container.
+     * Every level must be display:flex + flex:1 so cards stretch to equal height.
+     */
+    &[data-view-mode="true"] .grid-row {
+      align-items: stretch;
+    }
+
+    &[data-view-mode="true"] .dragdroppable-column {
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    &[data-view-mode="true"] .resizable-container {
+      flex: 1 1 auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      /* Override inline height — let flex chain control height */
+      height: unset !important;
+      min-height: 0 !important;
+    }
+
+    &[data-view-mode="true"] .dashboard-component-chart-holder {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    &[data-view-mode="true"] .dashboard-chart {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    &[data-view-mode="true"] .chart-slice {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    &[data-view-mode="true"] .slice_container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    &[data-view-mode="true"] .chart-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* KPI card: propagate flex through anonymous wrapper divs */
+    &[data-view-mode="true"]
+      div[data-test-viz-type='ext-kpi-card']
+      .slice_container
+      > div {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    &[data-view-mode="true"]
+      div[data-test-viz-type='ext-kpi-card']
+      .slice_container
+      > div
+      > div {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    &[data-view-mode="true"]
+      div[data-test-viz-type='ext-kpi-card']
+      .slice_container
+      > div
+      > div
+      > div {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /*
+     * Responsive layout — view mode only.
+     * Uses @container queries on .grid-container so layout reacts to
+     * actual container width (not viewport), adapting when filter panel opens.
+     * container-type is only set in view mode to protect edit mode.
+     */
+
+    /* ── View mode: enable container queries + fill containers ── */
+    &[data-view-mode="true"] .grid-container {
+      container-type: inline-size;
+      container-name: grid;
+      margin: clamp(4px, 1vw, 32px) !important;
+    }
+    &[data-view-mode="true"] .resizable-container {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    /* ── Wide container ≥1440px: 1 row, uniform gap ── */
+    @container grid (min-width: 1440px) {
+      .grid-row {
+        flex-wrap: nowrap !important;
+        gap: clamp(8px, 1cqi, 24px) !important;
       }
-
-      &.dashboard-content .grid-row {
-        flex-wrap: wrap !important;
-        gap: ${theme.sizeUnit * 2}px !important;
-        align-items: stretch !important;
-
-        & > :not(:last-child):not(.hover-menu) {
-          margin-right: 0 !important;
-        }
+      .grid-row > :not(:last-child):not(.hover-menu) {
+        margin-right: 0 !important;
       }
-
-      &.dashboard-content .dragdroppable-column {
-        flex: 1 1 calc(50% - ${theme.sizeUnit}px) !important;
-        min-width: calc(50% - ${theme.sizeUnit}px) !important;
-        max-width: 100% !important;
-        display: flex !important;
-        flex-direction: column !important;
+      /* Vertical gap between row wrappers (override GridContent margin-bottom) */
+      .dragdroppable-row {
+        margin-bottom: clamp(8px, 1cqi, 24px) !important;
       }
-
-      &.dashboard-content .resizable-container {
-        width: 100% !important;
-        max-width: 100% !important;
-        height: auto !important;
-        min-height: 0 !important;
-        flex: 1 !important;
-        display: flex !important;
-        flex-direction: column !important;
+      .dragdroppable-row:last-child {
+        margin-bottom: 0 !important;
       }
-
-      &.dashboard-content .dashboard-component-chart-holder {
-        flex: 1 !important;
-        display: flex !important;
-        flex-direction: column !important;
-      }
-
-      &.dashboard-content .dashboard-chart {
-        flex: 1 !important;
-        display: flex !important;
-        flex-direction: column !important;
+      .dragdroppable-column {
+        flex: 1 1 0% !important;
       }
     }
 
-    /* Responsive: single-column on small screens */
-    @media only screen and (max-width: 768px) {
-      &.dashboard-content .dragdroppable-column {
+    /* ── Medium container 800–1439px: 3 columns per row ── */
+    @container grid (min-width: 800px) and (max-width: 1439px) {
+      .grid-row {
+        flex-wrap: wrap !important;
+        gap: clamp(8px, 1cqi, 24px) !important;
+      }
+      .grid-row > :not(:last-child):not(.hover-menu) {
+        margin-right: 0 !important;
+      }
+      .dragdroppable-row {
+        margin-bottom: clamp(8px, 1cqi, 24px) !important;
+      }
+      .dragdroppable-row:last-child {
+        margin-bottom: 0 !important;
+      }
+      .dragdroppable-column {
+        flex: 1 1 calc(33.333% - clamp(6px, 0.7cqi, 16px)) !important;
+        min-width: calc(33.333% - clamp(6px, 0.7cqi, 16px)) !important;
+      }
+    }
+
+    /* ── Small container 425–799px: 2 columns ── */
+    @container grid (min-width: 425px) and (max-width: 799px) {
+      .grid-row {
+        flex-wrap: wrap !important;
+        gap: clamp(4px, 1cqi, 16px) !important;
+      }
+      .grid-row > :not(:last-child):not(.hover-menu) {
+        margin-right: 0 !important;
+      }
+      .dragdroppable-row {
+        margin-bottom: clamp(4px, 1cqi, 16px) !important;
+      }
+      .dragdroppable-row:last-child {
+        margin-bottom: 0 !important;
+      }
+      .dragdroppable-column {
+        flex: 1 1 calc(50% - clamp(2px, 0.5cqi, 8px)) !important;
+        min-width: calc(50% - clamp(2px, 0.5cqi, 8px)) !important;
+      }
+    }
+
+    /* ── Narrow container <425px: 1 column ── */
+    @container grid (max-width: 424px) {
+      .grid-row {
+        flex-wrap: wrap !important;
+        gap: clamp(4px, 1cqi, 8px) !important;
+      }
+      .dragdroppable-row {
+        margin-bottom: clamp(4px, 1cqi, 8px) !important;
+      }
+      .dragdroppable-row:last-child {
+        margin-bottom: 0 !important;
+      }
+      .dragdroppable-column {
         flex: 1 1 100% !important;
         min-width: 100% !important;
         max-width: 100% !important;
+        margin-right: 0 !important;
+      }
+    }
+
+    /* Hide filter panel on very narrow viewports (mobile) */
+    @media only screen and (max-width: 549px) {
+      [data-test="dashboard-filters-panel"] {
+        display: none !important;
       }
     }
   `}
@@ -527,8 +672,8 @@ const DashboardBuilder = () => {
 
   const showFilterBar = !editMode && nativeFiltersEnabled;
 
-  // Responsive: mobile breakpoint for filter bar layout
-  const MOBILE_BREAKPOINT = 768;
+  // Responsive: mobile breakpoint for filter bar layout (matches CSS mobile ≤570px)
+  const MOBILE_BREAKPOINT = 570;
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT,
   );
@@ -751,6 +896,7 @@ const DashboardBuilder = () => {
         >
           <StyledDashboardContent
             className="dashboard-content"
+            data-view-mode={!editMode ? 'true' : undefined}
             editMode={editMode}
             marginLeft={dashboardContentMarginLeft}
           >
