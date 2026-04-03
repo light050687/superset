@@ -443,88 +443,88 @@ const StyledDashboardContent = styled.div<{
 
     /*
      * Responsive layout — view mode only.
-     * Containers fill columns, columns grow to fill rows at all widths.
+     * Uses @container queries on .grid-container so layout reacts to
+     * actual container width (not viewport), adapting when filter panel opens.
+     * container-type is only set in view mode to protect edit mode.
      */
 
-    /* ── All widths: containers fill their column ── */
+    /* ── View mode: enable container queries + fill containers ── */
+    &[data-view-mode="true"] .grid-container {
+      container-type: inline-size;
+      container-name: grid;
+      margin: clamp(4px, 1vw, 32px) !important;
+    }
     &[data-view-mode="true"] .resizable-container {
       width: 100% !important;
       max-width: 100% !important;
     }
 
-    /* ── Desktop 1025–1439px: 3 columns per row ── */
-    @media only screen and (min-width: 1025px) and (max-width: 1439px) {
-      &[data-view-mode="true"] .grid-row {
-        flex-wrap: wrap !important;
-        gap: 16px !important;
+    /* ── Wide container ≥1440px: 1 row, uniform gap ── */
+    @container grid (min-width: 1440px) {
+      .grid-row {
+        flex-wrap: nowrap !important;
+        gap: clamp(8px, 1cqi, 24px) !important;
       }
-      &[data-view-mode="true"] .grid-row > :not(:last-child):not(.hover-menu) {
+      .grid-row > :not(:last-child):not(.hover-menu) {
         margin-right: 0 !important;
       }
-      &[data-view-mode="true"] .dragdroppable-column {
-        flex: 1 1 calc(33.333% - 11px) !important;
-        min-width: calc(33.333% - 11px) !important;
+      .dragdroppable-column {
+        flex: 1 1 0% !important;
       }
     }
 
-    /* ── Wide desktop ≥1440px: native 1 row, columns fill width ── */
-    @media only screen and (min-width: 1440px) {
-      &[data-view-mode="true"] .dragdroppable-column {
-        flex-grow: 1 !important;
-      }
-    }
-
-    /* ── 550–1024px: 2-column reflow ── */
-    @media only screen and (min-width: 550px) and (max-width: 1024px) {
-      &[data-view-mode="true"] .grid-container {
-        margin: 8px !important;
-      }
-      &[data-view-mode="true"] .grid-row {
+    /* ── Medium container 800–1439px: 3 columns per row ── */
+    @container grid (min-width: 800px) and (max-width: 1439px) {
+      .grid-row {
         flex-wrap: wrap !important;
-        gap: 8px !important;
+        gap: clamp(8px, 1cqi, 24px) !important;
       }
-      &[data-view-mode="true"] .grid-row > :not(:last-child):not(.hover-menu) {
+      .grid-row > :not(:last-child):not(.hover-menu) {
         margin-right: 0 !important;
       }
-      &[data-view-mode="true"] .dragdroppable-column {
-        flex: 1 1 calc(50% - 4px) !important;
-        min-width: calc(50% - 4px) !important;
-        margin-bottom: 0 !important;
+      .dragdroppable-column {
+        flex: 1 1 calc(33.333% - clamp(6px, 0.7cqi, 16px)) !important;
+        min-width: calc(33.333% - clamp(6px, 0.7cqi, 16px)) !important;
       }
     }
 
-    /* ── Mobile (<550px): 1 column ── */
-    @media only screen and (max-width: 549px) {
-      &[data-view-mode="true"] .grid-container {
-        margin: 4px !important;
-      }
-      &[data-view-mode="true"] .grid-row {
+    /* ── Small container 425–799px: 2 columns ── */
+    @container grid (min-width: 425px) and (max-width: 799px) {
+      .grid-row {
         flex-wrap: wrap !important;
-        gap: 4px !important;
+        gap: clamp(4px, 1cqi, 16px) !important;
       }
-      &[data-view-mode="true"] .dragdroppable-column {
+      .grid-row > :not(:last-child):not(.hover-menu) {
+        margin-right: 0 !important;
+      }
+      .dragdroppable-column {
+        flex: 1 1 calc(50% - clamp(2px, 0.5cqi, 8px)) !important;
+        min-width: calc(50% - clamp(2px, 0.5cqi, 8px)) !important;
+      }
+    }
+
+    /* ── Narrow container <425px: 1 column ── */
+    @container grid (max-width: 424px) {
+      .grid-row {
+        flex-wrap: wrap !important;
+        gap: clamp(4px, 1cqi, 8px) !important;
+      }
+      .dragdroppable-column {
         flex: 1 1 100% !important;
         min-width: 100% !important;
         max-width: 100% !important;
         margin-right: 0 !important;
       }
-      &[data-view-mode="true"] .resizable-container {
+      .resizable-container {
         height: auto !important;
         min-height: 120px !important;
       }
-      /* Hide filter panel on mobile */
-      [data-test="dashboard-filters-panel"] {
-        display: none !important;
-      }
     }
 
-    /* ── Phone (≤320px): tighter spacing ── */
-    @media only screen and (max-width: 320px) {
-      &[data-view-mode="true"] .grid-container {
-        margin: 2px !important;
-      }
-      &[data-view-mode="true"] .resizable-container {
-        min-height: 100px !important;
+    /* Hide filter panel on very narrow viewports (mobile) */
+    @media only screen and (max-width: 549px) {
+      [data-test="dashboard-filters-panel"] {
+        display: none !important;
       }
     }
   `}

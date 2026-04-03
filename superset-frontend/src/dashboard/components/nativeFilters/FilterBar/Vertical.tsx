@@ -195,6 +195,7 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
             onFilterSelectionChange={onSelectionChange}
             clearAllTriggers={clearAllTriggers}
             onClearAllComplete={onClearAllComplete}
+            isMobile={isMobile}
           />
         </FilterControlsWrapper>
       ),

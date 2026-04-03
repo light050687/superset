@@ -72,6 +72,8 @@ const FilterButton = styled.button`
 /**
  * Styled wrapper that overrides FilterBar vertical styles
  * for proper display inside a mobile bottom-sheet Drawer.
+ *
+ * Layout: fixed header → scrollable filter content → fixed action buttons.
  */
 const DrawerContent = styled.div`
   ${({ theme }) => css`
@@ -80,7 +82,7 @@ const DrawerContent = styled.div`
     flex-direction: column;
     overflow: hidden;
 
-    /* BarWrapper — full width */
+    /* BarWrapper — full width, flex column to fill drawer */
     & > div {
       width: 100% !important;
       height: 100% !important;
@@ -99,7 +101,7 @@ const DrawerContent = styled.div`
       display: none !important;
     }
 
-    /* Bar — fill drawer, no absolute positioning */
+    /* Bar — flex column, fill available space */
     & > div > div:last-child {
       position: relative !important;
       width: 100% !important;
@@ -112,14 +114,19 @@ const DrawerContent = styled.div`
       overflow: hidden !important;
     }
 
-    /* Scrollable filter content */
+    /* Scrollable filter content — takes remaining space */
     & > div > div:last-child > div:nth-child(2) {
       flex: 1 !important;
       overflow-y: auto !important;
       overflow-x: hidden !important;
-      padding-bottom: ${theme.sizeUnit * 2}px !important;
       width: 100% !important;
       box-sizing: border-box !important;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Remove desktop bottom padding (216px for absolute-positioned buttons) */
+    & [class*='FilterControlsWrapper'] {
+      padding-bottom: ${theme.sizeUnit * 2}px !important;
     }
 
     /* All nested content — constrain width */
@@ -128,15 +135,17 @@ const DrawerContent = styled.div`
       box-sizing: border-box;
     }
 
-    /* Hide collapse arrow button (the VerticalAlignTop icon) */
+    /* Hide collapse arrow button */
     & [data-test='filter-bar-collapse-button'] {
       display: none !important;
     }
 
-    /* Action buttons — one row, full width, Apply left / Clear right */
+    /* Action buttons — fixed at bottom of drawer */
     && [data-test='filterbar-action-buttons'],
     & div[data-test='filterbar-action-buttons'] {
-      position: static !important;
+      position: sticky !important;
+      bottom: 0 !important;
+      z-index: 10 !important;
       width: 100% !important;
       flex-direction: row !important;
       justify-content: space-between !important;
@@ -172,6 +181,35 @@ const DrawerContent = styled.div`
     & .ant-btn {
       border-radius: 6px !important;
     }
+
+    /* Time range popover — render as full-width bottom sheet inside drawer */
+    & .time-range-popover,
+    & .ant-popover.time-range-popover {
+      position: fixed !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      top: auto !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      transform: none !important;
+
+      .ant-popover-content {
+        border-radius: ${theme.sizeUnit * 2}px ${theme.sizeUnit * 2}px 0 0;
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .ant-popover-inner {
+        border-radius: ${theme.sizeUnit * 2}px ${theme.sizeUnit * 2}px 0 0;
+        max-height: 70vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .ant-popover-arrow {
+        display: none !important;
+      }
+    }
   `}
 `;
 
@@ -197,8 +235,7 @@ const MobileFilterBar = ({ children }: MobileFilterBarProps) => {
         closable={false}
         styles={{
           header: { display: 'none' },
-          body: { padding: 0, overflow: 'hidden', maxHeight: '85vh' },
-          wrapper: { maxHeight: '85vh' },
+          body: { padding: 0, overflow: 'hidden' },
         }}
       >
         <DrawerContent>{children}</DrawerContent>
