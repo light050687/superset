@@ -32,7 +32,9 @@ const GeoMapIframe = styled.iframe`
 `;
 
 const GeoMap: FC = () => {
-  const mapUrl = `http://${window.location.hostname}:8082/map/`;
+  // Proxy through Superset nginx to avoid cross-origin iframe blocking.
+  // /geo-tiles/ proxies to the geo-tiles tileserver nginx on port 8082.
+  const mapUrl = '/geo-tiles/map/';
 
   return (
     <GeoMapContainer>

@@ -37,6 +37,21 @@ server {
         proxy_set_header Host $host;
     }
 
+    # Geo Tiles — map UI + tile cache (nginx on port 8082)
+    location /geo-tiles/ {
+        proxy_pass http://host.docker.internal:8082/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # Geo Tiles — tileserver API (styles, data, fonts on port 8090)
+    location /geo-tileserver/ {
+        proxy_pass http://host.docker.internal:8090/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+    }
+
     location ${SUPERSET_APP_ROOT}/static {
         proxy_pass http://host.docker.internal:9000;  # Proxy to superset-node
         proxy_http_version 1.1;
