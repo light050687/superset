@@ -561,6 +561,28 @@ const RightMenu = ({
       });
     }
 
+    // App Launcher — grid icon with tool shortcuts (Geo Map, etc.)
+    if (!navbarRight.user_is_anonymous) {
+      items.push({
+        key: 'app-launcher',
+        label: <Icons.AppstoreOutlined data-test="app-launcher-icon" />,
+        className: 'submenu-with-caret',
+        icon: <Icons.DownOutlined iconSize="xs" />,
+        children: [
+          {
+            key: 'geo-map',
+            label: (
+              <Link to="/geo-map/" data-test="app-launcher-geo-map">
+                {t('Geo Map')}
+              </Link>
+            ),
+          },
+        ],
+        popupOffset: NAVBAR_MENU_POPUP_OFFSET,
+        ...{ 'data-test': 'app-launcher' },
+      });
+    }
+
     if (!navbarRight.user_is_anonymous && showActionDropdown) {
       items.push({
         key: 'new-dropdown',
