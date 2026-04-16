@@ -16,3 +16,81 @@
     specific language governing permissions and limitations
     under the License.
   #}
+
+<script nonce="{{ macros.get_nonce() }}">
+  /* ═══ DS 2.0 — детектор темы Superset для CSS-переменных ═══
+     Superset 6.0 не ставит data-theme атрибут — тема применяется через
+     AntD ConfigProvider (CSS-in-JS), меняя background body.
+     Этот скрипт определяет текущую тему по фактической яркости body.background
+     и ставит html[data-theme="dark|light"], чтобы наши CSS-переменные
+     в head_custom_extra.html (селектор [data-theme="dark"]) активировались.
+     Покрывает: OS preference, ручной toggle в хедере, смену OS на лету. */
+  (function () {
+    'use strict';
+
+    function detectTheme() {
+      try {
+        var bg = window.getComputedStyle(document.body).backgroundColor;
+        var m = bg.match(/\d+(\.\d+)?/g);
+        if (!m || m.length < 3) return 'light';
+        var r = +m[0], g = +m[1], b = +m[2];
+        // Формула Luma (ITU-R BT.601) — стандарт яркости
+        var luma = (r * 299 + g * 587 + b * 114) / 1000;
+        return luma < 128 ? 'dark' : 'light';
+      } catch (e) {
+        return 'light';
+      }
+    }
+
+    function applyTheme() {
+      var theme = detectTheme();
+      var current = document.documentElement.getAttribute('data-theme');
+      if (current !== theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+      }
+    }
+
+    // 1) Первоначальное определение (после AntD инициализации)
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(applyTheme, 50);
+      });
+    } else {
+      setTimeout(applyTheme, 50);
+    }
+
+    // 2) Наблюдатель за сменой темы (AntD меняет body style/class)
+    var observer = new MutationObserver(function () {
+      applyTheme();
+    });
+    function startObserving() {
+      if (document.body) {
+        observer.observe(document.body, {
+          attributes: true,
+          attributeFilter: ['style', 'class'],
+        });
+        observer.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['style', 'class'],
+        });
+      } else {
+        setTimeout(startObserving, 50);
+      }
+    }
+    startObserving();
+
+    // 3) Реакция на смену OS preference
+    try {
+      var mql = window.matchMedia('(prefers-color-scheme: dark)');
+      var listener = function () { setTimeout(applyTheme, 100); };
+      if (mql.addEventListener) {
+        mql.addEventListener('change', listener);
+      } else if (mql.addListener) {
+        mql.addListener(listener); // Safari <14 fallback
+      }
+    } catch (e) { /* noop */ }
+
+    // 4) Периодическая синхронизация (страховка на случай, если Observer пропустил)
+    setInterval(applyTheme, 2000);
+  })();
+</script>

@@ -113,12 +113,147 @@ WEBDRIVER_BASEURL_USER_FRIENDLY = (
 )
 SQLLAB_CTAS_NO_LIMIT = True
 
+# --- DS 2.0: шрифты через Google Fonts <link> ---
+# Superset автоматически инжектит эти URL в <head> через spa.html:65
+CUSTOM_FONT_URLS = [
+    "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap",
+    "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap",
+]
+
+# --- DS 2.0: общие AntD токены (размерная сетка, радиусы, отступы) ---
+_DS2_COMMON_TOKENS = {
+    "fontFamily": "'Manrope', 'Inter', Helvetica, Arial, sans-serif",
+    "fontFamilyCode": "'JetBrains Mono', 'Fira Code', 'Courier New', monospace",
+    "fontSize": 14,
+    "fontSizeSM": 12,
+    "fontSizeLG": 16,
+    "fontSizeXL": 20,
+    "fontSizeXS": 10,
+    "fontSizeHeading1": 28,
+    "fontSizeHeading2": 24,
+    "fontSizeHeading3": 20,
+    "fontSizeHeading4": 16,
+    "fontSizeHeading5": 14,
+    "fontWeightStrong": 600,
+    "borderRadius": 6,
+    "borderRadiusLG": 10,
+    "borderRadiusSM": 4,
+    "padding": 16,
+    "paddingSM": 12,
+    "paddingXS": 8,
+    "paddingLG": 24,
+    "margin": 16,
+    "marginSM": 12,
+    "marginXS": 8,
+    "marginLG": 24,
+    "controlHeight": 32,
+    "controlHeightSM": 28,
+    "controlHeightLG": 40,
+    "brandLogoAlt": "МРТС BI",
+}
+
+# --- DS 2.0: AntD тема (светлая) ---
+THEME_DEFAULT = {
+    "algorithm": "default",
+    "token": {
+        **_DS2_COMMON_TOKENS,
+        "colorBgBase": "#FFFFFF",
+        "colorBgLayout": "#F3F3F3",
+        "colorTextBase": "#0A0A0A",
+        "colorPrimary": "#3B8BD9",
+        "colorLink": "#3B8BD9",
+        "colorInfo": "#3B8BD9",
+        "colorSuccess": "#16A34A",
+        "colorError": "#DC2626",
+        "colorWarning": "#CCB604",
+        "colorBorder": "#DCDCDC",
+        "colorBorderSecondary": "#EBEBEB",
+    },
+}
+
+# --- DS 2.0: AntD тема (тёмная) ---
+THEME_DARK = {
+    "algorithm": "dark",
+    "token": {
+        **_DS2_COMMON_TOKENS,
+        "colorBgBase": "#171A1E",
+        "colorBgLayout": "#0F1114",
+        "colorTextBase": "#E6E9EF",
+        "colorPrimary": "#5CAAF0",
+        "colorLink": "#5CAAF0",
+        "colorInfo": "#5CAAF0",
+        "colorSuccess": "#34D399",
+        "colorError": "#F87171",
+        "colorWarning": "#F8F571",
+        "colorBorder": "#272B30",
+        "colorBorderSecondary": "#1B1E22",
+    },
+}
+
+# --- DS 2.0: категориальные цветовые схемы ---
+EXTRA_CATEGORICAL_COLOR_SCHEMES = [
+    {
+        "id": "ds2_accents",
+        "label": "DS 2.0",
+        "description": "DS 2.0 — 5 акцентных цветов данных",
+        "isDefault": True,
+        "colors": ["#3B8BD9", "#8B5CF6", "#E87C3E", "#D946A8", "#CA8A04"],
+    },
+    {
+        "id": "ds2_semantic",
+        "label": "DS 2.0 Семантика",
+        "description": "Рост / Снижение / Предупреждение / Нейтральный",
+        "colors": ["#16A34A", "#DC2626", "#CCB604", "#9CA3AF"],
+    },
+]
+
+# --- DS 2.0: последовательная палитра (heatmap / градиенты) ---
+EXTRA_SEQUENTIAL_COLOR_SCHEMES = [
+    {
+        "id": "ds2_sky_seq",
+        "label": "DS 2.0 Sky",
+        "isDiverging": False,
+        "colors": ["#E8F4FD", "#B8D9F2", "#88BEE7", "#3B8BD9", "#2A6BA8", "#1A4B78"],
+    },
+]
+
 # --- Locale ---
 BABEL_DEFAULT_LOCALE = "ru"
 LANGUAGES = {
     "ru": {"flag": "ru", "name": "Русский"},
     "en": {"flag": "us", "name": "English"},
 }
+
+# --- RU-форматы чисел (пробел-тысячи, запятая-десятичные, ₽ после числа) ---
+D3_FORMAT = {
+    "decimal": ",",
+    "thousands": "\u00a0",
+    "grouping": [3],
+    "currency": ["", "\u00a0\u20bd"],
+}
+
+# --- RU-форматы дат (DD.MM.YYYY, 24ч, русские месяцы) ---
+D3_TIME_FORMAT = {
+    "dateTime": "%A, %e %B %Y г. %X",
+    "date": "%d.%m.%Y",
+    "time": "%H:%M:%S",
+    "periods": ["AM", "PM"],
+    "days": [
+        "воскресенье", "понедельник", "вторник", "среда",
+        "четверг", "пятница", "суббота",
+    ],
+    "shortDays": ["вс", "пн", "вт", "ср", "чт", "пт", "сб"],
+    "months": [
+        "январь", "февраль", "март", "апрель", "май", "июнь",
+        "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь",
+    ],
+    "shortMonths": [
+        "янв", "фев", "мар", "апр", "май", "июн",
+        "июл", "авг", "сен", "окт", "ноя", "дек",
+    ],
+}
+
+CURRENCIES = ["RUB", "USD", "EUR"]
 
 log_level_text = os.getenv("SUPERSET_LOG_LEVEL", "INFO")
 LOG_LEVEL = getattr(logging, log_level_text.upper(), logging.INFO)
