@@ -24,7 +24,10 @@ import {
   deleteComponent,
   copyPage,
 } from 'src/dashboard/actions/dashboardLayout';
-import { setDirectPathToChild } from 'src/dashboard/actions/dashboardState';
+import {
+  setDirectPathToChild,
+  setActivePagePath,
+} from 'src/dashboard/actions/dashboardState';
 import { PAGE_TYPE } from 'src/dashboard/util/componentTypes';
 import { NEW_PAGES_ID } from 'src/dashboard/util/constants';
 import newComponentFactory from 'src/dashboard/util/newComponentFactory';
@@ -33,8 +36,8 @@ import getDirectPathToTabIndex from 'src/dashboard/util/getDirectPathToTabIndex'
 export default function PageSwitcherBar({ pagesComponent, editMode }) {
   const dispatch = useDispatch();
   const dashboardLayout = useSelector(state => state.dashboardLayout.present);
-  const directPathToChild = useSelector(
-    state => state.dashboardState.directPathToChild,
+  const activePagePath = useSelector(
+    state => state.dashboardState.activePagePath ?? [],
   );
   const [editingPageId, setEditingPageId] = useState(null);
   const [editingName, setEditingName] = useState('');
@@ -45,12 +48,13 @@ export default function PageSwitcherBar({ pagesComponent, editMode }) {
   const pagesId = pagesComponent.id;
 
   const activePageId =
-    pageIds.find(pid => directPathToChild?.includes(pid)) || pageIds[0];
+    pageIds.find(pid => activePagePath?.includes(pid)) || pageIds[0];
 
   const handlePageClick = useCallback(
     pageId => {
       const idx = pageIds.indexOf(pageId);
       const path = getDirectPathToTabIndex(pagesComponent, idx);
+      dispatch(setActivePagePath(path));
       dispatch(setDirectPathToChild(path));
     },
     [dispatch, pagesComponent, pageIds],

@@ -212,8 +212,13 @@ function Echart(
             inactiveColor: antdTheme.colorTextDisabled,
           },
           tooltip: {
-            backgroundColor: antdTheme.colorBgContainer,
-            textStyle: { color: antdTheme.colorText },
+            backgroundColor: antdTheme.colorTextBase,
+            textStyle: { color: antdTheme.colorBgContainer },
+            borderColor: 'transparent',
+            borderWidth: 0,
+            padding: [8, 12],
+            extraCssText:
+              'border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);',
           },
           axisPointer: {
             lineStyle: { color: antdTheme.colorPrimary },
@@ -223,15 +228,25 @@ function Echart(
         if (options?.xAxis) {
           echartsTheme.xAxis = {
             axisLine: { lineStyle: { color: antdTheme.colorSplit } },
-            axisLabel: { color: antdTheme.colorTextSecondary },
-            splitLine: { lineStyle: { color: antdTheme.colorSplit } },
+            axisLabel: {
+              color: antdTheme.colorTextSecondary,
+              fontFamily: antdTheme.fontFamilyCode,
+            },
+            splitLine: {
+              lineStyle: { color: antdTheme.colorSplit, type: 'dashed' },
+            },
           };
         }
         if (options?.yAxis) {
           echartsTheme.yAxis = {
             axisLine: { lineStyle: { color: antdTheme.colorSplit } },
-            axisLabel: { color: antdTheme.colorTextSecondary },
-            splitLine: { lineStyle: { color: antdTheme.colorSplit } },
+            axisLabel: {
+              color: antdTheme.colorTextSecondary,
+              fontFamily: antdTheme.fontFamilyCode,
+            },
+            splitLine: {
+              lineStyle: { color: antdTheme.colorSplit, type: 'dashed' },
+            },
           };
         }
         return echartsTheme;

@@ -29,7 +29,7 @@ export default function DraggableNewPages() {
       id={NEW_PAGES_ID}
       type={PAGES_TYPE}
       label={t('Страницы')}
-      IconComponent={Icons.FileOutlined}
+      IconComponent={Icons.BookOutlined}
     />
   );
 }

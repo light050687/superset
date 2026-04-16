@@ -667,6 +667,11 @@ export function setDirectPathToChild(path) {
   return { type: SET_DIRECT_PATH, path };
 }
 
+export const SET_ACTIVE_PAGE_PATH = 'SET_ACTIVE_PAGE_PATH';
+export function setActivePagePath(path) {
+  return { type: SET_ACTIVE_PAGE_PATH, path };
+}
+
 export const SET_ACTIVE_TAB = 'SET_ACTIVE_TAB';
 
 function findTabsToRestore(tabId, prevTabId, dashboardState, dashboardLayout) {

@@ -48,6 +48,7 @@ import {
 } from 'src/dashboard/types';
 import {
   setDirectPathToChild,
+  setActivePagePath,
   setEditMode,
 } from 'src/dashboard/actions/dashboardState';
 import {
@@ -634,6 +635,17 @@ const DashboardBuilder = () => {
     dashboardLayout[rootChildId]?.type === PAGES_TYPE
       ? dashboardLayout[rootChildId]
       : undefined;
+  // Initialize activePagePath when dashboard with Pages loads
+  const activePagePath = useSelector<RootState, string[]>(
+    state => (state.dashboardState as any).activePagePath ?? [],
+  );
+  useEffect(() => {
+    if (topLevelPages && activePagePath.length === 0) {
+      const firstPagePath = getDirectPathToTabIndex(topLevelPages, 0);
+      dispatch(setActivePagePath(firstPagePath));
+    }
+  }, [topLevelPages, activePagePath.length, dispatch]);
+
   const standaloneMode = getUrlParam(URL_PARAMS.standalone);
   const isReport = standaloneMode === DashboardStandaloneMode.Report;
   const hideDashboardHeader =
@@ -887,6 +899,7 @@ const DashboardBuilder = () => {
       <StyledContent fullSizeChartId={fullSizeChartId}>
         {!editMode &&
           !topLevelTabs &&
+          !topLevelPages &&
           dashboardLayout[DASHBOARD_GRID_ID]?.children?.length === 0 && (
             <EmptyState
               title={t('There are no charts added to this dashboard')}

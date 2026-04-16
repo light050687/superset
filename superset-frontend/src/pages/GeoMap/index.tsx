@@ -16,35 +16,80 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { FC } from 'react';
-import { styled } from '@superset-ui/core';
+import { FC, useState, useCallback, useRef } from 'react';
+import type { Map as MaplibreMap } from 'maplibre-gl';
+import type { ThemeMode, Language } from './types';
+import { applyLanguage } from './hooks/useMapLanguage';
+import { useMapTheme } from './hooks/useMapTheme';
+import { useLayerGroups } from './hooks/useLayerGroups';
+import MapCanvas from './MapCanvas';
+import ControlBar from './ControlBar';
+import ThemeToggle from './ThemeToggle';
+import LayerPanel from './LayerPanel';
+import { MapPageContainer } from './styles';
 
-const GeoMapContainer = styled.div`
-  width: 100%;
-  height: calc(100vh - 56px);
-  overflow: hidden;
-`;
-
-const GeoMapIframe = styled.iframe`
-  border: none;
-  width: 100%;
-  height: 100%;
-`;
-
+/**
+ * Full-page GeoMap component for Superset.
+ * Vector tile map with layer toggles, theme switching, and language selection.
+ */
 const GeoMap: FC = () => {
-  // Proxy through Superset nginx to avoid cross-origin iframe blocking.
-  // /geo-tiles/ proxies to the geo-tiles tileserver nginx on port 8082.
-  const mapUrl = '/geo-tiles/map/';
+  const [map, setMap] = useState<MaplibreMap | null>(null);
+  const [theme, setTheme] = useState<ThemeMode>('light');
+  const [language, setLanguage] = useState<Language>('ru');
+
+  const { swapTheme } = useMapTheme();
+  const { groups, toggleGroup, applyAllVisibility } = useLayerGroups();
+
+  const languageRef = useRef(language);
+  languageRef.current = language;
+
+  const handleMapReady = useCallback((mapInstance: MaplibreMap) => {
+    setMap(mapInstance);
+  }, []);
+
+  const handleStyleReady = useCallback(() => {
+    if (!map) return;
+    applyAllVisibility(map);
+  }, [map, applyAllVisibility]);
+
+  const handleThemeToggle = useCallback(() => {
+    const newTheme: ThemeMode = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    if (map) {
+      void swapTheme(map, newTheme, () => {
+        applyLanguage(map, languageRef.current);
+        applyAllVisibility(map);
+      });
+    }
+  }, [theme, map, swapTheme, applyAllVisibility]);
+
+  const handleLanguageChange = useCallback(
+    (lang: Language) => {
+      setLanguage(lang);
+      if (map) applyLanguage(map, lang);
+    },
+    [map],
+  );
+
+  const handleToggleGroup = useCallback(
+    (groupId: string) => {
+      toggleGroup(groupId, map);
+    },
+    [toggleGroup, map],
+  );
 
   return (
-    <GeoMapContainer>
-      <GeoMapIframe
-        src={mapUrl}
-        title="Geo Map"
-        allow="geolocation"
-        loading="lazy"
+    <MapPageContainer>
+      <MapCanvas
+        theme={theme}
+        language={language}
+        onMapReady={handleMapReady}
+        onStyleReady={handleStyleReady}
       />
-    </GeoMapContainer>
+      <ControlBar language={language} onLanguageChange={handleLanguageChange} />
+      <ThemeToggle theme={theme} onToggle={handleThemeToggle} />
+      <LayerPanel groups={groups} onToggleGroup={handleToggleGroup} />
+    </MapPageContainer>
   );
 };
 

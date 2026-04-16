@@ -18,3 +18,16 @@
   #}
 
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+
+<style>
+  /* ═══ FIX: AntD Select arrow click not opening dropdown ═══
+     In AntD v5.25, .ant-select-arrow has pointer-events:none (decorative),
+     but its child <span.anticon> and <svg> inherit pointer-events:auto.
+     The SVG catches clicks but doesn't bubble to .ant-select-selector (the click handler),
+     so clicking the ▼ arrow does nothing.
+     Fix: force pointer-events:none on ALL children of .ant-select-arrow. */
+  .ant-select-arrow,
+  .ant-select-arrow * {
+    pointer-events: none !important;
+  }
+</style>

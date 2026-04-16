@@ -26,7 +26,10 @@ import {
   copyPage,
   createTopLevelPages,
 } from 'src/dashboard/actions/dashboardLayout';
-import { setDirectPathToChild } from 'src/dashboard/actions/dashboardState';
+import {
+  setDirectPathToChild,
+  setActivePagePath,
+} from 'src/dashboard/actions/dashboardState';
 import { PAGE_TYPE, PAGES_TYPE } from 'src/dashboard/util/componentTypes';
 import { DASHBOARD_ROOT_ID } from 'src/dashboard/util/constants';
 import newComponentFactory from 'src/dashboard/util/newComponentFactory';
@@ -38,8 +41,8 @@ export default function PagesPanel({ topLevelPages, editMode, onClose }) {
   const dispatch = useDispatch();
   const theme = useTheme();
   const dashboardLayout = useSelector(state => state.dashboardLayout.present);
-  const directPathToChild = useSelector(
-    state => state.dashboardState.directPathToChild,
+  const activePagePath = useSelector(
+    state => state.dashboardState.activePagePath ?? [],
   );
   const [editingPageId, setEditingPageId] = useState(null);
   const [editingName, setEditingName] = useState('');
@@ -48,17 +51,17 @@ export default function PagesPanel({ topLevelPages, editMode, onClose }) {
   const pagesId = topLevelPages?.id;
 
   const activePageId =
-    pageIds.find(pid => directPathToChild?.includes(pid)) || pageIds[0];
+    pageIds.find(pid => activePagePath?.includes(pid)) || pageIds[0];
 
   const handlePageClick = useCallback(
     pageId => {
       if (!topLevelPages) return;
       const idx = pageIds.indexOf(pageId);
       const path = getDirectPathToTabIndex(topLevelPages, idx);
+      dispatch(setActivePagePath(path));
       dispatch(setDirectPathToChild(path));
-      if (onClose) onClose();
     },
-    [dispatch, topLevelPages, pageIds, onClose],
+    [dispatch, topLevelPages, pageIds],
   );
 
   const handleAddPage = useCallback(() => {
@@ -381,7 +384,7 @@ export default function PagesPanel({ topLevelPages, editMode, onClose }) {
               }
             `}
           >
-            <Icons.PlusSmall iconSize="s" />
+            <Icons.PlusOutlined iconSize="s" />
             {t('Добавить страницу')}
           </button>
         </div>

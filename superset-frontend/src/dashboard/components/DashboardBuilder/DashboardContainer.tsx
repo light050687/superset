@@ -118,6 +118,9 @@ const DashboardContainer: FC<DashboardContainerProps> = ({ topLevelTabs, topLeve
   const directPathToChild = useSelector<RootState, string[]>(
     state => state.dashboardState.directPathToChild,
   );
+  const activePagePath = useSelector<RootState, string[]>(
+    state => (state.dashboardState as any).activePagePath ?? [],
+  );
   const chartIds = useChartIds();
 
   const renderedChartIds = useRenderedChartIds();
@@ -126,10 +129,15 @@ const DashboardContainer: FC<DashboardContainerProps> = ({ topLevelTabs, topLeve
     useState(false);
   const prevRenderedChartIds = useRef<number[]>([]);
   const prevTabIndexRef = useRef<number>();
+
+  // For Pages: use dedicated activePagePath (immune to filter blur clearing directPathToChild)
+  // For Tabs: use directPathToChild as before
+  const effectivePath = topLevelPages ? activePagePath : directPathToChild;
+
   const tabIndex = useMemo(() => {
     const nextTabIndex = findTabIndexByComponentId({
       currentComponent: getRootLevelTabsComponent(dashboardLayout),
-      directPathToChild,
+      directPathToChild: effectivePath,
     });
 
     if (nextTabIndex === -1) {
@@ -137,7 +145,7 @@ const DashboardContainer: FC<DashboardContainerProps> = ({ topLevelTabs, topLeve
     }
     prevTabIndexRef.current = nextTabIndex;
     return nextTabIndex;
-  }, [dashboardLayout, directPathToChild]);
+  }, [dashboardLayout, effectivePath]);
   // when all charts have rendered, enforce fresh shared labels
   const shouldForceFreshSharedLabelsColors =
     dashboardLabelsColorInitiated &&
@@ -289,6 +297,24 @@ const DashboardContainer: FC<DashboardContainerProps> = ({ topLevelTabs, topLeve
 
   const renderParentSizeChildren = useCallback(
     ({ width }) => {
+      // Pages: render ONLY the active page. Both pages share the same chart IDs
+      // (COPY_PAGE clones layout IDs but keeps chartId references). Rendering
+      // both simultaneously causes duplicate React instances of the same chart,
+      // which corrupt each other's Redux state and rendering pipeline.
+      if (topLevelPages) {
+        const activeIdx = Math.min(tabIndex, childIds.length - 1);
+        const activeId = childIds[activeIdx] || childIds[0];
+        return (
+          <DashboardGrid
+            key={activeId}
+            gridComponent={dashboardLayout[activeId]}
+            depth={DASHBOARD_ROOT_DEPTH + 1}
+            width={width}
+            isComponentVisible
+          />
+        );
+      }
+
       const tabItems = childIds.map((id, index) => ({
         key: index === 0 ? DASHBOARD_GRID_ID : index.toString(),
         label: null,
@@ -316,7 +342,7 @@ const DashboardContainer: FC<DashboardContainerProps> = ({ topLevelTabs, topLeve
         />
       );
     },
-    [activeKey, childIds, dashboardLayout, handleFocus, renderTabBar, tabIndex],
+    [activeKey, childIds, dashboardLayout, handleFocus, renderTabBar, tabIndex, topLevelPages],
   );
 
   return (

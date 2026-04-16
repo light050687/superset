@@ -212,7 +212,7 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
     <FilterBarScrollContext.Provider value={isScrolling}>
       <BarWrapper
         {...getFilterBarTestId()}
-        className={cx({ open: filtersOpen })}
+        className={cx({ open: filtersOpen || pagesOpen })}
         width={width}
         isMobile={isMobile}
       >
@@ -223,31 +223,56 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
             role="navigation"
             offset={offset}
           >
-            <Icons.FilterOutlined
-              {...getFilterBarTestId('filter-icon')}
-              iconColor={theme.colorTextTertiary}
-              iconSize="l"
-              css={{
-                cursor: 'pointer',
-                marginBottom: `${theme.sizeUnit * 3}px`,
-              }}
-              onClick={() => {
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
                 setPagesOpen(false);
                 openFiltersBar();
               }}
+              onKeyDown={(e) => e.key === 'Enter' && openFiltersBar()}
+              css={{
+                cursor: 'pointer',
+                marginBottom: `${theme.sizeUnit * 3}px`,
+                display: 'flex',
+                alignItems: 'center',
+              }}
               aria-label={t('Фильтры')}
-            />
-            {showPagesIcon && (
-              <Icons.FileOutlined
+            >
+              <Icons.FilterOutlined
+                {...getFilterBarTestId('filter-icon')}
+                iconColor={theme.colorTextTertiary}
                 iconSize="l"
-                css={{ cursor: 'pointer' }}
-                iconColor={theme.colorPrimary}
-                onClick={() => {
+              />
+            </div>
+            {showPagesIcon && (
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  e.stopPropagation();
                   setPagesOpen(true);
                   toggleFiltersBar(true);
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setPagesOpen(true);
+                    toggleFiltersBar(true);
+                  }
+                }}
+                css={{
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
                 aria-label={t('Страницы')}
-              />
+              >
+                <Icons.BookOutlined
+                  iconSize="l"
+                  iconColor={theme.colorPrimary}
+                />
+              </div>
             )}
           </CollapsedBar>
         )}

@@ -473,6 +473,8 @@ const FilterBar: FC<FiltersBarProps> = ({
         clearAllTriggers={clearAllTriggers}
         onClearAllComplete={handleClearAllComplete}
         presetButton={presetButton}
+        topLevelPages={verticalConfig.topLevelPages}
+        editMode={verticalConfig.editMode}
       />
     ) : null;
 

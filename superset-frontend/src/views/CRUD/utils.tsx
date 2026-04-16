@@ -366,15 +366,11 @@ export const CardContainer = styled.div<{
     overflow: hidden;
     display: grid;
     justify-content: start;
-    grid-gap: ${theme.sizeUnit * 12}px ${theme.sizeUnit * 4}px;
-    grid-template-columns: repeat(auto-fit, 300px);
-    max-height: ${showThumbnails ? '314' : '148'}px;
-    margin-top: ${theme.sizeUnit * -6}px;
-    padding: ${
-      showThumbnails
-        ? `${theme.sizeUnit * 8 + 3}px ${theme.sizeUnit * 20}px`
-        : `${theme.sizeUnit * 8 + 1}px ${theme.sizeUnit * 20}px`
-    };
+    grid-gap: ${theme.sizeUnit * 3}px;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    max-height: ${showThumbnails ? '340' : '160'}px;
+    margin-top: ${theme.sizeUnit * -2}px;
+    padding: ${theme.sizeUnit * 3}px ${theme.sizeUnit * 4}px;
   `}
 `;
 

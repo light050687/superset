@@ -83,6 +83,15 @@ import { FilterPlugins } from 'src/constants';
 import AgGridTableChartPlugin from '@superset-ui/plugin-chart-ag-grid-table';
 import TimeTableChartPlugin from '../TimeTable';
 import { SupersetPluginChartKpiCard } from 'superset-plugin-chart-kpi-card';
+import { SupersetPluginChartParetoCard } from 'superset-plugin-chart-pareto-card';
+import { SupersetPluginChartStructureDonut } from 'superset-plugin-chart-structure-donut';
+import { SupersetPluginChartBullet } from 'superset-plugin-chart-bullet';
+import { SupersetPluginChartVelocityDiverging } from 'superset-plugin-chart-velocity-diverging';
+import { SupersetPluginChartRankedBars } from 'superset-plugin-chart-ranked-bars';
+import { SupersetPluginChartHeatmapPivot } from 'superset-plugin-chart-heatmap-pivot';
+import { SupersetPluginChartScatterRisk } from 'superset-plugin-chart-scatter-risk';
+import { SupersetPluginChartWriteoffsTimeseries } from 'superset-plugin-chart-writeoffs-timeseries';
+import { SupersetPluginChartRankedStores } from 'superset-plugin-chart-ranked-stores';
 
 export default class MainPreset extends Preset {
   constructor() {
@@ -109,6 +118,29 @@ export default class MainPreset extends Preset {
           key: VizType.BigNumberTotal,
         }),
         new SupersetPluginChartKpiCard().configure({ key: 'ext-kpi-card' }),
+        new SupersetPluginChartParetoCard().configure({ key: 'ext-pareto-card' }),
+        new SupersetPluginChartStructureDonut().configure({
+          key: 'ext-structure-donut',
+        }),
+        new SupersetPluginChartBullet().configure({ key: 'ext-bullet-chart' }),
+        new SupersetPluginChartVelocityDiverging().configure({
+          key: 'ext-velocity-diverging',
+        }),
+        new SupersetPluginChartRankedBars().configure({
+          key: 'ext-ranked-bars',
+        }),
+        new SupersetPluginChartHeatmapPivot().configure({
+          key: 'ext-heatmap-pivot',
+        }),
+        new SupersetPluginChartScatterRisk().configure({
+          key: 'ext-scatter-risk',
+        }),
+        new SupersetPluginChartWriteoffsTimeseries().configure({
+          key: 'ext-writeoffs-timeseries',
+        }),
+        new SupersetPluginChartRankedStores().configure({
+          key: 'ext-ranked-stores',
+        }),
         new EchartsBoxPlotChartPlugin().configure({ key: VizType.BoxPlot }),
         new BubbleChartPlugin().configure({ key: VizType.LegacyBubble }),
         new BulletChartPlugin().configure({ key: VizType.Bullet }),
