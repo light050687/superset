@@ -151,40 +151,79 @@ _DS2_COMMON_TOKENS = {
 }
 
 # --- DS 2.0: AntD тема (светлая) ---
+# Переопределяем ВСЕ фоновые/текстовые/fill-токены, чтобы AntD не
+# подмешивал colorPrimary в свою автогенерируемую palette (иначе
+# карточки/кнопки получают синеватый оттенок вместо нейтрального серого).
 THEME_DEFAULT = {
     "algorithm": "default",
     "token": {
         **_DS2_COMMON_TOKENS,
-        "colorBgBase": "#FFFFFF",
-        "colorBgLayout": "#F3F3F3",
-        "colorTextBase": "#0A0A0A",
-        "colorPrimary": "#3B8BD9",
+        # --- фоны ---
+        "colorBgBase": "#FFFFFF",       # --s
+        "colorBgLayout": "#F3F3F3",     # --bg (фон layout)
+        "colorBgContainer": "#FFFFFF",  # --s (фон карточек)
+        "colorBgElevated": "#FFFFFF",   # --s (модалки, dropdown)
+        "colorBgSpotlight": "#0A0A0A",  # --ink (тултипы)
+        "colorBgMask": "rgba(10, 10, 10, 0.45)",
+        # --- текст ---
+        "colorTextBase": "#0A0A0A",     # --ink
+        "colorText": "#0A0A0A",         # --ink
+        "colorTextSecondary": "#555555",   # --g600
+        "colorTextTertiary": "#737373",    # --g500
+        "colorTextQuaternary": "#999999",  # --g400 (плейсхолдеры ≥18px)
+        # --- заливки (hover, backgrounds, divs) ---
+        "colorFill": "#DCDCDC",           # --g200
+        "colorFillSecondary": "#EBEBEB",  # --g100
+        "colorFillTertiary": "#F7F7F7",   # --g50
+        "colorFillQuaternary": "rgba(10, 10, 10, 0.02)",
+        # --- бренд/статус ---
+        "colorPrimary": "#3B8BD9",      # --c-sky
         "colorLink": "#3B8BD9",
         "colorInfo": "#3B8BD9",
-        "colorSuccess": "#16A34A",
-        "colorError": "#DC2626",
-        "colorWarning": "#CCB604",
-        "colorBorder": "#DCDCDC",
-        "colorBorderSecondary": "#EBEBEB",
+        "colorSuccess": "#16A34A",      # --up
+        "colorError": "#DC2626",        # --dn
+        "colorWarning": "#CCB604",      # --wn
+        # --- бордеры ---
+        "colorBorder": "#DCDCDC",          # --g200
+        "colorBorderSecondary": "#EBEBEB", # --g100
     },
 }
 
 # --- DS 2.0: AntD тема (тёмная) ---
+# Каждый оттенок серого явно прокинут из нашей 8-ступенчатой шкалы,
+# чтобы AntD dark algorithm не тонировал фоны в primary (#5CAAF0).
 THEME_DARK = {
     "algorithm": "dark",
     "token": {
         **_DS2_COMMON_TOKENS,
-        "colorBgBase": "#171A1E",
-        "colorBgLayout": "#0F1114",
-        "colorTextBase": "#E6E9EF",
-        "colorPrimary": "#5CAAF0",
+        # --- фоны ---
+        "colorBgBase": "#171A1E",       # --s
+        "colorBgLayout": "#0F1114",     # --bg
+        "colorBgContainer": "#171A1E",  # --s (КАРТОЧКИ — было #242D3A, теперь нейтральные)
+        "colorBgElevated": "#1B1E22",   # --g100 (модалки/dropdown чуть светлее)
+        "colorBgSpotlight": "#171A1E",  # --s (тултипы на dark)
+        "colorBgMask": "rgba(0, 0, 0, 0.55)",
+        # --- текст ---
+        "colorTextBase": "#E6E9EF",     # --ink
+        "colorText": "#E6E9EF",         # --ink (85%-альфа не используем — иначе прозрачность)
+        "colorTextSecondary": "#9BA3AE",   # --g600
+        "colorTextTertiary": "#7B8390",    # --g500
+        "colorTextQuaternary": "#555C65",  # --g400
+        # --- заливки ---
+        "colorFill": "#272B30",           # --g200
+        "colorFillSecondary": "#1B1E22",  # --g100
+        "colorFillTertiary": "#131619",   # --g50
+        "colorFillQuaternary": "rgba(230, 233, 239, 0.04)",
+        # --- бренд/статус ---
+        "colorPrimary": "#5CAAF0",      # --c-sky (dark)
         "colorLink": "#5CAAF0",
         "colorInfo": "#5CAAF0",
-        "colorSuccess": "#34D399",
-        "colorError": "#F87171",
-        "colorWarning": "#F8F571",
-        "colorBorder": "#272B30",
-        "colorBorderSecondary": "#1B1E22",
+        "colorSuccess": "#34D399",      # --up (dark)
+        "colorError": "#F87171",        # --dn (dark)
+        "colorWarning": "#F8F571",      # --wn (dark)
+        # --- бордеры ---
+        "colorBorder": "#272B30",          # --g200
+        "colorBorderSecondary": "#1B1E22", # --g100
     },
 }
 
