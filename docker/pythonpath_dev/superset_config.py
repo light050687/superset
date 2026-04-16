@@ -113,12 +113,10 @@ WEBDRIVER_BASEURL_USER_FRIENDLY = (
 )
 SQLLAB_CTAS_NO_LIMIT = True
 
-# --- DS 2.0: шрифты через Google Fonts <link> ---
-# Superset автоматически инжектит эти URL в <head> через spa.html:65
-CUSTOM_FONT_URLS = [
-    "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap",
-    "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap",
-]
+# --- DS 2.0: шрифты ---
+# Manrope + JetBrains Mono загружаются локально через @font-face
+# в head_custom_extra.html (файлы в superset/static/assets/fonts/).
+# CUSTOM_FONT_URLS не используем — Google Fonts заблокирован корпсетью в Chrome.
 
 # --- DS 2.0: общие AntD токены (размерная сетка, радиусы, отступы) ---
 _DS2_COMMON_TOKENS = {
