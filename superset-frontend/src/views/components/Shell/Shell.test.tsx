@@ -13,6 +13,7 @@ import { fireEvent, render, screen } from 'spec/helpers/testing-library';
 import { UiConfigContext } from 'src/components/UiConfigContext';
 import { Rail } from './Rail';
 import { Drawer } from './Drawer';
+import { Shell } from './Shell';
 import { ShellProvider } from './ShellContext';
 
 const uiConfigShown = {
@@ -148,5 +149,34 @@ describe('<Drawer>', () => {
     );
     fireEvent.click(screen.getByLabelText('Создать'));
     expect(screen.getByText('Я контент create')).toBeInTheDocument();
+  });
+});
+
+describe('<Shell> embedded-режим', () => {
+  it('при hideNav=true рендерит только children без Rail/Drawer', () => {
+    const uiHidden = { ...uiConfigShown, hideNav: true };
+    render(
+      <UiConfigContext.Provider value={uiHidden}>
+        <Shell user={undefined}>
+          <div>Дашборд без shell</div>
+        </Shell>
+      </UiConfigContext.Provider>,
+      { useRouter: true, useTheme: true },
+    );
+    expect(screen.getByText('Дашборд без shell')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Главная навигация')).toBeNull();
+  });
+
+  it('при hideNav=false рендерит Rail + children', () => {
+    render(
+      <UiConfigContext.Provider value={uiConfigShown}>
+        <Shell user={undefined}>
+          <div>Обычный режим</div>
+        </Shell>
+      </UiConfigContext.Provider>,
+      { useRouter: true, useTheme: true },
+    );
+    expect(screen.getByText('Обычный режим')).toBeInTheDocument();
+    expect(screen.getByLabelText('Главная навигация')).toBeInTheDocument();
   });
 });

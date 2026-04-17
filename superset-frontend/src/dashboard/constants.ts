@@ -34,7 +34,10 @@ export const PLACEHOLDER_DATASOURCE: Datasource = {
   description: '',
 };
 
-export const MAIN_HEADER_HEIGHT = 53;
+// Высота верхнего навигационного header'а Superset. После Этапа 1
+// (Shell v2 с боковым Rail) top-bar больше не используется, поэтому
+// значение 0 — sticky filter bar и прочие элементы рассчитываются от top=0.
+export const MAIN_HEADER_HEIGHT = 0;
 export const CLOSED_FILTER_BAR_WIDTH = 32;
 export const OPEN_FILTER_BAR_WIDTH = 260;
 export const OPEN_FILTER_BAR_MAX_WIDTH = 550;

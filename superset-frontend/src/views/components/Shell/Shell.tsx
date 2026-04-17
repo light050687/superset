@@ -20,11 +20,14 @@ import {
   useState,
 } from 'react';
 import { useUiConfig } from 'src/components/UiConfigContext';
+import { URL_PARAMS } from 'src/constants';
+import { DashboardStandaloneMode } from 'src/dashboard/util/constants';
 import { AiFullView } from 'src/features/ai';
 import { CatalogDrawer } from 'src/features/catalog';
 import { DS2_VARS } from 'src/theme/ds2';
 import { useThemeContext } from 'src/theme/ThemeProvider';
 import type { BootstrapUser, MenuData } from 'src/types/bootstrapTypes';
+import { getUrlParam } from 'src/utils/urlUtils';
 import { CommandPalette } from './CommandPalette';
 import { CreateDrawer } from './CreateDrawer';
 import { Drawer } from './Drawer';
@@ -155,8 +158,16 @@ export const Shell: FC<ShellProps> = ({
     [drawerContent],
   );
 
-  if (ui.hideNav) {
-    // embedded / standalone — shell не рендерится
+  // Shell скрывается в:
+  // - embedded-режиме (hideNav через URL_PARAMS.uiConfig)
+  // - URL_PARAMS.standalone ≥ HideNav (iframe-встраивание, публичные ссылки)
+  const standaloneMode = getUrlParam(URL_PARAMS.standalone);
+  const hideShell =
+    ui.hideNav ||
+    (standaloneMode !== null &&
+      Number(standaloneMode) >= DashboardStandaloneMode.HideNav);
+
+  if (hideShell) {
     return <>{children}</>;
   }
 
