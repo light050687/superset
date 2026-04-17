@@ -10,14 +10,22 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 import { styled, ThemeMode } from '@superset-ui/core';
-import { type FC, type ReactNode, useCallback, useMemo } from 'react';
+import {
+  type FC,
+  type ReactNode,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useUiConfig } from 'src/components/UiConfigContext';
 import { CatalogDrawer } from 'src/features/catalog';
 import { DS2_VARS } from 'src/theme/ds2';
 import { useThemeContext } from 'src/theme/ThemeProvider';
-import type { BootstrapUser } from 'src/types/bootstrapTypes';
+import type { BootstrapUser, MenuData } from 'src/types/bootstrapTypes';
 import { Drawer } from './Drawer';
 import { Rail } from './Rail';
+import { SettingsDropdown } from './SettingsDropdown';
 import { ShellProvider } from './ShellContext';
 import type { DrawerKind } from './types';
 
@@ -38,6 +46,10 @@ const ShellMain = styled.main`
 
 interface ShellProps {
   user?: BootstrapUser;
+  /** Bootstrap menu_data — нужен SettingsDropdown для отрисовки нативных ссылок. */
+  menu?: MenuData;
+  /** Возвращает true, если URL обрабатывается React Router (не server-rendered). */
+  isFrontendRoute?: (url?: string) => boolean;
   children?: ReactNode;
   /** Контент для catalog/tools/create drawer (передаётся извне по мере реализации этапов). */
   drawerContent?: Partial<Record<DrawerKind, ReactNode>>;
@@ -47,8 +59,6 @@ interface ShellProps {
   onOpenAi?: () => void;
   /** Открытие календаря. */
   onOpenCalendar?: () => void;
-  /** Открытие профиля/настроек. */
-  onOpenSettings?: () => void;
 }
 
 function extractInitials(user?: BootstrapUser): string {
@@ -69,15 +79,18 @@ function extractInitials(user?: BootstrapUser): string {
  */
 export const Shell: FC<ShellProps> = ({
   user,
+  menu,
+  isFrontendRoute,
   children,
   drawerContent,
   onOpenSearch,
   onOpenAi,
   onOpenCalendar,
-  onOpenSettings,
 }) => {
   const ui = useUiConfig();
   const themeCtx = useThemeContext();
+  const settingsButtonRef = useRef<HTMLButtonElement>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const onToggleTheme = useCallback(() => {
     if (!themeCtx) return;
@@ -85,6 +98,11 @@ export const Shell: FC<ShellProps> = ({
       themeCtx.themeMode === ThemeMode.DARK ? ThemeMode.DEFAULT : ThemeMode.DARK;
     themeCtx.setThemeMode(next);
   }, [themeCtx]);
+
+  const handleOpenSettings = useCallback(() => {
+    setSettingsOpen(prev => !prev);
+  }, []);
+  const handleCloseSettings = useCallback(() => setSettingsOpen(false), []);
 
   // Дефолтный контент для catalog drawer — кастомный можно
   // подменить через проп drawerContent.catalog.
@@ -111,11 +129,22 @@ export const Shell: FC<ShellProps> = ({
           onOpenSearch={onOpenSearch}
           onOpenAi={onOpenAi}
           onOpenCalendar={onOpenCalendar}
-          onOpenSettings={onOpenSettings}
+          onOpenSettings={handleOpenSettings}
           onToggleTheme={onToggleTheme}
+          settingsButtonRef={settingsButtonRef}
         />
         <Drawer content={mergedDrawerContent} />
         <ShellMain>{children}</ShellMain>
+        {menu ? (
+          <SettingsDropdown
+            anchor={settingsButtonRef.current}
+            open={settingsOpen}
+            onClose={handleCloseSettings}
+            user={user}
+            menu={menu}
+            isFrontendRoute={isFrontendRoute}
+          />
+        ) : null}
       </ShellRoot>
     </ShellProvider>
   );

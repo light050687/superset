@@ -10,7 +10,7 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 import { styled, t } from '@superset-ui/core';
-import { type FC, useMemo } from 'react';
+import { type FC, type RefObject, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 import { useShell } from './ShellContext';
@@ -165,6 +165,8 @@ interface RailProps {
   aiBadgeColor?: string;
   /** Бейдж на календаре. */
   calendarBadgeColor?: string;
+  /** Ref на кнопку настроек (нужен SettingsDropdown для позиционирования). */
+  settingsButtonRef?: RefObject<HTMLButtonElement>;
 }
 
 export const Rail: FC<RailProps> = ({
@@ -178,6 +180,7 @@ export const Rail: FC<RailProps> = ({
   onOpenSettings,
   aiBadgeColor,
   calendarBadgeColor,
+  settingsButtonRef,
 }) => {
   const history = useHistory();
   const { openedDrawer, toggleDrawer, activeRailId } = useShell();
@@ -286,6 +289,7 @@ export const Rail: FC<RailProps> = ({
       return (
         <RailAvatar
           key={key}
+          ref={settingsButtonRef}
           type="button"
           onClick={() => handleClick(btn)}
           aria-label={btn.label}

@@ -34,7 +34,7 @@ import getBootstrapData, { applicationRoot } from 'src/utils/getBootstrapData';
 import ToastContainer from 'src/components/MessageToasts/ToastContainer';
 import setupApp from 'src/setup/setupApp';
 import setupPlugins from 'src/setup/setupPlugins';
-import { routes } from 'src/views/routes';
+import { routes, isFrontendRoute } from 'src/views/routes';
 import { Logger, LOG_ACTIONS_SPA_NAVIGATION } from 'src/logger/LogUtils';
 import setupExtensions from 'src/setup/setupExtensions';
 import { logEvent } from 'src/logger/actions';
@@ -75,7 +75,11 @@ const App = () => (
     <ScrollToTop />
     <LocationPathnameLogger />
     <RootContextProviders>
-      <Shell user={bootstrapData.user}>
+      <Shell
+        user={bootstrapData.user}
+        menu={bootstrapData.common.menu_data}
+        isFrontendRoute={isFrontendRoute}
+      >
         <Switch>
           {routes.map(
             ({ path, Component, props = {}, Fallback = Loading }) => (

@@ -12,5 +12,6 @@
 export { Shell } from './Shell';
 export { Rail, RAIL_WIDTH } from './Rail';
 export { Drawer, DRAWER_WIDTH } from './Drawer';
+export { SettingsDropdown } from './SettingsDropdown';
 export { ShellProvider, useShell } from './ShellContext';
 export type { DrawerKind, RailButtonDescriptor } from './types';
