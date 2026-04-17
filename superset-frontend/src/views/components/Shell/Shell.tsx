@@ -14,6 +14,7 @@ import {
   type FC,
   type ReactNode,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -23,10 +24,13 @@ import { CatalogDrawer } from 'src/features/catalog';
 import { DS2_VARS } from 'src/theme/ds2';
 import { useThemeContext } from 'src/theme/ThemeProvider';
 import type { BootstrapUser, MenuData } from 'src/types/bootstrapTypes';
+import { CommandPalette } from './CommandPalette';
+import { CreateDrawer } from './CreateDrawer';
 import { Drawer } from './Drawer';
 import { Rail } from './Rail';
 import { SettingsDropdown } from './SettingsDropdown';
 import { ShellProvider } from './ShellContext';
+import { ToolsDrawer } from './ToolsDrawer';
 import type { DrawerKind } from './types';
 
 const ShellRoot = styled.div`
@@ -91,6 +95,7 @@ export const Shell: FC<ShellProps> = ({
   const themeCtx = useThemeContext();
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   const onToggleTheme = useCallback(() => {
     if (!themeCtx) return;
@@ -104,11 +109,28 @@ export const Shell: FC<ShellProps> = ({
   }, []);
   const handleCloseSettings = useCallback(() => setSettingsOpen(false), []);
 
-  // Дефолтный контент для catalog drawer — кастомный можно
-  // подменить через проп drawerContent.catalog.
+  const handleOpenPalette = useCallback(() => setPaletteOpen(true), []);
+  const handleClosePalette = useCallback(() => setPaletteOpen(false), []);
+
+  // Глобальный Ctrl+K / Cmd+K. Работает на любой странице под Shell.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const modifier = e.ctrlKey || e.metaKey;
+      if (modifier && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setPaletteOpen(prev => !prev);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Дефолтный контент drawer — можно переопределить через проп drawerContent.
   const mergedDrawerContent = useMemo(
     () => ({
       catalog: <CatalogDrawer />,
+      tools: <ToolsDrawer />,
+      create: <CreateDrawer />,
       ...drawerContent,
     }),
     [drawerContent],
@@ -126,7 +148,7 @@ export const Shell: FC<ShellProps> = ({
       <ShellRoot>
         <Rail
           userInitials={initials}
-          onOpenSearch={onOpenSearch}
+          onOpenSearch={onOpenSearch ?? handleOpenPalette}
           onOpenAi={onOpenAi}
           onOpenCalendar={onOpenCalendar}
           onOpenSettings={handleOpenSettings}
@@ -145,6 +167,11 @@ export const Shell: FC<ShellProps> = ({
             isFrontendRoute={isFrontendRoute}
           />
         ) : null}
+        <CommandPalette
+          open={paletteOpen}
+          onClose={handleClosePalette}
+          onAskAi={onOpenAi}
+        />
       </ShellRoot>
     </ShellProvider>
   );
