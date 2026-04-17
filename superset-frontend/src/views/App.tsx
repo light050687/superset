@@ -29,12 +29,12 @@ import { css } from '@superset-ui/core';
 import { Layout, Loading } from '@superset-ui/core/components';
 import { setupAGGridModules } from '@superset-ui/core/components/ThemedAgGridReact';
 import { ErrorBoundary } from 'src/components';
-import Menu from 'src/features/home/Menu';
+import { Shell } from 'src/views/components/Shell';
 import getBootstrapData, { applicationRoot } from 'src/utils/getBootstrapData';
 import ToastContainer from 'src/components/MessageToasts/ToastContainer';
 import setupApp from 'src/setup/setupApp';
 import setupPlugins from 'src/setup/setupPlugins';
-import { routes, isFrontendRoute } from 'src/views/routes';
+import { routes } from 'src/views/routes';
 import { Logger, LOG_ACTIONS_SPA_NAVIGATION } from 'src/logger/LogUtils';
 import setupExtensions from 'src/setup/setupExtensions';
 import { logEvent } from 'src/logger/actions';
@@ -75,34 +75,34 @@ const App = () => (
     <ScrollToTop />
     <LocationPathnameLogger />
     <RootContextProviders>
-      <Menu
-        data={bootstrapData.common.menu_data}
-        isFrontendRoute={isFrontendRoute}
-      />
-      <Switch>
-        {routes.map(({ path, Component, props = {}, Fallback = Loading }) => (
-          <Route path={path} key={path}>
-            <Suspense fallback={<Fallback />}>
-              <Layout>
-                <Layout.Content
-                  css={css`
-                    display: flex;
-                    flex-direction: column;
-                  `}
-                >
-                  <ErrorBoundary
-                    css={css`
-                      margin: 16px;
-                    `}
-                  >
-                    <Component user={bootstrapData.user} {...props} />
-                  </ErrorBoundary>
-                </Layout.Content>
-              </Layout>
-            </Suspense>
-          </Route>
-        ))}
-      </Switch>
+      <Shell user={bootstrapData.user}>
+        <Switch>
+          {routes.map(
+            ({ path, Component, props = {}, Fallback = Loading }) => (
+              <Route path={path} key={path}>
+                <Suspense fallback={<Fallback />}>
+                  <Layout>
+                    <Layout.Content
+                      css={css`
+                        display: flex;
+                        flex-direction: column;
+                      `}
+                    >
+                      <ErrorBoundary
+                        css={css`
+                          margin: 16px;
+                        `}
+                      >
+                        <Component user={bootstrapData.user} {...props} />
+                      </ErrorBoundary>
+                    </Layout.Content>
+                  </Layout>
+                </Suspense>
+              </Route>
+            ),
+          )}
+        </Switch>
+      </Shell>
       <ToastContainer />
     </RootContextProviders>
   </Router>
