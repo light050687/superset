@@ -19,6 +19,16 @@
 import 'src/public-path';
 
 import ReactDOM from 'react-dom';
+import initPreamble from '../preamble';
 import App from './App';
 
-ReactDOM.render(<App />, document.getElementById('app'));
+// Await language pack loading before first render (upstream PR #36893)
+// This prevents the English "flash" when BABEL_DEFAULT_LOCALE != 'en'.
+(async () => {
+  try {
+    await initPreamble();
+  } finally {
+    // Always render the app, even if preamble fails
+    ReactDOM.render(<App />, document.getElementById('app'));
+  }
+})();
