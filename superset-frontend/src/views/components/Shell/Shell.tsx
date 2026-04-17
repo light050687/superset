@@ -20,6 +20,7 @@ import {
   useState,
 } from 'react';
 import { useUiConfig } from 'src/components/UiConfigContext';
+import { AiFullView } from 'src/features/ai';
 import { CatalogDrawer } from 'src/features/catalog';
 import { DS2_VARS } from 'src/theme/ds2';
 import { useThemeContext } from 'src/theme/ThemeProvider';
@@ -59,7 +60,7 @@ interface ShellProps {
   drawerContent?: Partial<Record<DrawerKind, ReactNode>>;
   /** Открытие команды поиска (Ctrl+K). */
   onOpenSearch?: () => void;
-  /** Открытие AI-режима. */
+  /** Внешний хендлер AI (если не задан — используется встроенный AiFullView). */
   onOpenAi?: () => void;
   /** Открытие календаря. */
   onOpenCalendar?: () => void;
@@ -96,6 +97,8 @@ export const Shell: FC<ShellProps> = ({
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiSeedQuery, setAiSeedQuery] = useState<string | undefined>(undefined);
 
   const onToggleTheme = useCallback(() => {
     if (!themeCtx) return;
@@ -111,6 +114,22 @@ export const Shell: FC<ShellProps> = ({
 
   const handleOpenPalette = useCallback(() => setPaletteOpen(true), []);
   const handleClosePalette = useCallback(() => setPaletteOpen(false), []);
+
+  const handleOpenAi = useCallback(
+    (seed?: string) => {
+      if (onOpenAi) {
+        onOpenAi();
+        return;
+      }
+      setAiSeedQuery(seed);
+      setAiOpen(true);
+    },
+    [onOpenAi],
+  );
+  const handleCloseAi = useCallback(() => {
+    setAiOpen(false);
+    setAiSeedQuery(undefined);
+  }, []);
 
   // Глобальный Ctrl+K / Cmd+K. Работает на любой странице под Shell.
   useEffect(() => {
@@ -149,11 +168,12 @@ export const Shell: FC<ShellProps> = ({
         <Rail
           userInitials={initials}
           onOpenSearch={onOpenSearch ?? handleOpenPalette}
-          onOpenAi={onOpenAi}
+          onOpenAi={() => handleOpenAi()}
           onOpenCalendar={onOpenCalendar}
           onOpenSettings={handleOpenSettings}
           onToggleTheme={onToggleTheme}
           settingsButtonRef={settingsButtonRef}
+          aiBadgeColor={DS2_VARS.up}
         />
         <Drawer content={mergedDrawerContent} />
         <ShellMain>{children}</ShellMain>
@@ -170,7 +190,13 @@ export const Shell: FC<ShellProps> = ({
         <CommandPalette
           open={paletteOpen}
           onClose={handleClosePalette}
-          onAskAi={onOpenAi}
+          onAskAi={query => handleOpenAi(query)}
+        />
+        <AiFullView
+          open={aiOpen}
+          onClose={handleCloseAi}
+          user={user}
+          seedQuery={aiSeedQuery}
         />
       </ShellRoot>
     </ShellProvider>
