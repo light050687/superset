@@ -18,7 +18,7 @@
 import logging
 from typing import Optional
 
-from flask import flash, g, redirect
+from flask import flash, g, redirect, request
 from flask_appbuilder import expose
 from flask_appbuilder._compat import as_unicode
 from flask_appbuilder.const import LOGMSG_ERR_SEC_NO_REGISTER_HASH
@@ -40,7 +40,15 @@ class SupersetAuthView(BaseSupersetView, AuthView):
         if g.user is not None and g.user.is_authenticated:
             return redirect(self.appbuilder.get_url_for_index)
 
-        return super().render_app_template()
+        # Кастомный брендированный login-шаблон (DS 2.0 / МРТС Analytics).
+        # POST /login/ обрабатывается FAB AuthDBView (отдельно зарегистрирован
+        # на том же URL с methods=["GET","POST"]) — форма сабмитится туда.
+        return self.render_template(
+            "superset/login.html",
+            title=self.appbuilder.app_name,
+            appbuilder=self.appbuilder,
+            next=request.args.get("next", ""),
+        )
 
 
 class SupersetRegisterUserView(BaseSupersetView):
