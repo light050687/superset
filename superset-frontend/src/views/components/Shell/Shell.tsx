@@ -10,8 +10,9 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 import { styled, ThemeMode } from '@superset-ui/core';
-import { type FC, type ReactNode, useCallback } from 'react';
+import { type FC, type ReactNode, useCallback, useMemo } from 'react';
 import { useUiConfig } from 'src/components/UiConfigContext';
+import { CatalogDrawer } from 'src/features/catalog';
 import { DS2_VARS } from 'src/theme/ds2';
 import { useThemeContext } from 'src/theme/ThemeProvider';
 import type { BootstrapUser } from 'src/types/bootstrapTypes';
@@ -85,6 +86,16 @@ export const Shell: FC<ShellProps> = ({
     themeCtx.setThemeMode(next);
   }, [themeCtx]);
 
+  // Дефолтный контент для catalog drawer — кастомный можно
+  // подменить через проп drawerContent.catalog.
+  const mergedDrawerContent = useMemo(
+    () => ({
+      catalog: <CatalogDrawer />,
+      ...drawerContent,
+    }),
+    [drawerContent],
+  );
+
   if (ui.hideNav) {
     // embedded / standalone — shell не рендерится
     return <>{children}</>;
@@ -103,7 +114,7 @@ export const Shell: FC<ShellProps> = ({
           onOpenSettings={onOpenSettings}
           onToggleTheme={onToggleTheme}
         />
-        <Drawer content={drawerContent} />
+        <Drawer content={mergedDrawerContent} />
         <ShellMain>{children}</ShellMain>
       </ShellRoot>
     </ShellProvider>
