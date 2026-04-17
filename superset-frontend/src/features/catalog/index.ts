@@ -27,3 +27,14 @@ export {
   type DragItemPayload,
 } from './types';
 export * as catalogApi from './api';
+// Прямые реэкспорты часто используемых функций (чтобы не тащить namespace catalogApi в компонентах).
+export {
+  assignCatalogItems,
+  createCatalogFolder,
+  deleteCatalogFolder,
+  fetchCatalogTree,
+  listCatalogItems,
+  moveCatalogFolder,
+  unassignCatalogItems,
+  updateCatalogFolder,
+} from './api';
