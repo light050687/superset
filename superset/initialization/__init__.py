@@ -150,9 +150,14 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         #
         # pylint: disable=import-outside-toplevel,too-many-locals,too-many-statements
         from superset.advanced_data_type.api import AdvancedDataTypeRestApi
+        from superset.ai_chats.api import (
+            AiChatFolderRestApi,
+            AiChatSessionRestApi,
+        )
         from superset.annotation_layers.annotations.api import AnnotationRestApi
         from superset.annotation_layers.api import AnnotationLayerRestApi
         from superset.async_events.api import AsyncEventsRestApi
+        from superset.catalog_folders.api import CatalogFolderRestApi
         from superset.available_domains.api import AvailableDomainsRestApi
         from superset.cachekeys.api import CacheRestApi
         from superset.charts.api import ChartRestApi
@@ -241,7 +246,10 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         appbuilder.add_api(AsyncEventsRestApi)
         appbuilder.add_api(AdvancedDataTypeRestApi)
         appbuilder.add_api(AvailableDomainsRestApi)
+        appbuilder.add_api(AiChatFolderRestApi)
+        appbuilder.add_api(AiChatSessionRestApi)
         appbuilder.add_api(CacheRestApi)
+        appbuilder.add_api(CatalogFolderRestApi)
         appbuilder.add_api(ChartRestApi)
         appbuilder.add_api(ChartDataRestApi)
         appbuilder.add_api(CssTemplateRestApi)
