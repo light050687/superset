@@ -179,11 +179,19 @@ export const Shell: FC<ShellProps> = ({
     setModelId(model.id);
   }, []);
 
-  const onToggleTheme = useCallback(() => {
+  const handleToggleTheme = useCallback(() => {
     if (!themeCtx) return;
     const next =
       themeCtx.themeMode === ThemeMode.DARK ? ThemeMode.DEFAULT : ThemeMode.DARK;
     themeCtx.setThemeMode(next);
+    // Синхронизируем data-theme на html — используется CSS-переменными в
+    // head_custom_extra.html для реактивного переключения glass/dock цветов.
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute(
+        'data-theme',
+        next === ThemeMode.DARK ? 'dark' : 'light',
+      );
+    }
   }, [themeCtx]);
 
   const handleOpenSettings = useCallback(() => {
@@ -305,7 +313,7 @@ export const Shell: FC<ShellProps> = ({
           onOpenAiHistory={handleOpenAiHistory}
           onOpenCalendar={handleToggleCalendar}
           onOpenSettings={handleOpenSettings}
-          onToggleTheme={onToggleTheme}
+          onToggleTheme={handleToggleTheme}
           settingsButtonRef={settingsButtonRef}
           calendarButtonRef={calendarButtonRef}
           aiBadgeColor={DS2_VARS.up}
