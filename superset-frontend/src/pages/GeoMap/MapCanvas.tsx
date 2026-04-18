@@ -58,6 +58,9 @@ const MapCanvas: FC<MapCanvasProps> = ({
 
     const style = await loadStyle(themeRef.current);
 
+    // canvasContextAttributes поддерживается maplibre-gl, но его
+    // типы (v4.7) не описывают это поле. Cast через unknown безопасен —
+    // в runtime опция принимается корректно.
     const map = new maplibregl.Map({
       container: containerRef.current,
       style,
@@ -65,7 +68,7 @@ const MapCanvas: FC<MapCanvasProps> = ({
       zoom: DEFAULT_ZOOM,
       attributionControl: false,
       canvasContextAttributes: CANVAS_CONTEXT_ATTRIBUTES,
-    });
+    } as unknown as maplibregl.MapOptions);
 
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
     map.addControl(

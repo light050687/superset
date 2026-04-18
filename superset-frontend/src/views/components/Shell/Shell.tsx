@@ -28,6 +28,7 @@ import { DS2_VARS } from 'src/theme/ds2';
 import { useThemeContext } from 'src/theme/ThemeProvider';
 import type { BootstrapUser, MenuData } from 'src/types/bootstrapTypes';
 import { getUrlParam } from 'src/utils/urlUtils';
+import { CalendarDropdown, type CalendarEvent } from './CalendarDropdown';
 import { CommandPalette } from './CommandPalette';
 import { CreateDrawer } from './CreateDrawer';
 import { Drawer } from './Drawer';
@@ -65,8 +66,10 @@ interface ShellProps {
   onOpenSearch?: () => void;
   /** Внешний хендлер AI (если не задан — используется встроенный AiFullView). */
   onOpenAi?: () => void;
-  /** Открытие календаря. */
+  /** Внешний хендлер календаря (если задан — встроенный dropdown скрывается). */
   onOpenCalendar?: () => void;
+  /** События для встроенного календаря. */
+  calendarEvents?: CalendarEvent[];
 }
 
 function extractInitials(user?: BootstrapUser): string {
@@ -94,12 +97,15 @@ export const Shell: FC<ShellProps> = ({
   onOpenSearch,
   onOpenAi,
   onOpenCalendar,
+  calendarEvents,
 }) => {
   const ui = useUiConfig();
   const themeCtx = useThemeContext();
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
+  const calendarButtonRef = useRef<HTMLButtonElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiSeedQuery, setAiSeedQuery] = useState<string | undefined>(undefined);
 
@@ -117,6 +123,15 @@ export const Shell: FC<ShellProps> = ({
 
   const handleOpenPalette = useCallback(() => setPaletteOpen(true), []);
   const handleClosePalette = useCallback(() => setPaletteOpen(false), []);
+
+  const handleToggleCalendar = useCallback(() => {
+    if (onOpenCalendar) {
+      onOpenCalendar();
+      return;
+    }
+    setCalendarOpen(prev => !prev);
+  }, [onOpenCalendar]);
+  const handleCloseCalendar = useCallback(() => setCalendarOpen(false), []);
 
   const handleOpenAi = useCallback(
     (seed?: string) => {
@@ -180,11 +195,14 @@ export const Shell: FC<ShellProps> = ({
           userInitials={initials}
           onOpenSearch={onOpenSearch ?? handleOpenPalette}
           onOpenAi={() => handleOpenAi()}
-          onOpenCalendar={onOpenCalendar}
+          onOpenCalendar={handleToggleCalendar}
           onOpenSettings={handleOpenSettings}
           onToggleTheme={onToggleTheme}
           settingsButtonRef={settingsButtonRef}
+          calendarButtonRef={calendarButtonRef}
           aiBadgeColor={DS2_VARS.up}
+          calendarBadgeColor={DS2_VARS.cTangerine}
+          catalogBadgeColor={DS2_VARS.cSky}
         />
         <Drawer content={mergedDrawerContent} />
         <ShellMain>{children}</ShellMain>
@@ -202,6 +220,12 @@ export const Shell: FC<ShellProps> = ({
           open={paletteOpen}
           onClose={handleClosePalette}
           onAskAi={query => handleOpenAi(query)}
+        />
+        <CalendarDropdown
+          anchor={calendarButtonRef.current}
+          open={calendarOpen}
+          onClose={handleCloseCalendar}
+          events={calendarEvents}
         />
         <AiFullView
           open={aiOpen}

@@ -29,6 +29,13 @@ const DrawerAside = styled.aside<{ $open: boolean }>`
   flex-direction: column;
   z-index: 15;
 
+  /* Drawer закреплён рядом с Rail — тоже sticky, чтобы содержимое
+     (дерево каталога, списки инструментов и т.п.) оставалось на месте
+     при прокрутке основного контента. */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+
   @media print {
     display: none;
   }

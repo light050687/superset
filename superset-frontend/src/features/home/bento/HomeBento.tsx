@@ -10,7 +10,7 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 import { styled, t } from '@superset-ui/core';
-import { type FC, useCallback, useMemo } from 'react';
+import { type FC, useCallback, useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useCatalogFolders } from 'src/features/catalog';
 import { DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
@@ -25,36 +25,74 @@ import {
 } from './BentoLayout';
 import { DepartmentTile } from './DepartmentTile';
 import { useBentoData } from './useBentoData';
-import type { BentoCardSize, BentoItem } from './types';
+import type { BentoCardKind, BentoCardSize, BentoItem } from './types';
 
 const Page = styled.div`
-  padding: ${DS2_SPACE.s4}px ${DS2_SPACE.s6}px ${DS2_SPACE.s12}px;
+  padding: ${DS2_SPACE.s3}px ${DS2_SPACE.s6}px ${DS2_SPACE.s12}px;
   background: ${DS2_VARS.bg};
   min-height: 100%;
 `;
 
-const Header = styled.header`
+const MainHeader = styled.header`
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin-bottom: ${DS2_SPACE.s3}px;
+  align-items: center;
+  padding: ${DS2_SPACE.s2}px 0;
+  gap: ${DS2_SPACE.s3}px;
+  min-height: 48px;
+  margin: 0 0 ${DS2_SPACE.s2}px;
 `;
 
-const Title = styled.h1`
+const Title = styled.span`
   font-family: ${DS2_VARS.fontSans};
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-size: 15px;
+  font-weight: 700;
   color: ${DS2_VARS.ink};
-  margin: 0;
 `;
 
-const Subtitle = styled.p`
+const Subtitle = styled.span`
   font-family: ${DS2_VARS.fontMono};
   font-size: 11px;
   color: ${DS2_VARS.g500};
-  margin: 0;
-  align-self: flex-end;
+`;
+
+const Spacer = styled.div`
+  flex: 1;
+`;
+
+const Pills = styled.div`
+  display: flex;
+  gap: ${DS2_SPACE.s1}px;
+  flex-wrap: wrap;
+  margin: ${DS2_SPACE.s3}px 0 ${DS2_SPACE.s2}px;
+`;
+
+const Pill = styled.button<{ $active: boolean }>`
+  font-family: ${DS2_VARS.fontMono};
+  font-size: 11px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid
+    ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.g200)};
+  background: ${({ $active }) =>
+    $active ? 'rgba(59, 139, 217, 0.08)' : 'transparent'};
+  color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.g500)};
+  cursor: pointer;
+  transition:
+    border-color 0.12s ${DS2_VARS.ease},
+    color 0.12s ${DS2_VARS.ease},
+    background 0.12s ${DS2_VARS.ease};
+  white-space: nowrap;
+
+  &:hover {
+    border-color: ${({ $active }) =>
+      $active ? DS2_VARS.cSky : DS2_VARS.g400};
+    color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.ink)};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${DS2_VARS.cSky};
+    outline-offset: 2px;
+  }
 `;
 
 const DeptGrid = styled.div`
@@ -62,6 +100,17 @@ const DeptGrid = styled.div`
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: ${DS2_SPACE.s2}px;
 `;
+
+type PillKind = 'all' | BentoCardKind;
+
+const PILL_LABELS: Record<PillKind, string> = {
+  all: 'Все',
+  dashboard: 'Дашборд',
+  chart: 'Диаграмма',
+  geo: 'Гео',
+  table: 'Таблица',
+  doc: 'Документ',
+};
 
 /** Размеры для favorites: первые две карточки — wide, остальные medium. */
 function favoriteSize(index: number): BentoCardSize {
@@ -83,6 +132,7 @@ export const HomeBento: FC<HomeBentoProps> = ({ user }) => {
     loading: foldersLoading,
     error: foldersError,
   } = useCatalogFolders();
+  const [activePill, setActivePill] = useState<PillKind>('all');
 
   const rootFolders = useMemo(
     () =>
@@ -92,18 +142,21 @@ export const HomeBento: FC<HomeBentoProps> = ({ user }) => {
     [folders],
   );
 
-  const greeting = useMemo(() => {
-    const firstName = user?.firstName ?? user?.username ?? '';
-    if (!firstName) return t('Добро пожаловать');
-    return t('Привет, %s', firstName);
-  }, [user]);
-
   const handleSelectFolder = useCallback(
     (id: number) => {
       history.push(`/dashboard/list/?catalog_folder=${id}`);
     },
     [history],
   );
+
+  const filterByPill = useCallback(
+    (items: BentoItem[]) =>
+      activePill === 'all' ? items : items.filter(i => i.kind === activePill),
+    [activePill],
+  );
+
+  const favoritesFiltered = filterByPill(favorites);
+  const recentsFiltered = filterByPill(recents);
 
   const renderSkeletons = (count: number) =>
     Array.from({ length: count }, (_, i) => <Skeleton key={`sk-${i}`} />);
@@ -121,16 +174,37 @@ export const HomeBento: FC<HomeBentoProps> = ({ user }) => {
       />
     ));
 
+  const pillOrder: PillKind[] = [
+    'all',
+    'dashboard',
+    'chart',
+    'geo',
+    'table',
+    'doc',
+  ];
+
   return (
     <Page>
-      <Header>
-        <Title>{greeting}</Title>
-        <Subtitle>
-          {t(
-            'Избранное, недавние просмотры и департаменты',
-          )}
-        </Subtitle>
-      </Header>
+      <MainHeader>
+        <Title>{t('Главная')}</Title>
+        <Subtitle>{t('Избранное, недавние и департаменты')}</Subtitle>
+        <Spacer />
+      </MainHeader>
+
+      <Pills role="tablist" aria-label={t('Фильтр по типу')}>
+        {pillOrder.map(k => (
+          <Pill
+            key={k}
+            role="tab"
+            aria-selected={activePill === k}
+            $active={activePill === k}
+            type="button"
+            onClick={() => setActivePill(k)}
+          >
+            {t(PILL_LABELS[k])}
+          </Pill>
+        ))}
+      </Pills>
 
       {error ? (
         <BentoGrid>
@@ -144,7 +218,7 @@ export const HomeBento: FC<HomeBentoProps> = ({ user }) => {
       <BentoGrid>
         {loadingFavorites
           ? renderSkeletons(3)
-          : favorites.length === 0
+          : favoritesFiltered.length === 0
             ? (
               <EmptyBlock>
                 {t(
@@ -152,20 +226,20 @@ export const HomeBento: FC<HomeBentoProps> = ({ user }) => {
                 )}
               </EmptyBlock>
             )
-            : renderBentoItems(favorites, favoriteSize)}
+            : renderBentoItems(favoritesFiltered, favoriteSize)}
       </BentoGrid>
 
       <SectionLabel title={t('Недавние')} />
       <BentoGrid>
         {loadingRecents
           ? renderSkeletons(3)
-          : recents.length === 0
+          : recentsFiltered.length === 0
             ? (
               <EmptyBlock>
                 {t('Недавних просмотров нет.')}
               </EmptyBlock>
             )
-            : renderBentoItems(recents, () => 'medium')}
+            : renderBentoItems(recentsFiltered, () => 'medium')}
       </BentoGrid>
 
       <SectionLabel title={t('Департаменты')} />

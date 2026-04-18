@@ -199,6 +199,38 @@ const InputBox = styled.div`
   }
 `;
 
+const IconBtn = styled.button`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: ${DS2_VARS.g500};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    background 0.1s ${DS2_VARS.ease},
+    color 0.1s ${DS2_VARS.ease};
+
+  &:hover {
+    background: ${DS2_VARS.g100};
+    color: ${DS2_VARS.ink};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${DS2_VARS.cSky};
+    outline-offset: 2px;
+  }
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+`;
+
 const SendBtn = styled.button`
   width: 36px;
   height: 36px;
@@ -246,6 +278,19 @@ const MockBanner = styled.div`
 const IconClose: FC = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M3 3l10 10M13 3L3 13" />
+  </svg>
+);
+
+const IconPaperclip: FC = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <path d="M11 7l-5 5a3 3 0 11-4-4l6-6a2 2 0 113 3l-6 6a1 1 0 11-1-1l5-5" />
+  </svg>
+);
+
+const IconMic: FC = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <rect x="6" y="2" width="4" height="8" rx="2" />
+    <path d="M3 8a5 5 0 0010 0M8 13v2" />
   </svg>
 );
 
@@ -594,6 +639,22 @@ export const AiFullView: FC<AiFullViewProps> = ({
                 }}
                 aria-label={t('Вопрос ИИ-аналитику')}
               />
+              <IconBtn
+                type="button"
+                aria-label={t('Прикрепить файл')}
+                title={t('Прикрепить файл')}
+                disabled
+              >
+                <IconPaperclip />
+              </IconBtn>
+              <IconBtn
+                type="button"
+                aria-label={t('Голосовой ввод')}
+                title={t('Голосовой ввод')}
+                disabled
+              >
+                <IconMic />
+              </IconBtn>
               <SendBtn
                 type="button"
                 onClick={() => void sendQuery(query)}

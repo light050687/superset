@@ -249,6 +249,24 @@ body.no-webgl #smoke, body.no-webgl #motes, body.no-webgl #bg-canvas { display:n
 .form-input:focus-visible{outline:2px solid var(--card-foc);outline-offset:0;border-color:var(--card-foc)}
 .form-input::placeholder{color:var(--card-sub-muted);opacity:.55}
 .form-input[aria-invalid="true"]{border-color:var(--dn)}
+/* ═══ Переопределяем Chrome autofill ═══
+   Браузер ставит свой фон (голубой в light, белый в dark), игнорируя CSS.
+   Единственный способ — inset box-shadow достаточной толщины (100px) +
+   text-fill-color. Используем --s (без прозрачности) чтобы autofill не
+   просвечивал сквозь. По DS 2.0 §08 (Состояния и интеракции) autofilled
+   input должен быть визуально идентичен обычному focused input. */
+.form-input:-webkit-autofill,
+.form-input:-webkit-autofill:hover,
+.form-input:-webkit-autofill:focus,
+.form-input:-webkit-autofill:active{
+  -webkit-box-shadow:0 0 0 100px var(--s) inset !important;
+  box-shadow:0 0 0 100px var(--s) inset !important;
+  -webkit-text-fill-color:var(--card-ink) !important;
+  caret-color:var(--card-ink);
+  border:1px solid var(--card-fbr) !important;
+  /* Длинный transition предотвращает мгновенное мигание autofill-цвета */
+  transition:background-color 600000s ease-in-out 0s, color 600000s ease-in-out 0s;
+}
 .login-row{display:flex;justify-content:flex-end;align-items:center;margin-bottom:16px;margin-top:8px}
 .login-forgot{font-family:var(--f);font-size:14px;color:var(--card-foc);cursor:pointer;text-decoration:none}
 .login-forgot:hover{text-decoration:underline}

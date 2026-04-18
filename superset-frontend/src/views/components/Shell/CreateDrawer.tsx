@@ -142,6 +142,37 @@ const IconSql: FC = () => (
   </svg>
 );
 
+const IconDatabase: FC = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <ellipse cx="8" cy="3.5" rx="6" ry="2" />
+    <path d="M2 3.5v9c0 1.1 2.7 2 6 2s6-.9 6-2v-9" />
+    <path d="M2 8c0 1.1 2.7 2 6 2s6-.9 6-2" />
+  </svg>
+);
+
+const IconSavedQuery: FC = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <path d="M3 2h7l3 3v9H3z" />
+    <path d="M10 2v3h3" />
+    <path d="M5 9l1.5 1.5L10 7" />
+  </svg>
+);
+
+const IconHistory: FC = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <circle cx="8" cy="8" r="6" />
+    <path d="M8 4v4l3 2" />
+    <path d="M2 8a6 6 0 01.5-2" />
+  </svg>
+);
+
+const IconTag: FC = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <path d="M7 1.5L1.5 7l7.5 7.5L14.5 9 8.5 3 7 1.5z" />
+    <circle cx="5.5" cy="5.5" r="0.8" fill="currentColor" />
+  </svg>
+);
+
 export const CreateDrawer: FC<CreateDrawerProps> = ({ onAfterNavigate }) => {
   const history = useHistory();
   const { closeDrawer } = useShell();
@@ -201,18 +232,52 @@ export const CreateDrawer: FC<CreateDrawerProps> = ({ onAfterNavigate }) => {
 
   const data: CreateItem[] = [
     {
+      key: 'database',
+      label: t('Подключение'),
+      url: '/databaseview/list/?enable_create=true',
+      accent: DS2_VARS.cTangerine,
+      icon: <IconDatabase />,
+    },
+    {
       key: 'dataset',
       label: t('Датасет'),
       url: '/tablemodelview/list/?enable_create=true',
       accent: DS2_VARS.ink,
       icon: <IconDataset />,
     },
+  ];
+
+  const sql: CreateItem[] = [
     {
       key: 'sql',
       label: t('SQL-запрос'),
       url: '/sqllab/?new=true',
       accent: DS2_VARS.ink,
       icon: <IconSql />,
+    },
+    {
+      key: 'sql-saved',
+      label: t('Сохранённые запросы'),
+      url: '/savedqueryview/list/',
+      accent: DS2_VARS.cSky,
+      icon: <IconSavedQuery />,
+    },
+    {
+      key: 'sql-history',
+      label: t('История запросов'),
+      url: '/sqllab/history/',
+      accent: DS2_VARS.g500,
+      icon: <IconHistory />,
+    },
+  ];
+
+  const organization: CreateItem[] = [
+    {
+      key: 'tag',
+      label: t('Тег'),
+      url: '/tags/?enable_create=true',
+      accent: DS2_VARS.cFuchsia,
+      icon: <IconTag />,
     },
   ];
 
@@ -249,6 +314,10 @@ export const CreateDrawer: FC<CreateDrawerProps> = ({ onAfterNavigate }) => {
       {renderGroup(t('Документы'), documents)}
       <Divider />
       {renderGroup(t('Данные'), data)}
+      <Divider />
+      {renderGroup(t('SQL'), sql)}
+      <Divider />
+      {renderGroup(t('Организация'), organization)}
     </Body>
   );
 };

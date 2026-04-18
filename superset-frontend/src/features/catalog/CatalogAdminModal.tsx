@@ -12,12 +12,13 @@
 import { styled, t } from '@superset-ui/core';
 import { Input, Modal } from '@superset-ui/core/components';
 import { type FC, useMemo, useState } from 'react';
-import { DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
+import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 import {
   createCatalogFolder,
   deleteCatalogFolder,
   updateCatalogFolder,
 } from './api';
+import { CatalogDeleteModal } from './CatalogDeleteModal';
 import type { CatalogFolderNode } from './types';
 
 interface CatalogAdminModalProps {
@@ -131,6 +132,48 @@ const ColorInput = styled.input`
   background: transparent;
 `;
 
+const FooterRow = styled.div`
+  display: flex;
+  gap: ${DS2_SPACE.s2}px;
+  justify-content: flex-end;
+  margin-top: ${DS2_SPACE.s4}px;
+  padding-top: ${DS2_SPACE.s3}px;
+  border-top: 1px solid ${DS2_VARS.g100};
+`;
+
+const FooterBtn = styled.button<{ $primary?: boolean }>`
+  font-family: ${DS2_VARS.fontMono};
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 8px 14px;
+  border-radius: ${DS2_RADIUS.control}px;
+  cursor: pointer;
+  transition:
+    background 0.12s ${DS2_VARS.ease},
+    border-color 0.12s ${DS2_VARS.ease};
+  background: ${({ $primary }) => ($primary ? DS2_VARS.cSky : 'transparent')};
+  border: 1px solid ${({ $primary }) => ($primary ? DS2_VARS.cSky : DS2_VARS.g200)};
+  color: ${({ $primary }) => ($primary ? DS2_VARS.s : DS2_VARS.g700)};
+
+  &:hover {
+    border-color: ${({ $primary }) =>
+      $primary ? DS2_VARS.cSky : DS2_VARS.g400};
+    color: ${({ $primary }) => ($primary ? DS2_VARS.s : DS2_VARS.ink)};
+    filter: ${({ $primary }) => ($primary ? 'brightness(1.1)' : 'none')};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${DS2_VARS.cSky};
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
 function flatten(
   folders: CatalogFolderNode[],
 ): Array<{ node: CatalogFolderNode; depth: number }> {
@@ -161,8 +204,10 @@ export const CatalogAdminModal: FC<CatalogAdminModalProps> = ({
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState('#3B8BD9');
   const [newParent, setNewParent] = useState<number | null>(null);
+  const [formMode, setFormMode] = useState<'folder' | 'subfolder' | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CatalogFolderNode | null>(null);
 
   const rows = useMemo(() => flatten(folders), [folders]);
 
@@ -182,6 +227,7 @@ export const CatalogAdminModal: FC<CatalogAdminModalProps> = ({
       });
       setNewName('');
       setNewParent(null);
+      setFormMode(null);
       await onChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('Ошибка'));
@@ -190,7 +236,22 @@ export const CatalogAdminModal: FC<CatalogAdminModalProps> = ({
     }
   };
 
+  const openFolderForm = () => {
+    setFormMode('folder');
+    setNewParent(null);
+    setError(null);
+  };
+
+  const openSubfolderForm = () => {
+    setFormMode('subfolder');
+    // По умолчанию предлагаем первую корневую папку в качестве родителя.
+    const root = rows.find(r => r.node.parent_id === null);
+    setNewParent(root ? root.node.id : null);
+    setError(null);
+  };
+
   const handleRename = async (folder: CatalogFolderNode) => {
+    // eslint-disable-next-line no-alert
     const name = window.prompt(t('Новое название'), folder.name);
     if (!name || name === folder.name) return;
     try {
@@ -201,17 +262,12 @@ export const CatalogAdminModal: FC<CatalogAdminModalProps> = ({
     }
   };
 
-  const handleDelete = async (folder: CatalogFolderNode) => {
-    const confirmed = window.confirm(
-      t(
-        'Удалить папку «%s»? Подпапки станут корневыми, привязки к объектам удалятся.',
-        folder.name,
-      ),
-    );
-    if (!confirmed) return;
+  const handleDeleteConfirmed = async () => {
+    if (!deleteTarget) return;
     try {
-      await deleteCatalogFolder(folder.id);
+      await deleteCatalogFolder(deleteTarget.id);
       await onChanged();
+      setDeleteTarget(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('Ошибка'));
     }
@@ -240,13 +296,24 @@ export const CatalogAdminModal: FC<CatalogAdminModalProps> = ({
               <span style={{ flex: 1 }}>{node.name}</span>
               <Count>{node.item_count}</Count>
               <Actions>
+                <ActionBtn
+                  type="button"
+                  onClick={() => {
+                    setFormMode('subfolder');
+                    setNewParent(node.id);
+                    setError(null);
+                  }}
+                  title={t('Добавить подпапку')}
+                >
+                  {t('+ Подпапка')}
+                </ActionBtn>
                 <ActionBtn type="button" onClick={() => handleRename(node)}>
                   {t('Править')}
                 </ActionBtn>
                 <ActionBtn
                   type="button"
                   $danger
-                  onClick={() => handleDelete(node)}
+                  onClick={() => setDeleteTarget(node)}
                 >
                   {t('Удалить')}
                 </ActionBtn>
@@ -256,57 +323,77 @@ export const CatalogAdminModal: FC<CatalogAdminModalProps> = ({
         )}
       </List>
 
-      <AddRow>
-        <FormLabel>
-          {t('Название')}
-          <Input
-            value={newName}
-            onChange={e => setNewName(e.target.value)}
-            placeholder={t('Например, «Коммерция»')}
-            maxLength={255}
-          />
-        </FormLabel>
-        <FormLabel style={{ flex: '0 0 110px' }}>
-          {t('Родитель')}
-          <select
-            value={newParent ?? ''}
-            onChange={e =>
-              setNewParent(e.target.value ? Number(e.target.value) : null)
-            }
-            style={{
-              height: 32,
-              border: `1px solid ${DS2_VARS.g200}`,
-              borderRadius: 4,
-              fontFamily: DS2_VARS.fontSans,
-              fontSize: 12,
-            }}
+      {formMode ? (
+        <AddRow>
+          <FormLabel>
+            {t('Название')}
+            <Input
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              placeholder={
+                formMode === 'folder'
+                  ? t('Например, «Коммерция»')
+                  : t('Например, «Маржа»')
+              }
+              maxLength={255}
+            />
+          </FormLabel>
+          {formMode === 'subfolder' ? (
+            <FormLabel style={{ flex: '0 0 140px' }}>
+              {t('Родитель')}
+              <select
+                value={newParent ?? ''}
+                onChange={e =>
+                  setNewParent(e.target.value ? Number(e.target.value) : null)
+                }
+                style={{
+                  height: 32,
+                  border: `1px solid ${DS2_VARS.g200}`,
+                  borderRadius: 4,
+                  fontFamily: DS2_VARS.fontSans,
+                  fontSize: 12,
+                }}
+              >
+                <option value="">— {t('корень')} —</option>
+                {rows.map(({ node, depth }) => (
+                  <option key={node.id} value={node.id}>
+                    {'— '.repeat(depth)}
+                    {node.name}
+                  </option>
+                ))}
+              </select>
+            </FormLabel>
+          ) : null}
+          <FormLabel style={{ flex: '0 0 50px' }}>
+            {t('Цвет')}
+            <ColorInput
+              type="color"
+              value={newColor}
+              onChange={e => setNewColor(e.target.value)}
+            />
+          </FormLabel>
+          <ActionBtn
+            type="button"
+            onClick={handleAdd}
+            disabled={submitting}
+            style={{ alignSelf: 'flex-end', padding: '8px 14px' }}
           >
-            <option value="">— {t('корень')} —</option>
-            {rows.map(({ node, depth }) => (
-              <option key={node.id} value={node.id}>
-                {'— '.repeat(depth)}
-                {node.name}
-              </option>
-            ))}
-          </select>
-        </FormLabel>
-        <FormLabel style={{ flex: '0 0 50px' }}>
-          {t('Цвет')}
-          <ColorInput
-            type="color"
-            value={newColor}
-            onChange={e => setNewColor(e.target.value)}
-          />
-        </FormLabel>
-        <ActionBtn
-          type="button"
-          onClick={handleAdd}
-          disabled={submitting}
-          style={{ alignSelf: 'flex-end', padding: '8px 14px' }}
-        >
-          {submitting ? t('…') : t('+ Добавить')}
-        </ActionBtn>
-      </AddRow>
+            {submitting ? t('…') : t('Сохранить')}
+          </ActionBtn>
+          <ActionBtn
+            type="button"
+            onClick={() => {
+              setFormMode(null);
+              setNewName('');
+              setError(null);
+            }}
+            disabled={submitting}
+            style={{ alignSelf: 'flex-end', padding: '8px 14px' }}
+          >
+            {t('Отмена')}
+          </ActionBtn>
+        </AddRow>
+      ) : null}
 
       {error ? (
         <div
@@ -319,6 +406,26 @@ export const CatalogAdminModal: FC<CatalogAdminModalProps> = ({
           {error}
         </div>
       ) : null}
+
+      <FooterRow>
+        <FooterBtn type="button" onClick={onClose}>
+          {t('Закрыть')}
+        </FooterBtn>
+        <FooterBtn type="button" onClick={openSubfolderForm}>
+          {t('+ Подпапка')}
+        </FooterBtn>
+        <FooterBtn type="button" $primary onClick={openFolderForm}>
+          {t('+ Департамент')}
+        </FooterBtn>
+      </FooterRow>
+
+      <CatalogDeleteModal
+        open={deleteTarget !== null}
+        folderName={deleteTarget?.name ?? ''}
+        hasContents={(deleteTarget?.item_count ?? 0) > 0}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirmed}
+      />
     </Modal>
   );
 };

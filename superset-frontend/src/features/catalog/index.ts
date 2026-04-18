@@ -13,6 +13,7 @@ export { CatalogDrawer } from './CatalogDrawer';
 export { CatalogTree } from './CatalogTree';
 export { CatalogTreeNode } from './CatalogTreeNode';
 export { CatalogAdminModal } from './CatalogAdminModal';
+export { CatalogDeleteModal } from './CatalogDeleteModal';
 export {
   useCatalogFolders,
   buildCatalogTree,

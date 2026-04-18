@@ -89,47 +89,25 @@ export const ToolsDrawer: FC = () => {
     closeDrawer();
   };
 
+  // По запросу: SQL Lab, Подключения, Датасеты, Теги — перенесены в «Создать».
+  // В Инструментах остаются только просмотровые/навигационные пункты.
   const tools: Tool[] = [
-    {
-      key: 'sql-lab',
-      label: t('SQL Lab'),
-      url: '/sqllab/',
-      color: DS2_VARS.wn,
-    },
-    {
-      key: 'saved-queries',
-      label: t('Сохранённые запросы'),
-      url: '/savedqueryview/list/',
-      color: DS2_VARS.cSky,
-    },
-    {
-      key: 'query-history',
-      label: t('История запросов'),
-      url: '/sqllab/history/',
-      color: DS2_VARS.g500,
-    },
     {
       key: 'geo',
       label: t('Гео-аналитика'),
-      url: '/geomap/',
+      url: '/geo-map/',
       color: '#2DD4BF',
     },
     {
-      key: 'tags',
-      label: t('Теги'),
-      url: '/tags/',
-      color: DS2_VARS.cFuchsia,
+      key: 'dashboards',
+      label: t('Дашборды'),
+      url: '/dashboard/list/',
+      color: DS2_VARS.cSky,
     },
     {
-      key: 'databases',
-      label: t('Подключения'),
-      url: '/databaseview/list/',
-      color: DS2_VARS.cTangerine,
-    },
-    {
-      key: 'datasets',
-      label: t('Датасеты'),
-      url: '/tablemodelview/list/',
+      key: 'charts',
+      label: t('Диаграммы'),
+      url: '/chart/list/',
       color: DS2_VARS.cViolet,
     },
   ];

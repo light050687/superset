@@ -41,6 +41,19 @@ const RailNav = styled.nav`
   gap: ${DS2_SPACE.s1}px;
   z-index: 20;
 
+  /* Rail закреплён — не скроллится вместе с контентом страницы.
+     height:100vh + sticky top:0 держат rail у верхнего края вьюпорта,
+     внутренний overflow-y обеспечивает прокрутку самих кнопок если их
+     станет больше чем влезает по высоте. */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 0;
+  }
+
   @media print {
     display: none;
   }
@@ -165,8 +178,12 @@ interface RailProps {
   aiBadgeColor?: string;
   /** Бейдж на календаре. */
   calendarBadgeColor?: string;
+  /** Бейдж на каталоге (индикатор новинок). */
+  catalogBadgeColor?: string;
   /** Ref на кнопку настроек (нужен SettingsDropdown для позиционирования). */
   settingsButtonRef?: RefObject<HTMLButtonElement>;
+  /** Ref на кнопку календаря (для CalendarDropdown). */
+  calendarButtonRef?: RefObject<HTMLButtonElement>;
 }
 
 export const Rail: FC<RailProps> = ({
@@ -180,7 +197,9 @@ export const Rail: FC<RailProps> = ({
   onOpenSettings,
   aiBadgeColor,
   calendarBadgeColor,
+  catalogBadgeColor,
   settingsButtonRef,
+  calendarButtonRef,
 }) => {
   const history = useHistory();
   const { openedDrawer, toggleDrawer, activeRailId } = useShell();
@@ -198,6 +217,7 @@ export const Rail: FC<RailProps> = ({
         label: t('Каталог'),
         icon: <IconCatalog />,
         drawer: 'catalog',
+        badgeColor: catalogBadgeColor,
       },
       {
         id: 'rail-tools',
@@ -258,6 +278,7 @@ export const Rail: FC<RailProps> = ({
       onOpenSettings,
       aiBadgeColor,
       calendarBadgeColor,
+      catalogBadgeColor,
     ],
   );
 
@@ -303,6 +324,7 @@ export const Rail: FC<RailProps> = ({
     return (
       <RailButton
         key={key}
+        ref={btn.id === 'rail-calendar' ? calendarButtonRef : undefined}
         type="button"
         onClick={() => handleClick(btn)}
         aria-label={btn.label}

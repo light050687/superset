@@ -16,5 +16,9 @@ export { CreateDrawer } from './CreateDrawer';
 export { ToolsDrawer } from './ToolsDrawer';
 export { SettingsDropdown } from './SettingsDropdown';
 export { CommandPalette } from './CommandPalette';
+export {
+  CalendarDropdown,
+  type CalendarEvent,
+} from './CalendarDropdown';
 export { ShellProvider, useShell } from './ShellContext';
 export type { DrawerKind, RailButtonDescriptor } from './types';
