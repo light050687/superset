@@ -51,11 +51,15 @@ const RailNav = styled.nav`
   left: 50%;
   transform: translateX(-50%);
   height: ${DS2_VARS.dockHeight};
+  /* В мокапе глобальный box-sizing: border-box — height 58 ВКЛЮЧАЕТ
+     padding и border. Без этого dock получался 72px (58 + 12 padding + 2 border). */
+  box-sizing: border-box;
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: ${DS2_SPACE.s1}px;
-  padding: 0 ${DS2_SPACE.s2}px;
+  /* Точно по мокапу: padding 6px, gap 2px. */
+  gap: 2px;
+  padding: 6px;
   background: ${DS2_VARS.dockBg};
   backdrop-filter: ${DS2_VARS.dockFilter};
   -webkit-backdrop-filter: ${DS2_VARS.dockFilter};
@@ -267,8 +271,6 @@ interface RailProps {
   onOpenAiHistory?: () => void;
   /** Хендлер открытия профиля/настроек. */
   onOpenSettings?: () => void;
-  /** Бейдж на AI-кнопке (color token или hex). */
-  aiBadgeColor?: string;
   /** Бейдж на календаре. */
   calendarBadgeColor?: string;
   /** Бейдж на каталоге (индикатор новинок). */
@@ -299,7 +301,6 @@ export const Rail: FC<RailProps> = ({
   onOpenAi,
   onOpenAiHistory,
   onOpenSettings,
-  aiBadgeColor,
   calendarBadgeColor,
   catalogBadgeColor,
   settingsButtonRef,
@@ -401,7 +402,6 @@ export const Rail: FC<RailProps> = ({
             title={t('История чатов')}
           >
             <IconHistory />
-            {aiBadgeColor ? <RailBadgeDot $color={aiBadgeColor} /> : null}
           </RailButton>
         ),
       },
@@ -483,7 +483,6 @@ export const Rail: FC<RailProps> = ({
       onOpenAiHistory,
       onToggleTheme,
       onOpenSettings,
-      aiBadgeColor,
       calendarBadgeColor,
       catalogBadgeColor,
       settingsButtonRef,

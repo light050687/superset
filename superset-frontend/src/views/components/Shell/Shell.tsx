@@ -362,7 +362,6 @@ export const Shell: FC<ShellProps> = ({
           onToggleTheme={handleToggleTheme}
           settingsButtonRef={settingsButtonRef}
           calendarButtonRef={calendarButtonRef}
-          aiBadgeColor={DS2_VARS.up}
           calendarBadgeColor={DS2_VARS.cTangerine}
           catalogBadgeColor={DS2_VARS.cTangerine}
           contexts={effectiveContexts}
