@@ -45,6 +45,12 @@ const Root = styled.aside<{ $collapsed: boolean }>`
   flex-shrink: 0;
   transition: width 0.2s ${DS2_VARS.ease};
   font-family: ${DS2_VARS.fontSans};
+
+  @media (max-width: 767px) {
+    /* На mobile AI overlay занимает весь экран — sidebar скрываем, чтобы
+       не сжимать main. История чатов в Этапе 6 переедет в AiHistorySheet. */
+    display: none;
+  }
 `;
 
 const Head = styled.div`

@@ -128,10 +128,14 @@ const DrawerClose = styled.button`
 /**
  * Body — нейтральный scroll-контейнер. Внутренние drawer-компоненты
  * (CatalogDrawer / ToolsDrawer / CreateDrawer) сами задают grid/flex layout
- * в соответствии со своей семантикой.
+ * в соответствии со своей семантикой. max-width ограничивает ширину
+ * содержимого на сверхшироких экранах (дашборд может быть 2560px+).
  */
 const DrawerBody = styled.div`
   flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0 ${DS2_SPACE.s4}px ${DS2_SPACE.s4}px;

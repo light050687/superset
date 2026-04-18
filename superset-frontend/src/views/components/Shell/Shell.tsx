@@ -52,6 +52,19 @@ import type { DrawerKind } from './types';
  *     ShellMain занимает 100% viewport по обеим осям.
  *   - Padding-bottom у ShellMain резервирует место под док, чтобы контент
  *     (дашборды, таблицы) не уходил под floating pill.
+ *
+ * Z-index иерархия Shell (для справки):
+ *   content / ShellMain  = auto (естественный order)
+ *   Drawer (bottom sheet) = 95
+ *   AI Scrim              = 99
+ *   AI Panel              = 100
+ *   FloatingDock/MobileNav= 101
+ *   CommandPalette overlay= 105
+ *   Dropdowns (popovers)  = 110
+ *
+ * При открытии AI overlay scrim не блокирует dock — dock специально
+ * стоит выше scrim, чтобы пользователь мог переключиться на другой режим
+ * без предварительного закрытия overlay-а.
  */
 const ShellRoot = styled.div`
   position: relative;

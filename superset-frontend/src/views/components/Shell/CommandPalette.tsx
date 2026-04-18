@@ -73,6 +73,14 @@ const Overlay = styled.div`
   justify-content: center;
   padding-top: 15vh;
   font-family: ${DS2_VARS.fontSans};
+
+  @media (max-width: 767px) {
+    /* На mobile — меньше верхнего отступа (виртуальная клавиатура заберёт
+       нижнюю половину экрана). */
+    padding-top: 8vh;
+    padding-left: ${DS2_VARS.dockBottom};
+    padding-right: ${DS2_VARS.dockBottom};
+  }
 `;
 
 const Panel = styled.div`
