@@ -9,31 +9,28 @@
  *
  *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * CentralPill — морфирующая капсула поиск+AI внутри FloatingDock.
+ * CentralPill — центральная капсула поиска и AI, точно по мокапу
+ * analytics-floating-dock.html (#railAsk).
  *
  * Состояния:
- * - compact (default): 280×44, одна строка «[chip] input [↑]»
- * - expanded (focus):  420×100, две строки
- *     Row 1: «[chip] input [↑]»
- *     Row 2: «[+] [Haiku 4.5 ▾] [voice] [⚙]»
+ * - **Compact** (default): 44h × 280min-w, radius 999 (pill). Показывает
+ *   только input + `⌘K` hint. Chip скрыт (мокап: `.ra-ctx-compact` всегда
+ *   display:none в compact).
+ * - **Focused** (click/focus): 84h × 560min-w, radius 20, margin-top:-40
+ *   (pill «растёт» вверх из dock'а), border sky, ring + glass shadow.
+ *   Показывает обе строки: top с input + kbd/send, bot с toolbar.
+ * - **has-text** (есть текст в input): mic-иконка морфит в send-arrow
+ *   (круглая sky-кнопка).
  *
- * Submit (Enter или клик по ↑) вызывает onSubmit(query) — родитель (Shell)
- * открывает AI overlay с этим query как seed.
- *
- * Контекст — выбор «в рамках чего работает ИИ» (Общий / конкретный дашборд).
- * Его значение просто прокидывается через onSubmit как метаданные (строка);
- * физически внедрение в query делает родитель — мы знаем только ID.
- *
- * Cmd+K по-прежнему открывает CommandPalette глобально (хоткей ловится в
- * Shell.tsx) — пилюля ничего про него не знает.
+ * Enter → onSubmit(query, {contextId, modelId}).
  */
-import { keyframes } from '@emotion/react';
 import { styled, t } from '@superset-ui/core';
 import {
   type FC,
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
+  useEffect,
   useRef,
   useState,
 } from 'react';
@@ -43,53 +40,93 @@ import { ContextPopover } from './ContextPopover';
 import { ModelPopover } from './ModelPopover';
 
 interface CentralPillProps {
-  /** Список доступных контекстов AI (минимум DEFAULT_AI_CONTEXT). */
   contexts: readonly AiContext[];
-  /** Текущий выбранный контекст — id. */
   contextId: string;
   onContextChange: (ctx: AiContext) => void;
-  /** Текущая модель. */
   modelId: AiModelId;
   onModelChange: (model: AiModelDescriptor) => void;
-  /** Отправка запроса — вызывается при Enter или клике по ↑. */
   onSubmit: (query: string, meta: { contextId: string; modelId: AiModelId }) => void;
-  /** Необязательный hook на focus/blur (для аналитики или подсветки dock'а). */
   onFocusChange?: (focused: boolean) => void;
 }
 
+/**
+ * Контейнер pill. Вертикальный flex (top row + bot row).
+ * В compact — видна только top row, height 44, radius 999 (pill).
+ * В focused — видны обе, height 84, radius 20, pill «вырастает» вверх
+ *   (margin-top:-40), min-width 560, border sky.
+ *
+ * Expanded-state управляется через CSS-селектор `&.is-focused` OR
+ * нативный `:focus-within`. React устанавливает класс `is-focused` когда
+ * открыт один из popover'ов (ctx/model) — это заставляет pill оставаться
+ * расширенной пока popover открыт (без класса pill бы схлопнулась при
+ * переходе focus с input на popover).
+ */
 const Pill = styled.div<{ $expanded: boolean }>`
   position: relative;
   display: flex;
   flex-direction: column;
+  gap: 0;
   flex-shrink: 0;
-  width: ${({ $expanded }) =>
-    $expanded ? DS2_VARS.pillExpandedW : DS2_VARS.pillCompactW};
-  height: ${({ $expanded }) =>
-    $expanded ? DS2_VARS.pillExpandedH : DS2_VARS.pillCompactH};
-  padding: ${({ $expanded }) =>
-    $expanded ? `${DS2_SPACE.s2}px` : `${DS2_SPACE.s1}px ${DS2_SPACE.s2}px`};
-  background: ${DS2_VARS.glassBgElev};
+  height: ${({ $expanded }) => ($expanded ? '84px' : '44px')};
+  min-width: ${({ $expanded }) => ($expanded ? '560px' : '280px')};
+  padding: 0;
+  margin: ${({ $expanded }) => ($expanded ? '-40px 4px 0' : '0 4px')};
+  background: ${DS2_VARS.g50};
   border: 1px solid
-    ${({ $expanded }) => ($expanded ? DS2_VARS.cSky : DS2_VARS.glassBorder)};
-  border-radius: ${DS2_VARS.rPill};
+    ${({ $expanded }) => ($expanded ? DS2_VARS.cSky : DS2_VARS.g200)};
+  border-radius: ${({ $expanded }) => ($expanded ? '20px' : '999px')};
   box-shadow: ${({ $expanded }) =>
-    $expanded ? DS2_VARS.glassShadowElev : 'none'};
+    $expanded
+      ? '0 0 0 3px rgba(92, 170, 240, 0.10), 0 12px 28px rgba(0, 0, 0, 0.15)'
+      : 'none'};
+  overflow: hidden;
+  align-self: flex-end;
+  color: ${DS2_VARS.g500};
+  font-family: ${DS2_VARS.fontSans};
+  font-size: 13px;
+  cursor: ${({ $expanded }) => ($expanded ? 'default' : 'text')};
   transition:
-    width 0.2s ${DS2_VARS.ease},
-    height 0.2s ${DS2_VARS.ease},
-    padding 0.2s ${DS2_VARS.ease},
-    border-color 0.12s ${DS2_VARS.ease},
-    box-shadow 0.2s ${DS2_VARS.ease};
+    height 0.22s ${DS2_VARS.ease},
+    min-width 0.22s ${DS2_VARS.ease},
+    margin 0.22s ${DS2_VARS.ease},
+    border-radius 0.22s ${DS2_VARS.ease},
+    border-color 0.18s ${DS2_VARS.ease},
+    background 0.18s ${DS2_VARS.ease},
+    box-shadow 0.18s ${DS2_VARS.ease};
 
-  @media (max-width: 767px) {
-    /* Compact fallback на узких экранах — MobileNav рендерится вместо Dock,
-       но если пилюля попала в MobileNav — не расширяем выше compact. */
-    width: ${DS2_VARS.pillCompactW};
-    height: ${DS2_VARS.pillCompactH};
+  &:hover {
+    border-color: ${({ $expanded }) =>
+      $expanded ? DS2_VARS.cSky : DS2_VARS.g300};
   }
 `;
 
-const InputRow = styled.form`
+/** Top row (always visible): input + kbd-hint / send-button. */
+const RowTop = styled.form`
+  display: flex;
+  align-items: center;
+  gap: ${DS2_SPACE.s2}px;
+  height: 44px;
+  padding: 0 6px 0 14px;
+  flex-shrink: 0;
+`;
+
+/** Bottom row (visible only when pill focused). Использует CSS-селектор
+ *  родителя через ссылку `& ${RowBot}` — но такие component-селекторы
+ *  требуют emotion babel-plugin, которого у нас нет. Поэтому:
+ *  - RowBot по умолчанию display:none
+ *  - Pill в :focus-within / .is-focused задаёт `& > [data-row="bot"]`
+ *    selector на data-attribute, который CSS знает.
+ */
+const RowBot = styled.div<{ $visible: boolean }>`
+  display: ${({ $visible }) => ($visible ? 'flex' : 'none')};
+  align-items: center;
+  gap: ${DS2_SPACE.s2}px;
+  height: 40px;
+  padding: 0 8px;
+  border-top: 1px solid ${DS2_VARS.g100};
+`;
+
+const RbLeft = styled.div`
   display: flex;
   align-items: center;
   gap: ${DS2_SPACE.s1}px;
@@ -97,40 +134,79 @@ const InputRow = styled.form`
   min-width: 0;
 `;
 
-const ContextChip = styled.button`
-  display: inline-flex;
+const RbRight = styled.div`
+  display: flex;
   align-items: center;
   gap: ${DS2_SPACE.s1}px;
-  max-width: 120px;
-  padding: 3px 8px;
-  background: ${DS2_VARS.g100};
-  border: 1px solid transparent;
-  border-radius: ${DS2_VARS.rControl};
-  color: ${DS2_VARS.g700};
-  font-family: ${DS2_VARS.fontMono};
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+`;
+
+const Input = styled.input`
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: ${DS2_VARS.fontSans};
+  font-size: 13px;
+  color: ${DS2_VARS.ink};
+
+  &::placeholder {
+    color: ${DS2_VARS.g500};
+  }
+`;
+
+/** kbd-hint «⌘K» — показывается только в compact без текста. */
+const Kbd = styled.kbd`
   flex-shrink: 0;
-  transition:
-    background 0.12s ${DS2_VARS.ease},
-    border-color 0.12s ${DS2_VARS.ease};
+  font-family: ${DS2_VARS.fontMono};
+  font-size: 9.5px;
+  line-height: 1;
+  background: ${DS2_VARS.bg};
+  border: 1px solid ${DS2_VARS.g200};
+  color: ${DS2_VARS.g500};
+  padding: 4px 6px;
+  border-radius: 5px;
+`;
+
+/** Context chip (только в bot row, expanded). */
+const CtxChip = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 8px;
+  background: ${DS2_VARS.bg};
+  border: 1px solid ${DS2_VARS.g200};
+  border-radius: 999px;
+  color: ${DS2_VARS.g600};
+  font-family: ${DS2_VARS.fontSans};
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.12s ${DS2_VARS.ease};
 
   &:hover {
-    background: ${DS2_VARS.g200};
     border-color: ${DS2_VARS.g300};
+    color: ${DS2_VARS.ink};
   }
 
   &:focus-visible {
     outline: 2px solid ${DS2_VARS.cSky};
     outline-offset: 1px;
   }
+
+  svg {
+    width: 9px;
+    height: 9px;
+    color: ${DS2_VARS.g500};
+    flex-shrink: 0;
+  }
 `;
 
-const ContextDot = styled.span<{ $color: string }>`
+const CtxDot = styled.span<{ $color: string }>`
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -138,55 +214,39 @@ const ContextDot = styled.span<{ $color: string }>`
   flex-shrink: 0;
 `;
 
-const ContextLabel = styled.span`
+const CtxLabel = styled.span`
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 90px;
+  max-width: 120px;
 `;
 
-const Input = styled.input`
-  flex: 1;
-  min-width: 0;
-  background: transparent;
-  border: none;
-  outline: none;
-  padding: 0 ${DS2_SPACE.s1}px;
-  font-family: ${DS2_VARS.fontSans};
-  font-size: 13px;
-  color: ${DS2_VARS.ink};
-
-  &::placeholder {
-    color: ${DS2_VARS.g400};
-  }
-`;
-
-const SendBtn = styled.button<{ $visible: boolean }>`
+/** Общая toolbar-кнопка (28×28, прозрачная) — attach, gear. */
+const TbBtn = styled.button`
   width: 28px;
   height: 28px;
   padding: 0;
-  background: ${DS2_VARS.cSky};
+  background: transparent;
   border: none;
-  border-radius: 50%;
-  color: ${DS2_VARS.s};
+  border-radius: 8px;
+  color: ${DS2_VARS.g500};
   cursor: pointer;
   flex-shrink: 0;
-  display: ${({ $visible }) => ($visible ? 'inline-flex' : 'none')};
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.12s ${DS2_VARS.ease};
+  transition:
+    background 0.12s ${DS2_VARS.ease},
+    color 0.12s ${DS2_VARS.ease};
 
   &:hover {
-    transform: scale(1.08);
+    background: ${DS2_VARS.g100};
+    color: ${DS2_VARS.ink};
   }
 
   &:focus-visible {
     outline: 2px solid ${DS2_VARS.cSky};
-    outline-offset: 2px;
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    background: ${DS2_VARS.g300};
+    outline-offset: 1px;
   }
 
   svg {
@@ -195,63 +255,78 @@ const SendBtn = styled.button<{ $visible: boolean }>`
   }
 `;
 
-const KbdHint = styled.span<{ $visible: boolean }>`
-  display: ${({ $visible }) => ($visible ? 'inline-flex' : 'none')};
-  align-items: center;
-  gap: 2px;
-  font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
-  color: ${DS2_VARS.g500};
-  padding: 2px 6px;
-  background: ${DS2_VARS.g100};
-  border: 1px solid ${DS2_VARS.g200};
-  border-radius: 3px;
+const TbDivider = styled.span`
+  width: 1px;
+  height: 18px;
+  background: ${DS2_VARS.g200};
+  margin: 0 2px;
+  opacity: 0.7;
   flex-shrink: 0;
 `;
 
-const fadeUp = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-`;
-
-const ToolsRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${DS2_SPACE.s1}px;
-  padding-top: ${DS2_SPACE.s1}px;
-  margin-top: ${DS2_SPACE.s1}px;
-  border-top: 1px solid ${DS2_VARS.g100};
-  animation: ${fadeUp} 0.18s ${DS2_VARS.ease};
-`;
-
-const ToolBtn = styled.button`
+/**
+ * Mic button. При has-text морфит в sky circle send-arrow.
+ * (Мокап: `.rail-ask.has-text .rb-mic` становится sky circle 30×30.)
+ */
+const MicBtn = styled.button<{ $hasText: boolean }>`
+  width: ${({ $hasText }) => ($hasText ? '30px' : '28px')};
+  height: ${({ $hasText }) => ($hasText ? '30px' : '28px')};
+  padding: 0;
+  background: ${({ $hasText }) =>
+    $hasText ? DS2_VARS.cSky : 'transparent'};
+  border: none;
+  border-radius: ${({ $hasText }) => ($hasText ? '50%' : '8px')};
+  color: ${({ $hasText }) => ($hasText ? '#0C0D10' : DS2_VARS.g500)};
+  cursor: pointer;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: ${DS2_SPACE.s1}px;
-  padding: 3px 8px;
-  background: transparent;
-  border: 1px solid ${DS2_VARS.g200};
-  border-radius: ${DS2_VARS.rControl};
-  color: ${DS2_VARS.g600};
-  font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
-  font-weight: 600;
-  cursor: pointer;
+  justify-content: center;
   transition:
     background 0.12s ${DS2_VARS.ease},
     color 0.12s ${DS2_VARS.ease},
-    border-color 0.12s ${DS2_VARS.ease};
+    border-radius 0.12s ${DS2_VARS.ease};
+
+  &:hover {
+    background: ${({ $hasText }) =>
+      $hasText ? '#7ABCF5' : DS2_VARS.g100};
+    color: ${({ $hasText }) => ($hasText ? '#0C0D10' : DS2_VARS.ink)};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${DS2_VARS.cSky};
+    outline-offset: 2px;
+  }
+
+  svg {
+    width: ${({ $hasText }) => ($hasText ? '15px' : '14px')};
+    height: ${({ $hasText }) => ($hasText ? '15px' : '14px')};
+  }
+`;
+
+/** Model-picker pill: [name][mode][▾]. */
+const ModelBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  color: ${DS2_VARS.g600};
+  cursor: pointer;
+  font-family: ${DS2_VARS.fontSans};
+  font-size: 11.5px;
+  font-weight: 500;
+  flex-shrink: 0;
+  transition:
+    background 0.12s ${DS2_VARS.ease},
+    color 0.12s ${DS2_VARS.ease};
 
   &:hover {
     background: ${DS2_VARS.g100};
     color: ${DS2_VARS.ink};
-    border-color: ${DS2_VARS.g300};
   }
 
   &:focus-visible {
@@ -260,44 +335,59 @@ const ToolBtn = styled.button`
   }
 
   svg {
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
+    color: ${DS2_VARS.g500};
   }
 `;
 
-const ToolSpacer = styled.div`
-  flex: 1;
+const MName = styled.span`
+  font-weight: 600;
+  color: ${DS2_VARS.ink};
 `;
 
+const MMode = styled.span`
+  color: ${DS2_VARS.g500};
+`;
+
+/* ─── SVG icons (из мокапа) ─── */
+
 const IconPlus: FC = () => (
-  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M6 2v8M2 6h8" />
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6}>
+    <path d="M8 3v10M3 8h10" />
   </svg>
 );
 
 const IconMic: FC = () => (
-  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <rect x="4.5" y="1.5" width="3" height="6" rx="1.5" />
-    <path d="M2.5 5.5v.5a3.5 3.5 0 007 0v-.5M6 9v2" />
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6}>
+    <rect x="6" y="2" width="4" height="8" rx="2" />
+    <path d="M3 8a5 5 0 0010 0M8 13v2" />
+  </svg>
+);
+
+const IconSend: FC = () => (
+  <svg
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M8 13V3.5M3.8 7.7L8 3.5L12.2 7.7" />
   </svg>
 );
 
 const IconGear: FC = () => (
-  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <circle cx="6" cy="6" r="1.8" />
-    <path d="M6 1v1.5M6 9.5V11M1 6h1.5M9.5 6H11M2.5 2.5l1 1M8.5 8.5l1 1M2.5 9.5l1-1M8.5 3.5l1-1" />
-  </svg>
-);
-
-const IconArrowUp: FC = () => (
-  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth={2}>
-    <path d="M7 11V3M3 7l4-4 4 4" />
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <circle cx="8" cy="8" r="2" />
+    <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3" />
   </svg>
 );
 
 const IconChevronDown: FC = () => (
-  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M3 5l3 3 3-3" />
+  <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <path d="M2 4l3 3 3-3" />
   </svg>
 );
 
@@ -310,33 +400,60 @@ export const CentralPill: FC<CentralPillProps> = ({
   onSubmit,
   onFocusChange,
 }) => {
+  const pillRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const contextBtnRef = useRef<HTMLButtonElement>(null);
+  const ctxBtnRef = useRef<HTMLButtonElement>(null);
   const modelBtnRef = useRef<HTMLButtonElement>(null);
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
-  const [contextOpen, setContextOpen] = useState(false);
+  const [ctxOpen, setCtxOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
 
-  const expanded = focused || query.length > 0 || contextOpen || modelOpen;
+  /**
+   * Click-outside handler — схлопывает pill когда клик вне pill и вне
+   * открытого popover. Подписывается только когда pill expanded (focused
+   * ИЛИ popover открыт).
+   */
+  const expandedNow = focused || ctxOpen || modelOpen;
+  useEffect(() => {
+    if (!expandedNow) return undefined;
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      const pill = pillRef.current;
+      if (pill && pill.contains(target)) return;
+      // Popover рендерится через portal в body — проверка class на родителях.
+      let el: Node | null = target;
+      while (el && el !== document.body) {
+        if (
+          el instanceof HTMLElement &&
+          (el.getAttribute('role') === 'listbox' ||
+            el.hasAttribute('data-ai-popover'))
+        ) {
+          return;
+        }
+        el = el.parentNode;
+      }
+      setFocused(false);
+      onFocusChange?.(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [expandedNow, onFocusChange]);
+
+  const hasText = query.trim().length > 0;
+  // Pill expanded когда focus на input ИЛИ открыт popover (ctx/model).
+  // Второе условие удерживает pill расширенной пока popover открыт.
+  const expanded = focused || ctxOpen || modelOpen;
 
   const current = contexts.find(c => c.id === contextId) ?? contexts[0];
-  const currentModel =
+  const modelLabel =
     modelId === 'opus-4.7'
       ? 'Opus 4.7'
       : modelId === 'sonnet-4.6'
       ? 'Sonnet 4.6'
       : 'Haiku 4.5';
-
-  const handleFocus = useCallback(() => {
-    setFocused(true);
-    onFocusChange?.(true);
-  }, [onFocusChange]);
-
-  const handleBlur = useCallback(() => {
-    setFocused(false);
-    onFocusChange?.(false);
-  }, [onFocusChange]);
+  const modelMode = modelId === 'opus-4.7' ? 'Extended' : 'Default';
 
   const doSubmit = useCallback(() => {
     const trimmed = query.trim();
@@ -364,106 +481,116 @@ export const CentralPill: FC<CentralPillProps> = ({
     [],
   );
 
-  const handleContextToggle = useCallback(() => {
-    setContextOpen(prev => !prev);
-    setModelOpen(false);
-  }, []);
-
-  const handleModelToggle = useCallback(() => {
-    setModelOpen(prev => !prev);
-    setContextOpen(false);
-  }, []);
-
-  const canSubmit = query.trim().length > 0;
+  const handlePillClick = useCallback(() => {
+    // Клик по pill расширяет её и фокусирует input.
+    setFocused(true);
+    onFocusChange?.(true);
+    inputRef.current?.focus();
+  }, [onFocusChange]);
 
   return (
     <>
-      <Pill $expanded={expanded} role="search" aria-label={t('Поиск и ИИ')}>
-        <InputRow onSubmit={handleFormSubmit}>
-          <ContextChip
-            ref={contextBtnRef}
-            type="button"
-            onClick={handleContextToggle}
-            aria-haspopup="listbox"
-            aria-expanded={contextOpen}
-            title={current.hint ?? current.label}
-          >
-            <ContextDot $color={current.colorVar} />
-            <ContextLabel>{current.label}</ContextLabel>
-          </ContextChip>
-
+      <Pill
+        ref={pillRef}
+        $expanded={expanded}
+        role="search"
+        aria-label={t('Поиск и ИИ')}
+        onClick={handlePillClick}
+      >
+        <RowTop onSubmit={handleFormSubmit}>
           <Input
             ref={inputRef}
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            placeholder={t('Спросите о данных…')}
+            placeholder={t('Спросить ИИ или найти…')}
             aria-label={t('Запрос ИИ или поиск')}
           />
+          {/* В compact без текста — показываем ⌘K. В compact с текстом или
+              в focused — вместо ⌘K рендерится send-button внутри row-bot
+              (через .rb-mic morph); тут ⌘K виден только когда обе условия нет. */}
+          {!expanded && !hasText ? <Kbd>{t('⌘K')}</Kbd> : null}
+          {/* Compact + has-text: send-кнопка в top-row для быстрого submit без
+              разворачивания pill. */}
+          {!expanded && hasText ? (
+            <MicBtn
+              type="submit"
+              $hasText={true}
+              aria-label={t('Отправить')}
+              title={t('Enter')}
+            >
+              <IconSend />
+            </MicBtn>
+          ) : null}
+        </RowTop>
 
-          <KbdHint $visible={!expanded}>{t('⌘K')}</KbdHint>
-
-          <SendBtn
-            type="submit"
-            $visible={canSubmit}
-            disabled={!canSubmit}
-            aria-label={t('Отправить запрос')}
-            title={t('Enter')}
-          >
-            <IconArrowUp />
-          </SendBtn>
-        </InputRow>
-
-        {expanded ? (
-          <ToolsRow>
-            <ToolBtn
+        <RowBot
+          $visible={expanded}
+          onClick={e => e.stopPropagation()}
+          role="toolbar"
+          aria-label={t('Инструменты ИИ')}
+        >
+          <RbLeft>
+            <TbBtn
               type="button"
-              aria-label={t('Прикрепить контекст')}
-              title={t('Прикрепить (скоро)')}
+              aria-label={t('Прикрепить')}
+              title={t('Прикрепить')}
             >
               <IconPlus />
-            </ToolBtn>
+            </TbBtn>
+            <TbDivider />
+            <CtxChip
+              ref={ctxBtnRef}
+              type="button"
+              onClick={() => setCtxOpen(prev => !prev)}
+              aria-haspopup="listbox"
+              aria-expanded={ctxOpen}
+              title={current.hint ?? current.label}
+            >
+              <CtxDot $color={current.colorVar} />
+              <CtxLabel>{current.label}</CtxLabel>
+              <IconChevronDown />
+            </CtxChip>
+          </RbLeft>
 
-            <ToolBtn
+          <RbRight>
+            <ModelBtn
               ref={modelBtnRef}
               type="button"
-              onClick={handleModelToggle}
+              onClick={() => setModelOpen(prev => !prev)}
               aria-haspopup="listbox"
               aria-expanded={modelOpen}
-              title={t('Выбрать модель')}
+              title={t('Модель')}
             >
-              {currentModel}
+              <MName>{modelLabel}</MName>
+              <MMode>{modelMode}</MMode>
               <IconChevronDown />
-            </ToolBtn>
-
-            <ToolSpacer />
-
-            <ToolBtn
+            </ModelBtn>
+            <MicBtn
               type="button"
-              aria-label={t('Голосовой ввод')}
-              title={t('Голос (скоро)')}
+              $hasText={hasText}
+              onClick={() => (hasText ? doSubmit() : undefined)}
+              aria-label={hasText ? t('Отправить') : t('Голосовой ввод')}
+              title={hasText ? t('Enter') : t('Голосовой ввод')}
             >
-              <IconMic />
-            </ToolBtn>
-
-            <ToolBtn
+              {hasText ? <IconSend /> : <IconMic />}
+            </MicBtn>
+            <TbBtn
               type="button"
               aria-label={t('Настройки ИИ')}
               title={t('Настройки ИИ')}
             >
               <IconGear />
-            </ToolBtn>
-          </ToolsRow>
-        ) : null}
+            </TbBtn>
+          </RbRight>
+        </RowBot>
       </Pill>
 
       <ContextPopover
-        anchor={contextBtnRef.current}
-        open={contextOpen}
-        onClose={() => setContextOpen(false)}
+        anchor={ctxBtnRef.current}
+        open={ctxOpen}
+        onClose={() => setCtxOpen(false)}
         contexts={contexts}
         currentContextId={contextId}
         onSelect={onContextChange}

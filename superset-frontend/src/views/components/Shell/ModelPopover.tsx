@@ -192,6 +192,7 @@ export const ModelPopover: FC<ModelPopoverProps> = ({
       ref={ref}
       role="listbox"
       aria-label={t('Выбор модели ИИ')}
+      data-ai-popover="model"
       style={{ top: pos.top, left: pos.left }}
     >
       <GroupLabel>{t('Модель')}</GroupLabel>

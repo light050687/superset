@@ -183,6 +183,7 @@ export const ContextPopover: FC<ContextPopoverProps> = ({
       ref={ref}
       role="listbox"
       aria-label={t('Контекст ИИ-ассистента')}
+      data-ai-popover="context"
       style={{ top: pos.top, left: pos.left }}
     >
       <GroupLabel>{t('Контекст')}</GroupLabel>
