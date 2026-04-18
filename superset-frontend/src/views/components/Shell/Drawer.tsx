@@ -8,6 +8,11 @@
  * with the License.  You may obtain a copy of the License at
  *
  *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Drawer — bottom sheet для Catalog / Tools / Create.
+ * Выезжает снизу (над floating dock) по клику по rail-кнопке.
+ * Liquid Glass стилизация, drag-handle сверху, close button в head.
+ * Закрывается: Esc, клик по той же rail-кнопке, клик вне sheet'а.
  */
 import { styled, t } from '@superset-ui/core';
 import { type FC, type ReactNode, useEffect, useRef } from 'react';
@@ -16,40 +21,67 @@ import { IconClose } from './RailIcons';
 import { useShell } from './ShellContext';
 import type { DrawerKind } from './types';
 
+/** Сохраняется для обратной совместимости импортов — теперь это максимум по высоте. */
 export const DRAWER_WIDTH = 220;
 
 /**
- * Этап 1 — переходное состояние: Drawer вытаскиваем из flex-потока ShellRoot
- * (который больше не flex-row), делаем fixed на левой стороне. В Этапе 3
- * он будет полностью переделан в bottom sheet (slides up над floating dock).
+ * Bottom sheet. Выезжает снизу (height: 0 → max-height), центрирован по
+ * горизонтали с симметричным отступом 24px от краёв. Стоит над floating dock
+ * (bottom: dockDrawerBottom).
  */
-const DrawerAside = styled.aside<{ $open: boolean }>`
+const DrawerSheet = styled.aside<{ $open: boolean }>`
   position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: ${({ $open }) => ($open ? `${DRAWER_WIDTH}px` : '0')};
+  left: ${DS2_SPACE.s6}px;
+  right: ${DS2_SPACE.s6}px;
+  bottom: ${DS2_VARS.dockDrawerBottom};
+  max-height: 320px;
+  /* Closed state — 0 высота и нулевая непрозрачность, чтобы не ловить клики. */
+  height: ${({ $open }) => ($open ? 'min(320px, 60vh)' : '0')};
+  opacity: ${({ $open }) => ($open ? 1 : 0)};
+  overflow: hidden;
   background: ${DS2_VARS.glassBg};
   backdrop-filter: ${DS2_VARS.glassFilter};
   -webkit-backdrop-filter: ${DS2_VARS.glassFilter};
-  border-right: 1px solid ${DS2_VARS.glassBorder};
-  overflow: hidden;
-  transition: width 0.2s ${DS2_VARS.ease};
+  border: 1px solid ${DS2_VARS.glassBorder};
+  border-radius: ${DS2_VARS.rGlass};
+  box-shadow: ${DS2_VARS.glassShadowElev};
   display: flex;
   flex-direction: column;
-  /* Ниже dropdowns (110), CommandPalette (105), AI overlay (100) и dock (101). */
-  z-index: 90;
+  pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};
+  transition:
+    height 0.22s ${DS2_VARS.ease},
+    opacity 0.18s ${DS2_VARS.ease};
+  /* Выше ShellMain контента (1) и ниже dropdowns/AI overlay/dock. */
+  z-index: 95;
 
   @media print {
     display: none;
   }
+
+  @media (max-width: 767px) {
+    /* На mobile — полноэкранный bottom sheet, 90vh. */
+    left: ${DS2_SPACE.s1}px;
+    right: ${DS2_SPACE.s1}px;
+    bottom: ${DS2_VARS.dockMobileHeight};
+    max-height: 90vh;
+    height: ${({ $open }) => ($open ? '90vh' : '0')};
+  }
+`;
+
+const DragHandle = styled.div`
+  width: 48px;
+  height: 4px;
+  margin: ${DS2_SPACE.s1}px auto ${DS2_SPACE.s2}px;
+  border-radius: 2px;
+  background: ${DS2_VARS.g300};
+  flex-shrink: 0;
 `;
 
 const DrawerHead = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${DS2_SPACE.s4}px ${DS2_SPACE.s4}px ${DS2_SPACE.s3}px;
+  padding: 0 ${DS2_SPACE.s4}px ${DS2_SPACE.s2}px;
   flex-shrink: 0;
 `;
 
@@ -73,6 +105,9 @@ const DrawerClose = styled.button`
   align-items: center;
   justify-content: center;
   border-radius: 4px;
+  transition:
+    background 0.12s ${DS2_VARS.ease},
+    color 0.12s ${DS2_VARS.ease};
 
   &:hover {
     color: ${DS2_VARS.ink};
@@ -90,13 +125,20 @@ const DrawerClose = styled.button`
   }
 `;
 
+/**
+ * Body — нейтральный scroll-контейнер. Внутренние drawer-компоненты
+ * (CatalogDrawer / ToolsDrawer / CreateDrawer) сами задают grid/flex layout
+ * в соответствии со своей семантикой.
+ */
 const DrawerBody = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 0 ${DS2_SPACE.s2}px ${DS2_SPACE.s3}px;
+  overflow-x: hidden;
+  padding: 0 ${DS2_SPACE.s4}px ${DS2_SPACE.s4}px;
 
   &::-webkit-scrollbar {
-    width: 3px;
+    height: 4px;
+    width: 4px;
   }
 
   &::-webkit-scrollbar-thumb {
@@ -106,8 +148,8 @@ const DrawerBody = styled.div`
 `;
 
 const DrawerFooter = styled.div`
-  padding: ${DS2_SPACE.s2}px;
-  border-top: 1px solid ${DS2_VARS.g100};
+  padding: ${DS2_SPACE.s2}px ${DS2_SPACE.s4}px;
+  border-top: 1px solid ${DS2_VARS.glassBorder};
   flex-shrink: 0;
 `;
 
@@ -142,34 +184,48 @@ export const Drawer: FC<DrawerProps> = ({
   const { openedDrawer, closeDrawer } = useShell();
   const asideRef = useRef<HTMLElement | null>(null);
 
-  // Escape закрывает drawer, когда фокус внутри него.
+  // Esc закрывает drawer; клик вне — тоже.
   useEffect(() => {
     if (!openedDrawer) return undefined;
-    const handler = (e: KeyboardEvent) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         closeDrawer();
       }
     };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (!asideRef.current || asideRef.current.contains(target)) return;
+      // Игнорируем клики по rail (rail-кнопки сами переключают drawer).
+      const nav = document.querySelector('nav[aria-label]');
+      if (nav && nav.contains(target)) return;
+      closeDrawer();
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onDocClick);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onDocClick);
+    };
   }, [openedDrawer, closeDrawer]);
 
   const kind = openedDrawer;
-  const title = kind
-    ? titles[kind] ?? t(DEFAULT_TITLES[kind])
-    : '';
+  const isOpen = kind !== null;
+  const title = kind ? titles[kind] ?? t(DEFAULT_TITLES[kind]) : '';
   const bodyNode = kind ? content[kind] : null;
   const footerNode = kind ? footer[kind] : null;
 
   return (
-    <DrawerAside
+    <DrawerSheet
       ref={asideRef as never}
-      $open={openedDrawer !== null}
-      aria-hidden={openedDrawer === null}
+      $open={isOpen}
+      aria-hidden={!isOpen}
       aria-label={kind ? title : undefined}
+      role="dialog"
+      aria-modal="false"
     >
       {kind ? (
         <>
+          <DragHandle role="presentation" />
           <DrawerHead>
             <DrawerTitle>{title}</DrawerTitle>
             <DrawerClose
@@ -191,6 +247,6 @@ export const Drawer: FC<DrawerProps> = ({
           {footerNode ? <DrawerFooter>{footerNode}</DrawerFooter> : null}
         </>
       ) : null}
-    </DrawerAside>
+    </DrawerSheet>
   );
 };
