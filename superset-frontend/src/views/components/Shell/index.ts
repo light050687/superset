@@ -11,6 +11,8 @@
  */
 export { Shell } from './Shell';
 export { Rail, RAIL_WIDTH } from './Rail';
+export { MobileNav } from './MobileNav';
+export { useMediaQuery } from './useMediaQuery';
 export { CentralPill } from './CentralPill';
 export { ContextPopover } from './ContextPopover';
 export { ModelPopover } from './ModelPopover';

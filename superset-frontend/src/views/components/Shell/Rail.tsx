@@ -66,12 +66,9 @@ const RailNav = styled.nav`
   }
 
   @media (max-width: 767px) {
-    /* На узких экранах FloatingDock не рендерится — вместо него MobileNav.
-       Если устройство случайно приземлилось здесь, не уродуем layout. */
-    left: ${DS2_SPACE.s2}px;
-    right: ${DS2_SPACE.s2}px;
-    transform: none;
-    padding: 0 ${DS2_SPACE.s2}px;
+    /* На узких экранах отображается MobileNav; FloatingDock скрыт CSS-ом
+       (не меняем React-дерево, чтобы не ломать state и hydration). */
+    display: none;
   }
 `;
 

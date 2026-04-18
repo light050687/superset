@@ -39,6 +39,7 @@ import {
 import { CommandPalette } from './CommandPalette';
 import { CreateDrawer } from './CreateDrawer';
 import { Drawer } from './Drawer';
+import { MobileNav } from './MobileNav';
 import { Rail } from './Rail';
 import { SettingsDropdown } from './SettingsDropdown';
 import { ShellProvider } from './ShellContext';
@@ -273,6 +274,14 @@ export const Shell: FC<ShellProps> = ({
           onContextChange={handleContextChange}
           modelId={modelId}
           onModelChange={handleModelChange}
+        />
+        <MobileNav
+          userInitials={initials}
+          onOpenAi={() => handleOpenAi()}
+          onOpenSettings={handleOpenSettings}
+          settingsButtonRef={settingsButtonRef}
+          aiBadgeColor={DS2_VARS.up}
+          catalogBadgeColor={DS2_VARS.cSky}
         />
         <Drawer content={mergedDrawerContent} />
         <ShellMain>{children}</ShellMain>
