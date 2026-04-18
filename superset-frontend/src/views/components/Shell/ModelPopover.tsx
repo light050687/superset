@@ -30,51 +30,53 @@ interface ModelPopoverProps {
   onSelect: (model: AiModelDescriptor) => void;
 }
 
+/* Popover: blur(28) saturate(160) + popoverShadow + padding 10 — мокап. */
 const Popover = styled.div`
   position: fixed;
   min-width: 260px;
   max-width: 300px;
-  padding: ${DS2_SPACE.s1}px;
+  padding: 10px;
   background: ${DS2_VARS.glassBg};
-  backdrop-filter: ${DS2_VARS.glassFilter};
-  -webkit-backdrop-filter: ${DS2_VARS.glassFilter};
+  backdrop-filter: ${DS2_VARS.popoverFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.popoverFilter};
   border: 1px solid ${DS2_VARS.glassBorder};
   border-radius: ${DS2_VARS.rGlass};
-  box-shadow: ${DS2_VARS.glassShadow};
+  box-shadow: ${DS2_VARS.popoverShadow};
   z-index: 110;
   font-family: ${DS2_VARS.fontSans};
 `;
 
 const GroupLabel = styled.div`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: ${DS2_VARS.g500};
-  padding: ${DS2_SPACE.s2}px ${DS2_SPACE.s3}px ${DS2_SPACE.s1}px;
+  padding: 6px 10px 8px;
 `;
 
 const Item = styled.button<{ $active: boolean }>`
   width: 100%;
   display: flex;
   align-items: flex-start;
-  gap: ${DS2_SPACE.s2}px;
-  padding: ${DS2_SPACE.s2}px ${DS2_SPACE.s3}px;
-  background: ${({ $active }) => ($active ? DS2_VARS.g100 : 'transparent')};
+  gap: 10px;
+  padding: 8px 10px;
+  background: ${({ $active }) =>
+    $active ? 'rgba(59, 139, 217, 0.14)' : 'transparent'};
   border: none;
-  border-radius: ${DS2_VARS.rControl};
-  color: ${({ $active }) => ($active ? DS2_VARS.ink : DS2_VARS.g700)};
+  border-radius: 10px;
+  color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.ink)};
   font-family: ${DS2_VARS.fontSans};
   font-size: 13px;
   cursor: pointer;
   text-align: left;
   transition:
-    background 0.12s ${DS2_VARS.ease},
-    color 0.12s ${DS2_VARS.ease};
+    background 0.1s ${DS2_VARS.ease},
+    color 0.1s ${DS2_VARS.ease};
 
   &:hover {
-    background: ${DS2_VARS.g100};
+    background: ${DS2_VARS.bg3};
     color: ${DS2_VARS.ink};
   }
 

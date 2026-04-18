@@ -232,6 +232,18 @@ export const DS2_VARS = {
   dockBtnActiveRing: 'var(--dock-btn-active-ring)',
   dockBtnActiveGlow: 'var(--dock-btn-active-glow)',
 
+  /* Pixel-perfect parity (мокап) — pill / popover / tile полупрозрачные. */
+  bg3: 'var(--bg3)',
+  pillBg: 'var(--pill-bg)',
+  pillBgHover: 'var(--pill-bg-hover)',
+  pillBgFocused: 'var(--pill-bg-focused)',
+  pillFocusBorder: 'var(--pill-focus-border)',
+  pillFocusShadow: 'var(--pill-focus-shadow)',
+  popoverFilter: 'var(--popover-filter)',
+  popoverShadow: 'var(--popover-shadow)',
+  tileHoverBg: 'var(--tile-hover-bg)',
+  tileHoverBorder: 'var(--tile-hover-border)',
+
   /* Радиусы */
   rCard: 'var(--r-card)',
   rControl: 'var(--r-control)',

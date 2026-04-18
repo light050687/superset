@@ -67,6 +67,14 @@ interface CentralPillProps {
  * расширенной пока popover открыт (без класса pill бы схлопнулась при
  * переходе focus с input на popover).
  */
+/**
+ * Pixel-perfect parity с мокапом `.rail-ask` (analytics-floating-dock.html):
+ * - compact: bg --pill-bg (полупрозрачный, виден стеклянный dock сквозь pill),
+ *   border --g200, radius 999;
+ * - hover compact: bg --pill-bg-hover, border --g300;
+ * - focused: bg --pill-bg-focused, border --pill-focus-border (sky-mix 55%),
+ *   radius 20, height 84, margin-top -40, shadow --pill-focus-shadow.
+ */
 const Pill = styled.div<{ $expanded: boolean }>`
   position: relative;
   display: flex;
@@ -77,14 +85,13 @@ const Pill = styled.div<{ $expanded: boolean }>`
   min-width: ${({ $expanded }) => ($expanded ? '560px' : '280px')};
   padding: 0;
   margin: ${({ $expanded }) => ($expanded ? '-40px 4px 0' : '0 4px')};
-  background: ${DS2_VARS.g50};
+  background: ${({ $expanded }) =>
+    $expanded ? DS2_VARS.pillBgFocused : DS2_VARS.pillBg};
   border: 1px solid
-    ${({ $expanded }) => ($expanded ? DS2_VARS.cSky : DS2_VARS.g200)};
+    ${({ $expanded }) => ($expanded ? DS2_VARS.pillFocusBorder : DS2_VARS.g200)};
   border-radius: ${({ $expanded }) => ($expanded ? '20px' : '999px')};
   box-shadow: ${({ $expanded }) =>
-    $expanded
-      ? '0 0 0 3px rgba(92, 170, 240, 0.10), 0 12px 28px rgba(0, 0, 0, 0.15)'
-      : 'none'};
+    $expanded ? DS2_VARS.pillFocusShadow : 'none'};
   overflow: hidden;
   align-self: flex-end;
   color: ${DS2_VARS.g500};
@@ -101,8 +108,10 @@ const Pill = styled.div<{ $expanded: boolean }>`
     box-shadow 0.18s ${DS2_VARS.ease};
 
   &:hover {
+    background: ${({ $expanded }) =>
+      $expanded ? DS2_VARS.pillBgFocused : DS2_VARS.pillBgHover};
     border-color: ${({ $expanded }) =>
-      $expanded ? DS2_VARS.cSky : DS2_VARS.g300};
+      $expanded ? DS2_VARS.pillFocusBorder : DS2_VARS.g300};
   }
 `;
 

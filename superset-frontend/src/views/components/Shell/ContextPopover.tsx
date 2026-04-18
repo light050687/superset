@@ -15,7 +15,7 @@
 import { styled, t } from '@superset-ui/core';
 import { type FC, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
+import { DS2_VARS } from 'src/theme/ds2';
 import type { AiContext } from './CentralPillTypes';
 
 interface ContextPopoverProps {
@@ -27,51 +27,55 @@ interface ContextPopoverProps {
   onSelect: (ctx: AiContext) => void;
 }
 
+/* Popover: pixel-perfect parity с мокапом `.ai-pop` —
+   blur(28px) saturate(160%) (отдельный от drawer/AI 16/180),
+   тень 0 20px 60px rgba(0,0,0,.5) + inset-highlight, padding 10. */
 const Popover = styled.div`
   position: fixed;
   min-width: 240px;
   max-width: 320px;
-  padding: ${DS2_SPACE.s1}px;
+  padding: 10px;
   background: ${DS2_VARS.glassBg};
-  backdrop-filter: ${DS2_VARS.glassFilter};
-  -webkit-backdrop-filter: ${DS2_VARS.glassFilter};
+  backdrop-filter: ${DS2_VARS.popoverFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.popoverFilter};
   border: 1px solid ${DS2_VARS.glassBorder};
   border-radius: ${DS2_VARS.rGlass};
-  box-shadow: ${DS2_VARS.glassShadow};
+  box-shadow: ${DS2_VARS.popoverShadow};
   z-index: 110;
   font-family: ${DS2_VARS.fontSans};
 `;
 
 const GroupLabel = styled.div`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: ${DS2_VARS.g500};
-  padding: ${DS2_SPACE.s2}px ${DS2_SPACE.s3}px ${DS2_SPACE.s1}px;
+  padding: 6px 10px 8px;
 `;
 
 const Item = styled.button<{ $active: boolean }>`
   width: 100%;
   display: flex;
   align-items: center;
-  gap: ${DS2_SPACE.s2}px;
-  padding: ${DS2_SPACE.s2}px ${DS2_SPACE.s3}px;
-  background: ${({ $active }) => ($active ? DS2_VARS.g100 : 'transparent')};
+  gap: 10px;
+  padding: 8px 10px;
+  background: ${({ $active }) =>
+    $active ? 'rgba(59, 139, 217, 0.14)' : 'transparent'};
   border: none;
-  border-radius: ${DS2_VARS.rControl};
-  color: ${({ $active }) => ($active ? DS2_VARS.ink : DS2_VARS.g700)};
+  border-radius: 10px;
+  color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.ink)};
   font-family: ${DS2_VARS.fontSans};
   font-size: 13px;
   cursor: pointer;
   text-align: left;
   transition:
-    background 0.12s ${DS2_VARS.ease},
-    color 0.12s ${DS2_VARS.ease};
+    background 0.1s ${DS2_VARS.ease},
+    color 0.1s ${DS2_VARS.ease};
 
   &:hover {
-    background: ${DS2_VARS.g100};
+    background: ${DS2_VARS.bg3};
     color: ${DS2_VARS.ink};
   }
 
@@ -112,6 +116,23 @@ const Check = styled.span`
   color: ${DS2_VARS.cSky};
   font-size: 14px;
   line-height: 1;
+`;
+
+/* Разделитель между списком контекстов и пунктом «+ Прикрепить». */
+const Sep = styled.div`
+  height: 1px;
+  background: ${DS2_VARS.g100};
+  margin: 6px 2px;
+`;
+
+/** Punkt «+ Прикрепить другой дашборд» — dashed dot, серый label. */
+const DashedDot = styled.span`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px dashed ${DS2_VARS.g300};
+  flex-shrink: 0;
 `;
 
 interface Position {
@@ -210,6 +231,20 @@ export const ContextPopover: FC<ContextPopoverProps> = ({
           </Item>
         );
       })}
+      <Sep />
+      <Item
+        type="button"
+        $active={false}
+        onClick={onClose}
+        aria-label={t('Прикрепить другой дашборд')}
+      >
+        <DashedDot />
+        <ItemBody>
+          <ItemLabel style={{ color: DS2_VARS.g500, fontWeight: 500 }}>
+            {t('+ Прикрепить другой дашборд')}
+          </ItemLabel>
+        </ItemBody>
+      </Item>
     </Popover>,
     document.body,
   );

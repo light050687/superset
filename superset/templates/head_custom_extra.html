@@ -182,6 +182,29 @@
     --dock-btn-active-ring: inset 0 0 0 1px rgba(59, 139, 217, 0.35);
     --dock-btn-active-glow: 0 0 8px rgba(59, 139, 217, 0.55);
 
+    /* Pixel-perfect parity Floating Dock — pill полупрозрачная (мокап
+       analytics-floating-dock.html). g50/bg2/bg3 в мокапе — это поверхности
+       3-го слоя, из которых через color-mix(in oklab, ... %, transparent)
+       формируются полупрозрачные фоны pill, tile, popover. Здесь —
+       прямые rgba-эквиваленты (color-mix не поддерживается старыми Safari). */
+    --bg3:                  rgba(237, 238, 241, 0.95);
+    --pill-bg:              rgba(237, 238, 241, 0.80);
+    --pill-bg-hover:        rgba(247, 248, 250, 0.85);
+    --pill-bg-focused:      rgba(247, 248, 250, 0.92);
+    --pill-focus-border:    rgba(80, 110, 180, 0.55);
+    --pill-focus-shadow:    0 0 0 3px rgba(59, 139, 217, 0.10),
+                            0 12px 28px rgba(0, 0, 0, 0.18);
+
+    /* Popover (ContextPopover, ModelPopover, AiSettingsPopover) — отдельный
+       glass-материал: blur 28 (vs 16 у dock/drawer/AI), saturate 160. */
+    --popover-filter:       blur(28px) saturate(160%);
+    --popover-shadow:       0 20px 60px rgba(0, 0, 0, 0.18),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.7);
+
+    /* Tile (dc-tile в Tools/Create drawer) — hover. */
+    --tile-hover-bg:        rgba(237, 238, 241, 0.80);
+    --tile-hover-border:    rgba(220, 220, 220, 0.70);
+
     /* Геометрия дока и его overlay-ей */
     --dock-height:          58px;
     --dock-bottom:          18px;
@@ -255,6 +278,21 @@
                           rgba(167, 139, 250, 0.10));
     --dock-btn-active-ring: inset 0 0 0 1px rgba(92, 170, 240, 0.35);
     --dock-btn-active-glow: 0 0 8px rgba(92, 170, 240, 0.65);
+
+    /* Pill / popover / tile — dark variants (pixel-perfect mockup parity) */
+    --bg3:                  rgba(34, 36, 43, 0.95);
+    --pill-bg:              rgba(34, 36, 43, 0.80);
+    --pill-bg-hover:        rgba(26, 27, 33, 0.85);
+    --pill-bg-focused:      rgba(26, 27, 33, 0.92);
+    --pill-focus-border:    rgba(96, 130, 200, 0.55);
+    --pill-focus-shadow:    0 0 0 3px rgba(92, 170, 240, 0.10),
+                            0 12px 28px rgba(0, 0, 0, 0.55);
+
+    --popover-shadow:       0 20px 60px rgba(0, 0, 0, 0.6),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+    --tile-hover-bg:        rgba(34, 36, 43, 0.80);
+    --tile-hover-border:    rgba(52, 56, 64, 0.70);
   }
 
   /* ═══ DS 2.0 — числа: tabular-nums в таблицах и BigNumber ═══ */

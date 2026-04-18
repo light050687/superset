@@ -68,6 +68,14 @@ const RailNav = styled.nav`
   box-shadow: ${DS2_VARS.dockShadow};
   z-index: 101;
 
+  /* Magnetic neighbor magnification (мокап rail-btn hover sibling).
+     Селектор по типу элемента — все button-дети nav (RailButton + RailAvatar).
+     Работает без emotion-component-selectors. */
+  & > button:hover + button,
+  & > button:has(+ button:hover) {
+    transform: translateY(-3px) scale(1.08);
+  }
+
   @media print {
     display: none;
   }

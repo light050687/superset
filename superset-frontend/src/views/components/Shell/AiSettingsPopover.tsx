@@ -65,17 +65,18 @@ export const DEFAULT_AI_PARAMS: AiParams = {
   language: 'RU',
 };
 
+/* Popover: blur(28) saturate(160) + popoverShadow + padding 10 — мокап. */
 const Popover = styled.div`
   position: fixed;
   min-width: 280px;
   max-width: 320px;
-  padding: ${DS2_SPACE.s1 + 2}px;
+  padding: 10px;
   background: ${DS2_VARS.glassBg};
-  backdrop-filter: ${DS2_VARS.glassFilter};
-  -webkit-backdrop-filter: ${DS2_VARS.glassFilter};
+  backdrop-filter: ${DS2_VARS.popoverFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.popoverFilter};
   border: 1px solid ${DS2_VARS.glassBorder};
   border-radius: ${DS2_VARS.rGlass};
-  box-shadow: ${DS2_VARS.glassShadow};
+  box-shadow: ${DS2_VARS.popoverShadow};
   z-index: 110;
   font-family: ${DS2_VARS.fontSans};
 `;
@@ -86,14 +87,14 @@ const Head = styled.div`
   color: ${DS2_VARS.g500};
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding: ${DS2_SPACE.s2}px ${DS2_SPACE.s3}px ${DS2_SPACE.s1}px;
+  padding: 6px 10px 8px;
 `;
 
 const Row = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${DS2_SPACE.s2}px ${DS2_SPACE.s3}px;
+  padding: 8px 10px;
   font-size: 12.5px;
   color: ${DS2_VARS.g600};
 `;

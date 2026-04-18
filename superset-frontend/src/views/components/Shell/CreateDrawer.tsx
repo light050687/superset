@@ -65,8 +65,8 @@ const Tile = styled.button`
     border-color 0.12s ${DS2_VARS.ease};
 
   &:hover {
-    background: ${DS2_VARS.g100};
-    border-color: ${DS2_VARS.g200};
+    background: ${DS2_VARS.tileHoverBg};
+    border-color: ${DS2_VARS.tileHoverBorder};
   }
 
   &:focus-visible {
@@ -82,7 +82,8 @@ const TileIcon = styled.div<{ $accent: string }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${({ $accent }) => `color-mix(in oklab, ${$accent} 12%, ${DS2_VARS.g50})`};
+  background: ${({ $accent }) =>
+    `color-mix(in oklab, ${$accent} 12%, ${DS2_VARS.bg3})`};
   border: 1px solid ${DS2_VARS.g200};
   color: ${({ $accent }) => $accent};
 
