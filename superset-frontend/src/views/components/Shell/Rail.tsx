@@ -41,12 +41,9 @@ const RailNav = styled.nav`
   gap: ${DS2_SPACE.s1}px;
   z-index: 20;
 
-  /* Rail закреплён — не скроллится вместе с контентом страницы.
-     height:100vh + sticky top:0 держат rail у верхнего края вьюпорта,
-     внутренний overflow-y обеспечивает прокрутку самих кнопок если их
-     станет больше чем влезает по высоте. */
-  position: sticky;
-  top: 0;
+  /* ShellRoot теперь height:100vh + overflow:hidden, поэтому Rail просто
+     flex-ребёнок фиксированной высоты viewport. Sticky больше не нужен.
+     overflow-y:auto — защита на случай большого числа rail-кнопок. */
   height: 100vh;
   overflow-y: auto;
 

@@ -30,7 +30,7 @@ import type { BentoCardKind, BentoCardSize, BentoItem } from './types';
 const Page = styled.div`
   padding: ${DS2_SPACE.s3}px ${DS2_SPACE.s6}px ${DS2_SPACE.s12}px;
   background: ${DS2_VARS.bg};
-  min-height: 100%;
+  /* min-height больше не нужен: скролл-контейнер теперь ShellMain. */
 `;
 
 const MainHeader = styled.header`

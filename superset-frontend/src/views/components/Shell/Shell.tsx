@@ -40,17 +40,32 @@ import type { DrawerKind } from './types';
 
 const ShellRoot = styled.div`
   display: flex;
-  min-height: 100vh;
+  /* Shell = «окно приложения» — фиксированный viewport, window-scroll не
+     появляется. Rail и Drawer — ребёнки flex с height:100vh, всегда видны. */
+  height: 100vh;
+  overflow: hidden;
   background: ${DS2_VARS.bg};
   color: ${DS2_VARS.ink};
   font-family: ${DS2_VARS.fontSans};
+
+  @media print {
+    /* При печати shell раскрывается по контенту, rail/drawer уже скрыты
+       через @media print (см. их стили), и странице нужно позволить расти. */
+    height: auto;
+    overflow: visible;
+  }
 `;
 
 const ShellMain = styled.main`
   flex: 1;
   min-width: 0;
+  /* min-height:0 обязателен для flex-child с overflow — иначе контейнер
+     не даст содержимому сжиматься и scroll не появится. */
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
 `;
 
 interface ShellProps {

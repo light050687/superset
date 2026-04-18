@@ -29,11 +29,9 @@ const DrawerAside = styled.aside<{ $open: boolean }>`
   flex-direction: column;
   z-index: 15;
 
-  /* Drawer закреплён рядом с Rail — тоже sticky, чтобы содержимое
-     (дерево каталога, списки инструментов и т.п.) оставалось на месте
-     при прокрутке основного контента. */
-  position: sticky;
-  top: 0;
+  /* ShellRoot на 100vh + overflow:hidden делает Drawer просто flex-ребёнком
+     фиксированной высоты. Внутренний скролл (DrawerBody) отвечает за
+     длинное дерево папок. */
   height: 100vh;
 
   @media print {
