@@ -28,6 +28,7 @@ import { DS2_VARS } from 'src/theme/ds2';
 import { useThemeContext } from 'src/theme/ThemeProvider';
 import type { BootstrapUser, MenuData } from 'src/types/bootstrapTypes';
 import { getUrlParam } from 'src/utils/urlUtils';
+import { AiHistorySheet } from './AiHistorySheet';
 import { CalendarDropdown, type CalendarEvent } from './CalendarDropdown';
 import {
   DEFAULT_AI_CONTEXT,
@@ -156,6 +157,7 @@ export const Shell: FC<ShellProps> = ({
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiSeedQuery, setAiSeedQuery] = useState<string | undefined>(undefined);
+  const [aiHistoryOpen, setAiHistoryOpen] = useState(false);
 
   // Контекст AI (общий / дашборд / чарт) и модель LLM для CentralPill.
   const effectiveContexts = useMemo<readonly AiContext[]>(
@@ -230,11 +232,24 @@ export const Shell: FC<ShellProps> = ({
   }, []);
 
   /**
-   * Открытие истории чатов (AiHistorySheet). В Этапе A пока заглушка —
-   * реальный bottom sheet будет подключён в Этапе B5.
+   * Toggle истории чатов (AiHistorySheet). Открывается из dock'а или
+   * из кнопки «История» внутри AI overlay.
    */
   const handleOpenAiHistory = useCallback(() => {
-    // Пока просто открываем AI overlay; полноценный AiHistorySheet — в B5.
+    setAiHistoryOpen(prev => !prev);
+  }, []);
+  const handleCloseAiHistory = useCallback(() => {
+    setAiHistoryOpen(false);
+  }, []);
+
+  const handleSelectAiSession = useCallback((_sessionId: number) => {
+    // Переключение сессии — откроем AI overlay; дальнейшая загрузка
+    // сообщений выполняется в AiFullView по session_id (TODO Этап B12).
+    setAiOpen(true);
+  }, []);
+
+  const handleNewAiChat = useCallback(() => {
+    setAiSeedQuery(undefined);
     setAiOpen(true);
   }, []);
 
@@ -336,6 +351,12 @@ export const Shell: FC<ShellProps> = ({
           seedQuery={aiSeedQuery}
           contextId={contextId}
           modelId={modelId}
+        />
+        <AiHistorySheet
+          open={aiHistoryOpen}
+          onClose={handleCloseAiHistory}
+          onSelectSession={handleSelectAiSession}
+          onNewChat={handleNewAiChat}
         />
       </ShellRoot>
     </ShellProvider>
