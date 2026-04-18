@@ -75,10 +75,56 @@ const ShellRoot = styled.div`
   background: ${DS2_VARS.bg};
   color: ${DS2_VARS.ink};
   font-family: ${DS2_VARS.fontSans};
+  isolation: isolate;
+
+  /* Ambient orbs — мягкие цветные blur-пятна (тренд 2026 «warmth &
+     humanity»). Два orb'а sky (top-left) и violet (bottom-right) на фоне,
+     не мешают контенту (z-index -1, pointer-events none). В печати скрыты. */
+  &::before,
+  &::after {
+    content: '';
+    position: fixed;
+    pointer-events: none;
+    z-index: -1;
+    filter: blur(80px);
+    opacity: 0.5;
+  }
+
+  &::before {
+    top: -10%;
+    left: -10%;
+    width: 50vw;
+    height: 50vw;
+    max-width: 700px;
+    max-height: 700px;
+    background: radial-gradient(
+      circle,
+      rgba(59, 139, 217, 0.18),
+      transparent 60%
+    );
+  }
+
+  &::after {
+    bottom: -10%;
+    right: -10%;
+    width: 55vw;
+    height: 55vw;
+    max-width: 800px;
+    max-height: 800px;
+    background: radial-gradient(
+      circle,
+      rgba(139, 92, 246, 0.15),
+      transparent 60%
+    );
+  }
 
   @media print {
     height: auto;
     overflow: visible;
+    &::before,
+    &::after {
+      display: none;
+    }
   }
 `;
 
