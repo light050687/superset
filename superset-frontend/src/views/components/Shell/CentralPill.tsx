@@ -35,6 +35,12 @@ import {
   useState,
 } from 'react';
 import { DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
+import {
+  AiSettingsPopover,
+  DEFAULT_AI_PARAMS,
+  DEFAULT_AI_TOOLS,
+  type AiToolsConfig,
+} from './AiSettingsPopover';
 import type { AiContext, AiModelDescriptor, AiModelId } from './CentralPillTypes';
 import { ContextPopover } from './ContextPopover';
 import { ModelPopover } from './ModelPopover';
@@ -404,10 +410,13 @@ export const CentralPill: FC<CentralPillProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const ctxBtnRef = useRef<HTMLButtonElement>(null);
   const modelBtnRef = useRef<HTMLButtonElement>(null);
+  const gearBtnRef = useRef<HTMLButtonElement>(null);
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [ctxOpen, setCtxOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [aiTools, setAiTools] = useState<AiToolsConfig>(DEFAULT_AI_TOOLS);
 
   /**
    * Click-outside handler — схлопывает pill когда клик вне pill и вне
@@ -442,9 +451,8 @@ export const CentralPill: FC<CentralPillProps> = ({
   }, [expandedNow, onFocusChange]);
 
   const hasText = query.trim().length > 0;
-  // Pill expanded когда focus на input ИЛИ открыт popover (ctx/model).
-  // Второе условие удерживает pill расширенной пока popover открыт.
-  const expanded = focused || ctxOpen || modelOpen;
+  // Pill expanded когда focus на input ИЛИ открыт любой popover.
+  const expanded = focused || ctxOpen || modelOpen || settingsOpen;
 
   const current = contexts.find(c => c.id === contextId) ?? contexts[0];
   const modelLabel =
@@ -577,7 +585,11 @@ export const CentralPill: FC<CentralPillProps> = ({
               {hasText ? <IconSend /> : <IconMic />}
             </MicBtn>
             <TbBtn
+              ref={gearBtnRef}
               type="button"
+              onClick={() => setSettingsOpen(prev => !prev)}
+              aria-haspopup="dialog"
+              aria-expanded={settingsOpen}
               aria-label={t('Настройки ИИ')}
               title={t('Настройки ИИ')}
             >
@@ -602,6 +614,15 @@ export const CentralPill: FC<CentralPillProps> = ({
         onClose={() => setModelOpen(false)}
         currentModelId={modelId}
         onSelect={onModelChange}
+      />
+
+      <AiSettingsPopover
+        anchor={gearBtnRef.current}
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        tools={aiTools}
+        onToolsChange={setAiTools}
+        params={DEFAULT_AI_PARAMS}
       />
     </>
   );

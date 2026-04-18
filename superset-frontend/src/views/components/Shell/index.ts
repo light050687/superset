@@ -18,6 +18,13 @@ export { CentralPill } from './CentralPill';
 export { ContextPopover } from './ContextPopover';
 export { ModelPopover } from './ModelPopover';
 export {
+  AiSettingsPopover,
+  DEFAULT_AI_PARAMS,
+  DEFAULT_AI_TOOLS,
+  type AiParams,
+  type AiToolsConfig,
+} from './AiSettingsPopover';
+export {
   AI_MODELS,
   DEFAULT_AI_CONTEXT,
   DEFAULT_AI_CONTEXTS,
