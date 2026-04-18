@@ -27,7 +27,8 @@
  * Cmd+K по-прежнему открывает CommandPalette глобально (хоткей ловится в
  * Shell.tsx) — пилюля ничего про него не знает.
  */
-import { css, styled, t } from '@superset-ui/core';
+import { keyframes } from '@emotion/react';
+import { styled, t } from '@superset-ui/core';
 import {
   type FC,
   type FormEvent,
@@ -208,6 +209,17 @@ const KbdHint = styled.span<{ $visible: boolean }>`
   flex-shrink: 0;
 `;
 
+const fadeUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+`;
+
 const ToolsRow = styled.div`
   display: flex;
   align-items: center;
@@ -215,20 +227,7 @@ const ToolsRow = styled.div`
   padding-top: ${DS2_SPACE.s1}px;
   margin-top: ${DS2_SPACE.s1}px;
   border-top: 1px solid ${DS2_VARS.g100};
-  animation: ${css`
-    centralPillFadeUp 0.18s ${DS2_VARS.ease}
-  `};
-
-  @keyframes centralPillFadeUp {
-    from {
-      opacity: 0;
-      transform: translateY(4px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
+  animation: ${fadeUp} 0.18s ${DS2_VARS.ease};
 `;
 
 const ToolBtn = styled.button`

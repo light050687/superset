@@ -167,20 +167,14 @@ const RailButton = styled.button<{ $active?: boolean }>`
 `;
 
 /**
- * Magnetic-эффект соседей: увеличиваем кнопки, смежные с той, над которой hover.
- * Работает через :has() (Safari 15.4+, Chromium 105+, Firefox 121+).
- * В браузерах без :has() — просто базовый scale(1.1) на hover-иконке, без magnetic.
+ * Magnetic-эффект соседей в мокапе (scale соседних при hover) требует
+ * @emotion/babel-plugin для component-селекторов `${RailButton}` — в нашей
+ * сборке этот плагин не включён. Без него оставляем только self-scale на hover
+ * (он уже задан в RailButton:hover выше). Группировочная обёртка — простой
+ * display:contents span, чтобы не ломать flex-поток dock'а.
  */
 const RailMagnet = styled.div`
   display: contents;
-
-  @supports selector(:has(*)) {
-    /* Нативный :has для соседей */
-    ${RailButton}:hover + ${RailButton},
-    ${RailButton}:has(+ ${RailButton}:hover) {
-      transform: scale(${DS2_VARS.magnifyNeighbor});
-    }
-  }
 `;
 
 const RailBadgeDot = styled.span<{ $color: string }>`
