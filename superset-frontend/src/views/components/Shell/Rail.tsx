@@ -10,9 +10,14 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 import { styled, t } from '@superset-ui/core';
-import { type FC, type RefObject, useMemo } from 'react';
-import { useHistory } from 'react-router-dom';
-import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
+import {
+  type FC,
+  type ReactNode,
+  type RefObject,
+  useMemo,
+} from 'react';
+import { useHistory, useLocation } from 'react-router-dom';
+import { DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 import { CentralPill } from './CentralPill';
 import type {
   AiContext,
@@ -21,26 +26,24 @@ import type {
 } from './CentralPillTypes';
 import { useShell } from './ShellContext';
 import {
-  IconAi,
   IconCalendar,
   IconCatalog,
   IconCreate,
+  IconHistory,
   IconHome,
-  IconSettings,
-  IconTheme,
+  IconMoon,
+  IconSun,
   IconTools,
 } from './RailIcons';
-import type { RailButtonDescriptor } from './types';
 
-/** Сохраняется как исторический псевдоним. Реальная высота — DS2_DOCK.height. */
+/** Историческое имя — сохраняется для обратной совместимости импортов. */
 export const RAIL_WIDTH = 56;
 
 /**
- * Floating Dock — горизонтальный плавающий dock (иконочный bar) внизу экрана.
- * Пришёл на смену вертикальному Rail (56px слева) согласно мокапу
- * analytics-floating-dock.html. Использует Liquid Glass + macOS-style
- * magnification. Прежнее имя `RailNav` сохранено для обратной совместимости
- * импортов, но теперь это горизонтальная пилюля, не вертикальный sidebar.
+ * Floating Dock — горизонтальный плавающий dock по мокапу
+ * `analytics-floating-dock.html`. Glass-материал с blur+saturate,
+ * magnification на hover, active-состояние с gradient+glow.
+ * На узких экранах (<768px) скрыт CSS-ом (вместо него MobileNav).
  */
 const RailNav = styled.nav`
   position: fixed;
@@ -52,13 +55,13 @@ const RailNav = styled.nav`
   flex-direction: row;
   align-items: center;
   gap: ${DS2_SPACE.s1}px;
-  padding: 0 ${DS2_SPACE.s3}px;
-  background: ${DS2_VARS.glassBg};
-  backdrop-filter: ${DS2_VARS.glassFilter};
-  -webkit-backdrop-filter: ${DS2_VARS.glassFilter};
-  border: 1px solid ${DS2_VARS.glassBorder};
-  border-radius: ${DS2_VARS.rPill};
-  box-shadow: ${DS2_VARS.glassShadow};
+  padding: 0 ${DS2_SPACE.s2}px;
+  background: ${DS2_VARS.dockBg};
+  backdrop-filter: ${DS2_VARS.dockFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.dockFilter};
+  border: 1px solid ${DS2_VARS.dockBorder};
+  border-radius: ${DS2_VARS.dockRadius};
+  box-shadow: ${DS2_VARS.dockShadow};
   z-index: 101;
 
   @media print {
@@ -66,79 +69,59 @@ const RailNav = styled.nav`
   }
 
   @media (max-width: 767px) {
-    /* На узких экранах отображается MobileNav; FloatingDock скрыт CSS-ом
-       (не меняем React-дерево, чтобы не ломать state и hydration). */
     display: none;
   }
 `;
 
-const RailLogo = styled.button`
-  width: 36px;
-  height: 36px;
-  border-radius: ${DS2_RADIUS.card}px;
-  background: ${DS2_VARS.cSky};
-  color: ${DS2_VARS.s};
-  font-family: ${DS2_VARS.fontSans};
-  font-weight: 800;
-  font-size: 13px;
-  border: none;
-  cursor: pointer;
+/**
+ * Вертикальный разделитель между группами кнопок (26×1, полупрозрачный).
+ * В мокапе их три: после Create, после CentralPill, перед Avatar.
+ */
+const RailSep = styled.span`
+  width: 1px;
+  height: 26px;
+  background: ${DS2_VARS.g200};
+  opacity: 0.6;
+  margin: 0 ${DS2_SPACE.s1}px;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    transform ${DS2_VARS.magnifyDuration} ${DS2_VARS.ease},
-    box-shadow ${DS2_VARS.magnifyDuration} ${DS2_VARS.ease};
-
-  &:hover {
-    transform: translateY(calc(-1 * ${DS2_VARS.magnifyLift}))
-      scale(${DS2_VARS.magnifyScale});
-    box-shadow: 0 8px 24px rgba(59, 139, 217, 0.35);
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${DS2_VARS.cSky};
-    outline-offset: 2px;
-  }
 `;
 
 /**
- * Rail-кнопка с magnetic magnification (macOS dock style).
+ * Rail-кнопка 44×44 с radius 14 и magnification на hover
+ * (translateY(-6) scale(1.18)). Active-состояние даёт gradient-bg +
+ * inset-ring + glow-dot под кнопкой (::after).
  *
- * При hover:
- *   - Активная иконка поднимается на --magnify-lift и увеличивается до
- *     --magnify-scale (1.1)
- *   - Соседние иконки увеличиваются до --magnify-neighbor (1.05) через
- *     селектор :has() — пропадает в браузерах без поддержки (graceful fallback)
- *
- * Active-состояние (открытый drawer) визуализируется тонким индикатором
- * (точкой) под иконкой, без изменения фона — дизайн требует чистого dock'а.
+ * transform-origin: center bottom — иконка «растёт» из точки над dock'ом,
+ * как в macOS dock, создавая иллюзию магнитного приближения.
  */
 const RailButton = styled.button<{ $active?: boolean }>`
-  width: 38px;
-  height: 38px;
-  border-radius: ${DS2_RADIUS.card}px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   border: none;
+  border-radius: 14px;
   background: ${({ $active }) =>
-    $active ? 'rgba(59, 139, 217, 0.08)' : 'transparent'};
-  color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.g500)};
+    $active ? DS2_VARS.dockBtnActiveBg : 'transparent'};
+  color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.g600)};
   cursor: pointer;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
+  transform-origin: center bottom;
+  box-shadow: ${({ $active }) =>
+    $active ? DS2_VARS.dockBtnActiveRing : 'none'};
   transition:
-    background 0.12s ${DS2_VARS.ease},
-    color 0.12s ${DS2_VARS.ease},
-    transform ${DS2_VARS.magnifyDuration} ${DS2_VARS.ease};
+    transform 0.2s ${DS2_VARS.ease},
+    background 0.15s ${DS2_VARS.ease},
+    color 0.15s ${DS2_VARS.ease},
+    box-shadow 0.2s ${DS2_VARS.ease};
 
   &:hover {
-    background: ${DS2_VARS.g100};
+    background: ${DS2_VARS.dockBtnHoverBg};
     color: ${DS2_VARS.ink};
-    transform: translateY(calc(-1 * ${DS2_VARS.magnifyLift}))
-      scale(${DS2_VARS.magnifyScale});
+    transform: translateY(-6px) scale(1.18);
   }
 
   &:focus-visible {
@@ -147,75 +130,84 @@ const RailButton = styled.button<{ $active?: boolean }>`
   }
 
   svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
+    stroke-width: 1.6;
   }
 
   &::after {
     content: '';
     position: absolute;
-    bottom: -6px;
+    bottom: -8px;
     left: 50%;
+    transform: translateX(-50%);
     width: 4px;
     height: 4px;
     border-radius: 50%;
     background: ${({ $active }) =>
       $active ? DS2_VARS.cSky : 'transparent'};
-    transform: translateX(-50%);
+    box-shadow: ${({ $active }) =>
+      $active ? DS2_VARS.dockBtnActiveGlow : 'none'};
     transition: background 0.12s ${DS2_VARS.ease};
   }
 `;
 
-/**
- * Magnetic-эффект соседей в мокапе (scale соседних при hover) требует
- * @emotion/babel-plugin для component-селекторов `${RailButton}` — в нашей
- * сборке этот плагин не включён. Без него оставляем только self-scale на hover
- * (он уже задан в RailButton:hover выше). Группировочная обёртка — простой
- * display:contents span, чтобы не ломать flex-поток dock'а.
- */
-const RailMagnet = styled.div`
-  display: contents;
-`;
-
+/** Бейдж с glow (мокап: `box-shadow: 0 0 0 2px bg1, 0 0 8px tang`). */
 const RailBadgeDot = styled.span<{ $color: string }>`
   position: absolute;
   top: 6px;
   right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${({ $color }) => $color};
+  box-shadow:
+    0 0 0 2px ${DS2_VARS.dockBg},
+    0 0 8px ${({ $color }) => $color};
+`;
+
+/** Простая цветная точка без glow (для календаря — наличие событий). */
+const RailDot = styled.span<{ $color: string }>`
+  position: absolute;
+  top: 8px;
+  right: 8px;
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: ${({ $color }) => $color};
-  box-shadow: 0 0 0 2px ${DS2_VARS.glassBg};
 `;
 
-const RailSeparator = styled.span`
-  width: 1px;
-  height: 24px;
-  background: ${DS2_VARS.g200};
-  margin: 0 ${DS2_SPACE.s1}px;
-  flex-shrink: 0;
-`;
-
+/**
+ * Avatar 34×34 с gradient (violet→fuchsia) и border 2px из dock-bg.
+ * Активируется кликом — открывает SettingsDropdown.
+ */
 const RailAvatar = styled.button`
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 2px solid ${DS2_VARS.dockBg};
   border-radius: 50%;
-  background: ${DS2_VARS.cViolet};
-  color: ${DS2_VARS.s};
+  background: linear-gradient(
+    135deg,
+    ${DS2_VARS.cViolet},
+    ${DS2_VARS.cFuchsia}
+  );
+  color: #fff;
   font-family: ${DS2_VARS.fontSans};
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  border: none;
   cursor: pointer;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform ${DS2_VARS.magnifyDuration} ${DS2_VARS.ease};
+  transition:
+    transform 0.2s ${DS2_VARS.ease},
+    box-shadow 0.2s ${DS2_VARS.ease};
 
   &:hover {
-    transform: translateY(calc(-1 * ${DS2_VARS.magnifyLift}))
-      scale(${DS2_VARS.magnifyScale});
+    transform: translateY(-4px) scale(1.1);
+    box-shadow: 0 6px 18px rgba(139, 92, 246, 0.4);
   }
 
   &:focus-visible {
@@ -224,25 +216,55 @@ const RailAvatar = styled.button`
   }
 `;
 
+/**
+ * Обёртка для sun+moon SVG. Видимость переключается через селектор
+ * [data-theme="dark"|"light"] на html. В dark видна moon, в light — sun.
+ */
+const ThemeIconSlot = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+
+  .th-sun {
+    display: none;
+  }
+  .th-moon {
+    display: block;
+  }
+
+  html[data-theme='light'] & .th-sun,
+  :root:not([data-theme='dark']) & .th-sun {
+    display: block;
+  }
+  html[data-theme='light'] & .th-moon,
+  :root:not([data-theme='dark']) & .th-moon {
+    display: none;
+  }
+`;
+
 interface RailProps {
   /** Инициалы пользователя для аватара (2 символа). */
   userInitials?: string;
   /** Базовый путь приложения (для react-router push). */
   brandUrl?: string;
-  /** Хендлер клика по бренду. Если не задан — навигация на brandUrl. */
+  /** Хендлер клика по бренду (сейчас бренд объединён с Home). */
   onBrandClick?: () => void;
   /** Хендлер открытия календаря. */
   onOpenCalendar?: () => void;
   /** Хендлер переключения темы. */
   onToggleTheme?: () => void;
   /**
-   * Хендлер открытия AI. Вызывается кнопкой rail-ai И когда CentralPill
-   * делает submit — в этом случае приходит seed-запрос и meta (контекст, модель).
+   * Хендлер открытия AI. Вызывается когда CentralPill делает submit —
+   * приходит seed-запрос и meta (контекст, модель). Также может быть
+   * вызван без аргументов из других мест (например, из drawer).
    */
   onOpenAi?: (
     seed?: string,
     meta?: { contextId: string; modelId: AiModelId },
   ) => void;
+  /** Хендлер открытия истории чатов (bottom sheet AiHistorySheet). */
+  onOpenAiHistory?: () => void;
   /** Хендлер открытия профиля/настроек. */
   onOpenSettings?: () => void;
   /** Бейдж на AI-кнопке (color token или hex). */
@@ -264,13 +286,18 @@ interface RailProps {
   onModelChange: (model: AiModelDescriptor) => void;
 }
 
+/** Спецификация элемента dock'а (кнопка, разделитель или компонент). */
+type RailSlot =
+  | { kind: 'btn'; node: ReactNode }
+  | { kind: 'sep' }
+  | { kind: 'custom'; node: ReactNode };
+
 export const Rail: FC<RailProps> = ({
   userInitials = '',
-  brandUrl = '/',
-  onBrandClick,
   onOpenCalendar,
   onToggleTheme,
   onOpenAi,
+  onOpenAiHistory,
   onOpenSettings,
   aiBadgeColor,
   calendarBadgeColor,
@@ -284,181 +311,202 @@ export const Rail: FC<RailProps> = ({
   onModelChange,
 }) => {
   const history = useHistory();
+  const location = useLocation();
   const { openedDrawer, toggleDrawer, activeRailId } = useShell();
 
-  /**
-   * Порядок кнопок floating dock (мокап analytics-floating-dock.html):
-   *   Logo · Home · Catalog · Tools · Create · [CentralPill] ·
-   *   Calendar · Theme · AI · Separator · Avatar
-   *
-   * CentralPill встраивается между `rail-create` и `rail-calendar` —
-   * рендерится отдельно в JSX, а не как кнопка. Поиск через Ctrl+K
-   * (CommandPalette) продолжает работать глобально.
-   */
-  const buttons = useMemo<RailButtonDescriptor[]>(
+  // Home активна на welcome/дашборде по умолчанию (если ничего не выбрано).
+  const isHomeActive =
+    activeRailId === 'rail-home' ||
+    (!activeRailId && /\/(superset\/)?welcome\/?/.test(location.pathname));
+
+  const onHome = () => history.push('/superset/welcome/');
+
+  const slots = useMemo<RailSlot[]>(
     () => [
       {
-        id: 'rail-home',
-        label: t('Главная'),
-        icon: <IconHome />,
-        href: '/superset/welcome/',
+        kind: 'btn',
+        node: (
+          <RailButton
+            key="rail-home"
+            type="button"
+            onClick={onHome}
+            aria-label={t('Главная')}
+            title={t('Главная')}
+            $active={isHomeActive}
+          >
+            <IconHome />
+          </RailButton>
+        ),
       },
       {
-        id: 'rail-catalog',
-        label: t('Каталог'),
-        icon: <IconCatalog />,
-        drawer: 'catalog',
-        badgeColor: catalogBadgeColor,
+        kind: 'btn',
+        node: (
+          <RailButton
+            key="rail-catalog"
+            type="button"
+            onClick={() => toggleDrawer('catalog')}
+            aria-label={t('Каталог')}
+            aria-pressed={openedDrawer === 'catalog'}
+            title={t('Каталог')}
+            $active={openedDrawer === 'catalog'}
+          >
+            <IconCatalog />
+            {catalogBadgeColor ? (
+              <RailBadgeDot $color={catalogBadgeColor} />
+            ) : null}
+          </RailButton>
+        ),
       },
       {
-        id: 'rail-tools',
-        label: t('Инструменты'),
-        icon: <IconTools />,
-        drawer: 'tools',
+        kind: 'btn',
+        node: (
+          <RailButton
+            key="rail-tools"
+            type="button"
+            onClick={() => toggleDrawer('tools')}
+            aria-label={t('Инструменты')}
+            aria-pressed={openedDrawer === 'tools'}
+            title={t('Инструменты')}
+            $active={openedDrawer === 'tools'}
+          >
+            <IconTools />
+          </RailButton>
+        ),
       },
       {
-        id: 'rail-create',
-        label: t('Создать'),
-        icon: <IconCreate />,
-        drawer: 'create',
+        kind: 'btn',
+        node: (
+          <RailButton
+            key="rail-create"
+            type="button"
+            onClick={() => toggleDrawer('create')}
+            aria-label={t('Создать')}
+            aria-pressed={openedDrawer === 'create'}
+            title={t('Создать')}
+            $active={openedDrawer === 'create'}
+          >
+            <IconCreate />
+          </RailButton>
+        ),
+      },
+      { kind: 'sep' },
+      {
+        kind: 'btn',
+        node: (
+          <RailButton
+            key="rail-history"
+            type="button"
+            onClick={() => onOpenAiHistory?.()}
+            aria-label={t('История чатов')}
+            title={t('История чатов')}
+          >
+            <IconHistory />
+            {aiBadgeColor ? <RailBadgeDot $color={aiBadgeColor} /> : null}
+          </RailButton>
+        ),
       },
       {
-        id: 'rail-calendar',
-        label: t('Календарь'),
-        icon: <IconCalendar />,
-        onClick: onOpenCalendar,
-        badgeColor: calendarBadgeColor,
+        kind: 'custom',
+        node: (
+          <CentralPill
+            key="rail-ask"
+            contexts={contexts}
+            contextId={contextId}
+            onContextChange={onContextChange}
+            modelId={modelId}
+            onModelChange={onModelChange}
+            onSubmit={(query, meta) => onOpenAi?.(query, meta)}
+          />
+        ),
+      },
+      { kind: 'sep' },
+      {
+        kind: 'btn',
+        node: (
+          <RailButton
+            key="rail-calendar"
+            ref={calendarButtonRef}
+            type="button"
+            onClick={() => onOpenCalendar?.()}
+            aria-label={t('Календарь')}
+            title={t('Календарь')}
+          >
+            <IconCalendar />
+            {calendarBadgeColor ? <RailDot $color={calendarBadgeColor} /> : null}
+          </RailButton>
+        ),
       },
       {
-        id: 'rail-theme',
-        label: t('Сменить тему'),
-        icon: <IconTheme />,
-        onClick: onToggleTheme,
+        kind: 'btn',
+        node: (
+          <RailButton
+            key="rail-theme"
+            type="button"
+            onClick={() => onToggleTheme?.()}
+            aria-label={t('Сменить тему')}
+            title={t('Сменить тему')}
+          >
+            <ThemeIconSlot>
+              <span className="th-sun">
+                <IconSun />
+              </span>
+              <span className="th-moon">
+                <IconMoon />
+              </span>
+            </ThemeIconSlot>
+          </RailButton>
+        ),
       },
+      { kind: 'sep' },
       {
-        id: 'rail-ai',
-        label: t('ИИ-аналитик'),
-        icon: <IconAi />,
-        onClick: () => onOpenAi?.(),
-        badgeColor: aiBadgeColor,
-      },
-      {
-        id: 'rail-settings',
-        label: t('Настройки и профиль'),
-        icon: <IconSettings />,
-        onClick: onOpenSettings,
-        separatorBefore: true,
+        kind: 'custom',
+        node: (
+          <RailAvatar
+            key="rail-settings"
+            ref={settingsButtonRef}
+            type="button"
+            onClick={() => onOpenSettings?.()}
+            aria-label={t('Настройки и профиль')}
+            title={t('Настройки и профиль')}
+          >
+            {userInitials}
+          </RailAvatar>
+        ),
       },
     ],
     [
+      isHomeActive,
+      openedDrawer,
+      toggleDrawer,
       onOpenCalendar,
-      onToggleTheme,
       onOpenAi,
+      onOpenAiHistory,
+      onToggleTheme,
       onOpenSettings,
       aiBadgeColor,
       calendarBadgeColor,
       catalogBadgeColor,
+      settingsButtonRef,
+      calendarButtonRef,
+      userInitials,
+      contexts,
+      contextId,
+      onContextChange,
+      modelId,
+      onModelChange,
     ],
   );
 
-  const handleClick = (btn: RailButtonDescriptor) => {
-    if (btn.drawer) {
-      toggleDrawer(btn.drawer);
-      return;
-    }
-    if (btn.onClick) {
-      btn.onClick();
-      return;
-    }
-    if (btn.href) {
-      history.push(btn.href);
-    }
-  };
-
-  const renderButton = (btn: RailButtonDescriptor) => {
-    const isActive =
-      activeRailId === btn.id ||
-      (btn.drawer !== undefined && openedDrawer === btn.drawer);
-    const key = btn.id;
-    const title = btn.hotkey ? `${btn.label} (${btn.hotkey})` : btn.label;
-
-    if (btn.id === 'rail-settings') {
-      return (
-        <RailAvatar
-          key={key}
-          ref={settingsButtonRef}
-          type="button"
-          onClick={() => handleClick(btn)}
-          aria-label={btn.label}
-          title={title}
-        >
-          {userInitials}
-        </RailAvatar>
-      );
-    }
-
-    return (
-      <RailButton
-        key={key}
-        ref={btn.id === 'rail-calendar' ? calendarButtonRef : undefined}
-        type="button"
-        onClick={() => handleClick(btn)}
-        aria-label={btn.label}
-        aria-pressed={btn.drawer ? openedDrawer === btn.drawer : undefined}
-        title={title}
-        $active={isActive}
-      >
-        {btn.icon}
-        {btn.badgeColor ? <RailBadgeDot $color={btn.badgeColor} /> : null}
-      </RailButton>
-    );
-  };
-
-  // CentralPill стоит между rail-create и rail-calendar — вставляем её
-  // как отдельный JSX между двумя группами кнопок.
-  const PILL_INSERT_AFTER = 'rail-create';
-  const insertIdx = buttons.findIndex(b => b.id === PILL_INSERT_AFTER);
-  const buttonsBeforePill =
-    insertIdx >= 0 ? buttons.slice(0, insertIdx + 1) : buttons;
-  const buttonsAfterPill =
-    insertIdx >= 0 ? buttons.slice(insertIdx + 1) : [];
-
   return (
     <RailNav aria-label={t('Главная навигация')}>
-      <RailLogo
-        type="button"
-        onClick={() => (onBrandClick ? onBrandClick() : history.push(brandUrl))}
-        aria-label={t('На главную')}
-        title={t('На главную')}
-      >
-        М
-      </RailLogo>
-      <RailMagnet>
-        {buttonsBeforePill.map(btn => (
-          <span key={btn.id} style={{ display: 'contents' }}>
-            {btn.separatorBefore ? <RailSeparator role="presentation" /> : null}
-            {renderButton(btn)}
-          </span>
-        ))}
-      </RailMagnet>
-
-      <CentralPill
-        contexts={contexts}
-        contextId={contextId}
-        onContextChange={onContextChange}
-        modelId={modelId}
-        onModelChange={onModelChange}
-        onSubmit={(query, meta) => onOpenAi?.(query, meta)}
-      />
-
-      <RailMagnet>
-        {buttonsAfterPill.map(btn => (
-          <span key={btn.id} style={{ display: 'contents' }}>
-            {btn.separatorBefore ? <RailSeparator role="presentation" /> : null}
-            {renderButton(btn)}
-          </span>
-        ))}
-      </RailMagnet>
+      {slots.map((slot, i) =>
+        slot.kind === 'sep' ? (
+          // eslint-disable-next-line react/no-array-index-key
+          <RailSep key={`sep-${i}`} role="presentation" />
+        ) : (
+          slot.node
+        ),
+      )}
     </RailNav>
   );
 };

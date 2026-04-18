@@ -154,8 +154,9 @@
     --ease: cubic-bezier(.4, 0, .2, 1);
 
     /* ═══ Floating Dock (Liquid Glass 2026) — светлая тема ═══
-       Используется FloatingDock, Drawer (bottom sheet), AiFullView (overlay),
-       ContextPopover, ModelPopover, SettingsDropdown, CalendarDropdown. */
+       Используется FloatingDock (rail), Drawer (bottom sheet), AiFullView
+       (overlay), ContextPopover, ModelPopover, SettingsDropdown, CalendarDropdown.
+       Значения зеркалят analytics-floating-dock.html мокап. */
     --glass-bg:          rgba(255, 255, 255, 0.85);
     --glass-bg-elev:     rgba(255, 255, 255, 0.95);
     --glass-border:      rgba(0, 0, 0, 0.06);
@@ -163,6 +164,23 @@
     --glass-shadow-elev: 0 20px 60px rgba(0, 0, 0, 0.25);
     --glass-scrim:       rgba(0, 0, 0, 0.4);
     --glass-filter:      blur(16px) saturate(180%);
+
+    /* Rail-специфичный фон — более прозрачный чем drawer/overlay */
+    --dock-bg:           rgba(255, 255, 255, 0.50);
+    --dock-filter:       blur(22px) saturate(160%);
+    --dock-border:       rgba(0, 0, 0, 0.05);
+    --dock-shadow:       0 1px 0 rgba(255, 255, 255, 0.7) inset,
+                         0 10px 28px rgba(15, 23, 42, 0.08),
+                         0 2px 6px rgba(15, 23, 42, 0.04);
+    --dock-radius:       18px;
+
+    /* Rail-button — фон hover и active-состояния */
+    --dock-btn-hover-bg: rgba(237, 238, 241, 0.80);
+    --dock-btn-active-bg: linear-gradient(135deg,
+                          rgba(59, 139, 217, 0.10),
+                          rgba(167, 139, 250, 0.06));
+    --dock-btn-active-ring: inset 0 0 0 1px rgba(59, 139, 217, 0.35);
+    --dock-btn-active-glow: 0 0 8px rgba(59, 139, 217, 0.55);
 
     /* Геометрия дока и его overlay-ей */
     --dock-height:          58px;
@@ -224,6 +242,19 @@
     --glass-shadow:      0 12px 32px rgba(0, 0, 0, 0.4);
     --glass-shadow-elev: 0 20px 60px rgba(0, 0, 0, 0.55);
     --glass-scrim:       rgba(0, 0, 0, 0.55);
+
+    /* Rail — dark */
+    --dock-bg:           rgba( 23,  26,  30, 0.38);
+    --dock-border:       rgba(255, 255, 255, 0.08);
+    --dock-shadow:       0 1px 0 rgba(255, 255, 255, 0.06) inset,
+                         0 10px 28px rgba(0, 0, 0, 0.28),
+                         0 2px 6px rgba(0, 0, 0, 0.16);
+    --dock-btn-hover-bg: rgba(34, 36, 43, 0.80);
+    --dock-btn-active-bg: linear-gradient(135deg,
+                          rgba(92, 170, 240, 0.14),
+                          rgba(167, 139, 250, 0.10));
+    --dock-btn-active-ring: inset 0 0 0 1px rgba(92, 170, 240, 0.35);
+    --dock-btn-active-glow: 0 0 8px rgba(92, 170, 240, 0.65);
   }
 
   /* ═══ DS 2.0 — числа: tabular-nums в таблицах и BigNumber ═══ */

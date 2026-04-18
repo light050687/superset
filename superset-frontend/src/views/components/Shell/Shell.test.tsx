@@ -52,14 +52,13 @@ const renderRail = (props = {}) =>
 describe('<Rail>', () => {
   it('рендерит все основные кнопки навигации с aria-label', () => {
     renderRail();
-    expect(screen.getByLabelText('На главную')).toBeInTheDocument();
     expect(screen.getByLabelText('Главная')).toBeInTheDocument();
     expect(screen.getByLabelText('Каталог')).toBeInTheDocument();
     expect(screen.getByLabelText('Инструменты')).toBeInTheDocument();
     expect(screen.getByLabelText('Создать')).toBeInTheDocument();
+    expect(screen.getByLabelText('История чатов')).toBeInTheDocument();
     expect(screen.getByLabelText('Календарь')).toBeInTheDocument();
     expect(screen.getByLabelText('Сменить тему')).toBeInTheDocument();
-    expect(screen.getByLabelText('ИИ-аналитик')).toBeInTheDocument();
     expect(screen.getByLabelText('Настройки и профиль')).toBeInTheDocument();
   });
 
@@ -94,12 +93,11 @@ describe('<Rail>', () => {
     expect(onOpenAi).not.toHaveBeenCalled();
   });
 
-  it('кнопка ИИ-аналитика вызывает onOpenAi без seed', () => {
-    const onOpenAi = jest.fn();
-    renderRail({ onOpenAi });
-    fireEvent.click(screen.getByLabelText('ИИ-аналитик'));
-    expect(onOpenAi).toHaveBeenCalledTimes(1);
-    expect(onOpenAi).toHaveBeenCalledWith();
+  it('клик по «История чатов» вызывает onOpenAiHistory', () => {
+    const onOpenAiHistory = jest.fn();
+    renderRail({ onOpenAiHistory });
+    fireEvent.click(screen.getByLabelText('История чатов'));
+    expect(onOpenAiHistory).toHaveBeenCalledTimes(1);
   });
 
   it('nav имеет aria-label главной навигации', () => {

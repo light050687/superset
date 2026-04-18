@@ -221,6 +221,17 @@ export const DS2_VARS = {
   glassScrim: 'var(--glass-scrim)',
   glassFilter: 'var(--glass-filter)',
 
+  /* Rail-специфичные (мокап analytics-floating-dock.html) */
+  dockBg: 'var(--dock-bg)',
+  dockFilter: 'var(--dock-filter)',
+  dockBorder: 'var(--dock-border)',
+  dockShadow: 'var(--dock-shadow)',
+  dockRadius: 'var(--dock-radius)',
+  dockBtnHoverBg: 'var(--dock-btn-hover-bg)',
+  dockBtnActiveBg: 'var(--dock-btn-active-bg)',
+  dockBtnActiveRing: 'var(--dock-btn-active-ring)',
+  dockBtnActiveGlow: 'var(--dock-btn-active-glow)',
+
   /* Радиусы */
   rCard: 'var(--r-card)',
   rControl: 'var(--r-control)',

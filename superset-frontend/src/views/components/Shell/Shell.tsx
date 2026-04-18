@@ -229,6 +229,15 @@ export const Shell: FC<ShellProps> = ({
     setAiSeedQuery(undefined);
   }, []);
 
+  /**
+   * Открытие истории чатов (AiHistorySheet). В Этапе A пока заглушка —
+   * реальный bottom sheet будет подключён в Этапе B5.
+   */
+  const handleOpenAiHistory = useCallback(() => {
+    // Пока просто открываем AI overlay; полноценный AiHistorySheet — в B5.
+    setAiOpen(true);
+  }, []);
+
   // Глобальный Ctrl+K / Cmd+K. Работает на любой странице под Shell.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -274,6 +283,7 @@ export const Shell: FC<ShellProps> = ({
         <Rail
           userInitials={initials}
           onOpenAi={handleOpenAi}
+          onOpenAiHistory={handleOpenAiHistory}
           onOpenCalendar={handleToggleCalendar}
           onOpenSettings={handleOpenSettings}
           onToggleTheme={onToggleTheme}
@@ -281,7 +291,7 @@ export const Shell: FC<ShellProps> = ({
           calendarButtonRef={calendarButtonRef}
           aiBadgeColor={DS2_VARS.up}
           calendarBadgeColor={DS2_VARS.cTangerine}
-          catalogBadgeColor={DS2_VARS.cSky}
+          catalogBadgeColor={DS2_VARS.cTangerine}
           contexts={effectiveContexts}
           contextId={contextId}
           onContextChange={handleContextChange}
