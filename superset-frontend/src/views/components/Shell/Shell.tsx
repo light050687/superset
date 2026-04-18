@@ -32,6 +32,7 @@ import { AiHistorySheet } from './AiHistorySheet';
 import { CalendarDropdown, type CalendarEvent } from './CalendarDropdown';
 import {
   DEFAULT_AI_CONTEXT,
+  DEFAULT_AI_CONTEXTS,
   DEFAULT_AI_MODEL,
   type AiContext,
   type AiModelDescriptor,
@@ -160,8 +161,11 @@ export const Shell: FC<ShellProps> = ({
   const [aiHistoryOpen, setAiHistoryOpen] = useState(false);
 
   // Контекст AI (общий / дашборд / чарт) и модель LLM для CentralPill.
+  // Если aiContexts не передан — используем дефолтный набор из мокапа
+  // (Общий + 3 дашборд-контекста). Реальные контексты могут приходить
+  // из bootstrap.common.ai_contexts (фильтруются permissions на backend).
   const effectiveContexts = useMemo<readonly AiContext[]>(
-    () => aiContexts ?? [DEFAULT_AI_CONTEXT],
+    () => aiContexts ?? DEFAULT_AI_CONTEXTS,
     [aiContexts],
   );
   const [contextId, setContextId] = useState<string>(DEFAULT_AI_CONTEXT.id);

@@ -45,9 +45,38 @@ export interface AiModelDescriptor {
 export const DEFAULT_AI_CONTEXT: AiContext = {
   id: 'general',
   label: 'Общий',
-  colorVar: 'var(--g500)',
-  hint: 'Запрос без привязки к дашборду',
+  colorVar: 'var(--c-sky)',
+  hint: 'Все данные компании',
 };
+
+/**
+ * Дефолтный набор контекстов из мокапа analytics-floating-dock.html:
+ * Общий (sky) · Потери Q1 (tang) · Продажи (teal/up) · Маржа P&L (violet).
+ * Используется в Shell если aiContexts проп не передан извне. Реальные
+ * дашборды-контексты могут прийти из bootstrap.common.ai_contexts
+ * (permissions-фильтрованные для текущего пользователя).
+ */
+export const DEFAULT_AI_CONTEXTS: readonly AiContext[] = [
+  DEFAULT_AI_CONTEXT,
+  {
+    id: 'dashboard_losses_q1',
+    label: 'Потери Q1',
+    colorVar: 'var(--c-tangerine)',
+    hint: 'Дашборд потерь за I квартал',
+  },
+  {
+    id: 'dashboard_sales',
+    label: 'Продажи',
+    colorVar: 'var(--up)',
+    hint: 'Дашборд продаж магазинов',
+  },
+  {
+    id: 'dashboard_margin',
+    label: 'Маржа P&L',
+    colorVar: 'var(--c-violet)',
+    hint: 'Маржинальность и P&L',
+  },
+];
 
 /**
  * Список моделей соответствует AI_BACKEND_URL (ai-analytics сервер):

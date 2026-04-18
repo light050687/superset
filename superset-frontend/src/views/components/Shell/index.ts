@@ -20,6 +20,7 @@ export { ModelPopover } from './ModelPopover';
 export {
   AI_MODELS,
   DEFAULT_AI_CONTEXT,
+  DEFAULT_AI_CONTEXTS,
   DEFAULT_AI_MODEL,
   type AiContext,
   type AiModelDescriptor,
