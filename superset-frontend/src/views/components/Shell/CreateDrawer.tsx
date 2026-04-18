@@ -8,89 +8,99 @@
  * with the License.  You may obtain a copy of the License at
  *
  *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * CreateDrawer — сетка быстрого создания объектов в формате мокапа
+ * (.dc-sections / .dc-grid / .dc-tile). Три секции:
+ *   Визуализация  · Документы · Данные
+ * Tile: цветная 38×38 иконка + label 12px.
  */
 import { styled, t } from '@superset-ui/core';
 import { type FC, type ReactNode } from 'react';
 import { useHistory } from 'react-router-dom';
-import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
+import { DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 import { useShell } from './ShellContext';
 
-interface CreateDrawerProps {
-  /** Колбэк, вызываемый после навигации — Shell закрывает drawer. */
-  onAfterNavigate?: () => void;
-}
-
-interface CreateItem {
-  key: string;
-  label: string;
-  url: string;
-  accent: string;
-  badge?: string;
-  icon: ReactNode;
-}
-
-const Body = styled.div`
+const Sections = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${DS2_SPACE.s1}px;
-  padding: ${DS2_SPACE.s1}px 0;
+  gap: 14px;
+  padding: 10px 22px 18px;
   font-family: ${DS2_VARS.fontSans};
 `;
 
-const GroupLabel = styled.div`
-  font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: ${DS2_VARS.g500};
-  padding: ${DS2_SPACE.s2}px ${DS2_SPACE.s2}px ${DS2_SPACE.s1}px;
-`;
-
-const ItemRow = styled.button<{ $accent: string }>`
+const Section = styled.div`
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: ${DS2_SPACE.s2}px;
-  width: 100%;
-  padding: ${DS2_SPACE.s1}px ${DS2_SPACE.s2}px;
+`;
+
+const SecLabel = styled.div`
+  font-size: 9.5px;
+  font-family: ${DS2_VARS.fontMono};
+  color: ${DS2_VARS.g500};
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 2px;
+`;
+
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+  gap: ${DS2_SPACE.s1 + 2}px;
+`;
+
+const Tile = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: ${DS2_SPACE.s2}px;
+  padding: 14px 10px 12px;
   background: transparent;
-  border: none;
-  border-radius: ${DS2_RADIUS.control}px;
-  color: ${({ $accent }) => $accent};
-  font-family: ${DS2_VARS.fontSans};
-  font-size: 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
   cursor: pointer;
-  text-align: left;
+  transition:
+    background 0.12s ${DS2_VARS.ease},
+    border-color 0.12s ${DS2_VARS.ease};
 
   &:hover {
     background: ${DS2_VARS.g100};
+    border-color: ${DS2_VARS.g200};
   }
 
   &:focus-visible {
     outline: 2px solid ${DS2_VARS.cSky};
-    outline-offset: 1px;
+    outline-offset: 2px;
   }
+`;
+
+const TileIcon = styled.div<{ $accent: string }>`
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ $accent }) => `color-mix(in oklab, ${$accent} 12%, ${DS2_VARS.g50})`};
+  border: 1px solid ${DS2_VARS.g200};
+  color: ${({ $accent }) => $accent};
 
   svg {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
+    width: 19px;
+    height: 19px;
   }
 `;
 
-const Badge = styled.span`
-  margin-left: auto;
-  font-family: ${DS2_VARS.fontMono};
-  font-size: 9px;
-  color: ${DS2_VARS.g500};
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+const TileName = styled.span`
+  font-size: 12px;
+  font-weight: 600;
+  color: ${DS2_VARS.ink};
+  text-align: center;
+  line-height: 1.1;
 `;
 
-const Divider = styled.div`
-  height: 1px;
-  background: ${DS2_VARS.g100};
-  margin: ${DS2_SPACE.s2}px 0;
-`;
+/* ─── SVG иконки (мокап) ─── */
 
 const IconDashboard: FC = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -107,10 +117,10 @@ const IconChart: FC = () => (
   </svg>
 );
 
-const IconGlobe: FC = () => (
+const IconGeo: FC = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <circle cx="8" cy="8" r="6" />
-    <path d="M2 8h12M8 2c-2 2-2 10 0 12M8 2c2 2 2 10 0 12" />
+    <path d="M2 8h12" />
   </svg>
 );
 
@@ -138,186 +148,136 @@ const IconDataset: FC = () => (
 const IconSql: FC = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M3 3h10v10H3z" />
-    <path d="M3 7h10M3 11h10" />
+    <path d="M3 7h10" />
   </svg>
 );
 
 const IconDatabase: FC = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <ellipse cx="8" cy="3.5" rx="6" ry="2" />
-    <path d="M2 3.5v9c0 1.1 2.7 2 6 2s6-.9 6-2v-9" />
-    <path d="M2 8c0 1.1 2.7 2 6 2s6-.9 6-2" />
+    <ellipse cx="8" cy="3" rx="5" ry="1.6" />
+    <path d="M3 3v10c0 .9 2.2 1.6 5 1.6s5-.7 5-1.6V3M3 8c0 .9 2.2 1.6 5 1.6s5-.7 5-1.6" />
   </svg>
 );
 
-const IconSavedQuery: FC = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M3 2h7l3 3v9H3z" />
-    <path d="M10 2v3h3" />
-    <path d="M5 9l1.5 1.5L10 7" />
-  </svg>
-);
+/* ─── Data model ─── */
 
-const IconHistory: FC = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <circle cx="8" cy="8" r="6" />
-    <path d="M8 4v4l3 2" />
-    <path d="M2 8a6 6 0 01.5-2" />
-  </svg>
-);
+interface CreateItem {
+  key: string;
+  label: string;
+  url: string;
+  accent: string;
+  icon: ReactNode;
+}
 
-const IconTag: FC = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M7 1.5L1.5 7l7.5 7.5L14.5 9 8.5 3 7 1.5z" />
-    <circle cx="5.5" cy="5.5" r="0.8" fill="currentColor" />
-  </svg>
-);
+interface SectionDef {
+  label: string;
+  items: CreateItem[];
+}
 
-export const CreateDrawer: FC<CreateDrawerProps> = ({ onAfterNavigate }) => {
+export const CreateDrawer: FC = () => {
   const history = useHistory();
   const { closeDrawer } = useShell();
 
   const go = (url: string) => {
     history.push(url);
     closeDrawer();
-    onAfterNavigate?.();
   };
 
-  const openExternal = (url: string) => {
-    window.location.href = url;
-  };
-
-  const visualization: CreateItem[] = [
+  const sections: SectionDef[] = [
     {
-      key: 'dashboard',
-      label: t('Дашборд'),
-      url: '/dashboard/new/',
-      accent: DS2_VARS.cSky,
-      icon: <IconDashboard />,
+      label: t('Визуализация'),
+      items: [
+        {
+          key: 'dashboard',
+          label: t('Дашборд'),
+          url: '/dashboard/new/',
+          accent: DS2_VARS.cSky,
+          icon: <IconDashboard />,
+        },
+        {
+          key: 'chart',
+          label: t('Диаграмма'),
+          url: '/chart/add',
+          accent: DS2_VARS.cViolet,
+          icon: <IconChart />,
+        },
+        {
+          key: 'geo',
+          label: t('Гео-карта'),
+          url: '/chart/add?viz_type=deck_geojson',
+          accent: DS2_VARS.up,
+          icon: <IconGeo />,
+        },
+      ],
     },
     {
-      key: 'chart',
-      label: t('Диаграмма'),
-      url: '/chart/add',
-      accent: DS2_VARS.cViolet,
-      icon: <IconChart />,
+      label: t('Документы'),
+      items: [
+        {
+          key: 'table',
+          label: t('Таблица'),
+          url: '/chart/add?viz_type=table',
+          accent: DS2_VARS.cTangerine,
+          icon: <IconTable />,
+        },
+        {
+          key: 'doc',
+          label: t('Документ'),
+          url: '/dashboard/new/?type=doc',
+          accent: DS2_VARS.cFuchsia,
+          icon: <IconDoc />,
+        },
+      ],
     },
     {
-      key: 'geo',
-      label: t('Гео-карта'),
-      url: '/chart/add?viz_type=deck_scatter',
-      accent: '#2DD4BF',
-      icon: <IconGlobe />,
-    },
-  ];
-
-  const documents: CreateItem[] = [
-    {
-      key: 'table',
-      label: t('Таблица'),
-      url: '/univer/sheet/new',
-      accent: DS2_VARS.cTangerine,
-      badge: 'Univer',
-      icon: <IconTable />,
-    },
-    {
-      key: 'doc',
-      label: t('Документ'),
-      url: '/univer/doc/new',
-      accent: DS2_VARS.cFuchsia,
-      badge: 'Univer',
-      icon: <IconDoc />,
-    },
-  ];
-
-  const data: CreateItem[] = [
-    {
-      key: 'database',
-      label: t('Подключение'),
-      url: '/databaseview/list/?enable_create=true',
-      accent: DS2_VARS.cTangerine,
-      icon: <IconDatabase />,
-    },
-    {
-      key: 'dataset',
-      label: t('Датасет'),
-      url: '/tablemodelview/list/?enable_create=true',
-      accent: DS2_VARS.ink,
-      icon: <IconDataset />,
-    },
-  ];
-
-  const sql: CreateItem[] = [
-    {
-      key: 'sql',
-      label: t('SQL-запрос'),
-      url: '/sqllab/?new=true',
-      accent: DS2_VARS.ink,
-      icon: <IconSql />,
-    },
-    {
-      key: 'sql-saved',
-      label: t('Сохранённые запросы'),
-      url: '/savedqueryview/list/',
-      accent: DS2_VARS.cSky,
-      icon: <IconSavedQuery />,
-    },
-    {
-      key: 'sql-history',
-      label: t('История запросов'),
-      url: '/sqllab/history/',
-      accent: DS2_VARS.g500,
-      icon: <IconHistory />,
+      label: t('Данные'),
+      items: [
+        {
+          key: 'dataset',
+          label: t('Датасет'),
+          url: '/tablemodelview/add',
+          accent: DS2_VARS.g600,
+          icon: <IconDataset />,
+        },
+        {
+          key: 'sql',
+          label: t('SQL-запрос'),
+          url: '/sqllab/',
+          accent: DS2_VARS.g600,
+          icon: <IconSql />,
+        },
+        {
+          key: 'database',
+          label: t('Подключение к БД'),
+          url: '/databaseview/add',
+          accent: DS2_VARS.cAmber,
+          icon: <IconDatabase />,
+        },
+      ],
     },
   ];
-
-  const organization: CreateItem[] = [
-    {
-      key: 'tag',
-      label: t('Тег'),
-      url: '/tags/?enable_create=true',
-      accent: DS2_VARS.cFuchsia,
-      icon: <IconTag />,
-    },
-  ];
-
-  const renderGroup = (label: string, items: CreateItem[]) => (
-    <div key={label}>
-      <GroupLabel>{label}</GroupLabel>
-      {items.map(item => (
-        <ItemRow
-          key={item.key}
-          type="button"
-          $accent={item.accent}
-          onClick={() => {
-            // Univer-маршруты рендерятся не React Router, а внешним shell.
-            if (item.url.startsWith('/univer/')) {
-              openExternal(item.url);
-              return;
-            }
-            go(item.url);
-          }}
-          aria-label={item.label}
-        >
-          {item.icon}
-          <span>{item.label}</span>
-          {item.badge ? <Badge>{item.badge}</Badge> : null}
-        </ItemRow>
-      ))}
-    </div>
-  );
 
   return (
-    <Body role="menu" aria-label={t('Создать')}>
-      {renderGroup(t('Визуализация'), visualization)}
-      <Divider />
-      {renderGroup(t('Документы'), documents)}
-      <Divider />
-      {renderGroup(t('Данные'), data)}
-      <Divider />
-      {renderGroup(t('SQL'), sql)}
-      <Divider />
-      {renderGroup(t('Организация'), organization)}
-    </Body>
+    <Sections role="menu" aria-label={t('Создать')}>
+      {sections.map(sec => (
+        <Section key={sec.label}>
+          <SecLabel>{sec.label}</SecLabel>
+          <Grid>
+            {sec.items.map(item => (
+              <Tile
+                key={item.key}
+                type="button"
+                onClick={() => go(item.url)}
+                aria-label={item.label}
+                title={item.label}
+              >
+                <TileIcon $accent={item.accent}>{item.icon}</TileIcon>
+                <TileName>{item.label}</TileName>
+              </Tile>
+            ))}
+          </Grid>
+        </Section>
+      ))}
+    </Sections>
   );
 };
