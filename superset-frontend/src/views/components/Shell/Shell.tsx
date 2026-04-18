@@ -302,6 +302,8 @@ export const Shell: FC<ShellProps> = ({
           onClose={handleCloseAi}
           user={user}
           seedQuery={aiSeedQuery}
+          contextId={contextId}
+          modelId={modelId}
         />
       </ShellRoot>
     </ShellProvider>

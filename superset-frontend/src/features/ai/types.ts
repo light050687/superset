@@ -122,7 +122,13 @@ export interface AiAnswerBlocks {
 export interface AiAnalyzeRequest {
   query: string;
   session_id?: string;
+  /** Произвольный контекст (dashboard_id, chart_id, date_range). */
   context?: Record<string, unknown>;
+  /**
+   * ID модели LLM (haiku-4.5, sonnet-4.6, opus-4.7). Если поле не задано —
+   * бэкенд ai-analytics использует модель по умолчанию из config.
+   */
+  model?: string;
 }
 
 export interface AiAnalyzeResponse {

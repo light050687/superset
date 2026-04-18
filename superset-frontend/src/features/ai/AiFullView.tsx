@@ -51,17 +51,62 @@ interface AiFullViewProps {
   open: boolean;
   onClose: () => void;
   user?: BootstrapUser;
-  /** Предзаполненный вопрос (например, из Command Palette Tab). */
+  /** Предзаполненный вопрос (например, из CentralPill или Command Palette Tab). */
   seedQuery?: string;
+  /** ID AI-контекста из CentralPill (general / dashboard_<id> / chart_<id>). */
+  contextId?: string;
+  /** ID модели LLM из CentralPill (haiku-4.5 / sonnet-4.6 / opus-4.7). */
+  modelId?: string;
 }
 
-const Overlay = styled.div`
+/**
+ * Scrim — полупрозрачный backdrop под Panel. Клик по scrim закрывает AI overlay
+ * (так же как Esc). Это отличает AI overlay 2.0 от прежнего fullscreen —
+ * дашборд под ним частично виден.
+ */
+const Scrim = styled.div`
   position: fixed;
   inset: 0;
-  background: ${DS2_VARS.bg};
-  z-index: 70;
+  background: ${DS2_VARS.glassScrim};
+  z-index: 99;
+`;
+
+/**
+ * Panel — centered floating chat (820×640). Зажат между dock (bottom:92px над
+ * доком) и верхом viewport (со смарт-fallback через max-height:70vh). Нулевые
+ * поля от центра — через left:50% + translateX.
+ */
+const Panel = styled.div`
+  position: fixed;
+  left: 50%;
+  bottom: ${DS2_VARS.dockAiBottom};
+  transform: translateX(-50%);
+  width: min(${DS2_VARS.dockAiWidth}, calc(100vw - 24px));
+  height: min(${DS2_VARS.dockAiHeight}, 70vh);
+  max-height: 70vh;
+  background: ${DS2_VARS.glassBgElev};
+  backdrop-filter: ${DS2_VARS.glassFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.glassFilter};
+  border: 1px solid ${DS2_VARS.glassBorder};
+  border-radius: ${DS2_VARS.rGlass};
+  box-shadow: ${DS2_VARS.glassShadowElev};
+  overflow: hidden;
+  z-index: 100;
   display: flex;
   font-family: ${DS2_VARS.fontSans};
+
+  @media (max-width: 767px) {
+    /* Mobile: fullscreen (вкрай viewport-а кроме MobileNav). */
+    left: 0;
+    right: 0;
+    transform: none;
+    width: 100%;
+    bottom: ${DS2_VARS.dockMobileHeight};
+    top: 0;
+    height: auto;
+    max-height: none;
+    border-radius: 0;
+  }
 `;
 
 const Main = styled.div`
@@ -329,6 +374,8 @@ export const AiFullView: FC<AiFullViewProps> = ({
   onClose,
   user,
   seedQuery,
+  contextId,
+  modelId,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -489,11 +536,14 @@ export const AiFullView: FC<AiFullViewProps> = ({
         }
       }
 
-      // Отправляем в ai-analytics.
+      // Отправляем в ai-analytics. Контекст и модель приходят из CentralPill
+      // через пропсы — бэкенду отдаём как структурированные поля.
       try {
         const response = await analyzeQuestion({
           query: trimmed,
           session_id: sessionId != null ? String(sessionId) : undefined,
+          context: contextId ? { context_id: contextId } : undefined,
+          model: modelId,
         });
 
         setItems(prev => {
@@ -532,7 +582,7 @@ export const AiFullView: FC<AiFullViewProps> = ({
         void refresh();
       }
     },
-    [currentSessionId, sending, refresh],
+    [currentSessionId, sending, refresh, contextId, modelId],
   );
 
   const handlePrompt = useCallback(
@@ -558,8 +608,13 @@ export const AiFullView: FC<AiFullViewProps> = ({
   const empty = items.length === 0;
 
   return (
-    <Overlay role="dialog" aria-modal="true" aria-label={t('ИИ-аналитик')}>
-      <AiSidebar
+    <>
+      <Scrim
+        aria-hidden="true"
+        onClick={onClose}
+      />
+      <Panel role="dialog" aria-modal="true" aria-label={t('ИИ-аналитик')}>
+        <AiSidebar
         folders={folders}
         sessions={sessions}
         activeTasks={tasks}
@@ -666,8 +721,9 @@ export const AiFullView: FC<AiFullViewProps> = ({
             </InputBox>
           </InputInner>
         </InputZone>
-      </Main>
-    </Overlay>
+        </Main>
+      </Panel>
+    </>
   );
 };
 
