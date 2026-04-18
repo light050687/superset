@@ -13,6 +13,12 @@ import { styled, t } from '@superset-ui/core';
 import { type FC, type RefObject, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
+import { CentralPill } from './CentralPill';
+import type {
+  AiContext,
+  AiModelDescriptor,
+  AiModelId,
+} from './CentralPillTypes';
 import { useShell } from './ShellContext';
 import {
   IconAi,
@@ -20,7 +26,6 @@ import {
   IconCatalog,
   IconCreate,
   IconHome,
-  IconSearch,
   IconSettings,
   IconTheme,
   IconTools,
@@ -235,14 +240,18 @@ interface RailProps {
   brandUrl?: string;
   /** Хендлер клика по бренду. Если не задан — навигация на brandUrl. */
   onBrandClick?: () => void;
-  /** Хендлер открытия глобального поиска (Command Palette). */
-  onOpenSearch?: () => void;
   /** Хендлер открытия календаря. */
   onOpenCalendar?: () => void;
   /** Хендлер переключения темы. */
   onToggleTheme?: () => void;
-  /** Хендлер открытия AI. */
-  onOpenAi?: () => void;
+  /**
+   * Хендлер открытия AI. Вызывается кнопкой rail-ai И когда CentralPill
+   * делает submit — в этом случае приходит seed-запрос и meta (контекст, модель).
+   */
+  onOpenAi?: (
+    seed?: string,
+    meta?: { contextId: string; modelId: AiModelId },
+  ) => void;
   /** Хендлер открытия профиля/настроек. */
   onOpenSettings?: () => void;
   /** Бейдж на AI-кнопке (color token или hex). */
@@ -255,13 +264,19 @@ interface RailProps {
   settingsButtonRef?: RefObject<HTMLButtonElement>;
   /** Ref на кнопку календаря (для CalendarDropdown). */
   calendarButtonRef?: RefObject<HTMLButtonElement>;
+
+  /* ─── CentralPill (доступные контексты, модель) ─── */
+  contexts: readonly AiContext[];
+  contextId: string;
+  onContextChange: (ctx: AiContext) => void;
+  modelId: AiModelId;
+  onModelChange: (model: AiModelDescriptor) => void;
 }
 
 export const Rail: FC<RailProps> = ({
   userInitials = '',
   brandUrl = '/',
   onBrandClick,
-  onOpenSearch,
   onOpenCalendar,
   onToggleTheme,
   onOpenAi,
@@ -271,18 +286,23 @@ export const Rail: FC<RailProps> = ({
   catalogBadgeColor,
   settingsButtonRef,
   calendarButtonRef,
+  contexts,
+  contextId,
+  onContextChange,
+  modelId,
+  onModelChange,
 }) => {
   const history = useHistory();
   const { openedDrawer, toggleDrawer, activeRailId } = useShell();
 
   /**
-   * Порядок кнопок floating dock по мокапу analytics-floating-dock.html:
-   *   Logo · Home · Catalog · Tools · Create · [Search/CentralPill] ·
+   * Порядок кнопок floating dock (мокап analytics-floating-dock.html):
+   *   Logo · Home · Catalog · Tools · Create · [CentralPill] ·
    *   Calendar · Theme · AI · Separator · Avatar
    *
-   * В Этапе 1 на месте CentralPill стоит привычная кнопка rail-search
-   * (IconSearch). Она будет заменена на морфирующую капсулу в Этапе 2.
-   * separatorBefore: true на Avatar → разделитель перед аватаром.
+   * CentralPill встраивается между `rail-create` и `rail-calendar` —
+   * рендерится отдельно в JSX, а не как кнопка. Поиск через Ctrl+K
+   * (CommandPalette) продолжает работать глобально.
    */
   const buttons = useMemo<RailButtonDescriptor[]>(
     () => [
@@ -312,13 +332,6 @@ export const Rail: FC<RailProps> = ({
         drawer: 'create',
       },
       {
-        id: 'rail-search',
-        label: t('Поиск (Ctrl+K)'),
-        icon: <IconSearch />,
-        onClick: onOpenSearch,
-        hotkey: 'Ctrl+K',
-      },
-      {
         id: 'rail-calendar',
         label: t('Календарь'),
         icon: <IconCalendar />,
@@ -335,7 +348,7 @@ export const Rail: FC<RailProps> = ({
         id: 'rail-ai',
         label: t('ИИ-аналитик'),
         icon: <IconAi />,
-        onClick: onOpenAi,
+        onClick: () => onOpenAi?.(),
         badgeColor: aiBadgeColor,
       },
       {
@@ -347,7 +360,6 @@ export const Rail: FC<RailProps> = ({
       },
     ],
     [
-      onOpenSearch,
       onOpenCalendar,
       onToggleTheme,
       onOpenAi,
@@ -411,6 +423,15 @@ export const Rail: FC<RailProps> = ({
     );
   };
 
+  // CentralPill стоит между rail-create и rail-calendar — вставляем её
+  // как отдельный JSX между двумя группами кнопок.
+  const PILL_INSERT_AFTER = 'rail-create';
+  const insertIdx = buttons.findIndex(b => b.id === PILL_INSERT_AFTER);
+  const buttonsBeforePill =
+    insertIdx >= 0 ? buttons.slice(0, insertIdx + 1) : buttons;
+  const buttonsAfterPill =
+    insertIdx >= 0 ? buttons.slice(insertIdx + 1) : [];
+
   return (
     <RailNav aria-label={t('Главная навигация')}>
       <RailLogo
@@ -422,7 +443,25 @@ export const Rail: FC<RailProps> = ({
         М
       </RailLogo>
       <RailMagnet>
-        {buttons.map(btn => (
+        {buttonsBeforePill.map(btn => (
+          <span key={btn.id} style={{ display: 'contents' }}>
+            {btn.separatorBefore ? <RailSeparator role="presentation" /> : null}
+            {renderButton(btn)}
+          </span>
+        ))}
+      </RailMagnet>
+
+      <CentralPill
+        contexts={contexts}
+        contextId={contextId}
+        onContextChange={onContextChange}
+        modelId={modelId}
+        onModelChange={onModelChange}
+        onSubmit={(query, meta) => onOpenAi?.(query, meta)}
+      />
+
+      <RailMagnet>
+        {buttonsAfterPill.map(btn => (
           <span key={btn.id} style={{ display: 'contents' }}>
             {btn.separatorBefore ? <RailSeparator role="presentation" /> : null}
             {renderButton(btn)}

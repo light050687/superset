@@ -10,10 +10,19 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 import { MemoryRouter } from 'react-router-dom';
+import { DEFAULT_AI_CONTEXT, DEFAULT_AI_MODEL } from './CentralPillTypes';
 import { Drawer } from './Drawer';
 import { Rail } from './Rail';
 import { ShellProvider } from './ShellContext';
 import type { DrawerKind } from './types';
+
+const railPillProps = {
+  contexts: [DEFAULT_AI_CONTEXT],
+  contextId: DEFAULT_AI_CONTEXT.id,
+  onContextChange: () => {},
+  modelId: DEFAULT_AI_MODEL,
+  onModelChange: () => {},
+};
 
 interface Args {
   openedKind: DrawerKind | null;
@@ -35,7 +44,7 @@ const Story = ({ openedKind, withContent }: Args) => (
     <ShellProvider>
       <DemoOpener openedKind={openedKind} />
       <div style={{ display: 'flex', minHeight: 600, background: 'var(--bg)' }}>
-        <Rail userInitials="ДК" />
+        <Rail userInitials="ДК" {...railPillProps} />
         <Drawer
           content={
             withContent

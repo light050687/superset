@@ -29,6 +29,13 @@ import { useThemeContext } from 'src/theme/ThemeProvider';
 import type { BootstrapUser, MenuData } from 'src/types/bootstrapTypes';
 import { getUrlParam } from 'src/utils/urlUtils';
 import { CalendarDropdown, type CalendarEvent } from './CalendarDropdown';
+import {
+  DEFAULT_AI_CONTEXT,
+  DEFAULT_AI_MODEL,
+  type AiContext,
+  type AiModelDescriptor,
+  type AiModelId,
+} from './CentralPillTypes';
 import { CommandPalette } from './CommandPalette';
 import { CreateDrawer } from './CreateDrawer';
 import { Drawer } from './Drawer';
@@ -85,14 +92,18 @@ interface ShellProps {
   children?: ReactNode;
   /** Контент для catalog/tools/create drawer (передаётся извне по мере реализации этапов). */
   drawerContent?: Partial<Record<DrawerKind, ReactNode>>;
-  /** Открытие команды поиска (Ctrl+K). */
-  onOpenSearch?: () => void;
   /** Внешний хендлер AI (если не задан — используется встроенный AiFullView). */
   onOpenAi?: () => void;
   /** Внешний хендлер календаря (если задан — встроенный dropdown скрывается). */
   onOpenCalendar?: () => void;
   /** События для встроенного календаря. */
   calendarEvents?: CalendarEvent[];
+  /**
+   * Доступные контексты AI для CentralPill. По умолчанию — только «Общий».
+   * Маршрут дашборда может передать расширенный список из bootstrap или
+   * сформировать его на лету из URL (dashboard/chart контекст).
+   */
+  aiContexts?: readonly AiContext[];
 }
 
 function extractInitials(user?: BootstrapUser): string {
@@ -117,10 +128,10 @@ export const Shell: FC<ShellProps> = ({
   isFrontendRoute,
   children,
   drawerContent,
-  onOpenSearch,
   onOpenAi,
   onOpenCalendar,
   calendarEvents,
+  aiContexts,
 }) => {
   const ui = useUiConfig();
   const themeCtx = useThemeContext();
@@ -131,6 +142,22 @@ export const Shell: FC<ShellProps> = ({
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiSeedQuery, setAiSeedQuery] = useState<string | undefined>(undefined);
+
+  // Контекст AI (общий / дашборд / чарт) и модель LLM для CentralPill.
+  const effectiveContexts = useMemo<readonly AiContext[]>(
+    () => aiContexts ?? [DEFAULT_AI_CONTEXT],
+    [aiContexts],
+  );
+  const [contextId, setContextId] = useState<string>(DEFAULT_AI_CONTEXT.id);
+  const [modelId, setModelId] = useState<AiModelId>(DEFAULT_AI_MODEL);
+
+  const handleContextChange = useCallback((ctx: AiContext) => {
+    setContextId(ctx.id);
+  }, []);
+
+  const handleModelChange = useCallback((model: AiModelDescriptor) => {
+    setModelId(model.id);
+  }, []);
 
   const onToggleTheme = useCallback(() => {
     if (!themeCtx) return;
@@ -144,7 +171,9 @@ export const Shell: FC<ShellProps> = ({
   }, []);
   const handleCloseSettings = useCallback(() => setSettingsOpen(false), []);
 
-  const handleOpenPalette = useCallback(() => setPaletteOpen(true), []);
+  /* handleOpenPalette больше не вызывается из Rail (rail-search удалён —
+     заменён CentralPill). CommandPalette открывается только по Ctrl+K
+     (глобальный хоткей — см. эффект ниже). */
   const handleClosePalette = useCallback(() => setPaletteOpen(false), []);
 
   const handleToggleCalendar = useCallback(() => {
@@ -156,16 +185,30 @@ export const Shell: FC<ShellProps> = ({
   }, [onOpenCalendar]);
   const handleCloseCalendar = useCallback(() => setCalendarOpen(false), []);
 
+  /**
+   * Открытие AI overlay. Принимает опциональный seed-запрос и мета (контекст,
+   * модель) — приходят из CentralPill.onSubmit. Мы включаем контекст в текст
+   * seed, чтобы бэк ai-analytics (AnalyzeRequest.query) знал рамки запроса;
+   * model отдельно пока не передаётся — добавим в Этапе 4.
+   */
   const handleOpenAi = useCallback(
-    (seed?: string) => {
+    (seed?: string, meta?: { contextId: string; modelId: AiModelId }) => {
       if (onOpenAi) {
         onOpenAi();
         return;
       }
-      setAiSeedQuery(seed);
+      if (meta) {
+        // Синхронизируем контекст/модель дока с тем, что отправил пилюля.
+        if (meta.contextId !== contextId) setContextId(meta.contextId);
+        if (meta.modelId !== modelId) setModelId(meta.modelId);
+      }
+      const ctx = effectiveContexts.find(c => c.id === (meta?.contextId ?? contextId));
+      const ctxPrefix =
+        ctx && ctx.id !== DEFAULT_AI_CONTEXT.id ? `[${ctx.label}] ` : '';
+      setAiSeedQuery(seed ? `${ctxPrefix}${seed}` : undefined);
       setAiOpen(true);
     },
-    [onOpenAi],
+    [onOpenAi, contextId, modelId, effectiveContexts],
   );
   const handleCloseAi = useCallback(() => {
     setAiOpen(false);
@@ -216,8 +259,7 @@ export const Shell: FC<ShellProps> = ({
       <ShellRoot>
         <Rail
           userInitials={initials}
-          onOpenSearch={onOpenSearch ?? handleOpenPalette}
-          onOpenAi={() => handleOpenAi()}
+          onOpenAi={handleOpenAi}
           onOpenCalendar={handleToggleCalendar}
           onOpenSettings={handleOpenSettings}
           onToggleTheme={onToggleTheme}
@@ -226,6 +268,11 @@ export const Shell: FC<ShellProps> = ({
           aiBadgeColor={DS2_VARS.up}
           calendarBadgeColor={DS2_VARS.cTangerine}
           catalogBadgeColor={DS2_VARS.cSky}
+          contexts={effectiveContexts}
+          contextId={contextId}
+          onContextChange={handleContextChange}
+          modelId={modelId}
+          onModelChange={handleModelChange}
         />
         <Drawer content={mergedDrawerContent} />
         <ShellMain>{children}</ShellMain>

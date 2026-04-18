@@ -11,6 +11,17 @@
  */
 export { Shell } from './Shell';
 export { Rail, RAIL_WIDTH } from './Rail';
+export { CentralPill } from './CentralPill';
+export { ContextPopover } from './ContextPopover';
+export { ModelPopover } from './ModelPopover';
+export {
+  AI_MODELS,
+  DEFAULT_AI_CONTEXT,
+  DEFAULT_AI_MODEL,
+  type AiContext,
+  type AiModelDescriptor,
+  type AiModelId,
+} from './CentralPillTypes';
 export { Drawer, DRAWER_WIDTH } from './Drawer';
 export { CreateDrawer } from './CreateDrawer';
 export { ToolsDrawer } from './ToolsDrawer';

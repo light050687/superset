@@ -12,6 +12,12 @@
 import { fireEvent, render, screen } from 'spec/helpers/testing-library';
 import { UiConfigContext } from 'src/components/UiConfigContext';
 import { Rail } from './Rail';
+import {
+  DEFAULT_AI_CONTEXT,
+  DEFAULT_AI_MODEL,
+  type AiContext,
+  type AiModelId,
+} from './CentralPillTypes';
 import { Drawer } from './Drawer';
 import { Shell } from './Shell';
 import { ShellProvider } from './ShellContext';
@@ -25,11 +31,19 @@ const uiConfigShown = {
   showRowLimitWarning: false,
 };
 
+const defaultPillProps = {
+  contexts: [DEFAULT_AI_CONTEXT] as readonly AiContext[],
+  contextId: DEFAULT_AI_CONTEXT.id,
+  onContextChange: jest.fn(),
+  modelId: DEFAULT_AI_MODEL as AiModelId,
+  onModelChange: jest.fn(),
+};
+
 const renderRail = (props = {}) =>
   render(
     <UiConfigContext.Provider value={uiConfigShown}>
       <ShellProvider>
-        <Rail userInitials="ДК" {...props} />
+        <Rail userInitials="ДК" {...defaultPillProps} {...props} />
       </ShellProvider>
     </UiConfigContext.Provider>,
     { useRouter: true, useTheme: true },
@@ -43,25 +57,49 @@ describe('<Rail>', () => {
     expect(screen.getByLabelText('Каталог')).toBeInTheDocument();
     expect(screen.getByLabelText('Инструменты')).toBeInTheDocument();
     expect(screen.getByLabelText('Создать')).toBeInTheDocument();
-    expect(screen.getByLabelText(/Поиск/)).toBeInTheDocument();
     expect(screen.getByLabelText('Календарь')).toBeInTheDocument();
     expect(screen.getByLabelText('Сменить тему')).toBeInTheDocument();
     expect(screen.getByLabelText('ИИ-аналитик')).toBeInTheDocument();
     expect(screen.getByLabelText('Настройки и профиль')).toBeInTheDocument();
   });
 
-  it('вызывает onOpenSearch при клике на кнопку поиска', () => {
-    const onOpenSearch = jest.fn();
-    renderRail({ onOpenSearch });
-    fireEvent.click(screen.getByLabelText(/Поиск/));
-    expect(onOpenSearch).toHaveBeenCalledTimes(1);
+  it('рендерит CentralPill с input и chip контекста', () => {
+    renderRail();
+    expect(screen.getByLabelText('Запрос ИИ или поиск')).toBeInTheDocument();
+    // Chip показывает label контекста «Общий» по умолчанию.
+    expect(screen.getByText(DEFAULT_AI_CONTEXT.label)).toBeInTheDocument();
   });
 
-  it('кнопка ИИ-аналитика вызывает onOpenAi', () => {
+  it('CentralPill Enter с текстом вызывает onOpenAi(query, meta)', () => {
+    const onOpenAi = jest.fn();
+    renderRail({ onOpenAi });
+    const input = screen.getByLabelText('Запрос ИИ или поиск') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Какая маржа?' } });
+    fireEvent.submit(input.closest('form') as HTMLFormElement);
+    expect(onOpenAi).toHaveBeenCalledTimes(1);
+    expect(onOpenAi).toHaveBeenCalledWith(
+      'Какая маржа?',
+      expect.objectContaining({
+        contextId: DEFAULT_AI_CONTEXT.id,
+        modelId: DEFAULT_AI_MODEL,
+      }),
+    );
+  });
+
+  it('CentralPill Enter с пустым текстом НЕ вызывает onOpenAi', () => {
+    const onOpenAi = jest.fn();
+    renderRail({ onOpenAi });
+    const input = screen.getByLabelText('Запрос ИИ или поиск') as HTMLInputElement;
+    fireEvent.submit(input.closest('form') as HTMLFormElement);
+    expect(onOpenAi).not.toHaveBeenCalled();
+  });
+
+  it('кнопка ИИ-аналитика вызывает onOpenAi без seed', () => {
     const onOpenAi = jest.fn();
     renderRail({ onOpenAi });
     fireEvent.click(screen.getByLabelText('ИИ-аналитик'));
     expect(onOpenAi).toHaveBeenCalledTimes(1);
+    expect(onOpenAi).toHaveBeenCalledWith();
   });
 
   it('nav имеет aria-label главной навигации', () => {
@@ -83,14 +121,13 @@ describe('<Drawer>', () => {
       </ShellProvider>,
       { useRouter: true, useTheme: true },
     );
-    // Без открытия — контент не в DOM.
     expect(screen.queryByText('Содержимое появится в следующем этапе.')).toBeNull();
   });
 
   it('открывается при toggleDrawer через ShellContext', () => {
     const { container } = render(
       <ShellProvider>
-        <Rail userInitials="ДК" />
+        <Rail userInitials="ДК" {...defaultPillProps} />
         <Drawer />
       </ShellProvider>,
       { useRouter: true, useTheme: true },
@@ -99,14 +136,13 @@ describe('<Drawer>', () => {
     expect(
       screen.getByText('Содержимое появится в следующем этапе.'),
     ).toBeInTheDocument();
-    // Title — uppercase в DS 2.0, проверяем наличие обоих регистров (CSS-трансформ).
     expect(container.textContent).toContain('Каталог');
   });
 
   it('закрывается при повторном клике по той же кнопке rail', () => {
     render(
       <ShellProvider>
-        <Rail userInitials="ДК" />
+        <Rail userInitials="ДК" {...defaultPillProps} />
         <Drawer />
       </ShellProvider>,
       { useRouter: true, useTheme: true },
@@ -122,7 +158,7 @@ describe('<Drawer>', () => {
   it('Escape закрывает открытый drawer', () => {
     render(
       <ShellProvider>
-        <Rail userInitials="ДК" />
+        <Rail userInitials="ДК" {...defaultPillProps} />
         <Drawer />
       </ShellProvider>,
       { useRouter: true, useTheme: true },
@@ -138,7 +174,7 @@ describe('<Drawer>', () => {
   it('рендерит переданный content вместо placeholder', () => {
     render(
       <ShellProvider>
-        <Rail userInitials="ДК" />
+        <Rail userInitials="ДК" {...defaultPillProps} />
         <Drawer
           content={{
             create: <div data-test="create-body">Я контент create</div>,

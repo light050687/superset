@@ -11,7 +11,33 @@
  */
 import { MemoryRouter } from 'react-router-dom';
 import { Rail } from './Rail';
+import {
+  DEFAULT_AI_CONTEXT,
+  DEFAULT_AI_MODEL,
+} from './CentralPillTypes';
 import { ShellProvider } from './ShellContext';
+
+const pillProps = {
+  contexts: [
+    DEFAULT_AI_CONTEXT,
+    {
+      id: 'dashboard_loss_q1',
+      label: 'Потери Q1',
+      colorVar: 'var(--c-sky)',
+      hint: 'Дашборд потерь за 1 квартал',
+    },
+    {
+      id: 'dashboard_sales',
+      label: 'Продажи магазинов',
+      colorVar: 'var(--c-tangerine)',
+      hint: 'Дашборд продаж по магазинам',
+    },
+  ],
+  contextId: DEFAULT_AI_CONTEXT.id,
+  onContextChange: () => {},
+  modelId: DEFAULT_AI_MODEL,
+  onModelChange: () => {},
+};
 
 const Story = (args: any) => (
   <MemoryRouter>
@@ -29,7 +55,7 @@ const Story = (args: any) => (
         <p style={{ color: 'var(--g500)', fontSize: 12 }}>
           Floating Dock — плавающая навигация внизу экрана (Liquid Glass)
         </p>
-        <Rail {...args} />
+        <Rail {...pillProps} {...args} />
       </div>
     </ShellProvider>
   </MemoryRouter>
