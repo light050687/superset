@@ -16,13 +16,20 @@ import { ShellProvider } from './ShellContext';
 const Story = (args: any) => (
   <MemoryRouter>
     <ShellProvider>
-      <div style={{ display: 'flex', minHeight: 600, background: 'var(--bg)' }}>
+      <div
+        style={{
+          position: 'relative',
+          minHeight: 600,
+          background: 'var(--bg)',
+          padding: 24,
+          paddingBottom: 'var(--dock-content-pad)',
+          color: 'var(--ink)',
+        }}
+      >
+        <p style={{ color: 'var(--g500)', fontSize: 12 }}>
+          Floating Dock — плавающая навигация внизу экрана (Liquid Glass)
+        </p>
         <Rail {...args} />
-        <div style={{ flex: 1, padding: 24, color: 'var(--ink)' }}>
-          <p style={{ color: 'var(--g500)', fontSize: 12 }}>
-            Rail (56px) — главная навигация
-          </p>
-        </div>
       </div>
     </ShellProvider>
   </MemoryRouter>
@@ -35,9 +42,10 @@ export default {
     docs: {
       description: {
         component:
-          'Вертикальный rail (56px) — заменяет классический top-bar Menu Superset. ' +
-          'Содержит 9 кнопок: Главная, Каталог, Инструменты, Создать, Поиск, ' +
-          'Календарь, Тема, ИИ-аналитик, Настройки/Профиль.',
+          'Floating Dock (58px) — горизонтальный плавающий dock внизу экрана, ' +
+          'пришёл на смену вертикальному Rail. Liquid Glass + magnification. ' +
+          '9 кнопок: Главная, Каталог, Инструменты, Создать, Поиск (будет заменено ' +
+          'на CentralPill в Этапе 2), Календарь, Тема, ИИ-аналитик, Настройки/Профиль.',
       },
     },
   },
@@ -53,6 +61,7 @@ WithBadges.args = {
   userInitials: 'ИП',
   aiBadgeColor: '#16A34A',
   calendarBadgeColor: '#E87C3E',
+  catalogBadgeColor: '#3B8BD9',
 };
 
 export const NoUser = Story.bind({});

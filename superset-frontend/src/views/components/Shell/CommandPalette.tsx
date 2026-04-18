@@ -63,8 +63,11 @@ const KIND_COLORS: Record<PaletteRow['kind'], string> = {
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  z-index: 100;
+  background: ${DS2_VARS.glassScrim};
+  /* Над floating dock (101), под AI overlay (100) + dropdowns (110).
+     Command Palette вызывается глобально Ctrl+K и не должен перекрываться
+     другими overlay-ями — ставим промежуточный z-index 105. */
+  z-index: 105;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -75,11 +78,13 @@ const Overlay = styled.div`
 const Panel = styled.div`
   width: 560px;
   max-width: calc(100% - 32px);
-  background: ${DS2_VARS.s};
-  border: 1px solid ${DS2_VARS.g200};
-  border-radius: ${DS2_RADIUS.card}px;
+  background: ${DS2_VARS.glassBg};
+  backdrop-filter: ${DS2_VARS.glassFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.glassFilter};
+  border: 1px solid ${DS2_VARS.glassBorder};
+  border-radius: ${DS2_VARS.rGlass};
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  box-shadow: ${DS2_VARS.glassShadowElev};
   display: flex;
   flex-direction: column;
 `;

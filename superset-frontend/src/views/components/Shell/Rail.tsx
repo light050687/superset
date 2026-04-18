@@ -27,32 +27,46 @@ import {
 } from './RailIcons';
 import type { RailButtonDescriptor } from './types';
 
+/** Сохраняется как исторический псевдоним. Реальная высота — DS2_DOCK.height. */
 export const RAIL_WIDTH = 56;
 
+/**
+ * Floating Dock — горизонтальный плавающий dock (иконочный bar) внизу экрана.
+ * Пришёл на смену вертикальному Rail (56px слева) согласно мокапу
+ * analytics-floating-dock.html. Использует Liquid Glass + macOS-style
+ * magnification. Прежнее имя `RailNav` сохранено для обратной совместимости
+ * импортов, но теперь это горизонтальная пилюля, не вертикальный sidebar.
+ */
 const RailNav = styled.nav`
-  width: ${RAIL_WIDTH}px;
-  flex-shrink: 0;
-  background: ${DS2_VARS.s};
-  border-right: 1px solid ${DS2_VARS.g100};
+  position: fixed;
+  bottom: ${DS2_VARS.dockBottom};
+  left: 50%;
+  transform: translateX(-50%);
+  height: ${DS2_VARS.dockHeight};
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  padding: ${DS2_SPACE.s3}px 0;
   gap: ${DS2_SPACE.s1}px;
-  z-index: 20;
-
-  /* ShellRoot теперь height:100vh + overflow:hidden, поэтому Rail просто
-     flex-ребёнок фиксированной высоты viewport. Sticky больше не нужен.
-     overflow-y:auto — защита на случай большого числа rail-кнопок. */
-  height: 100vh;
-  overflow-y: auto;
-
-  &::-webkit-scrollbar {
-    width: 0;
-  }
+  padding: 0 ${DS2_SPACE.s3}px;
+  background: ${DS2_VARS.glassBg};
+  backdrop-filter: ${DS2_VARS.glassFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.glassFilter};
+  border: 1px solid ${DS2_VARS.glassBorder};
+  border-radius: ${DS2_VARS.rPill};
+  box-shadow: ${DS2_VARS.glassShadow};
+  z-index: 101;
 
   @media print {
     display: none;
+  }
+
+  @media (max-width: 767px) {
+    /* На узких экранах FloatingDock не рендерится — вместо него MobileNav.
+       Если устройство случайно приземлилось здесь, не уродуем layout. */
+    left: ${DS2_SPACE.s2}px;
+    right: ${DS2_SPACE.s2}px;
+    transform: none;
+    padding: 0 ${DS2_SPACE.s2}px;
   }
 `;
 
@@ -67,10 +81,19 @@ const RailLogo = styled.button`
   font-size: 13px;
   border: none;
   cursor: pointer;
-  margin-bottom: ${DS2_SPACE.s2}px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition:
+    transform ${DS2_VARS.magnifyDuration} ${DS2_VARS.ease},
+    box-shadow ${DS2_VARS.magnifyDuration} ${DS2_VARS.ease};
+
+  &:hover {
+    transform: translateY(calc(-1 * ${DS2_VARS.magnifyLift}))
+      scale(${DS2_VARS.magnifyScale});
+    box-shadow: 0 8px 24px rgba(59, 139, 217, 0.35);
+  }
 
   &:focus-visible {
     outline: 2px solid ${DS2_VARS.cSky};
@@ -78,6 +101,18 @@ const RailLogo = styled.button`
   }
 `;
 
+/**
+ * Rail-кнопка с magnetic magnification (macOS dock style).
+ *
+ * При hover:
+ *   - Активная иконка поднимается на --magnify-lift и увеличивается до
+ *     --magnify-scale (1.1)
+ *   - Соседние иконки увеличиваются до --magnify-neighbor (1.05) через
+ *     селектор :has() — пропадает в браузерах без поддержки (graceful fallback)
+ *
+ * Active-состояние (открытый drawer) визуализируется тонким индикатором
+ * (точкой) под иконкой, без изменения фона — дизайн требует чистого dock'а.
+ */
 const RailButton = styled.button<{ $active?: boolean }>`
   width: 38px;
   height: 38px;
@@ -87,17 +122,21 @@ const RailButton = styled.button<{ $active?: boolean }>`
     $active ? 'rgba(59, 139, 217, 0.08)' : 'transparent'};
   color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.g500)};
   cursor: pointer;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   transition:
     background 0.12s ${DS2_VARS.ease},
-    color 0.12s ${DS2_VARS.ease};
+    color 0.12s ${DS2_VARS.ease},
+    transform ${DS2_VARS.magnifyDuration} ${DS2_VARS.ease};
 
   &:hover {
     background: ${DS2_VARS.g100};
     color: ${DS2_VARS.ink};
+    transform: translateY(calc(-1 * ${DS2_VARS.magnifyLift}))
+      scale(${DS2_VARS.magnifyScale});
   }
 
   &:focus-visible {
@@ -109,6 +148,37 @@ const RailButton = styled.button<{ $active?: boolean }>`
     width: 18px;
     height: 18px;
   }
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: ${({ $active }) =>
+      $active ? DS2_VARS.cSky : 'transparent'};
+    transform: translateX(-50%);
+    transition: background 0.12s ${DS2_VARS.ease};
+  }
+`;
+
+/**
+ * Magnetic-эффект соседей: увеличиваем кнопки, смежные с той, над которой hover.
+ * Работает через :has() (Safari 15.4+, Chromium 105+, Firefox 121+).
+ * В браузерах без :has() — просто базовый scale(1.1) на hover-иконке, без magnetic.
+ */
+const RailMagnet = styled.div`
+  display: contents;
+
+  @supports selector(:has(*)) {
+    /* Нативный :has для соседей */
+    ${RailButton}:hover + ${RailButton},
+    ${RailButton}:has(+ ${RailButton}:hover) {
+      transform: scale(${DS2_VARS.magnifyNeighbor});
+    }
+  }
 `;
 
 const RailBadgeDot = styled.span<{ $color: string }>`
@@ -119,18 +189,15 @@ const RailBadgeDot = styled.span<{ $color: string }>`
   height: 6px;
   border-radius: 50%;
   background: ${({ $color }) => $color};
-  box-shadow: 0 0 0 2px ${DS2_VARS.s};
+  box-shadow: 0 0 0 2px ${DS2_VARS.glassBg};
 `;
 
 const RailSeparator = styled.span`
-  width: 24px;
-  height: 1px;
-  background: ${DS2_VARS.g100};
-  margin: ${DS2_SPACE.s1}px 0;
-`;
-
-const RailSpacer = styled.div`
-  flex: 1;
+  width: 1px;
+  height: 24px;
+  background: ${DS2_VARS.g200};
+  margin: 0 ${DS2_SPACE.s1}px;
+  flex-shrink: 0;
 `;
 
 const RailAvatar = styled.button`
@@ -144,9 +211,16 @@ const RailAvatar = styled.button`
   font-weight: 700;
   border: none;
   cursor: pointer;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: transform ${DS2_VARS.magnifyDuration} ${DS2_VARS.ease};
+
+  &:hover {
+    transform: translateY(calc(-1 * ${DS2_VARS.magnifyLift}))
+      scale(${DS2_VARS.magnifyScale});
+  }
 
   &:focus-visible {
     outline: 2px solid ${DS2_VARS.cSky};
@@ -201,6 +275,15 @@ export const Rail: FC<RailProps> = ({
   const history = useHistory();
   const { openedDrawer, toggleDrawer, activeRailId } = useShell();
 
+  /**
+   * Порядок кнопок floating dock по мокапу analytics-floating-dock.html:
+   *   Logo · Home · Catalog · Tools · Create · [Search/CentralPill] ·
+   *   Calendar · Theme · AI · Separator · Avatar
+   *
+   * В Этапе 1 на месте CentralPill стоит привычная кнопка rail-search
+   * (IconSearch). Она будет заменена на морфирующую капсулу в Этапе 2.
+   * separatorBefore: true на Avatar → разделитель перед аватаром.
+   */
   const buttons = useMemo<RailButtonDescriptor[]>(
     () => [
       {
@@ -241,14 +324,12 @@ export const Rail: FC<RailProps> = ({
         icon: <IconCalendar />,
         onClick: onOpenCalendar,
         badgeColor: calendarBadgeColor,
-        position: 'bottom',
       },
       {
         id: 'rail-theme',
         label: t('Сменить тему'),
         icon: <IconTheme />,
         onClick: onToggleTheme,
-        position: 'bottom',
       },
       {
         id: 'rail-ai',
@@ -256,14 +337,12 @@ export const Rail: FC<RailProps> = ({
         icon: <IconAi />,
         onClick: onOpenAi,
         badgeColor: aiBadgeColor,
-        position: 'bottom',
       },
       {
         id: 'rail-settings',
         label: t('Настройки и профиль'),
         icon: <IconSettings />,
         onClick: onOpenSettings,
-        position: 'bottom',
         separatorBefore: true,
       },
     ],
@@ -292,9 +371,6 @@ export const Rail: FC<RailProps> = ({
       history.push(btn.href);
     }
   };
-
-  const topButtons = buttons.filter(b => b.position !== 'bottom');
-  const bottomButtons = buttons.filter(b => b.position === 'bottom');
 
   const renderButton = (btn: RailButtonDescriptor) => {
     const isActive =
@@ -345,14 +421,14 @@ export const Rail: FC<RailProps> = ({
       >
         М
       </RailLogo>
-      {topButtons.map(renderButton)}
-      <RailSpacer />
-      {bottomButtons.map(btn => (
-        <span key={btn.id} style={{ display: 'contents' }}>
-          {btn.separatorBefore ? <RailSeparator role="presentation" /> : null}
-          {renderButton(btn)}
-        </span>
-      ))}
+      <RailMagnet>
+        {buttons.map(btn => (
+          <span key={btn.id} style={{ display: 'contents' }}>
+            {btn.separatorBefore ? <RailSeparator role="presentation" /> : null}
+            {renderButton(btn)}
+          </span>
+        ))}
+      </RailMagnet>
     </RailNav>
   );
 };

@@ -38,10 +38,15 @@ import { ShellProvider } from './ShellContext';
 import { ToolsDrawer } from './ToolsDrawer';
 import type { DrawerKind } from './types';
 
+/**
+ * Shell = «окно приложения». С переходом на Floating Dock (Этап 1):
+ *   - ShellRoot больше не flex-row: док плавает через position:fixed,
+ *     ShellMain занимает 100% viewport по обеим осям.
+ *   - Padding-bottom у ShellMain резервирует место под док, чтобы контент
+ *     (дашборды, таблицы) не уходил под floating pill.
+ */
 const ShellRoot = styled.div`
-  display: flex;
-  /* Shell = «окно приложения» — фиксированный viewport, window-scroll не
-     появляется. Rail и Drawer — ребёнки flex с height:100vh, всегда видны. */
+  position: relative;
   height: 100vh;
   overflow: hidden;
   background: ${DS2_VARS.bg};
@@ -49,23 +54,26 @@ const ShellRoot = styled.div`
   font-family: ${DS2_VARS.fontSans};
 
   @media print {
-    /* При печати shell раскрывается по контенту, rail/drawer уже скрыты
-       через @media print (см. их стили), и странице нужно позволить расти. */
     height: auto;
     overflow: visible;
   }
 `;
 
 const ShellMain = styled.main`
-  flex: 1;
+  height: 100%;
+  width: 100%;
   min-width: 0;
-  /* min-height:0 обязателен для flex-child с overflow — иначе контейнер
-     не даст содержимому сжиматься и scroll не появится. */
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
+  /* Резервируем нижний отступ под FloatingDock (height + bottom + gap). */
+  padding-bottom: ${DS2_VARS.dockContentPad};
+
+  @media print {
+    padding-bottom: 0;
+  }
 `;
 
 interface ShellProps {

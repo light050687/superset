@@ -18,21 +18,27 @@ import type { DrawerKind } from './types';
 
 export const DRAWER_WIDTH = 220;
 
+/**
+ * Этап 1 — переходное состояние: Drawer вытаскиваем из flex-потока ShellRoot
+ * (который больше не flex-row), делаем fixed на левой стороне. В Этапе 3
+ * он будет полностью переделан в bottom sheet (slides up над floating dock).
+ */
 const DrawerAside = styled.aside<{ $open: boolean }>`
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
   width: ${({ $open }) => ($open ? `${DRAWER_WIDTH}px` : '0')};
-  flex-shrink: 0;
-  background: ${DS2_VARS.s};
-  border-right: 1px solid ${DS2_VARS.g100};
+  background: ${DS2_VARS.glassBg};
+  backdrop-filter: ${DS2_VARS.glassFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.glassFilter};
+  border-right: 1px solid ${DS2_VARS.glassBorder};
   overflow: hidden;
   transition: width 0.2s ${DS2_VARS.ease};
   display: flex;
   flex-direction: column;
-  z-index: 15;
-
-  /* ShellRoot на 100vh + overflow:hidden делает Drawer просто flex-ребёнком
-     фиксированной высоты. Внутренний скролл (DrawerBody) отвечает за
-     длинное дерево папок. */
-  height: 100vh;
+  /* Ниже dropdowns (110), CommandPalette (105), AI overlay (100) и dock (101). */
+  z-index: 90;
 
   @media print {
     display: none;

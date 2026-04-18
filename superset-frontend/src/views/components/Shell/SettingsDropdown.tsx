@@ -48,18 +48,21 @@ interface SettingsDropdownProps {
 }
 
 const Dropdown = styled.div`
-  background: ${DS2_VARS.s};
-  border: 1px solid ${DS2_VARS.g200};
-  border-radius: ${DS2_RADIUS.card}px;
+  background: ${DS2_VARS.glassBg};
+  backdrop-filter: ${DS2_VARS.glassFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.glassFilter};
+  border: 1px solid ${DS2_VARS.glassBorder};
+  border-radius: ${DS2_VARS.rGlass};
   padding: ${DS2_SPACE.s1}px;
   min-width: 260px;
   max-width: 320px;
   max-height: calc(100vh - 24px);
   overflow-y: auto;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  box-shadow: ${DS2_VARS.glassShadow};
   font-family: ${DS2_VARS.fontSans};
   color: ${DS2_VARS.ink};
-  z-index: 80;
+  /* Над floating dock (101), scrim (99), под AI overlay (100). */
+  z-index: 110;
 
   &::-webkit-scrollbar {
     width: 4px;
@@ -273,11 +276,25 @@ interface Position {
   left: number;
 }
 
-function computePosition(anchor: HTMLElement, menuHeight: number): Position {
+/**
+ * Позиционируем dropdown НАД anchor-кнопкой в floating dock (см. аналог
+ * в CalendarDropdown). Settings — самый правый элемент дока, поэтому
+ * dropdown чаще всего прижимается правым краем к viewport: clamp гарантирует
+ * отступ 8px справа.
+ */
+function computePosition(
+  anchor: HTMLElement,
+  menuWidth: number,
+  menuHeight: number,
+): Position {
   const rect = anchor.getBoundingClientRect();
-  const viewportH = window.innerHeight;
-  const top = Math.max(8, Math.min(rect.top, viewportH - menuHeight - 12));
-  const left = rect.right + 8;
+  const viewportW = window.innerWidth;
+  const gap = 12;
+  const anchorCenterX = rect.left + rect.width / 2;
+  const rawLeft = anchorCenterX - menuWidth / 2;
+  const left = Math.max(8, Math.min(rawLeft, viewportW - menuWidth - 8));
+  const above = rect.top - menuHeight - gap;
+  const top = above >= 8 ? above : rect.bottom + gap;
   return { top, left };
 }
 
@@ -298,8 +315,8 @@ export const SettingsDropdown: FC<SettingsDropdownProps> = ({
 
   useLayoutEffect(() => {
     if (!open || !anchor || !ref.current) return;
-    const menuH = ref.current.getBoundingClientRect().height;
-    setPos(computePosition(anchor, menuH));
+    const box = ref.current.getBoundingClientRect();
+    setPos(computePosition(anchor, box.width, box.height));
   }, [open, anchor]);
 
   // Закрытие по Escape и клику вне.
