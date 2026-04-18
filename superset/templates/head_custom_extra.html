@@ -147,9 +147,45 @@
     /* Радиусы */
     --r-card:    10px;
     --r-control: 6px;
+    --r-pill:    20px;
+    --r-glass:   16px;
 
     /* Transitions */
     --ease: cubic-bezier(.4, 0, .2, 1);
+
+    /* ═══ Floating Dock (Liquid Glass 2026) — светлая тема ═══
+       Используется FloatingDock, Drawer (bottom sheet), AiFullView (overlay),
+       ContextPopover, ModelPopover, SettingsDropdown, CalendarDropdown. */
+    --glass-bg:          rgba(255, 255, 255, 0.85);
+    --glass-bg-elev:     rgba(255, 255, 255, 0.95);
+    --glass-border:      rgba(0, 0, 0, 0.06);
+    --glass-shadow:      0 12px 32px rgba(0, 0, 0, 0.15);
+    --glass-shadow-elev: 0 20px 60px rgba(0, 0, 0, 0.25);
+    --glass-scrim:       rgba(0, 0, 0, 0.4);
+    --glass-filter:      blur(16px) saturate(180%);
+
+    /* Геометрия дока и его overlay-ей */
+    --dock-height:          58px;
+    --dock-bottom:          18px;
+    --dock-drawer-bottom:   76px;
+    --dock-ai-bottom:       92px;
+    --dock-dropdown-bottom: 84px;
+    --dock-ai-width:        820px;
+    --dock-ai-height:       640px;
+    --dock-content-pad:     88px;
+    --dock-mobile-height:   64px;
+
+    /* CentralPill */
+    --pill-compact-w:  280px;
+    --pill-compact-h:  44px;
+    --pill-expanded-w: 420px;
+    --pill-expanded-h: 100px;
+
+    /* Magnification (macOS-style hover) */
+    --magnify-scale:         1.1;
+    --magnify-neighbor:      1.05;
+    --magnify-lift:          4px;
+    --magnify-duration:      0.15s;
   }
 
   /* ═══ DS 2.0 — тёмная тема ═══ */
@@ -179,6 +215,15 @@
     --up-b: rgba( 52, 211, 153, 0.10);
     --dn-b: rgba(248, 113, 113, 0.10);
     --wn-b: rgba(248, 245, 113, 0.10);
+
+    /* Floating Dock (Liquid Glass) — тёмная тема.
+       Значения зеркалят DS2_GLASS_DARK из superset-frontend/src/theme/ds2Tokens.ts. */
+    --glass-bg:          rgba( 23,  26,  30, 0.85);
+    --glass-bg-elev:     rgba( 39,  43,  48, 0.90);
+    --glass-border:      rgba(255, 255, 255, 0.08);
+    --glass-shadow:      0 12px 32px rgba(0, 0, 0, 0.4);
+    --glass-shadow-elev: 0 20px 60px rgba(0, 0, 0, 0.55);
+    --glass-scrim:       rgba(0, 0, 0, 0.55);
   }
 
   /* ═══ DS 2.0 — числа: tabular-nums в таблицах и BigNumber ═══ */

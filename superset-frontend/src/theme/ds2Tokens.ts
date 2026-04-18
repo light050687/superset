@@ -27,9 +27,104 @@ export const DS2_SPACE = {
 export const DS2_RADIUS = {
   card: 10,
   control: 6,
+  pill: 20,
+  glass: 16,
 } as const;
 
 export const DS2_EASE = 'cubic-bezier(.4, 0, .2, 1)';
+
+/**
+ * Floating Dock геометрия (Этап 0 миграции Shell v2 → Floating Dock).
+ * Значения берутся из дизайн-прототипа analytics-floating-dock.html
+ * и используются в FloatingDock.tsx, CentralPill.tsx, AiFullView-overlay.
+ */
+export const DS2_DOCK = {
+  /** Высота самого дока в compact-состоянии. */
+  height: 58,
+  /** Отступ дока от нижнего края viewport. */
+  bottom: 18,
+  /** Bottom sheet drawer — над доком (dock.height + gap). */
+  drawerBottom: 76,
+  /** AI overlay снизу (dock.height + gap). */
+  aiOverlayBottom: 92,
+  /** Настолько dropdowns (settings, calendar) подняты над доком. */
+  dropdownBottom: 84,
+  /** Ширина AI overlay-а (фиксированная на desktop). */
+  aiOverlayWidth: 820,
+  /** Высота AI overlay-а (capped 70vh на меньших экранах). */
+  aiOverlayHeight: 640,
+  /** Порог, ниже которого рендерим MobileNav вместо FloatingDock. */
+  mobileBreakpoint: 768,
+  /** Высота MobileNav (bottom tab bar). */
+  mobileNavHeight: 64,
+  /** Отступ контента снизу, чтобы не прятался под доком. */
+  contentPaddingBottom: 88,
+} as const;
+
+/**
+ * CentralPill геометрия. Морфирующая капсула поиск+AI.
+ * compact = одна строка, expanded = две (при focus).
+ */
+export const DS2_PILL = {
+  compactWidth: 280,
+  compactHeight: 44,
+  expandedWidth: 420,
+  expandedHeight: 100,
+  /** Длительность morph-анимации focus/blur. */
+  morphDuration: '0.2s',
+} as const;
+
+/**
+ * Magnetic magnification для rail-кнопок дока (hover scale как macOS dock).
+ * Используются в FloatingDock.tsx. Важно: применять только на desktop
+ * (на touch-устройствах hover не имеет смысла).
+ */
+export const DS2_MAGNIFY = {
+  /** Scale иконки под курсором. */
+  scale: 1.1,
+  /** Scale соседних иконок (мягкий magnetic-эффект). */
+  neighborScale: 1.05,
+  /** Lift по Y-оси для поднятия иконки при hover. */
+  lift: 4,
+  /** Длительность magnification-анимации. */
+  duration: '0.15s',
+} as const;
+
+/**
+ * Liquid Glass — параметры полупрозрачного материала (iOS 26 / One UI 8.5).
+ * Применяются к доку, drawer-у, AI overlay-ю, popover-ам.
+ * Значения отличаются для light/dark темы — используйте через useDs2().glass.
+ */
+export const DS2_GLASS_LIGHT = {
+  /** rgba фон glass-панели (светлая тема). */
+  bg: 'rgba(255, 255, 255, 0.85)',
+  /** rgba фон вложенных контролов внутри glass. */
+  bgElevated: 'rgba(255, 255, 255, 0.95)',
+  /** rgba border для glass-панели. */
+  border: 'rgba(0, 0, 0, 0.06)',
+  /** box-shadow для floating-элементов. */
+  shadow: '0 12px 32px rgba(0, 0, 0, 0.15)',
+  /** box-shadow для AI overlay (сильнее). */
+  shadowElevated: '0 20px 60px rgba(0, 0, 0, 0.25)',
+  /** scrim-фон под модальными overlay-ями. */
+  scrim: 'rgba(0, 0, 0, 0.4)',
+} as const;
+
+export const DS2_GLASS_DARK = {
+  bg: 'rgba(23, 26, 30, 0.85)',
+  bgElevated: 'rgba(39, 43, 48, 0.90)',
+  border: 'rgba(255, 255, 255, 0.08)',
+  shadow: '0 12px 32px rgba(0, 0, 0, 0.4)',
+  shadowElevated: '0 20px 60px rgba(0, 0, 0, 0.55)',
+  scrim: 'rgba(0, 0, 0, 0.55)',
+} as const;
+
+/** backdrop-filter — общий для обеих тем. */
+export const DS2_GLASS_FILTER = 'blur(16px) saturate(180%)' as const;
+
+export type Ds2GlassPalette = {
+  [K in keyof typeof DS2_GLASS_LIGHT]: string;
+};
 
 export const DS2_LIGHT = {
   bg: '#F3F3F3',
@@ -116,6 +211,44 @@ export const DS2_VARS = {
   fontSans: 'var(--f)',
   fontMono: 'var(--m)',
   ease: 'var(--ease)',
+
+  /* Floating Dock — Liquid Glass (реактивный на смену темы) */
+  glassBg: 'var(--glass-bg)',
+  glassBgElev: 'var(--glass-bg-elev)',
+  glassBorder: 'var(--glass-border)',
+  glassShadow: 'var(--glass-shadow)',
+  glassShadowElev: 'var(--glass-shadow-elev)',
+  glassScrim: 'var(--glass-scrim)',
+  glassFilter: 'var(--glass-filter)',
+
+  /* Радиусы */
+  rCard: 'var(--r-card)',
+  rControl: 'var(--r-control)',
+  rPill: 'var(--r-pill)',
+  rGlass: 'var(--r-glass)',
+
+  /* Dock geometry */
+  dockHeight: 'var(--dock-height)',
+  dockBottom: 'var(--dock-bottom)',
+  dockDrawerBottom: 'var(--dock-drawer-bottom)',
+  dockAiBottom: 'var(--dock-ai-bottom)',
+  dockDropdownBottom: 'var(--dock-dropdown-bottom)',
+  dockAiWidth: 'var(--dock-ai-width)',
+  dockAiHeight: 'var(--dock-ai-height)',
+  dockContentPad: 'var(--dock-content-pad)',
+  dockMobileHeight: 'var(--dock-mobile-height)',
+
+  /* Pill geometry */
+  pillCompactW: 'var(--pill-compact-w)',
+  pillCompactH: 'var(--pill-compact-h)',
+  pillExpandedW: 'var(--pill-expanded-w)',
+  pillExpandedH: 'var(--pill-expanded-h)',
+
+  /* Magnification */
+  magnifyScale: 'var(--magnify-scale)',
+  magnifyNeighbor: 'var(--magnify-neighbor)',
+  magnifyLift: 'var(--magnify-lift)',
+  magnifyDuration: 'var(--magnify-duration)',
 } as const;
 
 /** Типографическая шкала DS 2.0 (см. раздел 02 дизайн-документа). */

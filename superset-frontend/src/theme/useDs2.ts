@@ -13,13 +13,20 @@
 import { useEffect, useState } from 'react';
 import {
   DS2_DARK,
+  DS2_DOCK,
   DS2_EASE,
   DS2_FONTS,
+  DS2_GLASS_DARK,
+  DS2_GLASS_FILTER,
+  DS2_GLASS_LIGHT,
   DS2_LIGHT,
+  DS2_MAGNIFY,
+  DS2_PILL,
   DS2_RADIUS,
   DS2_SPACE,
   DS2_TYPE,
   DS2_VARS,
+  type Ds2GlassPalette,
   type Ds2Palette,
 } from './ds2Tokens';
 
@@ -34,6 +41,11 @@ function readMode(): Ds2Mode {
 export interface Ds2Context {
   mode: Ds2Mode;
   palette: Ds2Palette;
+  glass: Ds2GlassPalette;
+  glassFilter: string;
+  dock: typeof DS2_DOCK;
+  pill: typeof DS2_PILL;
+  magnify: typeof DS2_MAGNIFY;
   fonts: typeof DS2_FONTS;
   space: typeof DS2_SPACE;
   radius: typeof DS2_RADIUS;
@@ -67,6 +79,11 @@ export function useDs2(): Ds2Context {
   return {
     mode,
     palette: mode === 'dark' ? DS2_DARK : DS2_LIGHT,
+    glass: mode === 'dark' ? DS2_GLASS_DARK : DS2_GLASS_LIGHT,
+    glassFilter: DS2_GLASS_FILTER,
+    dock: DS2_DOCK,
+    pill: DS2_PILL,
+    magnify: DS2_MAGNIFY,
     fonts: DS2_FONTS,
     space: DS2_SPACE,
     radius: DS2_RADIUS,
