@@ -26,17 +26,26 @@ export const DRAWER_WIDTH = 220;
 
 /**
  * Bottom sheet. Выезжает снизу (height: 0 → max-height), центрирован по
- * горизонтали с симметричным отступом 24px от краёв. Стоит над floating dock
- * (bottom: dockDrawerBottom).
+ * горизонтали. Стоит над floating dock (bottom: dockDrawerBottom).
+ *
+ * Мокап различает размер для разных типов:
+ * - catalog: `.is-catalog` width min(96vw, 1200px), max-height min(640px, 80vh)
+ * - tools / create / default: ~760px × 320px
+ * Разделяем через проп $kind.
  */
-const DrawerSheet = styled.aside<{ $open: boolean }>`
+const DrawerSheet = styled.aside<{ $open: boolean; $kind: 'catalog' | 'other' }>`
   position: fixed;
-  left: ${DS2_SPACE.s6}px;
-  right: ${DS2_SPACE.s6}px;
   bottom: ${DS2_VARS.dockDrawerBottom};
-  max-height: 320px;
-  /* Closed state — 0 высота и нулевая непрозрачность, чтобы не ловить клики. */
-  height: ${({ $open }) => ($open ? 'min(320px, 60vh)' : '0')};
+  left: 50%;
+  transform: translateX(-50%);
+  width: ${({ $kind }) =>
+    $kind === 'catalog' ? 'min(96vw, 1200px)' : 'min(96vw, 760px)'};
+  max-height: ${({ $kind }) =>
+    $kind === 'catalog' ? 'min(640px, 80vh)' : '60vh'};
+  height: ${({ $open, $kind }) => {
+    if (!$open) return '0';
+    return $kind === 'catalog' ? 'min(640px, 80vh)' : 'min(420px, 60vh)';
+  }};
   opacity: ${({ $open }) => ($open ? 1 : 0)};
   overflow: hidden;
   background: ${DS2_VARS.glassBg};
@@ -50,6 +59,7 @@ const DrawerSheet = styled.aside<{ $open: boolean }>`
   pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};
   transition:
     height 0.22s ${DS2_VARS.ease},
+    width 0.22s ${DS2_VARS.ease},
     opacity 0.18s ${DS2_VARS.ease};
   /* Выше ShellMain контента (1) и ниже dropdowns/AI overlay/dock. */
   z-index: 95;
@@ -59,9 +69,11 @@ const DrawerSheet = styled.aside<{ $open: boolean }>`
   }
 
   @media (max-width: 767px) {
-    /* На mobile — полноэкранный bottom sheet, 90vh. */
+    /* На mobile — полноэкранный bottom sheet, 90vh, без transform. */
     left: ${DS2_SPACE.s1}px;
     right: ${DS2_SPACE.s1}px;
+    transform: none;
+    width: auto;
     bottom: ${DS2_VARS.dockMobileHeight};
     max-height: 90vh;
     height: ${({ $open }) => ($open ? '90vh' : '0')};
@@ -205,10 +217,13 @@ export const Drawer: FC<DrawerProps> = ({
       closeDrawer();
     };
     document.addEventListener('keydown', onKey);
-    document.addEventListener('mousedown', onDocClick);
+    // Используем click (не mousedown): click срабатывает после mouseup,
+    // т.е. после завершения текущего event-loop открытия drawer. Иначе
+    // тот же клик, что открыл drawer, сразу бы его закрыл.
+    document.addEventListener('click', onDocClick);
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('click', onDocClick);
     };
   }, [openedDrawer, closeDrawer]);
 
@@ -222,6 +237,7 @@ export const Drawer: FC<DrawerProps> = ({
     <DrawerSheet
       ref={asideRef as never}
       $open={isOpen}
+      $kind={kind === 'catalog' ? 'catalog' : 'other'}
       aria-hidden={!isOpen}
       aria-label={kind ? title : undefined}
       role="dialog"
