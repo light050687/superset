@@ -212,99 +212,8 @@ const Chip = styled.button`
   }
 `;
 
-const InputBox = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${DS2_SPACE.s2}px;
-  background: ${DS2_VARS.s};
-  border: 1px solid ${DS2_VARS.g200};
-  border-radius: 24px;
-  padding: ${DS2_SPACE.s1}px ${DS2_SPACE.s1}px ${DS2_SPACE.s1}px
-    ${DS2_SPACE.s4}px;
-  transition: border-color 0.15s ${DS2_VARS.ease};
-
-  &:focus-within {
-    border-color: ${DS2_VARS.cSky};
-    box-shadow: 0 0 0 3px rgba(59, 139, 217, 0.12);
-  }
-
-  input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: ${DS2_VARS.ink};
-    font-family: ${DS2_VARS.fontSans};
-    font-size: 14px;
-    outline: none;
-    height: 38px;
-  }
-
-  input::placeholder {
-    color: ${DS2_VARS.g400};
-  }
-`;
-
-const IconBtn = styled.button`
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: transparent;
-  border: none;
-  color: ${DS2_VARS.g500};
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition:
-    background 0.1s ${DS2_VARS.ease},
-    color 0.1s ${DS2_VARS.ease};
-
-  &:hover {
-    background: ${DS2_VARS.g100};
-    color: ${DS2_VARS.ink};
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${DS2_VARS.cSky};
-    outline-offset: 2px;
-  }
-
-  svg {
-    width: 15px;
-    height: 15px;
-  }
-`;
-
-const SendBtn = styled.button`
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: ${DS2_VARS.cSky};
-  border: none;
-  color: ${DS2_VARS.s};
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-weight: 700;
-
-  &:hover {
-    filter: brightness(1.1);
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${DS2_VARS.ink};
-    outline-offset: 2px;
-  }
-
-  &:disabled {
-    background: ${DS2_VARS.g300};
-    cursor: not-allowed;
-  }
-`;
+/* InputBox/IconBtn/SendBtn удалены — нижний input-ряд убран в B12
+   (ввод идёт через CentralPill в dock'е, которая парит над overlay-ем). */
 
 const MockBanner = styled.div`
   background: ${DS2_VARS.wnBg};
@@ -326,18 +235,8 @@ const IconClose: FC = () => (
   </svg>
 );
 
-const IconPaperclip: FC = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M11 7l-5 5a3 3 0 11-4-4l6-6a2 2 0 113 3l-6 6a1 1 0 11-1-1l5-5" />
-  </svg>
-);
-
-const IconMic: FC = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <rect x="6" y="2" width="4" height="8" rx="2" />
-    <path d="M3 8a5 5 0 0010 0M8 13v2" />
-  </svg>
-);
+/* IconPaperclip/IconMic удалены вместе с нижним input-рядом. Ввод через
+   CentralPill в dock'е, там свои иконки (IconPlus, IconMic, IconGear). */
 
 const DEFAULT_PROMPTS = [
   'Какая маржа по мясу за март?',
@@ -377,7 +276,6 @@ export const AiFullView: FC<AiFullViewProps> = ({
   contextId,
   modelId,
 }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
 
   const [folders, setFolders] = useState<AiChatFolder[]>([]);
@@ -385,7 +283,6 @@ export const AiFullView: FC<AiFullViewProps> = ({
   const [tasks, setTasks] = useState<AiActiveTask[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
   const [items, setItems] = useState<ChatItem[]>([]);
-  const [query, setQuery] = useState('');
   const [sending, setSending] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -410,7 +307,6 @@ export const AiFullView: FC<AiFullViewProps> = ({
   useEffect(() => {
     if (!open) return;
     void refresh();
-    setTimeout(() => inputRef.current?.focus(), 50);
   }, [open, refresh]);
 
   useEffect(() => {
@@ -422,10 +318,15 @@ export const AiFullView: FC<AiFullViewProps> = ({
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  /* seedQuery приходит из CentralPill после её submit. Автоматически
+     отправляем запрос в AI (CentralPill сама очистила input у себя). */
   useEffect(() => {
     if (seedQuery && open) {
-      setQuery(seedQuery);
+      void sendQuery(seedQuery);
     }
+    // sendQuery зависит от currentSessionId/sending — но мы хотим запустить
+    // seedQuery ОДИН раз при open+seedQuery. eslint-disable для простоты.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedQuery, open]);
 
   // Скролл к последнему сообщению.
@@ -455,7 +356,6 @@ export const AiFullView: FC<AiFullViewProps> = ({
   const handleNewChat = useCallback(() => {
     setCurrentSessionId(null);
     setItems([]);
-    setTimeout(() => inputRef.current?.focus(), 0);
   }, []);
 
   const handleNewFolder = useCallback(async () => {
@@ -499,7 +399,6 @@ export const AiFullView: FC<AiFullViewProps> = ({
       if (!trimmed || sending) return;
 
       setSending(true);
-      setQuery('');
 
       // Создаём сессию если её ещё нет.
       let sessionId = currentSessionId;
@@ -587,8 +486,7 @@ export const AiFullView: FC<AiFullViewProps> = ({
 
   const handlePrompt = useCallback(
     (text: string) => {
-      setQuery(text);
-      setTimeout(() => sendQuery(text), 0);
+      void sendQuery(text);
     },
     [sendQuery],
   );
@@ -664,9 +562,14 @@ export const AiFullView: FC<AiFullViewProps> = ({
             ))
           )}
         </Body>
-        <InputZone>
-          <InputInner>
-            {!empty ? (
+        {/*
+         * Нижний input убран (мокап analytics-floating-dock.html): ввод
+         * идёт через CentralPill в dock'е, которая парит над overlay-ем.
+         * Quick-chips после чата остаются как быстрый способ продолжить диалог.
+         */}
+        {!empty ? (
+          <InputZone>
+            <InputInner>
               <QuickChips>
                 {QUICK_CHIPS_AFTER_CHAT.map(chip => (
                   <Chip
@@ -678,49 +581,9 @@ export const AiFullView: FC<AiFullViewProps> = ({
                   </Chip>
                 ))}
               </QuickChips>
-            ) : null}
-            <InputBox>
-              <input
-                ref={inputRef}
-                type="text"
-                placeholder={t('Спросите что-нибудь о ваших данных…')}
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !sending) {
-                    e.preventDefault();
-                    void sendQuery(query);
-                  }
-                }}
-                aria-label={t('Вопрос ИИ-аналитику')}
-              />
-              <IconBtn
-                type="button"
-                aria-label={t('Прикрепить файл')}
-                title={t('Прикрепить файл')}
-                disabled
-              >
-                <IconPaperclip />
-              </IconBtn>
-              <IconBtn
-                type="button"
-                aria-label={t('Голосовой ввод')}
-                title={t('Голосовой ввод')}
-                disabled
-              >
-                <IconMic />
-              </IconBtn>
-              <SendBtn
-                type="button"
-                onClick={() => void sendQuery(query)}
-                disabled={sending || !query.trim()}
-                aria-label={t('Отправить')}
-              >
-                ↑
-              </SendBtn>
-            </InputBox>
-          </InputInner>
-        </InputZone>
+            </InputInner>
+          </InputZone>
+        ) : null}
         </Main>
       </Panel>
     </>
