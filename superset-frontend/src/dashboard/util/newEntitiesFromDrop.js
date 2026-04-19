@@ -21,7 +21,7 @@ import shouldWrapChildInRow from './shouldWrapChildInRow';
 import newComponentFactory from './newComponentFactory';
 import getComponentWidthFromDrop from './getComponentWidthFromDrop';
 
-import { ROW_TYPE, TABS_TYPE, TAB_TYPE } from './componentTypes';
+import { ROW_TYPE, TABS_TYPE, TAB_TYPE, PAGES_TYPE, PAGE_TYPE } from './componentTypes';
 
 export default function newEntitiesFromDrop({ dropResult, layout }) {
   const { dragging, destination } = dropResult;
@@ -59,6 +59,11 @@ export default function newEntitiesFromDrop({ dropResult, layout }) {
     tabChild.parents = (dropEntity.parents || []).concat(dropEntity.id);
     newDropChild.children = [tabChild.id];
     newEntities[tabChild.id] = tabChild;
+  } else if (dragType === PAGES_TYPE) {
+    const pageChild = newComponentFactory(PAGE_TYPE);
+    pageChild.parents = (dropEntity.parents || []).concat(dropEntity.id);
+    newDropChild.children = [pageChild.id];
+    newEntities[pageChild.id] = pageChild;
   }
 
   const nextDropChildren = [...dropEntity.children];

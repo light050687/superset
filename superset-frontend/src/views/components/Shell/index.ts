@@ -1,0 +1,46 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ */
+export { Shell } from './Shell';
+export { Rail, RAIL_WIDTH } from './Rail';
+export { MobileNav } from './MobileNav';
+export { AiHistorySheet } from './AiHistorySheet';
+export { useMediaQuery } from './useMediaQuery';
+export { CentralPill } from './CentralPill';
+export { ContextPopover } from './ContextPopover';
+export { ModelPopover } from './ModelPopover';
+export {
+  AiSettingsPopover,
+  DEFAULT_AI_PARAMS,
+  DEFAULT_AI_TOOLS,
+  type AiParams,
+  type AiToolsConfig,
+} from './AiSettingsPopover';
+export {
+  AI_MODELS,
+  DEFAULT_AI_CONTEXT,
+  DEFAULT_AI_CONTEXTS,
+  DEFAULT_AI_MODEL,
+  type AiContext,
+  type AiModelDescriptor,
+  type AiModelId,
+} from './CentralPillTypes';
+export { Drawer, DRAWER_WIDTH } from './Drawer';
+export { CreateDrawer } from './CreateDrawer';
+export { ToolsDrawer } from './ToolsDrawer';
+export { SettingsDropdown } from './SettingsDropdown';
+export { CommandPalette } from './CommandPalette';
+export {
+  CalendarDropdown,
+  type CalendarEvent,
+} from './CalendarDropdown';
+export { ShellProvider, useShell } from './ShellContext';
+export type { DrawerKind, RailButtonDescriptor } from './types';

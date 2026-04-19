@@ -35,6 +35,7 @@ import {
   ON_REFRESH,
   ON_REFRESH_SUCCESS,
   SET_DIRECT_PATH,
+  SET_ACTIVE_PAGE_PATH,
   SET_FOCUSED_FILTER_FIELD,
   UNSET_FOCUSED_FILTER_FIELD,
   SET_ACTIVE_TAB,
@@ -218,6 +219,12 @@ export default function dashboardStateReducer(state = {}, action) {
         ...state,
         directPathToChild: action.path,
         directPathLastUpdated: Date.now(),
+      };
+    },
+    [SET_ACTIVE_PAGE_PATH]() {
+      return {
+        ...state,
+        activePagePath: action.path,
       };
     },
     [SET_ACTIVE_TAB]() {

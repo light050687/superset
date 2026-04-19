@@ -47,6 +47,8 @@ interface VerticalBarConfig {
   toggleFiltersBar: any;
   width: number;
   isMobile?: boolean;
+  topLevelPages?: any;
+  editMode?: boolean;
 }
 
 export interface FiltersBarProps {

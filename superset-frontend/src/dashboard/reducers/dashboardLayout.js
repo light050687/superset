@@ -30,7 +30,8 @@ import newComponentFactory from '../util/newComponentFactory';
 import newEntitiesFromDrop from '../util/newEntitiesFromDrop';
 import reorderItem from '../util/dnd-reorder';
 import shouldWrapChildInRow from '../util/shouldWrapChildInRow';
-import { ROW_TYPE, TAB_TYPE, TABS_TYPE } from '../util/componentTypes';
+import { ROW_TYPE, TAB_TYPE, TABS_TYPE, PAGE_TYPE, PAGES_TYPE } from '../util/componentTypes';
+import cloneComponentTree from '../util/cloneComponentTree';
 
 import {
   UPDATE_COMPONENTS,
@@ -40,6 +41,9 @@ import {
   MOVE_COMPONENT,
   CREATE_TOP_LEVEL_TABS,
   DELETE_TOP_LEVEL_TABS,
+  CREATE_TOP_LEVEL_PAGES,
+  DELETE_TOP_LEVEL_PAGES,
+  COPY_PAGE,
   DASHBOARD_TITLE_CHANGED,
 } from '../actions/dashboardLayout';
 
@@ -276,6 +280,112 @@ const actionHandlers = {
     };
 
     return nextEntities;
+  },
+
+  [CREATE_TOP_LEVEL_PAGES](state, action) {
+    const {
+      payload: { dropResult },
+    } = action;
+    const { source, dragging } = dropResult;
+
+    const rootComponent = state[DASHBOARD_ROOT_ID];
+    const topLevelId = rootComponent.children[0];
+    const topLevelComponent = state[topLevelId];
+
+    if (source.id !== NEW_COMPONENTS_SOURCE_ID) {
+      const draggingPages = state[dragging.id];
+      const draggingPageId = draggingPages.children[0];
+      const draggingPage = state[draggingPageId];
+
+      const childrenToMove = [...topLevelComponent.children].filter(
+        id => id !== dragging.id,
+      );
+
+      return {
+        ...state,
+        [DASHBOARD_ROOT_ID]: {
+          ...rootComponent,
+          children: [dragging.id],
+        },
+        [topLevelId]: {
+          ...topLevelComponent,
+          children: [],
+        },
+        [draggingPageId]: {
+          ...draggingPage,
+          children: [...draggingPage.children, ...childrenToMove],
+        },
+      };
+    }
+
+    const newEntities = newEntitiesFromDrop({ dropResult, layout: state });
+    const newEntitiesArray = Object.values(newEntities);
+    const pageComponent = newEntitiesArray.find(
+      component => component.type === PAGE_TYPE,
+    );
+    const pagesComponent = newEntitiesArray.find(
+      component => component.type === PAGES_TYPE,
+    );
+
+    pageComponent.children = [...topLevelComponent.children];
+    newEntities[topLevelId] = { ...topLevelComponent, children: [] };
+    newEntities[DASHBOARD_ROOT_ID] = {
+      ...rootComponent,
+      children: [pagesComponent.id],
+    };
+
+    return {
+      ...state,
+      ...newEntities,
+    };
+  },
+
+  [DELETE_TOP_LEVEL_PAGES](state) {
+    const rootComponent = state[DASHBOARD_ROOT_ID];
+    const topLevelId = rootComponent.children[0];
+    const topLevelPages = state[topLevelId];
+
+    if (topLevelPages.type !== PAGES_TYPE) return state;
+
+    let childrenToMove = [];
+    const nextEntities = { ...state };
+
+    topLevelPages.children.forEach(pageId => {
+      const pageComponent = state[pageId];
+      childrenToMove = [...childrenToMove, ...pageComponent.children];
+      delete nextEntities[pageId];
+    });
+
+    delete nextEntities[topLevelId];
+
+    nextEntities[DASHBOARD_ROOT_ID] = {
+      ...rootComponent,
+      children: [DASHBOARD_GRID_ID],
+    };
+
+    nextEntities[DASHBOARD_GRID_ID] = {
+      ...state[DASHBOARD_GRID_ID],
+      children: childrenToMove,
+    };
+
+    return nextEntities;
+  },
+
+  [COPY_PAGE](state, action) {
+    const { pageId, pagesId } = action.payload;
+    const { rootId: clonedPageId, entities: clonedEntities } =
+      cloneComponentTree(pageId, state);
+
+    const pagesComponent = state[pagesId];
+    const sourceIndex = pagesComponent.children.indexOf(pageId);
+    const nextChildren = [...pagesComponent.children];
+    nextChildren.splice(sourceIndex + 1, 0, clonedPageId);
+
+    return {
+      ...state,
+      ...clonedEntities,
+      [pagesId]: { ...pagesComponent, children: nextChildren },
+    };
   },
 
   [UPDATE_COMPONENTS_PARENTS_LIST](state) {

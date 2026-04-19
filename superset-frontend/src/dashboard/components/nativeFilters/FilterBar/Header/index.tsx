@@ -78,12 +78,7 @@ const Header: FC<HeaderProps> = ({ toggleFiltersBar, isMobile }) => (
           buttonSize="xsmall"
           onClick={() => toggleFiltersBar(false)}
         >
-          <Icons.VerticalAlignTopOutlined
-            iconSize="xl"
-            css={css`
-              transform: rotate(-90deg);
-            `}
-          />
+          <Icons.CloseOutlined iconSize="l" />
         </HeaderButton>
       )}
     </TitleArea>

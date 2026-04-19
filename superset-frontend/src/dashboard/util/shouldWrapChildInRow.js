@@ -22,6 +22,7 @@ import {
   COLUMN_TYPE,
   MARKDOWN_TYPE,
   TAB_TYPE,
+  PAGE_TYPE,
 } from './componentTypes';
 
 const typeToWrapChildLookup = {
@@ -32,6 +33,12 @@ const typeToWrapChildLookup = {
   },
 
   [TAB_TYPE]: {
+    [CHART_TYPE]: true,
+    [COLUMN_TYPE]: true,
+    [MARKDOWN_TYPE]: true,
+  },
+
+  [PAGE_TYPE]: {
     [CHART_TYPE]: true,
     [COLUMN_TYPE]: true,
     [MARKDOWN_TYPE]: true,

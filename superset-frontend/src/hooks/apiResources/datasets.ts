@@ -72,8 +72,9 @@ export const useDatasetDrillInfo = (
   });
 
   useEffect(() => {
-    if (skip) {
-      // short circuit if `skip` is `true`
+    const numericDatasetId = getDatasetId(datasetId);
+    if (skip || Number.isNaN(numericDatasetId)) {
+      // short circuit if `skip` is `true` or datasetId is invalid
       setResource({
         status: ResourceStatus.Complete,
         result: {} as Dataset,
@@ -83,7 +84,6 @@ export const useDatasetDrillInfo = (
     }
     const fetchDataset = async () => {
       try {
-        const numericDatasetId = getDatasetId(datasetId);
         const loadDrillByOptionsExtension = getExtensionsRegistry().get(
           'load.drillby.options',
         );

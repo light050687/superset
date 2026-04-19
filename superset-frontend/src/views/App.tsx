@@ -29,7 +29,7 @@ import { css } from '@superset-ui/core';
 import { Layout, Loading } from '@superset-ui/core/components';
 import { setupAGGridModules } from '@superset-ui/core/components/ThemedAgGridReact';
 import { ErrorBoundary } from 'src/components';
-import Menu from 'src/features/home/Menu';
+import { Shell } from 'src/views/components/Shell';
 import getBootstrapData, { applicationRoot } from 'src/utils/getBootstrapData';
 import ToastContainer from 'src/components/MessageToasts/ToastContainer';
 import setupApp from 'src/setup/setupApp';
@@ -75,34 +75,40 @@ const App = () => (
     <ScrollToTop />
     <LocationPathnameLogger />
     <RootContextProviders>
-      <Menu
-        data={bootstrapData.common.menu_data}
+      <Shell
+        user={bootstrapData.user}
+        menu={bootstrapData.common.menu_data}
         isFrontendRoute={isFrontendRoute}
-      />
-      <Switch>
-        {routes.map(({ path, Component, props = {}, Fallback = Loading }) => (
-          <Route path={path} key={path}>
-            <Suspense fallback={<Fallback />}>
-              <Layout>
-                <Layout.Content
-                  css={css`
-                    display: flex;
-                    flex-direction: column;
-                  `}
-                >
-                  <ErrorBoundary
-                    css={css`
-                      margin: 16px;
-                    `}
-                  >
-                    <Component user={bootstrapData.user} {...props} />
-                  </ErrorBoundary>
-                </Layout.Content>
-              </Layout>
-            </Suspense>
-          </Route>
-        ))}
-      </Switch>
+      >
+        <Switch>
+          {routes.map(
+            ({ path, Component, props = {}, Fallback = Loading }) => (
+              <Route path={path} key={path}>
+                <Suspense fallback={<Fallback />}>
+                  <Layout>
+                    <Layout.Content
+                      css={css`
+                        display: flex;
+                        flex-direction: column;
+                        flex: 1;
+                        min-height: 0;
+                      `}
+                    >
+                      <ErrorBoundary
+                        css={css`
+                          margin: 16px;
+                        `}
+                      >
+                        <Component user={bootstrapData.user} {...props} />
+                      </ErrorBoundary>
+                    </Layout.Content>
+                  </Layout>
+                </Suspense>
+              </Route>
+            ),
+          )}
+        </Switch>
+      </Shell>
       <ToastContainer />
     </RootContextProviders>
   </Router>

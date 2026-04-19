@@ -314,6 +314,9 @@ const config = {
     minimizer: [new CssMinimizerPlugin(), '...'],
   },
   resolve: {
+    // Don't resolve symlinks to realpath — keeps file:../my-plugins/* visible
+    // through the host's node_modules cascade (needed for peerDependencies)
+    symlinks: false,
     // resolve modules from `/superset_frontend/node_modules` and `/superset_frontend`
     modules: ['node_modules', APP_DIR],
     alias: {

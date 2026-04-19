@@ -18,3 +18,340 @@
   #}
 
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+
+<style>
+  /* ═══ FIX: AntD Select arrow click not opening dropdown ═══
+     In AntD v5.25, .ant-select-arrow has pointer-events:none (decorative),
+     but its child <span.anticon> and <svg> inherit pointer-events:auto.
+     The SVG catches clicks but doesn't bubble to .ant-select-selector (the click handler),
+     so clicking the ▼ arrow does nothing.
+     Fix: force pointer-events:none on ALL children of .ant-select-arrow. */
+  .ant-select-arrow,
+  .ant-select-arrow * {
+    pointer-events: none !important;
+  }
+
+  /* ═══ DS 2.0 — локальные шрифты Manrope + JetBrains Mono (9 весов × 2 subset) ═══
+     Скачано с fonts.gstatic.com, лежит в /static/assets/fonts/.
+     Subsets: latin (базовая латиница + пунктуация) + cyrillic (русский/украинский).
+     font-display: swap — сразу показываем текст fallback'ом, подменяем когда шрифт загрузится. */
+
+  /* --- Manrope latin --- */
+  @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 300; font-display: swap;
+    src: url('/static/assets/fonts/manrope-latin-300.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 400; font-display: swap;
+    src: url('/static/assets/fonts/manrope-latin-400.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url('/static/assets/fonts/manrope-latin-500.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 600; font-display: swap;
+    src: url('/static/assets/fonts/manrope-latin-600.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 700; font-display: swap;
+    src: url('/static/assets/fonts/manrope-latin-700.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 800; font-display: swap;
+    src: url('/static/assets/fonts/manrope-latin-800.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+  /* --- Manrope cyrillic --- */
+  @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 300; font-display: swap;
+    src: url('/static/assets/fonts/manrope-cyrillic-300.woff2') format('woff2');
+    unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+  @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 400; font-display: swap;
+    src: url('/static/assets/fonts/manrope-cyrillic-400.woff2') format('woff2');
+    unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+  @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url('/static/assets/fonts/manrope-cyrillic-500.woff2') format('woff2');
+    unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+  @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 600; font-display: swap;
+    src: url('/static/assets/fonts/manrope-cyrillic-600.woff2') format('woff2');
+    unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+  @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 700; font-display: swap;
+    src: url('/static/assets/fonts/manrope-cyrillic-700.woff2') format('woff2');
+    unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+  @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 800; font-display: swap;
+    src: url('/static/assets/fonts/manrope-cyrillic-800.woff2') format('woff2');
+    unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+
+  /* --- JetBrains Mono latin --- */
+  @font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400; font-display: swap;
+    src: url('/static/assets/fonts/jetbrains-mono-latin-400.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url('/static/assets/fonts/jetbrains-mono-latin-500.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 600; font-display: swap;
+    src: url('/static/assets/fonts/jetbrains-mono-latin-600.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+  /* --- JetBrains Mono cyrillic --- */
+  @font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400; font-display: swap;
+    src: url('/static/assets/fonts/jetbrains-mono-cyrillic-400.woff2') format('woff2');
+    unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+  @font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url('/static/assets/fonts/jetbrains-mono-cyrillic-500.woff2') format('woff2');
+    unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+  @font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 600; font-display: swap;
+    src: url('/static/assets/fonts/jetbrains-mono-cyrillic-600.woff2') format('woff2');
+    unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+
+  /* ═══ DS 2.0 — CSS Custom Properties (светлая тема) ═══ */
+  :root {
+    /* Шрифты (цепочка fallback на случай недоступности Google Fonts) */
+    --f: 'Manrope', 'Inter', Helvetica, Arial, sans-serif;
+    --m: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+
+    /* Фундамент */
+    --bg: #F3F3F3;
+    --s:  #FFFFFF;
+    --ink: #0A0A0A;
+
+    /* Шкала серого (8 ступеней) */
+    --g50:  #F7F7F7;
+    --g100: #EBEBEB;
+    --g200: #DCDCDC;
+    --g300: #C0C0C0;
+    --g400: #999999;
+    --g500: #737373;
+    --g600: #555555;
+    --g700: #2E2E2E;
+
+    /* Акценты (5 цветов данных) */
+    --c-sky:       #3B8BD9;
+    --c-violet:    #8B5CF6;
+    --c-tangerine: #E87C3E;
+    --c-fuchsia:   #D946A8;
+    --c-amber:     #CA8A04;
+
+    /* Семантика */
+    --up: #16A34A;
+    --dn: #DC2626;
+    --wn: #CCB604;
+    --up-b: rgba( 22, 163,  74, 0.08);
+    --dn-b: rgba(220,  38,  38, 0.08);
+    --wn-b: rgba(204, 182,   4, 0.08);
+
+    /* Отступы (8px grid) */
+    --space-05:  2px;
+    --space-1:   4px;
+    --space-2:   8px;
+    --space-3:  12px;
+    --space-4:  16px;
+    --space-6:  24px;
+    --space-8:  32px;
+    --space-12: 48px;
+
+    /* Радиусы */
+    --r-card:    10px;
+    --r-control: 6px;
+    --r-pill:    20px;
+    --r-glass:   16px;
+
+    /* Transitions */
+    --ease: cubic-bezier(.4, 0, .2, 1);
+
+    /* ═══ Floating Dock — flat solid DS 2.0 (светлая тема) ═══
+       Без прозрачности, без backdrop-filter, без drop-shadow.
+       Глубина передаётся только через 1px hairline border (var(--g200))
+       и plain цветовые поверхности. */
+    --glass-bg:          #FFFFFF;
+    --glass-bg-elev:     #FFFFFF;
+    --glass-border:      var(--g200);
+    --glass-shadow:      none;
+    --glass-shadow-elev: none;
+    --glass-scrim:       rgba(0, 0, 0, 0.40); /* scrim под модалками оставляем */
+    --glass-filter:      none;
+
+    /* Rail (dock) — solid surface. */
+    --dock-bg:           var(--s);
+    --dock-filter:       none;
+    --dock-border:       var(--g200);
+    --dock-shadow:       none;
+    --dock-radius:       18px;
+
+    /* Rail-button hover/active. */
+    --dock-btn-hover-bg: var(--g100);
+    --dock-btn-active-bg: rgba(59, 139, 217, 0.10);
+    --dock-btn-active-ring: inset 0 0 0 1px var(--c-sky);
+    --dock-btn-active-glow: none;
+
+    /* CentralPill (.rail-ask) — solid surfaces из шкалы серого. */
+    --bg3:                  var(--g100);
+    --pill-bg:              var(--g50);
+    --pill-bg-hover:        var(--g100);
+    --pill-bg-focused:      var(--s);
+    --pill-focus-border:    var(--c-sky);
+    --pill-focus-shadow:    none;
+
+    /* Popover (ContextPopover, ModelPopover, AiSettingsPopover). */
+    --popover-filter:       none;
+    --popover-shadow:       none;
+
+    /* Tile hover в drawer-ах. */
+    --tile-hover-bg:        var(--g100);
+    --tile-hover-border:    var(--g200);
+
+    /* Drawer (bottom sheet). */
+    --drawer-bottom:        92px;
+    --drawer-radius:        18px;
+    --drawer-bg:            var(--s);
+    --drawer-filter:        none;
+    --drawer-border:        var(--g200);
+    --drawer-shadow:        none;
+
+    /* AI overlay (.ai-full). */
+    --ai-bg:                var(--s);
+    --ai-filter:            none;
+    --ai-border:            var(--g200);
+    --ai-shadow:            none;
+
+    /* AI side panel — чуть темнее overlay (бэкграунд bg vs surface s). */
+    --ai-side-bg:           var(--bg);
+    --ai-side-border:       var(--g200);
+    --ai-side-hairline:     transparent;
+    --ai-side-glow:         transparent;
+    --ai-side-divider:      var(--g200);
+
+    /* Dropdown (Calendar / Settings / SettingsDropdown). */
+    --dropdown-bg:          var(--s);
+    --dropdown-filter:      none;
+    --dropdown-border:      var(--g200);
+    --dropdown-radius:      18px;
+    --dropdown-shadow:      none;
+
+    /* Геометрия дока и его overlay-ей */
+    --dock-height:          58px;
+    --dock-bottom:          18px;
+    --dock-drawer-bottom:   76px;
+    --dock-ai-bottom:       92px;
+    --dock-dropdown-bottom: 84px;
+    --dock-ai-width:        820px;
+    --dock-ai-height:       640px;
+    --dock-content-pad:     88px;
+    --dock-mobile-height:   64px;
+
+    /* CentralPill */
+    --pill-compact-w:  280px;
+    --pill-compact-h:  44px;
+    --pill-expanded-w: 420px;
+    --pill-expanded-h: 100px;
+
+    /* Magnification (macOS-style hover) */
+    --magnify-scale:         1.1;
+    --magnify-neighbor:      1.05;
+    --magnify-lift:          4px;
+    --magnify-duration:      0.15s;
+  }
+
+  /* ═══ DS 2.0 — тёмная тема ═══ */
+  [data-theme="dark"] {
+    --bg: #0F1114;
+    --s:  #171A1E;
+    --ink: #E6E9EF;
+
+    --g50:  #131619;
+    --g100: #1B1E22;
+    --g200: #272B30;
+    --g300: #363B42;
+    --g400: #555C65;
+    --g500: #7B8390;
+    --g600: #9BA3AE;
+    --g700: #C4CAD2;
+
+    --c-sky:       #5CAAF0;
+    --c-violet:    #A78BFA;
+    --c-tangerine: #F09A62;
+    --c-fuchsia:   #E870C0;
+    --c-amber:     #FBBF24;
+
+    --up: #34D399;
+    --dn: #F87171;
+    --wn: #F8F571;
+    --up-b: rgba( 52, 211, 153, 0.10);
+    --dn-b: rgba(248, 113, 113, 0.10);
+    --wn-b: rgba(248, 245, 113, 0.10);
+
+    /* ═══ Floating Dock — flat solid DS 2.0 (тёмная тема) ═══
+       Те же принципы: solid surfaces + 1px hairline border. */
+    --glass-bg:          var(--s);
+    --glass-bg-elev:     var(--s);
+    --glass-border:      var(--g200);
+    --glass-shadow:      none;
+    --glass-shadow-elev: none;
+    --glass-scrim:       rgba(0, 0, 0, 0.55);
+
+    --dock-bg:           var(--s);
+    --dock-border:       var(--g200);
+    --dock-shadow:       none;
+    --dock-btn-hover-bg: var(--g200);
+    --dock-btn-active-bg: rgba(92, 170, 240, 0.16);
+    --dock-btn-active-ring: inset 0 0 0 1px var(--c-sky);
+    --dock-btn-active-glow: none;
+
+    /* Pill / popover / tile — dark. */
+    --bg3:                  var(--g100);
+    --pill-bg:              var(--g100);
+    --pill-bg-hover:        var(--g200);
+    --pill-bg-focused:      var(--s);
+    --pill-focus-border:    var(--c-sky);
+    --pill-focus-shadow:    none;
+
+    --popover-shadow:       none;
+
+    --tile-hover-bg:        var(--g100);
+    --tile-hover-border:    var(--g200);
+
+    /* Drawer (dark). */
+    --drawer-bg:            var(--s);
+    --drawer-border:        var(--g200);
+    --drawer-shadow:        none;
+
+    /* AI overlay (dark). */
+    --ai-bg:                var(--s);
+    --ai-border:            var(--g200);
+    --ai-shadow:            none;
+
+    /* AI side panel (dark) — чуть темнее overlay (bg vs s). */
+    --ai-side-bg:           var(--bg);
+    --ai-side-border:       var(--g200);
+    --ai-side-hairline:     transparent;
+    --ai-side-glow:         transparent;
+    --ai-side-divider:      var(--g200);
+
+    /* Dropdown (dark). */
+    --dropdown-bg:          var(--s);
+    --dropdown-border:      var(--g200);
+    --dropdown-shadow:      none;
+  }
+
+  /* ═══ DS 2.0 — числа: tabular-nums в таблицах и BigNumber ═══ */
+  .pivot_table_v2 td,
+  .superset-legacy-chart-table td,
+  div[data-test="table-container"] td,
+  .big_number_total,
+  .big_number_total .subheader-line {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ═══ DS 2.0 — заголовки Pivot Table → JetBrains Mono UPPERCASE ═══ */
+  .pivot_table_v2 thead th {
+    font-family: var(--m) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+
+  /* ═══ DS 2.0 — ECharts DOM-тултипы → JetBrains Mono ═══ */
+  .echarts-tooltip {
+    font-family: var(--m) !important;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Анимация смены темы (View Transitions API) живёт в JS
+     (ThemeProvider.tsx) — инжектится через <style> на mount. Это надёжнее
+     чем Jinja-шаблон: он плохо перечитывается Flask/Werkzeug-reloader'ом
+     в dev-режиме (reloader мониторит .py, не .html). */
+</style>

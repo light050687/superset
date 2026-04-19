@@ -167,6 +167,10 @@ const UserRegistrations = lazy(
     ),
 );
 
+const GeoMap = lazy(
+  () => import(/* webpackChunkName: "GeoMap" */ 'src/pages/GeoMap'),
+);
+
 type Routes = {
   path: string;
   Component: ComponentType;
@@ -297,6 +301,10 @@ export const routes: Routes = [
   {
     path: '/registrations/',
     Component: UserRegistrations,
+  },
+  {
+    path: '/geo-map/',
+    Component: GeoMap,
   },
 ];
 

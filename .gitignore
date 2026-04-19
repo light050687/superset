@@ -68,6 +68,8 @@ node_modules
 npm-debug.log*
 superset/static/assets/*
 !superset/static/assets/.gitkeep
+!superset/static/assets/fonts/
+!superset/static/assets/fonts/**
 superset/static/uploads/*
 !superset/static/uploads/.gitkeep
 superset/static/version_info.json

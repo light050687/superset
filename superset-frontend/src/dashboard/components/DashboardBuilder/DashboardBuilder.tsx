@@ -48,6 +48,7 @@ import {
 } from 'src/dashboard/types';
 import {
   setDirectPathToChild,
+  setActivePagePath,
   setEditMode,
 } from 'src/dashboard/actions/dashboardState';
 import {
@@ -61,6 +62,7 @@ import {
   DASHBOARD_ROOT_ID,
   DashboardStandaloneMode,
 } from 'src/dashboard/util/constants';
+import { PAGES_TYPE } from 'src/dashboard/util/componentTypes';
 import FilterBar from 'src/dashboard/components/nativeFilters/FilterBar';
 import MobileFilterBar from 'src/dashboard/components/nativeFilters/FilterBar/MobileFilterBar';
 import { useUiConfig } from 'src/components/UiConfigContext';
@@ -624,9 +626,26 @@ const DashboardBuilder = () => {
   const dashboardRoot = dashboardLayout[DASHBOARD_ROOT_ID];
   const rootChildId = dashboardRoot?.children[0];
   const topLevelTabs =
-    rootChildId !== DASHBOARD_GRID_ID
+    rootChildId !== DASHBOARD_GRID_ID &&
+    dashboardLayout[rootChildId]?.type !== PAGES_TYPE
       ? dashboardLayout[rootChildId]
       : undefined;
+  const topLevelPages =
+    rootChildId !== DASHBOARD_GRID_ID &&
+    dashboardLayout[rootChildId]?.type === PAGES_TYPE
+      ? dashboardLayout[rootChildId]
+      : undefined;
+  // Initialize activePagePath when dashboard with Pages loads
+  const activePagePath = useSelector<RootState, string[]>(
+    state => (state.dashboardState as any).activePagePath ?? [],
+  );
+  useEffect(() => {
+    if (topLevelPages && activePagePath.length === 0) {
+      const firstPagePath = getDirectPathToTabIndex(topLevelPages, 0);
+      dispatch(setActivePagePath(firstPagePath));
+    }
+  }, [topLevelPages, activePagePath.length, dispatch]);
+
   const standaloneMode = getUrlParam(URL_PARAMS.standalone);
   const isReport = standaloneMode === DashboardStandaloneMode.Report;
   const hideDashboardHeader =
@@ -813,6 +832,8 @@ const DashboardBuilder = () => {
                   width: filterBarWidth,
                   height: filterBarHeight,
                   offset: filterBarOffset,
+                  topLevelPages,
+                  editMode,
                 }}
               />
             </ErrorBoundary>
@@ -826,11 +847,16 @@ const DashboardBuilder = () => {
       filterBarHeight,
       filterBarOffset,
       isReport,
+      topLevelPages,
+      editMode,
     ],
   );
 
+  const hasPages = (topLevelPages?.children?.length || 0) > 1;
   const isVerticalFilterBarVisible =
-    showFilterBar && filterBarOrientation === FilterBarOrientation.Vertical;
+    (showFilterBar && filterBarOrientation === FilterBarOrientation.Vertical) ||
+    hasPages ||
+    editMode;
   const headerFilterBarWidth =
     isVerticalFilterBarVisible && !isMobile ? currentFilterBarWidth : 0;
 
@@ -855,7 +881,7 @@ const DashboardBuilder = () => {
         {/* @ts-ignore */}
         <Droppable
           data-test="top-level-tabs"
-          className={cx(!topLevelTabs && editMode && 'empty-droptarget')}
+          className={cx(!topLevelTabs && !topLevelPages && editMode && 'empty-droptarget')}
           component={dashboardRoot}
           parentComponent={null}
           depth={DASHBOARD_ROOT_DEPTH}
@@ -864,7 +890,7 @@ const DashboardBuilder = () => {
           onDrop={handleDrop}
           editMode={editMode}
           // you cannot drop on/displace tabs if they already exist
-          disableDragDrop={!!topLevelTabs}
+          disableDragDrop={!!topLevelTabs || !!topLevelPages}
           style={draggableStyle}
         >
           {renderDraggableContent}
@@ -873,6 +899,7 @@ const DashboardBuilder = () => {
       <StyledContent fullSizeChartId={fullSizeChartId}>
         {!editMode &&
           !topLevelTabs &&
+          !topLevelPages &&
           dashboardLayout[DASHBOARD_GRID_ID]?.children?.length === 0 && (
             <EmptyState
               title={t('There are no charts added to this dashboard')}
@@ -926,7 +953,12 @@ const DashboardBuilder = () => {
                   />
                 </div>
               ) : (
-                <DashboardContainer topLevelTabs={topLevelTabs} />
+                <>
+                  <DashboardContainer
+                    topLevelTabs={topLevelTabs}
+                    topLevelPages={topLevelPages}
+                  />
+                </>
               )
             ) : (
               <Loading />
