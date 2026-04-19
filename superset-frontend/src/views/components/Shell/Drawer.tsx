@@ -35,32 +35,30 @@ export const DRAWER_WIDTH = 220;
  */
 const DrawerSheet = styled.aside<{ $open: boolean; $kind: 'catalog' | 'other' }>`
   position: fixed;
-  bottom: ${DS2_VARS.dockDrawerBottom};
+  bottom: ${DS2_VARS.drawerBottom};
   left: 50%;
-  transform: translateX(-50%);
-  width: ${({ $kind }) =>
-    $kind === 'catalog' ? 'min(96vw, 1200px)' : 'min(96vw, 760px)'};
-  max-height: ${({ $kind }) =>
-    $kind === 'catalog' ? 'min(640px, 80vh)' : '60vh'};
-  height: ${({ $open, $kind }) => {
-    if (!$open) return '0';
-    return $kind === 'catalog' ? 'min(640px, 80vh)' : 'min(420px, 60vh)';
-  }};
+  transform: translateX(-50%)
+    translateY(${({ $open }) => ($open ? '0' : '20px')});
+  /* Единый размер для всех drawer'ов (catalog/tools/create/AI history) —
+     по дизайн-запросу: min(96vw, 1200px) × min(640px, 80vh). */
+  width: min(96vw, 1200px);
+  max-height: ${({ $open }) => ($open ? 'min(640px, 80vh)' : '0')};
+  height: ${({ $open }) => ($open ? 'min(640px, 80vh)' : '0')};
   opacity: ${({ $open }) => ($open ? 1 : 0)};
   overflow: hidden;
-  background: ${DS2_VARS.glassBg};
-  backdrop-filter: ${DS2_VARS.glassFilter};
-  -webkit-backdrop-filter: ${DS2_VARS.glassFilter};
-  border: 1px solid ${DS2_VARS.glassBorder};
-  border-radius: ${DS2_VARS.rGlass};
-  box-shadow: ${DS2_VARS.glassShadowElev};
+  background: ${DS2_VARS.drawerBg};
+  backdrop-filter: ${DS2_VARS.drawerFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.drawerFilter};
+  border: 1px solid ${DS2_VARS.drawerBorder};
+  border-radius: ${DS2_VARS.drawerRadius};
+  box-shadow: ${DS2_VARS.drawerShadow};
   display: flex;
   flex-direction: column;
   pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};
   transition:
-    height 0.22s ${DS2_VARS.ease},
-    width 0.22s ${DS2_VARS.ease},
-    opacity 0.18s ${DS2_VARS.ease};
+    max-height 0.28s ${DS2_VARS.ease},
+    transform 0.28s ${DS2_VARS.ease},
+    opacity 0.2s ${DS2_VARS.ease};
   /* Выше ShellMain контента (1) и ниже dropdowns/AI overlay/dock. */
   z-index: 95;
 
@@ -80,27 +78,31 @@ const DrawerSheet = styled.aside<{ $open: boolean; $kind: 'catalog' | 'other' }>
   }
 `;
 
+/* Мокап `.drawer-handle`: 36×4, margin 10 auto 0, opacity 0.5. */
 const DragHandle = styled.div`
-  width: 48px;
+  width: 36px;
   height: 4px;
-  margin: ${DS2_SPACE.s1}px auto ${DS2_SPACE.s2}px;
+  margin: 10px auto 0;
   border-radius: 2px;
   background: ${DS2_VARS.g300};
+  opacity: 0.5;
   flex-shrink: 0;
 `;
 
+/* Мокап `.drawer-head`: padding 8 22 10. */
 const DrawerHead = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 ${DS2_SPACE.s4}px ${DS2_SPACE.s2}px;
+  padding: 8px 22px 10px;
   flex-shrink: 0;
 `;
 
+/* Мокап `.drawer-title`: font 12 / weight 700 / uppercase / ls 0.06em sans. */
 const DrawerTitle = styled.span`
-  font-family: ${DS2_VARS.fontMono};
-  font-size: 11px;
-  font-weight: 600;
+  font-family: ${DS2_VARS.fontSans};
+  font-size: 12px;
+  font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: ${DS2_VARS.g600};
@@ -143,18 +145,21 @@ const DrawerClose = styled.button`
  * в соответствии со своей семантикой. max-width ограничивает ширину
  * содержимого на сверхшироких экранах (дашборд может быть 2560px+).
  */
-const DrawerBody = styled.div`
+/* Мокап .drawer-body: padding 4 22 18 (default), scrollbar 3px g300.
+   Catalog (.cat-body): $flush=true → padding 0 — grid занимает всю ширину. */
+const DrawerBody = styled.div<{ $flush: boolean }>`
   flex: 1;
+  min-height: 0;
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  overflow-y: auto;
+  box-sizing: border-box;
+  overflow-y: ${({ $flush }) => ($flush ? 'hidden' : 'auto')};
   overflow-x: hidden;
-  padding: 0 ${DS2_SPACE.s4}px ${DS2_SPACE.s4}px;
+  padding: ${({ $flush }) => ($flush ? '0' : '4px 22px 18px')};
+  display: ${({ $flush }) => ($flush ? 'flex' : 'block')};
+  flex-direction: column;
 
   &::-webkit-scrollbar {
-    height: 4px;
-    width: 4px;
+    width: 3px;
   }
 
   &::-webkit-scrollbar-thumb {
@@ -164,8 +169,8 @@ const DrawerBody = styled.div`
 `;
 
 const DrawerFooter = styled.div`
-  padding: ${DS2_SPACE.s2}px ${DS2_SPACE.s4}px;
-  border-top: 1px solid ${DS2_VARS.glassBorder};
+  padding: 10px 22px 14px;
+  border-top: 1px solid ${DS2_VARS.g100};
   flex-shrink: 0;
 `;
 
@@ -200,7 +205,7 @@ export const Drawer: FC<DrawerProps> = ({
   const { openedDrawer, closeDrawer } = useShell();
   const asideRef = useRef<HTMLElement | null>(null);
 
-  // Esc закрывает drawer; клик вне — тоже.
+  // Esc закрывает drawer; click-outside — тоже, но с mousedown-tracking.
   useEffect(() => {
     if (!openedDrawer) return undefined;
     const onKey = (e: KeyboardEvent) => {
@@ -208,22 +213,59 @@ export const Drawer: FC<DrawerProps> = ({
         closeDrawer();
       }
     };
-    const onDocClick = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (!asideRef.current || asideRef.current.contains(target)) return;
-      // Игнорируем клики по rail (rail-кнопки сами переключают drawer).
-      const nav = document.querySelector('nav[aria-label]');
-      if (nav && nav.contains(target)) return;
-      closeDrawer();
+    /**
+     * Стандартный паттерн «close on outside click» с mousedown-tracking.
+     * Проблема простого listener'а на click: если click внутри drawer
+     * вызывает React-ре-рендер (например, переключение таба), к моменту
+     * bubbling'а до document target-элемент может быть уже удалён из DOM,
+     * и `drawer.contains(target)` возвращает false → drawer ложно
+     * закрывается. Решение: фиксируем «начало клика» на mousedown (capture
+     * phase — до React-handler'ов и ре-рендеров), и закрываем только если
+     * mousedown был ВНЕ drawer и nav.
+     */
+    let mouseDownWasOutside = false;
+
+    const isOutside = (path: EventTarget[]): boolean => {
+      // composedPath стабилен на capture phase и содержит путь ещё до
+      // любых React изменений DOM.
+      const inDrawer = path.some(
+        el =>
+          el instanceof Element &&
+          el.getAttribute?.('data-shell-drawer') === 'true',
+      );
+      if (inDrawer) return false;
+      const inRail = path.some(
+        el =>
+          el instanceof Element &&
+          typeof el.matches === 'function' &&
+          el.matches('nav[aria-label]'),
+      );
+      if (inRail) return false;
+      return true;
     };
+
+    const onMouseDown = (e: MouseEvent) => {
+      const path =
+        typeof e.composedPath === 'function'
+          ? (e.composedPath() as EventTarget[])
+          : [];
+      mouseDownWasOutside = isOutside(path);
+    };
+
+    const onClick = () => {
+      if (mouseDownWasOutside) {
+        closeDrawer();
+      }
+      mouseDownWasOutside = false;
+    };
+
     document.addEventListener('keydown', onKey);
-    // Используем click (не mousedown): click срабатывает после mouseup,
-    // т.е. после завершения текущего event-loop открытия drawer. Иначе
-    // тот же клик, что открыл drawer, сразу бы его закрыл.
-    document.addEventListener('click', onDocClick);
+    document.addEventListener('mousedown', onMouseDown, true);
+    document.addEventListener('click', onClick, true);
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.removeEventListener('click', onDocClick);
+      document.removeEventListener('mousedown', onMouseDown, true);
+      document.removeEventListener('click', onClick, true);
     };
   }, [openedDrawer, closeDrawer]);
 
@@ -242,6 +284,7 @@ export const Drawer: FC<DrawerProps> = ({
       aria-label={kind ? title : undefined}
       role="dialog"
       aria-modal="false"
+      data-shell-drawer="true"
     >
       {kind ? (
         <>
@@ -257,7 +300,7 @@ export const Drawer: FC<DrawerProps> = ({
               <IconClose />
             </DrawerClose>
           </DrawerHead>
-          <DrawerBody>
+          <DrawerBody $flush={kind === 'catalog'}>
             {bodyNode ?? (
               <DrawerPlaceholder>
                 {t('Содержимое появится в следующем этапе.')}

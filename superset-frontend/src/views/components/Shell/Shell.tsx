@@ -23,7 +23,11 @@ import { useUiConfig } from 'src/components/UiConfigContext';
 import { URL_PARAMS } from 'src/constants';
 import { DashboardStandaloneMode } from 'src/dashboard/util/constants';
 import { AiFullView } from 'src/features/ai';
-import { CatalogDrawer } from 'src/features/catalog';
+import {
+  CatalogDrawer,
+  useCatalogFolders,
+  useCatalogHasUpdates,
+} from 'src/features/catalog';
 import { DS2_VARS } from 'src/theme/ds2';
 import { useThemeContext } from 'src/theme/ThemeProvider';
 import type { BootstrapUser, MenuData } from 'src/types/bootstrapTypes';
@@ -350,6 +354,11 @@ export const Shell: FC<ShellProps> = ({
 
   const initials = extractInitials(user);
 
+  // Badge на иконке Каталога — только при изменениях с момента последнего
+  // открытия CatalogDrawer (snapshot в localStorage).
+  const { folders } = useCatalogFolders();
+  const catalogHasUpdates = useCatalogHasUpdates(folders);
+
   return (
     <ShellProvider>
       <ShellRoot>
@@ -363,7 +372,9 @@ export const Shell: FC<ShellProps> = ({
           settingsButtonRef={settingsButtonRef}
           calendarButtonRef={calendarButtonRef}
           calendarBadgeColor={DS2_VARS.cTangerine}
-          catalogBadgeColor={DS2_VARS.cTangerine}
+          catalogBadgeColor={
+            catalogHasUpdates ? DS2_VARS.cTangerine : undefined
+          }
           contexts={effectiveContexts}
           contextId={contextId}
           onContextChange={handleContextChange}
@@ -376,7 +387,9 @@ export const Shell: FC<ShellProps> = ({
           onOpenSettings={handleOpenSettings}
           settingsButtonRef={settingsButtonRef}
           aiBadgeColor={DS2_VARS.up}
-          catalogBadgeColor={DS2_VARS.cSky}
+          catalogBadgeColor={
+            catalogHasUpdates ? DS2_VARS.cTangerine : undefined
+          }
         />
         <Drawer content={mergedDrawerContent} />
         <ShellMain>{children}</ShellMain>

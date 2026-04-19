@@ -130,10 +130,24 @@ const RailButton = styled.button<{ $active?: boolean }>`
     color 0.15s ${DS2_VARS.ease},
     box-shadow 0.2s ${DS2_VARS.ease};
 
+  /* Hover: активная кнопка сохраняет sky-подсветку (background gradient,
+     ring, color) — как в мокапе. Для неактивной — обычный grey hover. */
   &:hover {
-    background: ${DS2_VARS.dockBtnHoverBg};
-    color: ${DS2_VARS.ink};
+    background: ${({ $active }) =>
+      $active ? DS2_VARS.dockBtnActiveBg : DS2_VARS.dockBtnHoverBg};
+    color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.ink)};
+    box-shadow: ${({ $active }) =>
+      $active ? DS2_VARS.dockBtnActiveRing : 'none'};
     transform: translateY(-6px) scale(1.18);
+  }
+
+  /* Active button при focus-visible тоже сохраняет sky-подсветку. */
+  &:focus {
+    background: ${({ $active }) =>
+      $active ? DS2_VARS.dockBtnActiveBg : 'transparent'};
+    color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.g600)};
+    box-shadow: ${({ $active }) =>
+      $active ? DS2_VARS.dockBtnActiveRing : 'none'};
   }
 
   &:focus-visible {
@@ -190,13 +204,41 @@ const RailDot = styled.span<{ $color: string }>`
 `;
 
 /**
- * Avatar 34×34 с gradient (violet→fuchsia) и border 2px из dock-bg.
- * Активируется кликом — открывает SettingsDropdown.
+ * Avatar slot. По мокапу: button-обёртка 44×44 (как `.rail-btn`, чтобы
+ * совпадал bounding box и magnification) + внутренний кружок 34×34 с
+ * gradient. Структура мокапа: `<button class="rail-btn"><div class="rail-avatar"/></button>`.
  */
-const RailAvatar = styled.button`
+const RailAvatarBtn = styled.button`
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center bottom;
+  transition: transform 0.2s ${DS2_VARS.ease};
+
+  &:hover {
+    transform: translateY(-6px) scale(1.18);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${DS2_VARS.cSky};
+    outline-offset: 2px;
+  }
+`;
+
+/* Мокап `.rail-avatar`: 34×34, gradient violet→fuchsia, border 2px bg1 60%. */
+const RailAvatarDot = styled.span`
   width: 34px;
   height: 34px;
-  padding: 0;
+  flex-shrink: 0;
+  box-sizing: border-box;
   border: 2px solid ${DS2_VARS.dockBg};
   border-radius: 50%;
   background: linear-gradient(
@@ -208,24 +250,9 @@ const RailAvatar = styled.button`
   font-family: ${DS2_VARS.fontSans};
   font-size: 11px;
   font-weight: 700;
-  cursor: pointer;
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition:
-    transform 0.2s ${DS2_VARS.ease},
-    box-shadow 0.2s ${DS2_VARS.ease};
-
-  &:hover {
-    transform: translateY(-4px) scale(1.1);
-    box-shadow: 0 6px 18px rgba(139, 92, 246, 0.4);
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${DS2_VARS.cSky};
-    outline-offset: 2px;
-  }
 `;
 
 /**
@@ -323,10 +350,14 @@ export const Rail: FC<RailProps> = ({
   const location = useLocation();
   const { openedDrawer, toggleDrawer, activeRailId } = useShell();
 
-  // Home активна на welcome/дашборде по умолчанию (если ничего не выбрано).
+  // Home активна только когда ничего другое не выбрано И drawer закрыт —
+  // иначе была ситуация «Home + Каталог горят одновременно» при открытии
+  // любого drawer на welcome-странице.
   const isHomeActive =
     activeRailId === 'rail-home' ||
-    (!activeRailId && /\/(superset\/)?welcome\/?/.test(location.pathname));
+    (!activeRailId &&
+      !openedDrawer &&
+      /\/(superset\/)?welcome\/?/.test(location.pathname));
 
   const onHome = () => history.push('/superset/welcome/');
 
@@ -467,9 +498,9 @@ export const Rail: FC<RailProps> = ({
       },
       { kind: 'sep' },
       {
-        kind: 'custom',
+        kind: 'btn',
         node: (
-          <RailAvatar
+          <RailAvatarBtn
             key="rail-settings"
             ref={settingsButtonRef}
             type="button"
@@ -477,8 +508,8 @@ export const Rail: FC<RailProps> = ({
             aria-label={t('Настройки и профиль')}
             title={t('Настройки и профиль')}
           >
-            {userInitials}
-          </RailAvatar>
+            <RailAvatarDot>{userInitials}</RailAvatarDot>
+          </RailAvatarBtn>
         ),
       },
     ],

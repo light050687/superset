@@ -52,20 +52,21 @@ const Sheet = styled.aside<{ $open: boolean }>`
   opacity: ${({ $open }) => ($open ? 1 : 0)};
   pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};
   overflow: hidden;
-  background: ${DS2_VARS.glassBg};
-  backdrop-filter: ${DS2_VARS.glassFilter};
-  -webkit-backdrop-filter: ${DS2_VARS.glassFilter};
-  border: 1px solid ${DS2_VARS.glassBorder};
-  border-radius: ${DS2_VARS.rGlass};
-  box-shadow: ${DS2_VARS.glassShadowElev};
+  /* Pixel-perfect parity .ai-side: тот же glass-материал что drawer
+     (blur 32 sat 160, radius 24, bg1 80%, тень 30px 80px). */
+  background: ${DS2_VARS.drawerBg};
+  backdrop-filter: ${DS2_VARS.drawerFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.drawerFilter};
+  border: 1px solid ${DS2_VARS.drawerBorder};
+  border-radius: ${DS2_VARS.drawerRadius};
+  box-shadow: ${DS2_VARS.drawerShadow};
   display: flex;
   flex-direction: column;
   z-index: 97;
   transition:
-    max-height 0.22s ${DS2_VARS.ease},
-    height 0.22s ${DS2_VARS.ease},
-    opacity 0.18s ${DS2_VARS.ease},
-    transform 0.22s ${DS2_VARS.ease};
+    max-height 0.28s ${DS2_VARS.ease},
+    transform 0.28s ${DS2_VARS.ease},
+    opacity 0.2s ${DS2_VARS.ease};
   font-family: ${DS2_VARS.fontSans};
 
   @media print {

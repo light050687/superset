@@ -244,6 +244,27 @@ export const DS2_VARS = {
   tileHoverBg: 'var(--tile-hover-bg)',
   tileHoverBorder: 'var(--tile-hover-border)',
 
+  /* Drawer (bottom sheet) — pixel-perfect parity мокап */
+  drawerBottom: 'var(--drawer-bottom)',
+  drawerRadius: 'var(--drawer-radius)',
+  drawerBg: 'var(--drawer-bg)',
+  drawerFilter: 'var(--drawer-filter)',
+  drawerBorder: 'var(--drawer-border)',
+  drawerShadow: 'var(--drawer-shadow)',
+
+  /* AI overlay (.ai-full) — pixel-perfect мокап */
+  aiBg: 'var(--ai-bg)',
+  aiFilter: 'var(--ai-filter)',
+  aiBorder: 'var(--ai-border)',
+  aiShadow: 'var(--ai-shadow)',
+
+  /* Dropdown (Calendar/Settings) — pixel-perfect мокап .dropdown.pm/.cal */
+  dropdownBg: 'var(--dropdown-bg)',
+  dropdownFilter: 'var(--dropdown-filter)',
+  dropdownBorder: 'var(--dropdown-border)',
+  dropdownRadius: 'var(--dropdown-radius)',
+  dropdownShadow: 'var(--dropdown-shadow)',
+
   /* Радиусы */
   rCard: 'var(--r-card)',
   rControl: 'var(--r-control)',

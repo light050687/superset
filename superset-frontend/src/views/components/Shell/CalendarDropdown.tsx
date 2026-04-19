@@ -76,16 +76,17 @@ const MONTHS_RU_GEN = [
 
 const WEEKDAYS_RU_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'] as const;
 
+/* Pixel-perfect parity .dropdown.cal: blur 24 sat 160, radius 18, тень 30px 80px. */
 const Dropdown = styled.div`
-  background: ${DS2_VARS.glassBg};
-  backdrop-filter: ${DS2_VARS.glassFilter};
-  -webkit-backdrop-filter: ${DS2_VARS.glassFilter};
-  border: 1px solid ${DS2_VARS.glassBorder};
-  border-radius: ${DS2_VARS.rGlass};
+  background: ${DS2_VARS.dropdownBg};
+  backdrop-filter: ${DS2_VARS.dropdownFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.dropdownFilter};
+  border: 1px solid ${DS2_VARS.dropdownBorder};
+  border-radius: ${DS2_VARS.dropdownRadius};
   padding: 0;
   min-width: 300px;
   max-width: 340px;
-  box-shadow: ${DS2_VARS.glassShadow};
+  box-shadow: ${DS2_VARS.dropdownShadow};
   font-family: ${DS2_VARS.fontSans};
   color: ${DS2_VARS.ink};
   /* Над floating dock (101) и scrim (99), но под AI overlay (100). */

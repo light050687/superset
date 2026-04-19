@@ -81,6 +81,9 @@ const Pill = styled.div<{ $expanded: boolean }>`
   flex-direction: column;
   gap: 0;
   flex-shrink: 0;
+  /* Мокап использует глобальный box-sizing: border-box → height 44 ВКЛЮЧАЕТ
+     border. Без этого pill получался 46 (44 + 2×1px border). */
+  box-sizing: border-box;
   height: ${({ $expanded }) => ($expanded ? '84px' : '44px')};
   min-width: ${({ $expanded }) => ($expanded ? '560px' : '280px')};
   padding: 0;
@@ -170,19 +173,6 @@ const Input = styled.input`
   &::placeholder {
     color: ${DS2_VARS.g500};
   }
-`;
-
-/** kbd-hint «⌘K» — показывается только в compact без текста. */
-const Kbd = styled.kbd`
-  flex-shrink: 0;
-  font-family: ${DS2_VARS.fontMono};
-  font-size: 9.5px;
-  line-height: 1;
-  background: ${DS2_VARS.bg};
-  border: 1px solid ${DS2_VARS.g200};
-  color: ${DS2_VARS.g500};
-  padding: 4px 6px;
-  border-radius: 5px;
 `;
 
 /** Context chip (только в bot row, expanded). */
@@ -524,12 +514,8 @@ export const CentralPill: FC<CentralPillProps> = ({
             placeholder={t('Спросить ИИ или найти…')}
             aria-label={t('Запрос ИИ или поиск')}
           />
-          {/* В compact без текста — показываем ⌘K. В compact с текстом или
-              в focused — вместо ⌘K рендерится send-button внутри row-bot
-              (через .rb-mic morph); тут ⌘K виден только когда обе условия нет. */}
-          {!expanded && !hasText ? <Kbd>{t('⌘K')}</Kbd> : null}
           {/* Compact + has-text: send-кнопка в top-row для быстрого submit без
-              разворачивания pill. */}
+              разворачивания pill. По мокапу `.ra-kbd` отсутствует. */}
           {!expanded && hasText ? (
             <MicBtn
               type="submit"

@@ -20,11 +20,13 @@ import { useHistory } from 'react-router-dom';
 import { DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 import { useShell } from './ShellContext';
 
+/* Мокап .drawer-body.dc-sections: padding 10 22 18 суммарно.
+   Внешний DrawerBody даёт 4 22 18, здесь добавляем 6 сверху → итого 10/22/18. */
 const Sections = styled.div`
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 10px 22px 18px;
+  padding: 6px 0 0;
   font-family: ${DS2_VARS.fontSans};
 `;
 
@@ -78,6 +80,7 @@ const Tile = styled.button`
 const TileIcon = styled.div<{ $accent: string }>`
   width: 38px;
   height: 38px;
+  box-sizing: border-box;
   border-radius: 10px;
   display: flex;
   align-items: center;

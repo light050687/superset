@@ -12,13 +12,17 @@
 export { CatalogDrawer } from './CatalogDrawer';
 export { CatalogTree } from './CatalogTree';
 export { CatalogTreeNode } from './CatalogTreeNode';
-export { CatalogAdminModal } from './CatalogAdminModal';
 export { CatalogDeleteModal } from './CatalogDeleteModal';
+export { CatalogManageView } from './CatalogManageView';
 export {
   useCatalogFolders,
   buildCatalogTree,
   type CatalogTreeNode as CatalogTreeNodeData,
 } from './useCatalogFolders';
+export {
+  useCatalogHasUpdates,
+  markCatalogViewed,
+} from './useCatalogHasUpdates';
 export {
   CATALOG_DRAG_TYPES,
   type CatalogFolderNode,

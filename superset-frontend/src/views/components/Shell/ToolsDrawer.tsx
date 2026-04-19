@@ -21,11 +21,13 @@ import { useShell } from './ShellContext';
 
 /* ─── Structure по мокапу (dc-sections) ─── */
 
+/* Мокап .drawer-body.dc-sections: padding 10 22 18 суммарно.
+   Внешний DrawerBody даёт 4 22 18, здесь добавляем 6 сверху → итого 10/22/18. */
 const Sections = styled.div`
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 10px 22px 18px;
+  padding: 6px 0 0;
   font-family: ${DS2_VARS.fontSans};
 `;
 
@@ -80,6 +82,7 @@ const Tile = styled.button`
 const TileIcon = styled.div<{ $accent: string }>`
   width: 38px;
   height: 38px;
+  box-sizing: border-box;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -105,65 +108,25 @@ const TileName = styled.span`
 
 /* ─── Inline SVG иконки (16×16 viewBox, stroke currentColor) ─── */
 
-const IconSql: FC = () => (
+/* Мокап toolDefs — Гео-аналитика, Таблицы, Документы. */
+const IconGeo: FC = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <ellipse cx="8" cy="3.5" rx="5" ry="1.8" />
-    <path d="M3 3.5v9c0 1 2.3 1.8 5 1.8s5-.8 5-1.8v-9" />
-    <path d="M3 8c0 1 2.3 1.8 5 1.8s5-.8 5-1.8" />
+    <circle cx="8" cy="8" r="6" />
+    <path d="M2 8h12M8 2a8 8 0 010 12M8 2a8 8 0 000 12" />
   </svg>
 );
 
-const IconSaved: FC = () => (
+const IconTablesBig: FC = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M4 2h8v12l-4-3-4 3V2z" />
+    <rect x="2" y="2" width="12" height="12" rx="1" />
+    <path d="M2 6h12M2 10h12M6 2v12" />
   </svg>
 );
 
-const IconHistory: FC = () => (
+const IconDoc: FC = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M8 4v4l3 2" />
-    <path d="M8 14A6 6 0 108 2a6 6 0 000 12z" />
-  </svg>
-);
-
-const IconDataset: FC = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <rect x="2" y="2" width="12" height="12" rx="2" />
-    <path d="M2 6h12M6 2v12" />
-  </svg>
-);
-
-const IconDatabase: FC = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <ellipse cx="8" cy="3" rx="5" ry="1.6" />
-    <path d="M3 3v10c0 .9 2.2 1.6 5 1.6s5-.7 5-1.6V3M3 8c0 .9 2.2 1.6 5 1.6s5-.7 5-1.6" />
-  </svg>
-);
-
-const IconAlert: FC = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M3 12V7a5 5 0 0110 0v5l1.5 1.5h-13L3 12z" />
-    <path d="M6.5 13.5a1.5 1.5 0 003 0" />
-  </svg>
-);
-
-const IconReport: FC = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <rect x="3" y="2" width="10" height="12" rx="1" />
-    <path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3" />
-  </svg>
-);
-
-const IconCss: FC = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M3 2l1 12 4 1 4-1 1-12H3z" />
-    <path d="M5 5h6l-.3 3H6l.2 2 2.3.7 2.3-.7.1-1" />
-  </svg>
-);
-
-const IconAnnotation: FC = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M2 3.5a1.5 1.5 0 011.5-1.5h9A1.5 1.5 0 0114 3.5v7a1.5 1.5 0 01-1.5 1.5H6l-3 3v-3H3.5a1.5 1.5 0 01-1.5-1.5v-7z" />
+    <path d="M4 2h6l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" />
+    <path d="M10 2v4h4" />
   </svg>
 );
 
@@ -191,84 +154,42 @@ export const ToolsDrawer: FC = () => {
     closeDrawer();
   };
 
-  // Секции по мокапу (dc-section+dc-grid), пункты — native Superset
-  // tool-страницы. Без визуализаций (Dashboards/Charts) — они в «Каталоге».
+  // Мокап structure (analytics-floating-dock.html):
+  //   - Карты: Гео-аналитика
+  //   - Таблицы и документы: Таблицы, Документы
+  // Нативные Superset-инструменты (SQL Lab, Сохранённые, История запросов,
+  // Датасеты, Базы данных, Оповещения, Отчёты, CSS шаблоны, Аннотации)
+  // временно перенесены в SettingsDropdown (раздел «Инструменты администратора»),
+  // пока у нас нет собственных страниц Гео/Таблиц/Документов.
   const sections: SectionDef[] = [
     {
-      label: t('SQL'),
+      label: t('Карты'),
       tools: [
         {
-          key: 'sqllab',
-          label: t('SQL Lab'),
-          url: '/sqllab/',
-          accent: DS2_VARS.cSky,
-          icon: <IconSql />,
-        },
-        {
-          key: 'saved-queries',
-          label: t('Сохранённые'),
-          url: '/savedqueryview/list/',
-          accent: DS2_VARS.cViolet,
-          icon: <IconSaved />,
-        },
-        {
-          key: 'query-history',
-          label: t('История запросов'),
-          url: '/sqllab/history/',
-          accent: DS2_VARS.g600,
-          icon: <IconHistory />,
-        },
-      ],
-    },
-    {
-      label: t('Данные'),
-      tools: [
-        {
-          key: 'datasets',
-          label: t('Датасеты'),
-          url: '/tablemodelview/list/',
-          accent: DS2_VARS.cTangerine,
-          icon: <IconDataset />,
-        },
-        {
-          key: 'databases',
-          label: t('Базы данных'),
-          url: '/databaseview/list/',
-          accent: DS2_VARS.cAmber,
-          icon: <IconDatabase />,
-        },
-      ],
-    },
-    {
-      label: t('Автоматизация и стили'),
-      tools: [
-        {
-          key: 'alerts',
-          label: t('Оповещения'),
-          url: '/alert/list/',
-          accent: DS2_VARS.dn,
-          icon: <IconAlert />,
-        },
-        {
-          key: 'reports',
-          label: t('Отчёты'),
-          url: '/report/list/',
+          key: 'geo',
+          label: t('Гео-аналитика'),
+          url: '/chart/add?viz_type=deck_geojson',
           accent: DS2_VARS.up,
-          icon: <IconReport />,
+          icon: <IconGeo />,
+        },
+      ],
+    },
+    {
+      label: t('Таблицы и документы'),
+      tools: [
+        {
+          key: 'tables',
+          label: t('Таблицы'),
+          url: '/chart/add?viz_type=table',
+          accent: DS2_VARS.cTangerine,
+          icon: <IconTablesBig />,
         },
         {
-          key: 'css-templates',
-          label: t('CSS шаблоны'),
-          url: '/csstemplatemodelview/list/',
+          key: 'docs',
+          label: t('Документы'),
+          url: '/dashboard/new/?type=doc',
           accent: DS2_VARS.cFuchsia,
-          icon: <IconCss />,
-        },
-        {
-          key: 'annotations',
-          label: t('Аннотации'),
-          url: '/annotationlayer/list/',
-          accent: DS2_VARS.g600,
-          icon: <IconAnnotation />,
+          icon: <IconDoc />,
         },
       ],
     },

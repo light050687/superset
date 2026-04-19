@@ -47,18 +47,19 @@ interface SettingsDropdownProps {
   appVersion?: string;
 }
 
+/* Pixel-perfect parity .dropdown.pm: blur 24 sat 160, radius 18, тень 30px 80px. */
 const Dropdown = styled.div`
-  background: ${DS2_VARS.glassBg};
-  backdrop-filter: ${DS2_VARS.glassFilter};
-  -webkit-backdrop-filter: ${DS2_VARS.glassFilter};
-  border: 1px solid ${DS2_VARS.glassBorder};
-  border-radius: ${DS2_VARS.rGlass};
+  background: ${DS2_VARS.dropdownBg};
+  backdrop-filter: ${DS2_VARS.dropdownFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.dropdownFilter};
+  border: 1px solid ${DS2_VARS.dropdownBorder};
+  border-radius: ${DS2_VARS.dropdownRadius};
   padding: ${DS2_SPACE.s1}px;
   min-width: 260px;
   max-width: 320px;
   max-height: calc(100vh - 24px);
   overflow-y: auto;
-  box-shadow: ${DS2_VARS.glassShadow};
+  box-shadow: ${DS2_VARS.dropdownShadow};
   font-family: ${DS2_VARS.fontSans};
   color: ${DS2_VARS.ink};
   /* Над floating dock (101), scrim (99), под AI overlay (100). */
@@ -392,6 +393,39 @@ export const SettingsDropdown: FC<SettingsDropdownProps> = ({
           </UserInfo>
         </UserCard>
       ) : null}
+
+      {/* Временный раздел: нативные Superset tool-страницы перенесены сюда
+          из ToolsDrawer, пока «Инструменты» у нас отражают только мокап
+          (Гео/Таблицы/Документы). Когда появятся собственные реализации —
+          эту секцию можно сократить. */}
+      <Section>
+        <SectionLabel>{t('Инструменты администратора')}</SectionLabel>
+        {renderLink(t('SQL Lab'), '/sqllab/', 'admin-sqllab')}
+        {renderLink(
+          t('Сохранённые запросы'),
+          '/savedqueryview/list/',
+          'admin-saved-queries',
+        )}
+        {renderLink(
+          t('История запросов'),
+          '/sqllab/history/',
+          'admin-query-history',
+        )}
+        {renderLink(t('Датасеты'), '/tablemodelview/list/', 'admin-datasets')}
+        {renderLink(t('Базы данных'), '/databaseview/list/', 'admin-databases')}
+        {renderLink(t('Оповещения'), '/alert/list/', 'admin-alerts')}
+        {renderLink(t('Отчёты'), '/report/list/', 'admin-reports')}
+        {renderLink(
+          t('CSS шаблоны'),
+          '/csstemplatemodelview/list/',
+          'admin-css',
+        )}
+        {renderLink(
+          t('Аннотации'),
+          '/annotationlayer/list/',
+          'admin-annotations',
+        )}
+      </Section>
 
       {settings?.map(section => {
         if (!section.childs || section.childs.length === 0) return null;

@@ -205,6 +205,35 @@
     --tile-hover-bg:        rgba(237, 238, 241, 0.80);
     --tile-hover-border:    rgba(220, 220, 220, 0.70);
 
+    /* Drawer (bottom sheet) — pixel-perfect parity мокап .drawer:
+       blur 32 (vs 16 у glass), padding/radius/bottom — точно по analytics-floating-dock.html. */
+    --drawer-bottom:        92px;
+    --drawer-radius:        24px;
+    --drawer-bg:            rgba(255, 255, 255, 0.80);
+    --drawer-filter:        blur(32px) saturate(160%);
+    --drawer-border:        rgba(0, 0, 0, 0.04);
+    --drawer-shadow:        inset 0 1px 0 rgba(255, 255, 255, 0.7),
+                            0 30px 80px rgba(0, 0, 0, 0.18);
+
+    /* AI overlay (.ai-full) — pixel-perfect мокап:
+       blur 36 (vs 32 у drawer, 16 у glass) — самый «жирный» glass-эффект,
+       более глубокая тень (40px 100px), border-radius 24, bg1 88%. */
+    --ai-bg:                rgba(255, 255, 255, 0.88);
+    --ai-filter:            blur(36px) saturate(180%);
+    --ai-border:            rgba(0, 0, 0, 0.04);
+    --ai-shadow:            inset 0 1px 0 rgba(255, 255, 255, 0.7),
+                            0 40px 100px rgba(0, 0, 0, 0.22),
+                            0 0 0 1px rgba(0, 0, 0, 0.04);
+
+    /* Dropdown (.dropdown.pm / .dropdown.cal) — мокап Calendar/Settings:
+       blur 24 sat 160, radius 18, bg1 92%, shadow 30px 80px. */
+    --dropdown-bg:          rgba(255, 255, 255, 0.92);
+    --dropdown-filter:      blur(24px) saturate(160%);
+    --dropdown-border:      rgba(0, 0, 0, 0.05);
+    --dropdown-radius:      18px;
+    --dropdown-shadow:      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+                            0 30px 80px rgba(0, 0, 0, 0.18);
+
     /* Геометрия дока и его overlay-ей */
     --dock-height:          58px;
     --dock-bottom:          18px;
@@ -266,7 +295,6 @@
     --glass-shadow-elev: 0 20px 60px rgba(0, 0, 0, 0.55);
     --glass-scrim:       rgba(0, 0, 0, 0.55);
 
-    /* Rail — dark */
     --dock-bg:           rgba( 23,  26,  30, 0.38);
     --dock-border:       rgba(255, 255, 255, 0.08);
     --dock-shadow:       0 1px 0 rgba(255, 255, 255, 0.06) inset,
@@ -293,6 +321,25 @@
 
     --tile-hover-bg:        rgba(34, 36, 43, 0.80);
     --tile-hover-border:    rgba(52, 56, 64, 0.70);
+
+    /* Drawer (dark) — мокап: bg1 80% + 0 30px 80px rgba(0,0,0,.5) */
+    --drawer-bg:            rgba(15, 17, 20, 0.80);
+    --drawer-border:        rgba(255, 255, 255, 0.06);
+    --drawer-shadow:        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+                            0 30px 80px rgba(0, 0, 0, 0.5);
+
+    /* AI overlay (dark) — мокап: bg1 88% + 0 40px 100px rgba(0,0,0,.55) */
+    --ai-bg:                rgba(15, 17, 20, 0.88);
+    --ai-border:            rgba(255, 255, 255, 0.06);
+    --ai-shadow:            inset 0 1px 0 rgba(255, 255, 255, 0.06),
+                            0 40px 100px rgba(0, 0, 0, 0.55),
+                            0 0 0 1px rgba(0, 0, 0, 0.2);
+
+    /* Dropdown (dark) — мокап: bg1 92% + 0 30px 80px rgba(0,0,0,.55) */
+    --dropdown-bg:          rgba(15, 17, 20, 0.92);
+    --dropdown-border:      rgba(255, 255, 255, 0.08);
+    --dropdown-shadow:      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+                            0 30px 80px rgba(0, 0, 0, 0.55);
   }
 
   /* ═══ DS 2.0 — числа: tabular-nums в таблицах и BigNumber ═══ */

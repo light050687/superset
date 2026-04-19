@@ -76,20 +76,23 @@ const Scrim = styled.div`
  * доком) и верхом viewport (со смарт-fallback через max-height:70vh). Нулевые
  * поля от центра — через left:50% + translateX.
  */
+/* Pixel-perfect parity .ai-full (analytics-floating-dock.html):
+   width min(92vw, 820), height min(70vh, 640), bottom 92, radius 24,
+   blur 36 saturate 180, bg1 88%, тяжёлая тень 40px 100px. */
 const Panel = styled.div`
   position: fixed;
   left: 50%;
   bottom: ${DS2_VARS.dockAiBottom};
   transform: translateX(-50%);
-  width: min(${DS2_VARS.dockAiWidth}, calc(100vw - 24px));
+  width: min(92vw, ${DS2_VARS.dockAiWidth});
   height: min(${DS2_VARS.dockAiHeight}, 70vh);
   max-height: 70vh;
-  background: ${DS2_VARS.glassBgElev};
-  backdrop-filter: ${DS2_VARS.glassFilter};
-  -webkit-backdrop-filter: ${DS2_VARS.glassFilter};
-  border: 1px solid ${DS2_VARS.glassBorder};
-  border-radius: ${DS2_VARS.rGlass};
-  box-shadow: ${DS2_VARS.glassShadowElev};
+  background: ${DS2_VARS.aiBg};
+  backdrop-filter: ${DS2_VARS.aiFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.aiFilter};
+  border: 1px solid ${DS2_VARS.aiBorder};
+  border-radius: ${DS2_VARS.drawerRadius};
+  box-shadow: ${DS2_VARS.aiShadow};
   overflow: hidden;
   z-index: 100;
   display: flex;
@@ -117,6 +120,7 @@ const Main = styled.div`
   position: relative;
 `;
 
+/* Мокап .ai-close: 30×30. */
 const CloseBtn = styled.button`
   position: absolute;
   top: ${DS2_SPACE.s3}px;
@@ -124,8 +128,8 @@ const CloseBtn = styled.button`
   background: ${DS2_VARS.s};
   border: 1px solid ${DS2_VARS.g200};
   color: ${DS2_VARS.g600};
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: ${DS2_RADIUS.control}px;
   cursor: pointer;
   display: flex;
