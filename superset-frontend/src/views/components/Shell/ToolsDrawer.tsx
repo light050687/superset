@@ -52,7 +52,7 @@ const Grid = styled.div`
   gap: ${DS2_SPACE.s1 + 2}px;
 `;
 
-const Tile = styled.button`
+const Tile = styled.button<{ $disabled?: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -62,15 +62,18 @@ const Tile = styled.button`
   background: transparent;
   border: 1px solid transparent;
   border-radius: 10px;
-  cursor: pointer;
+  cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
+  opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
   transition:
     background 0.12s ${DS2_VARS.ease},
     border-color 0.12s ${DS2_VARS.ease},
     transform 0.12s ${DS2_VARS.ease};
 
   &:hover {
-    background: ${DS2_VARS.tileHoverBg};
-    border-color: ${DS2_VARS.tileHoverBorder};
+    background: ${({ $disabled }) =>
+      $disabled ? 'transparent' : DS2_VARS.tileHoverBg};
+    border-color: ${({ $disabled }) =>
+      $disabled ? 'transparent' : DS2_VARS.tileHoverBorder};
   }
 
   &:focus-visible {
@@ -79,7 +82,8 @@ const Tile = styled.button`
   }
 `;
 
-const TileIcon = styled.div<{ $accent: string }>`
+const TileIcon = styled.div<{ $accent: string; $disabled?: boolean }>`
+  position: relative;
   width: 38px;
   height: 38px;
   box-sizing: border-box;
@@ -87,10 +91,13 @@ const TileIcon = styled.div<{ $accent: string }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${({ $accent }) =>
-    `color-mix(in oklab, ${$accent} 12%, ${DS2_VARS.bg3})`};
+  background: ${({ $accent, $disabled }) =>
+    $disabled
+      ? DS2_VARS.bg3
+      : `color-mix(in oklab, ${$accent} 12%, ${DS2_VARS.bg3})`};
   border: 1px solid ${DS2_VARS.g200};
-  color: ${({ $accent }) => $accent};
+  color: ${({ $accent, $disabled }) => ($disabled ? DS2_VARS.g400 : $accent)};
+  filter: ${({ $disabled }) => ($disabled ? 'grayscale(1)' : 'none')};
 
   svg {
     width: 19px;
@@ -98,12 +105,31 @@ const TileIcon = styled.div<{ $accent: string }>`
   }
 `;
 
-const TileName = styled.span`
+const TileName = styled.span<{ $disabled?: boolean }>`
   font-size: 12px;
   font-weight: 600;
-  color: ${DS2_VARS.ink};
+  color: ${({ $disabled }) => ($disabled ? DS2_VARS.g500 : DS2_VARS.ink)};
   text-align: center;
   line-height: 1.1;
+`;
+
+const ComingSoonBadge = styled.span`
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  font-family: ${DS2_VARS.fontMono};
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: ${DS2_VARS.ink};
+  background: ${DS2_VARS.cAmber};
+  padding: 1px 5px;
+  border-radius: 4px;
+  box-shadow: none;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 1;
 `;
 
 /* ─── Inline SVG иконки (16×16 viewBox, stroke currentColor) ─── */
@@ -138,6 +164,8 @@ interface Tool {
   url: string;
   accent: string;
   icon: ReactNode;
+  /** true — серая плитка с бейджем «Скоро», клик отключён. */
+  disabled?: boolean;
 }
 
 interface SectionDef {
@@ -167,6 +195,9 @@ export const ToolsDrawer: FC = () => {
       tools: [
         {
           key: 'geo',
+          /* Гео-аналитика — кастомный плагин пользователя. URL ведёт на
+             создание чарта с viz_type плагина. TODO: заменить на точный
+             viz_type когда плагин зарегистрирован (ext-geo-*). */
           label: t('Гео-аналитика'),
           url: '/chart/add?viz_type=deck_geojson',
           accent: DS2_VARS.up,
@@ -183,6 +214,7 @@ export const ToolsDrawer: FC = () => {
           url: '/chart/add?viz_type=table',
           accent: DS2_VARS.cTangerine,
           icon: <IconTablesBig />,
+          disabled: true,
         },
         {
           key: 'docs',
@@ -190,6 +222,7 @@ export const ToolsDrawer: FC = () => {
           url: '/dashboard/new/?type=doc',
           accent: DS2_VARS.cFuchsia,
           icon: <IconDoc />,
+          disabled: true,
         },
       ],
     },
@@ -205,12 +238,25 @@ export const ToolsDrawer: FC = () => {
               <Tile
                 key={tool.key}
                 type="button"
-                onClick={() => go(tool.url)}
+                $disabled={tool.disabled}
+                disabled={tool.disabled}
+                onClick={() => {
+                  if (tool.disabled) return;
+                  go(tool.url);
+                }}
                 aria-label={tool.label}
-                title={tool.label}
+                aria-disabled={tool.disabled}
+                title={
+                  tool.disabled ? t('Скоро будет доступно') : tool.label
+                }
               >
-                <TileIcon $accent={tool.accent}>{tool.icon}</TileIcon>
-                <TileName>{tool.label}</TileName>
+                <TileIcon $accent={tool.accent} $disabled={tool.disabled}>
+                  {tool.icon}
+                  {tool.disabled ? (
+                    <ComingSoonBadge>{t('Скоро')}</ComingSoonBadge>
+                  ) : null}
+                </TileIcon>
+                <TileName $disabled={tool.disabled}>{tool.label}</TileName>
               </Tile>
             ))}
           </Grid>

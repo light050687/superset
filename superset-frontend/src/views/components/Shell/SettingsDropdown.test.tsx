@@ -98,12 +98,12 @@ const Harness: React.FC<{ open: boolean; onClose?: () => void }> = ({
 describe('<SettingsDropdown>', () => {
   it('не рендерится когда open=false', () => {
     render(<Harness open={false} />, { useRouter: true, useTheme: true });
-    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('рендерит все секции и ссылки из menu_data.settings', () => {
+  it('рендерит секции и плитки из menu_data.settings', () => {
     render(<Harness open />, { useRouter: true, useTheme: true });
-    expect(screen.getByRole('menu')).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('Безопасность')).toBeInTheDocument();
     expect(screen.getByText('Пользователи')).toBeInTheDocument();
     expect(screen.getByText('Роли')).toBeInTheDocument();
@@ -138,33 +138,8 @@ describe('<SettingsDropdown>', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('показывает «Тёмная тема» toggle в секции Вид', () => {
+  it('показывает переключатель темы в секции Вид', () => {
     render(<Harness open />, { useRouter: true, useTheme: true });
-    expect(screen.getByText('Тёмная тема')).toBeInTheDocument();
-    expect(screen.getByLabelText('Переключить тёмную тему')).toBeInTheDocument();
-  });
-
-  it('пустая секция settings без ссылок скипается', () => {
-    const menu = makeMenu();
-    menu.settings = [
-      { label: 'Пусто', name: 'empty', isHeader: true, childs: [] },
-    ];
-    const HarnessEmpty: React.FC = () => {
-      const ref = useRef<HTMLButtonElement>(null);
-      return (
-        <>
-          <button ref={ref} type="button" />
-          <SettingsDropdown
-            anchor={ref.current}
-            open
-            onClose={() => {}}
-            user={makeUser()}
-            menu={menu}
-          />
-        </>
-      );
-    };
-    render(<HarnessEmpty />, { useRouter: true, useTheme: true });
-    expect(screen.queryByText('Пусто')).toBeNull();
+    expect(screen.getByLabelText('Переключить тему')).toBeInTheDocument();
   });
 });

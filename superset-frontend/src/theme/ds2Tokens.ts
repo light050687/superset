@@ -258,6 +258,13 @@ export const DS2_VARS = {
   aiBorder: 'var(--ai-border)',
   aiShadow: 'var(--ai-shadow)',
 
+  /* AI side panel — боковая пристройка к AI overlay (история чатов) */
+  aiSideBg: 'var(--ai-side-bg)',
+  aiSideBorder: 'var(--ai-side-border)',
+  aiSideHairline: 'var(--ai-side-hairline)',
+  aiSideGlow: 'var(--ai-side-glow)',
+  aiSideDivider: 'var(--ai-side-divider)',
+
   /* Dropdown (Calendar/Settings) — pixel-perfect мокап .dropdown.pm/.cal */
   dropdownBg: 'var(--dropdown-bg)',
   dropdownFilter: 'var(--dropdown-filter)',

@@ -53,6 +53,9 @@ interface CentralPillProps {
   onModelChange: (model: AiModelDescriptor) => void;
   onSubmit: (query: string, meta: { contextId: string; modelId: AiModelId }) => void;
   onFocusChange?: (focused: boolean) => void;
+  /** Принудительно держать pill расширенным (используется когда открыт
+   *  AI overlay — тогда строка не должна сворачиваться при кликах вне). */
+  keepExpanded?: boolean;
 }
 
 /**
@@ -92,7 +95,8 @@ const Pill = styled.div<{ $expanded: boolean }>`
     $expanded ? DS2_VARS.pillBgFocused : DS2_VARS.pillBg};
   border: 1px solid
     ${({ $expanded }) => ($expanded ? DS2_VARS.pillFocusBorder : DS2_VARS.g200)};
-  border-radius: ${({ $expanded }) => ($expanded ? '20px' : '999px')};
+  /* Радиус как у dock'а (--dock-radius: 18px) — единый стиль панели. */
+  border-radius: 18px;
   box-shadow: ${({ $expanded }) =>
     $expanded ? DS2_VARS.pillFocusShadow : 'none'};
   overflow: hidden;
@@ -404,6 +408,7 @@ export const CentralPill: FC<CentralPillProps> = ({
   onModelChange,
   onSubmit,
   onFocusChange,
+  keepExpanded = false,
 }) => {
   const pillRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -420,11 +425,13 @@ export const CentralPill: FC<CentralPillProps> = ({
   /**
    * Click-outside handler — схлопывает pill когда клик вне pill и вне
    * открытого popover. Подписывается только когда pill expanded (focused
-   * ИЛИ popover открыт).
+   * ИЛИ popover открыт). При `keepExpanded=true` (открыт AI overlay) —
+   * outside click игнорируется, строка остаётся расширенной пока overlay
+   * не закроют или не кликнут по другой rail-иконке.
    */
   const expandedNow = focused || ctxOpen || modelOpen;
   useEffect(() => {
-    if (!expandedNow) return undefined;
+    if (!expandedNow || keepExpanded) return undefined;
     const onDown = (e: MouseEvent) => {
       const target = e.target as Node | null;
       if (!target) return;
@@ -447,11 +454,28 @@ export const CentralPill: FC<CentralPillProps> = ({
     };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
-  }, [expandedNow, onFocusChange]);
+  }, [expandedNow, onFocusChange, keepExpanded]);
+
+  // Синхронизация focused со внешним keepExpanded:
+  //  - keepExpanded=true (открыт AI overlay) → pill expanded
+  //  - keepExpanded=false (overlay закрылся) → pill возвращается в compact
+  useEffect(() => {
+    if (keepExpanded) {
+      setFocused(true);
+      onFocusChange?.(true);
+    } else {
+      setFocused(false);
+      onFocusChange?.(false);
+      inputRef.current?.blur();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keepExpanded]);
 
   const hasText = query.trim().length > 0;
-  // Pill expanded когда focus на input ИЛИ открыт любой popover.
-  const expanded = focused || ctxOpen || modelOpen || settingsOpen;
+  // Pill expanded когда focus на input ИЛИ открыт любой popover ИЛИ
+  // принудительно через keepExpanded (активен AI overlay).
+  const expanded =
+    focused || ctxOpen || modelOpen || settingsOpen || keepExpanded;
 
   const current = contexts.find(c => c.id === contextId) ?? contexts[0];
   const modelLabel =

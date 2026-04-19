@@ -51,7 +51,8 @@ const Grid = styled.div`
   gap: ${DS2_SPACE.s1 + 2}px;
 `;
 
-const Tile = styled.button`
+const Tile = styled.button<{ $disabled?: boolean }>`
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -61,14 +62,17 @@ const Tile = styled.button`
   background: transparent;
   border: 1px solid transparent;
   border-radius: 10px;
-  cursor: pointer;
+  cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
+  opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
   transition:
     background 0.12s ${DS2_VARS.ease},
     border-color 0.12s ${DS2_VARS.ease};
 
   &:hover {
-    background: ${DS2_VARS.tileHoverBg};
-    border-color: ${DS2_VARS.tileHoverBorder};
+    background: ${({ $disabled }) =>
+      $disabled ? 'transparent' : DS2_VARS.tileHoverBg};
+    border-color: ${({ $disabled }) =>
+      $disabled ? 'transparent' : DS2_VARS.tileHoverBorder};
   }
 
   &:focus-visible {
@@ -77,7 +81,8 @@ const Tile = styled.button`
   }
 `;
 
-const TileIcon = styled.div<{ $accent: string }>`
+const TileIcon = styled.div<{ $accent: string; $disabled?: boolean }>`
+  position: relative;
   width: 38px;
   height: 38px;
   box-sizing: border-box;
@@ -85,10 +90,13 @@ const TileIcon = styled.div<{ $accent: string }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${({ $accent }) =>
-    `color-mix(in oklab, ${$accent} 12%, ${DS2_VARS.bg3})`};
+  background: ${({ $accent, $disabled }) =>
+    $disabled
+      ? DS2_VARS.bg3
+      : `color-mix(in oklab, ${$accent} 12%, ${DS2_VARS.bg3})`};
   border: 1px solid ${DS2_VARS.g200};
-  color: ${({ $accent }) => $accent};
+  color: ${({ $accent, $disabled }) => ($disabled ? DS2_VARS.g400 : $accent)};
+  filter: ${({ $disabled }) => ($disabled ? 'grayscale(1)' : 'none')};
 
   svg {
     width: 19px;
@@ -96,12 +104,34 @@ const TileIcon = styled.div<{ $accent: string }>`
   }
 `;
 
-const TileName = styled.span`
+const TileName = styled.span<{ $disabled?: boolean }>`
   font-size: 12px;
   font-weight: 600;
-  color: ${DS2_VARS.ink};
+  color: ${({ $disabled }) => ($disabled ? DS2_VARS.g500 : DS2_VARS.ink)};
   text-align: center;
   line-height: 1.1;
+`;
+
+/* «Скоро» бейдж — absolutely-positioned внутри TileIcon, смещён в
+   правый-верхний угол (top:-6 right:-10) чтобы перекрывать иконку
+   на ~30-40% как просил пользователь. */
+const ComingSoonBadge = styled.span`
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  font-family: ${DS2_VARS.fontMono};
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: ${DS2_VARS.ink};
+  background: ${DS2_VARS.cAmber};
+  padding: 1px 5px;
+  border-radius: 4px;
+  box-shadow: none;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 1;
 `;
 
 /* ─── SVG иконки (мокап) ─── */
@@ -121,13 +151,6 @@ const IconChart: FC = () => (
   </svg>
 );
 
-const IconGeo: FC = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <circle cx="8" cy="8" r="6" />
-    <path d="M2 8h12" />
-  </svg>
-);
-
 const IconTable: FC = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <rect x="2" y="2" width="12" height="12" rx="1" />
@@ -142,27 +165,6 @@ const IconDoc: FC = () => (
   </svg>
 );
 
-const IconDataset: FC = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <rect x="2" y="2" width="12" height="12" rx="2" />
-    <path d="M2 6h12" />
-  </svg>
-);
-
-const IconSql: FC = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M3 3h10v10H3z" />
-    <path d="M3 7h10" />
-  </svg>
-);
-
-const IconDatabase: FC = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <ellipse cx="8" cy="3" rx="5" ry="1.6" />
-    <path d="M3 3v10c0 .9 2.2 1.6 5 1.6s5-.7 5-1.6V3M3 8c0 .9 2.2 1.6 5 1.6s5-.7 5-1.6" />
-  </svg>
-);
-
 /* ─── Data model ─── */
 
 interface CreateItem {
@@ -171,6 +173,8 @@ interface CreateItem {
   url: string;
   accent: string;
   icon: ReactNode;
+  /** true — плитка серая, клик отключён, под лейблом «Скоро». */
+  disabled?: boolean;
 }
 
 interface SectionDef {
@@ -187,6 +191,12 @@ export const CreateDrawer: FC = () => {
     closeDrawer();
   };
 
+  /* Все self-service плитки пока disabled с бейджем «Скоро» — включим
+     когда будут готовы соответствующие потоки создания для not-admin
+     пользователей. Секция «Данные» полностью убрана: Подключения/Датасеты
+     живут в профиле (SettingsDropdown), SQL Lab — тоже там. */
+  /* Гео-карта убрана из «Создать» — она живёт в «Инструментах» как
+     отдельный кастомный плагин пользователя (ToolsDrawer → Карты). */
   const sections: SectionDef[] = [
     {
       label: t('Визуализация'),
@@ -197,6 +207,7 @@ export const CreateDrawer: FC = () => {
           url: '/dashboard/new/',
           accent: DS2_VARS.cSky,
           icon: <IconDashboard />,
+          disabled: true,
         },
         {
           key: 'chart',
@@ -204,13 +215,7 @@ export const CreateDrawer: FC = () => {
           url: '/chart/add',
           accent: DS2_VARS.cViolet,
           icon: <IconChart />,
-        },
-        {
-          key: 'geo',
-          label: t('Гео-карта'),
-          url: '/chart/add?viz_type=deck_geojson',
-          accent: DS2_VARS.up,
-          icon: <IconGeo />,
+          disabled: true,
         },
       ],
     },
@@ -223,6 +228,7 @@ export const CreateDrawer: FC = () => {
           url: '/chart/add?viz_type=table',
           accent: DS2_VARS.cTangerine,
           icon: <IconTable />,
+          disabled: true,
         },
         {
           key: 'doc',
@@ -230,32 +236,7 @@ export const CreateDrawer: FC = () => {
           url: '/dashboard/new/?type=doc',
           accent: DS2_VARS.cFuchsia,
           icon: <IconDoc />,
-        },
-      ],
-    },
-    {
-      label: t('Данные'),
-      items: [
-        {
-          key: 'dataset',
-          label: t('Датасет'),
-          url: '/tablemodelview/add',
-          accent: DS2_VARS.g600,
-          icon: <IconDataset />,
-        },
-        {
-          key: 'sql',
-          label: t('SQL-запрос'),
-          url: '/sqllab/',
-          accent: DS2_VARS.g600,
-          icon: <IconSql />,
-        },
-        {
-          key: 'database',
-          label: t('Подключение к БД'),
-          url: '/databaseview/add',
-          accent: DS2_VARS.cAmber,
-          icon: <IconDatabase />,
+          disabled: true,
         },
       ],
     },
@@ -271,12 +252,25 @@ export const CreateDrawer: FC = () => {
               <Tile
                 key={item.key}
                 type="button"
-                onClick={() => go(item.url)}
+                $disabled={item.disabled}
+                disabled={item.disabled}
+                onClick={() => {
+                  if (item.disabled) return;
+                  go(item.url);
+                }}
                 aria-label={item.label}
-                title={item.label}
+                aria-disabled={item.disabled}
+                title={
+                  item.disabled ? t('Скоро будет доступно') : item.label
+                }
               >
-                <TileIcon $accent={item.accent}>{item.icon}</TileIcon>
-                <TileName>{item.label}</TileName>
+                <TileIcon $accent={item.accent} $disabled={item.disabled}>
+                  {item.icon}
+                  {item.disabled ? (
+                    <ComingSoonBadge>{t('Скоро')}</ComingSoonBadge>
+                  ) : null}
+                </TileIcon>
+                <TileName $disabled={item.disabled}>{item.label}</TileName>
               </Tile>
             ))}
           </Grid>

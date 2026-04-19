@@ -178,7 +178,7 @@ const RailButton = styled.button<{ $active?: boolean }>`
   }
 `;
 
-/** Бейдж с glow (мокап: `box-shadow: 0 0 0 2px bg1, 0 0 8px tang`). */
+/** Бейдж без glow — ring цвета dock-фона визуально отделяет от иконки. */
 const RailBadgeDot = styled.span<{ $color: string }>`
   position: absolute;
   top: 6px;
@@ -187,9 +187,7 @@ const RailBadgeDot = styled.span<{ $color: string }>`
   height: 8px;
   border-radius: 50%;
   background: ${({ $color }) => $color};
-  box-shadow:
-    0 0 0 2px ${DS2_VARS.dockBg},
-    0 0 8px ${({ $color }) => $color};
+  box-shadow: 0 0 0 2px ${DS2_VARS.dockBg};
 `;
 
 /** Простая цветная точка без glow (для календаря — наличие событий). */
@@ -310,6 +308,14 @@ interface RailProps {
   calendarBadgeColor?: string;
   /** Бейдж на каталоге (индикатор новинок). */
   catalogBadgeColor?: string;
+  /** Активна кнопка истории чатов (AiHistorySheet открыт). */
+  historyActive?: boolean;
+  /** Активна кнопка календаря (CalendarDropdown открыт). */
+  calendarActive?: boolean;
+  /** Активна кнопка настроек (SettingsDropdown открыт). */
+  settingsActive?: boolean;
+  /** Открыт ли AI overlay — тогда pill держится расширенным. */
+  aiActive?: boolean;
   /** Ref на кнопку настроек (нужен SettingsDropdown для позиционирования). */
   settingsButtonRef?: RefObject<HTMLButtonElement>;
   /** Ref на кнопку календаря (для CalendarDropdown). */
@@ -338,6 +344,10 @@ export const Rail: FC<RailProps> = ({
   onOpenSettings,
   calendarBadgeColor,
   catalogBadgeColor,
+  historyActive = false,
+  calendarActive = false,
+  settingsActive = false,
+  aiActive = false,
   settingsButtonRef,
   calendarButtonRef,
   contexts,
@@ -438,7 +448,9 @@ export const Rail: FC<RailProps> = ({
             type="button"
             onClick={() => onOpenAiHistory?.()}
             aria-label={t('История чатов')}
+            aria-pressed={historyActive}
             title={t('История чатов')}
+            $active={historyActive}
           >
             <IconHistory />
           </RailButton>
@@ -455,6 +467,12 @@ export const Rail: FC<RailProps> = ({
             modelId={modelId}
             onModelChange={onModelChange}
             onSubmit={(query, meta) => onOpenAi?.(query, meta)}
+            onFocusChange={focused => {
+              // Клик по pill (focus) → открываем AI overlay в empty-state
+              // (без seed). Любая работа с ИИ теперь идёт через overlay.
+              if (focused) onOpenAi?.();
+            }}
+            keepExpanded={aiActive}
           />
         ),
       },
@@ -468,7 +486,9 @@ export const Rail: FC<RailProps> = ({
             type="button"
             onClick={() => onOpenCalendar?.()}
             aria-label={t('Календарь')}
+            aria-pressed={calendarActive}
             title={t('Календарь')}
+            $active={calendarActive}
           >
             <IconCalendar />
             {calendarBadgeColor ? <RailDot $color={calendarBadgeColor} /> : null}
@@ -506,6 +526,7 @@ export const Rail: FC<RailProps> = ({
             type="button"
             onClick={() => onOpenSettings?.()}
             aria-label={t('Настройки и профиль')}
+            aria-pressed={settingsActive}
             title={t('Настройки и профиль')}
           >
             <RailAvatarDot>{userInitials}</RailAvatarDot>
@@ -524,6 +545,10 @@ export const Rail: FC<RailProps> = ({
       onOpenSettings,
       calendarBadgeColor,
       catalogBadgeColor,
+      historyActive,
+      calendarActive,
+      settingsActive,
+      aiActive,
       settingsButtonRef,
       calendarButtonRef,
       userInitials,

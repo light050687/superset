@@ -153,86 +153,74 @@
     /* Transitions */
     --ease: cubic-bezier(.4, 0, .2, 1);
 
-    /* ═══ Floating Dock (Liquid Glass 2026) — светлая тема ═══
-       Используется FloatingDock (rail), Drawer (bottom sheet), AiFullView
-       (overlay), ContextPopover, ModelPopover, SettingsDropdown, CalendarDropdown.
-       Значения зеркалят analytics-floating-dock.html мокап. */
-    --glass-bg:          rgba(255, 255, 255, 0.85);
-    --glass-bg-elev:     rgba(255, 255, 255, 0.95);
-    --glass-border:      rgba(0, 0, 0, 0.06);
-    --glass-shadow:      0 12px 32px rgba(0, 0, 0, 0.15);
-    --glass-shadow-elev: 0 20px 60px rgba(0, 0, 0, 0.25);
-    --glass-scrim:       rgba(0, 0, 0, 0.4);
-    --glass-filter:      blur(16px) saturate(180%);
+    /* ═══ Floating Dock — flat solid DS 2.0 (светлая тема) ═══
+       Без прозрачности, без backdrop-filter, без drop-shadow.
+       Глубина передаётся только через 1px hairline border (var(--g200))
+       и plain цветовые поверхности. */
+    --glass-bg:          #FFFFFF;
+    --glass-bg-elev:     #FFFFFF;
+    --glass-border:      var(--g200);
+    --glass-shadow:      none;
+    --glass-shadow-elev: none;
+    --glass-scrim:       rgba(0, 0, 0, 0.40); /* scrim под модалками оставляем */
+    --glass-filter:      none;
 
-    /* Rail-специфичный фон — более прозрачный чем drawer/overlay */
-    --dock-bg:           rgba(255, 255, 255, 0.50);
-    --dock-filter:       blur(22px) saturate(160%);
-    --dock-border:       rgba(0, 0, 0, 0.05);
-    --dock-shadow:       0 1px 0 rgba(255, 255, 255, 0.7) inset,
-                         0 10px 28px rgba(15, 23, 42, 0.08),
-                         0 2px 6px rgba(15, 23, 42, 0.04);
+    /* Rail (dock) — solid surface. */
+    --dock-bg:           var(--s);
+    --dock-filter:       none;
+    --dock-border:       var(--g200);
+    --dock-shadow:       none;
     --dock-radius:       18px;
 
-    /* Rail-button — фон hover и active-состояния */
-    --dock-btn-hover-bg: rgba(237, 238, 241, 0.80);
-    --dock-btn-active-bg: linear-gradient(135deg,
-                          rgba(59, 139, 217, 0.10),
-                          rgba(167, 139, 250, 0.06));
-    --dock-btn-active-ring: inset 0 0 0 1px rgba(59, 139, 217, 0.35);
-    --dock-btn-active-glow: 0 0 8px rgba(59, 139, 217, 0.55);
+    /* Rail-button hover/active. */
+    --dock-btn-hover-bg: var(--g100);
+    --dock-btn-active-bg: rgba(59, 139, 217, 0.10);
+    --dock-btn-active-ring: inset 0 0 0 1px var(--c-sky);
+    --dock-btn-active-glow: none;
 
-    /* Pixel-perfect parity Floating Dock — pill полупрозрачная (мокап
-       analytics-floating-dock.html). g50/bg2/bg3 в мокапе — это поверхности
-       3-го слоя, из которых через color-mix(in oklab, ... %, transparent)
-       формируются полупрозрачные фоны pill, tile, popover. Здесь —
-       прямые rgba-эквиваленты (color-mix не поддерживается старыми Safari). */
-    --bg3:                  rgba(237, 238, 241, 0.95);
-    --pill-bg:              rgba(237, 238, 241, 0.80);
-    --pill-bg-hover:        rgba(247, 248, 250, 0.85);
-    --pill-bg-focused:      rgba(247, 248, 250, 0.92);
-    --pill-focus-border:    rgba(80, 110, 180, 0.55);
-    --pill-focus-shadow:    0 0 0 3px rgba(59, 139, 217, 0.10),
-                            0 12px 28px rgba(0, 0, 0, 0.18);
+    /* CentralPill (.rail-ask) — solid surfaces из шкалы серого. */
+    --bg3:                  var(--g100);
+    --pill-bg:              var(--g50);
+    --pill-bg-hover:        var(--g100);
+    --pill-bg-focused:      var(--s);
+    --pill-focus-border:    var(--c-sky);
+    --pill-focus-shadow:    none;
 
-    /* Popover (ContextPopover, ModelPopover, AiSettingsPopover) — отдельный
-       glass-материал: blur 28 (vs 16 у dock/drawer/AI), saturate 160. */
-    --popover-filter:       blur(28px) saturate(160%);
-    --popover-shadow:       0 20px 60px rgba(0, 0, 0, 0.18),
-                            inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    /* Popover (ContextPopover, ModelPopover, AiSettingsPopover). */
+    --popover-filter:       none;
+    --popover-shadow:       none;
 
-    /* Tile (dc-tile в Tools/Create drawer) — hover. */
-    --tile-hover-bg:        rgba(237, 238, 241, 0.80);
-    --tile-hover-border:    rgba(220, 220, 220, 0.70);
+    /* Tile hover в drawer-ах. */
+    --tile-hover-bg:        var(--g100);
+    --tile-hover-border:    var(--g200);
 
-    /* Drawer (bottom sheet) — pixel-perfect parity мокап .drawer:
-       blur 32 (vs 16 у glass), padding/radius/bottom — точно по analytics-floating-dock.html. */
+    /* Drawer (bottom sheet). */
     --drawer-bottom:        92px;
-    --drawer-radius:        24px;
-    --drawer-bg:            rgba(255, 255, 255, 0.80);
-    --drawer-filter:        blur(32px) saturate(160%);
-    --drawer-border:        rgba(0, 0, 0, 0.04);
-    --drawer-shadow:        inset 0 1px 0 rgba(255, 255, 255, 0.7),
-                            0 30px 80px rgba(0, 0, 0, 0.18);
+    --drawer-radius:        18px;
+    --drawer-bg:            var(--s);
+    --drawer-filter:        none;
+    --drawer-border:        var(--g200);
+    --drawer-shadow:        none;
 
-    /* AI overlay (.ai-full) — pixel-perfect мокап:
-       blur 36 (vs 32 у drawer, 16 у glass) — самый «жирный» glass-эффект,
-       более глубокая тень (40px 100px), border-radius 24, bg1 88%. */
-    --ai-bg:                rgba(255, 255, 255, 0.88);
-    --ai-filter:            blur(36px) saturate(180%);
-    --ai-border:            rgba(0, 0, 0, 0.04);
-    --ai-shadow:            inset 0 1px 0 rgba(255, 255, 255, 0.7),
-                            0 40px 100px rgba(0, 0, 0, 0.22),
-                            0 0 0 1px rgba(0, 0, 0, 0.04);
+    /* AI overlay (.ai-full). */
+    --ai-bg:                var(--s);
+    --ai-filter:            none;
+    --ai-border:            var(--g200);
+    --ai-shadow:            none;
 
-    /* Dropdown (.dropdown.pm / .dropdown.cal) — мокап Calendar/Settings:
-       blur 24 sat 160, radius 18, bg1 92%, shadow 30px 80px. */
-    --dropdown-bg:          rgba(255, 255, 255, 0.92);
-    --dropdown-filter:      blur(24px) saturate(160%);
-    --dropdown-border:      rgba(0, 0, 0, 0.05);
+    /* AI side panel — чуть темнее overlay (бэкграунд bg vs surface s). */
+    --ai-side-bg:           var(--bg);
+    --ai-side-border:       var(--g200);
+    --ai-side-hairline:     transparent;
+    --ai-side-glow:         transparent;
+    --ai-side-divider:      var(--g200);
+
+    /* Dropdown (Calendar / Settings / SettingsDropdown). */
+    --dropdown-bg:          var(--s);
+    --dropdown-filter:      none;
+    --dropdown-border:      var(--g200);
     --dropdown-radius:      18px;
-    --dropdown-shadow:      inset 0 1px 0 rgba(255, 255, 255, 0.7),
-                            0 30px 80px rgba(0, 0, 0, 0.18);
+    --dropdown-shadow:      none;
 
     /* Геометрия дока и его overlay-ей */
     --dock-height:          58px;
@@ -286,60 +274,57 @@
     --dn-b: rgba(248, 113, 113, 0.10);
     --wn-b: rgba(248, 245, 113, 0.10);
 
-    /* Floating Dock (Liquid Glass) — тёмная тема.
-       Значения зеркалят DS2_GLASS_DARK из superset-frontend/src/theme/ds2Tokens.ts. */
-    --glass-bg:          rgba( 23,  26,  30, 0.85);
-    --glass-bg-elev:     rgba( 39,  43,  48, 0.90);
-    --glass-border:      rgba(255, 255, 255, 0.08);
-    --glass-shadow:      0 12px 32px rgba(0, 0, 0, 0.4);
-    --glass-shadow-elev: 0 20px 60px rgba(0, 0, 0, 0.55);
+    /* ═══ Floating Dock — flat solid DS 2.0 (тёмная тема) ═══
+       Те же принципы: solid surfaces + 1px hairline border. */
+    --glass-bg:          var(--s);
+    --glass-bg-elev:     var(--s);
+    --glass-border:      var(--g200);
+    --glass-shadow:      none;
+    --glass-shadow-elev: none;
     --glass-scrim:       rgba(0, 0, 0, 0.55);
 
-    --dock-bg:           rgba( 23,  26,  30, 0.38);
-    --dock-border:       rgba(255, 255, 255, 0.08);
-    --dock-shadow:       0 1px 0 rgba(255, 255, 255, 0.06) inset,
-                         0 10px 28px rgba(0, 0, 0, 0.28),
-                         0 2px 6px rgba(0, 0, 0, 0.16);
-    --dock-btn-hover-bg: rgba(34, 36, 43, 0.80);
-    --dock-btn-active-bg: linear-gradient(135deg,
-                          rgba(92, 170, 240, 0.14),
-                          rgba(167, 139, 250, 0.10));
-    --dock-btn-active-ring: inset 0 0 0 1px rgba(92, 170, 240, 0.35);
-    --dock-btn-active-glow: 0 0 8px rgba(92, 170, 240, 0.65);
+    --dock-bg:           var(--s);
+    --dock-border:       var(--g200);
+    --dock-shadow:       none;
+    --dock-btn-hover-bg: var(--g200);
+    --dock-btn-active-bg: rgba(92, 170, 240, 0.16);
+    --dock-btn-active-ring: inset 0 0 0 1px var(--c-sky);
+    --dock-btn-active-glow: none;
 
-    /* Pill / popover / tile — dark variants (pixel-perfect mockup parity) */
-    --bg3:                  rgba(34, 36, 43, 0.95);
-    --pill-bg:              rgba(34, 36, 43, 0.80);
-    --pill-bg-hover:        rgba(26, 27, 33, 0.85);
-    --pill-bg-focused:      rgba(26, 27, 33, 0.92);
-    --pill-focus-border:    rgba(96, 130, 200, 0.55);
-    --pill-focus-shadow:    0 0 0 3px rgba(92, 170, 240, 0.10),
-                            0 12px 28px rgba(0, 0, 0, 0.55);
+    /* Pill / popover / tile — dark. */
+    --bg3:                  var(--g100);
+    --pill-bg:              var(--g100);
+    --pill-bg-hover:        var(--g200);
+    --pill-bg-focused:      var(--s);
+    --pill-focus-border:    var(--c-sky);
+    --pill-focus-shadow:    none;
 
-    --popover-shadow:       0 20px 60px rgba(0, 0, 0, 0.6),
-                            inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --popover-shadow:       none;
 
-    --tile-hover-bg:        rgba(34, 36, 43, 0.80);
-    --tile-hover-border:    rgba(52, 56, 64, 0.70);
+    --tile-hover-bg:        var(--g100);
+    --tile-hover-border:    var(--g200);
 
-    /* Drawer (dark) — мокап: bg1 80% + 0 30px 80px rgba(0,0,0,.5) */
-    --drawer-bg:            rgba(15, 17, 20, 0.80);
-    --drawer-border:        rgba(255, 255, 255, 0.06);
-    --drawer-shadow:        inset 0 1px 0 rgba(255, 255, 255, 0.06),
-                            0 30px 80px rgba(0, 0, 0, 0.5);
+    /* Drawer (dark). */
+    --drawer-bg:            var(--s);
+    --drawer-border:        var(--g200);
+    --drawer-shadow:        none;
 
-    /* AI overlay (dark) — мокап: bg1 88% + 0 40px 100px rgba(0,0,0,.55) */
-    --ai-bg:                rgba(15, 17, 20, 0.88);
-    --ai-border:            rgba(255, 255, 255, 0.06);
-    --ai-shadow:            inset 0 1px 0 rgba(255, 255, 255, 0.06),
-                            0 40px 100px rgba(0, 0, 0, 0.55),
-                            0 0 0 1px rgba(0, 0, 0, 0.2);
+    /* AI overlay (dark). */
+    --ai-bg:                var(--s);
+    --ai-border:            var(--g200);
+    --ai-shadow:            none;
 
-    /* Dropdown (dark) — мокап: bg1 92% + 0 30px 80px rgba(0,0,0,.55) */
-    --dropdown-bg:          rgba(15, 17, 20, 0.92);
-    --dropdown-border:      rgba(255, 255, 255, 0.08);
-    --dropdown-shadow:      inset 0 1px 0 rgba(255, 255, 255, 0.06),
-                            0 30px 80px rgba(0, 0, 0, 0.55);
+    /* AI side panel (dark) — чуть темнее overlay (bg vs s). */
+    --ai-side-bg:           var(--bg);
+    --ai-side-border:       var(--g200);
+    --ai-side-hairline:     transparent;
+    --ai-side-glow:         transparent;
+    --ai-side-divider:      var(--g200);
+
+    /* Dropdown (dark). */
+    --dropdown-bg:          var(--s);
+    --dropdown-border:      var(--g200);
+    --dropdown-shadow:      none;
   }
 
   /* ═══ DS 2.0 — числа: tabular-nums в таблицах и BigNumber ═══ */
@@ -364,4 +349,9 @@
     font-family: var(--m) !important;
     font-variant-numeric: tabular-nums;
   }
+
+  /* Анимация смены темы (View Transitions API) живёт в JS
+     (ThemeProvider.tsx) — инжектится через <style> на mount. Это надёжнее
+     чем Jinja-шаблон: он плохо перечитывается Flask/Werkzeug-reloader'ом
+     в dev-режиме (reloader мониторит .py, не .html). */
 </style>

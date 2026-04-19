@@ -40,6 +40,7 @@ import {
 import { AiEmpty } from './AiEmpty';
 import { AiMessage } from './AiMessage';
 import { AiSidebar } from './AiSidebar';
+import { AiSidePanel } from './AiSidePanel';
 import type {
   AiActiveTask,
   AiAnswerBlocks,
@@ -92,6 +93,8 @@ const Panel = styled.div`
   -webkit-backdrop-filter: ${DS2_VARS.aiFilter};
   border: 1px solid ${DS2_VARS.aiBorder};
   border-radius: ${DS2_VARS.drawerRadius};
+  /* Flat modern style — без drop-shadow. Глубину дают backdrop-blur и
+     ring-border. Не падает тень на side panel. */
   box-shadow: ${DS2_VARS.aiShadow};
   overflow: hidden;
   z-index: 100;
@@ -118,6 +121,51 @@ const Main = styled.div`
   flex-direction: column;
   overflow: hidden;
   position: relative;
+`;
+
+/* Кнопка-таб на левом крае overlay для открытия боковой панели истории.
+   Визуально — часть окна чата (полупрозрачный hover, тот же tone). */
+const SidePanelTab = styled.button`
+  position: absolute;
+  top: ${DS2_SPACE.s3}px;
+  left: ${DS2_SPACE.s3}px;
+  background: transparent;
+  border: 1px solid ${DS2_VARS.g200};
+  color: ${DS2_VARS.g600};
+  width: 30px;
+  height: 30px;
+  border-radius: ${DS2_RADIUS.control}px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  transition:
+    background 0.12s ${DS2_VARS.ease},
+    border-color 0.12s ${DS2_VARS.ease},
+    color 0.12s ${DS2_VARS.ease};
+
+  &:hover {
+    background: ${DS2_VARS.bg3};
+    border-color: ${DS2_VARS.g300};
+    color: ${DS2_VARS.ink};
+  }
+
+  &[aria-pressed='true'] {
+    border-color: ${DS2_VARS.cSky};
+    color: ${DS2_VARS.cSky};
+    background: rgba(59, 139, 217, 0.1);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${DS2_VARS.cSky};
+    outline-offset: 2px;
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
 `;
 
 /* Мокап .ai-close: 30×30. */
@@ -156,7 +204,10 @@ const CloseBtn = styled.button`
 const Body = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: ${DS2_SPACE.s8}px ${DS2_SPACE.s6}px ${DS2_SPACE.s6}px;
+  /* Top 56px — отступ под SidePanelTab + CloseBtn (30×30 + отступы),
+     чтобы сообщения пользователя не заходили под эти кнопки.
+     Bottom 72px — запас под CentralPill, которая парит над overlay. */
+  padding: 56px 24px 72px;
   max-width: 780px;
   margin: 0 auto;
   width: 100%;
@@ -233,6 +284,15 @@ const MockBanner = styled.div`
   }
 `;
 
+/* Икона side-panel toggle — прямоугольник с вертикальной линией слева
+   (sidebar symbol). */
+const IconSidePanel: FC = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6}>
+    <rect x="2" y="3" width="12" height="10" rx="1.5" />
+    <path d="M6 3v10" />
+  </svg>
+);
+
 const IconClose: FC = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M3 3l10 10M13 3L3 13" />
@@ -242,18 +302,13 @@ const IconClose: FC = () => (
 /* IconPaperclip/IconMic удалены вместе с нижним input-рядом. Ввод через
    CentralPill в dock'е, там свои иконки (IconPlus, IconMic, IconGear). */
 
-const DEFAULT_PROMPTS = [
-  'Какая маржа по мясу за март?',
-  'Топ-10 магазинов по выручке за неделю',
-  'Где растут потери в категории молочной продукции?',
-  'Покажи на карте магазины с падением LFL',
-];
+/* Empty state welcome — без hardcoded подсказок. Реальные подсказки
+   появятся когда backend отдаст их через `/api/v1/ai/suggestions/` (TODO). */
+const DEFAULT_PROMPTS: string[] = [];
 
-const QUICK_CHIPS_AFTER_CHAT = [
-  '📊 Сравнить периоды',
-  '📈 Построить прогноз',
-  '⬇ Экспорт в Excel',
-];
+/* Быстрые чипсы после ответа ИИ — убраны; их должен отдавать бэкенд
+   в поле `followups` AiAnswerBlocks для каждого конкретного ответа. */
+const QUICK_CHIPS_AFTER_CHAT: string[] = [];
 
 interface ChatItem {
   role: 'user' | 'bot' | 'thinking';
@@ -280,6 +335,14 @@ export const AiFullView: FC<AiFullViewProps> = ({
   contextId,
   modelId,
 }) => {
+  // Side panel — локальное состояние overlay'я, управляется кнопкой-табом
+  // на левом крае Panel (не из dock). При выборе чата / новом чате —
+  // не закрываем автоматически; только по кнопке или при закрытии overlay.
+  // Состояние сохраняется между открытиями overlay — если юзер оставил
+  // панель открытой, она будет открытой при следующем открытии overlay.
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
+  const toggleSidePanel = useCallback(() => setSidePanelOpen(v => !v), []);
+  const closeSidePanel = useCallback(() => setSidePanelOpen(false), []);
   const bodyRef = useRef<HTMLDivElement>(null);
 
   const [folders, setFolders] = useState<AiChatFolder[]>([]);
@@ -515,21 +578,28 @@ export const AiFullView: FC<AiFullViewProps> = ({
         aria-hidden="true"
         onClick={onClose}
       />
-      <Panel role="dialog" aria-modal="true" aria-label={t('ИИ-аналитик')}>
-        <AiSidebar
+      {/* Side panel — пристройка СНАРУЖИ overlay, слева. position:fixed
+          рендерится рядом с overlay'ем, с нахлёстом 2px на overlay для
+          бесшовного стыка (тень обрезана clip-path на правой стороне). */}
+      <AiSidePanel
+        open={sidePanelOpen}
+        onClose={closeSidePanel}
         folders={folders}
         sessions={sessions}
-        activeTasks={tasks}
         currentSessionId={currentSessionId}
-        onNewChat={handleNewChat}
         onSelectSession={handleSelectSession}
-        onNewFolder={handleNewFolder}
-        onDeleteFolder={handleDeleteFolder}
-        onDeleteSession={handleDeleteSession}
-        onRenameSession={handleRenameSession}
-        collapsed={sidebarCollapsed}
-        onToggleCollapsed={() => setSidebarCollapsed(prev => !prev)}
+        onNewChat={handleNewChat}
       />
+      <Panel role="dialog" aria-modal="true" aria-label={t('ИИ-аналитик')}>
+      <SidePanelTab
+        type="button"
+        onClick={toggleSidePanel}
+        aria-label={t('История чатов')}
+        aria-pressed={sidePanelOpen}
+        title={t('История чатов')}
+      >
+        <IconSidePanel />
+      </SidePanelTab>
       <Main>
         <CloseBtn
           type="button"
@@ -539,14 +609,6 @@ export const AiFullView: FC<AiFullViewProps> = ({
         >
           <IconClose />
         </CloseBtn>
-        {mockMode ? (
-          <MockBanner>
-            <strong>{t('Mock-режим:')}</strong>{' '}
-            {t(
-              'ai-analytics backend не подключён (VITE_AI_BACKEND_URL или AI_BACKEND_URL в config). Ответы — локальные заглушки.',
-            )}
-          </MockBanner>
-        ) : null}
         <Body ref={bodyRef}>
           {empty ? (
             <AiEmpty

@@ -9,29 +9,40 @@
  *
  *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * AiHistorySheet — bottom sheet истории чатов ИИ-аналитика. Открывается
- * кликом по кнопке «История чатов» в dock'е. Точно по мокапу
- * analytics-floating-dock.html `.ai-side`:
- *   - position fixed, left 50%, bottom 92px
- *   - width min(96vw, 1200px), max-height min(640px, 80vh)
- *   - Glass (blur + saturate)
- *   - ais-handle · ais-head · ais-body (4-col grid) · ais-foot
+ * AiHistorySheet — bottom sheet истории чатов ИИ. Pixel-perfect parity с
+ * мокапом `.ai-side` (analytics-floating-dock.html). 4 колонки:
  *
- * Содержимое — группы чатов по датам (Сегодня / Вчера / На неделе / Старше).
- * Данные: listAiChatSessions() из features/ai/api.ts. Пока что выводим
- * упрощённый placeholder когда сессии пустые (API возвращает []).
+ *   1. В РАБОТЕ       — активные задачи AI (mock, позже из API)
+ *   2. ПАПКИ          — папки чатов (drill-in: корневые → подпапки → чаты)
+ *   3. ИИ АНАЛИТИКА   — сгенерированные инсайты (ежедневная сводка,
+ *                       аномалии, еженедельный отчёт)
+ *   4. НЕДАВНИЕ       — последние чаты с временем
+ *
+ * Header: [title] · + Новый чат · ×
+ * Footer: «Управление историей чатов» (активирует режим управления — TODO).
  */
-import { styled, t } from '@superset-ui/core';
+import { css, keyframes, styled, t } from '@superset-ui/core';
 import {
   type FC,
+  type ReactNode,
   useCallback,
   useEffect,
   useMemo,
   useState,
 } from 'react';
 import { DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
-import { listAiChatSessions } from 'src/features/ai';
-import type { AiChatSession } from 'src/features/ai';
+import {
+  deleteAiChatFolder,
+  listAiActiveTasks,
+  listAiChatFolders,
+  listAiChatSessions,
+} from 'src/features/ai/api';
+import type {
+  AiActiveTask,
+  AiChatFolder,
+  AiChatSession,
+} from 'src/features/ai';
+import { AiHistoryManageView } from './AiHistoryManageView';
 
 interface AiHistorySheetProps {
   open: boolean;
@@ -39,6 +50,8 @@ interface AiHistorySheetProps {
   onSelectSession?: (sessionId: number) => void;
   onNewChat?: () => void;
 }
+
+/* ─── Sheet shell ─── */
 
 const Sheet = styled.aside<{ $open: boolean }>`
   position: fixed;
@@ -52,8 +65,6 @@ const Sheet = styled.aside<{ $open: boolean }>`
   opacity: ${({ $open }) => ($open ? 1 : 0)};
   pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};
   overflow: hidden;
-  /* Pixel-perfect parity .ai-side: тот же glass-материал что drawer
-     (blur 32 sat 160, radius 24, bg1 80%, тень 30px 80px). */
   background: ${DS2_VARS.drawerBg};
   backdrop-filter: ${DS2_VARS.drawerFilter};
   -webkit-backdrop-filter: ${DS2_VARS.drawerFilter};
@@ -94,8 +105,10 @@ const Handle = styled.div`
   flex-shrink: 0;
 `;
 
+/* ─── Header: title + actions ─── */
+
 const Head = styled.div`
-  padding: 4px 22px 10px;
+  padding: 8px 22px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -110,6 +123,7 @@ const HeadTitle = styled.div`
   color: ${DS2_VARS.g500};
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  font-weight: 600;
 `;
 
 const HeadActions = styled.div`
@@ -118,29 +132,31 @@ const HeadActions = styled.div`
   align-items: center;
 `;
 
-const HeadBtn = styled.button`
+/* Primary action button (+ Новый чат) — ink+surface DS 2.0.
+   Раньше sky-cSky, но у него разные hex в темах → кнопка смотрелась
+   неоднородно; ink+surface одинаково выразительна в обеих темах. */
+const HeadPrimaryBtn = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   padding: 6px 12px;
-  background: none;
-  border: 1px solid ${DS2_VARS.g200};
-  border-radius: ${DS2_VARS.rControl};
-  color: ${DS2_VARS.g500};
+  background: ${DS2_VARS.ink};
+  border: 1px solid ${DS2_VARS.ink};
+  border-radius: 7px;
+  color: ${DS2_VARS.s};
   cursor: pointer;
   font-family: ${DS2_VARS.fontSans};
-  font-size: 11px;
-  transition: all 0.12s ${DS2_VARS.ease};
+  font-size: 12px;
+  font-weight: 600;
+  transition: opacity 0.12s ${DS2_VARS.ease};
 
   &:hover {
-    border-color: ${DS2_VARS.cSky};
-    color: ${DS2_VARS.cSky};
-    background: ${DS2_VARS.upBg};
+    opacity: 0.88;
   }
 
   &:focus-visible {
     outline: 2px solid ${DS2_VARS.cSky};
-    outline-offset: 1px;
+    outline-offset: 2px;
   }
 
   svg {
@@ -173,6 +189,8 @@ const CloseBtn = styled.button`
     height: 12px;
   }
 `;
+
+/* ─── Body: 4-col grid ─── */
 
 const Body = styled.div`
   flex: 1;
@@ -216,41 +234,288 @@ const Col = styled.div`
   }
 `;
 
-const ColLabel = styled.div`
-  font-family: ${DS2_VARS.fontMono};
+/* Отдельный класс для «ИИ аналитика» — увеличенный gap между карточками. */
+const InsightsCol = styled(Col)`
+  gap: 6px;
+`;
+
+const ColHead = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 9.5px;
+  font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding: 4px 0 8px;
+  padding: 0 4px 10px;
+  margin-bottom: 2px;
 `;
+
+const ColHeadCount = styled.span`
+  font-family: ${DS2_VARS.fontMono};
+  color: ${DS2_VARS.g400};
+`;
+
+const Empty = styled.div`
+  padding: 20px 12px;
+  color: ${DS2_VARS.g500};
+  font-size: 11px;
+  text-align: center;
+  font-family: ${DS2_VARS.fontSans};
+`;
+
+/* ─── Col 1: Активные задачи ─── */
+
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+/* Мокап .ais-active-row: янтарная полупрозрачная плашка с вращающимся
+   spinner'ом (warning цвет) и прогрессом справа. */
+const ActiveRow = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: rgba(251, 191, 36, 0.05);
+  border: 1px solid rgba(251, 191, 36, 0.15);
+  margin-bottom: 4px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.12s ${DS2_VARS.ease};
+
+  &:hover {
+    background: rgba(251, 191, 36, 0.1);
+  }
+`;
+
+const Spinner = styled.div`
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid ${DS2_VARS.g300};
+  border-top-color: ${DS2_VARS.wn};
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: ${spin} 1s linear infinite;
+`;
+
+const ActiveText = styled.div`
+  flex: 1;
+  font-size: 11px;
+  color: ${DS2_VARS.ink};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const ActiveTime = styled.div`
+  font-size: 9px;
+  font-family: ${DS2_VARS.fontMono};
+  color: ${DS2_VARS.g500};
+`;
+
+/* ─── Col 2: Папки (folder rows) ─── */
+
+const FolderRow = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: transparent;
+  border: none;
+  color: ${DS2_VARS.ink};
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.1s ${DS2_VARS.ease};
+
+  &:hover {
+    background: ${DS2_VARS.bg3};
+  }
+`;
+
+const FolderDot = styled.span<{ $color: string; $dashed?: boolean }>`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: ${({ $color, $dashed }) => ($dashed ? 'transparent' : $color)};
+  ${({ $dashed }) =>
+    $dashed
+      ? css`
+          border: 1px dashed ${DS2_VARS.g400};
+        `
+      : ''}
+`;
+
+const FolderName = styled.span<{ $italic?: boolean }>`
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  ${({ $italic }) =>
+    $italic
+      ? css`
+          color: ${DS2_VARS.g500};
+          font-style: italic;
+        `
+      : ''}
+`;
+
+const FolderCount = styled.span`
+  font-size: 11px;
+  font-family: ${DS2_VARS.fontMono};
+  color: ${DS2_VARS.g500};
+  flex-shrink: 0;
+`;
+
+/* ─── Col 3: ИИ аналитика (insight cards) ─── */
+
+/* Мокап .ais-insight: карточка с цветным левым бордером, header (icon+badge
+   +time), title, preview (2-line clamp). */
+const Insight = styled.button<{ $sev: 'high' | 'med' | 'info' }>`
+  position: relative;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: ${DS2_VARS.bg3};
+  border: 1px solid ${DS2_VARS.g100};
+  color: ${DS2_VARS.ink};
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: hidden;
+  text-align: left;
+  width: 100%;
+  transition:
+    background 0.12s ${DS2_VARS.ease},
+    border-color 0.12s ${DS2_VARS.ease},
+    transform 0.12s ${DS2_VARS.ease};
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+    background: ${({ $sev }) =>
+      $sev === 'high'
+        ? DS2_VARS.cTangerine
+        : $sev === 'med'
+        ? DS2_VARS.cAmber
+        : DS2_VARS.cSky};
+  }
+
+  &:hover {
+    background: ${DS2_VARS.glassBgElev};
+    border-color: ${DS2_VARS.g200};
+    transform: translateX(1px);
+  }
+`;
+
+const InsHead = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const InsIcon = styled.span<{ $kind: 'daily' | 'weekly' | 'anomaly' }>`
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: ${({ $kind }) =>
+    $kind === 'daily'
+      ? `color-mix(in oklab, ${DS2_VARS.cSky} 15%, transparent)`
+      : $kind === 'weekly'
+      ? `color-mix(in oklab, ${DS2_VARS.cViolet} 15%, transparent)`
+      : `color-mix(in oklab, ${DS2_VARS.cTangerine} 15%, transparent)`};
+  color: ${({ $kind }) =>
+    $kind === 'daily'
+      ? DS2_VARS.cSky
+      : $kind === 'weekly'
+      ? DS2_VARS.cViolet
+      : DS2_VARS.cTangerine};
+
+  svg {
+    width: 10px;
+    height: 10px;
+  }
+`;
+
+const InsBadge = styled.span`
+  flex: 1;
+  font-size: 9px;
+  font-family: ${DS2_VARS.fontMono};
+  color: ${DS2_VARS.g500};
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+`;
+
+const InsTime = styled.span`
+  font-size: 9px;
+  font-family: ${DS2_VARS.fontMono};
+  color: ${DS2_VARS.g400};
+`;
+
+const InsTitle = styled.div`
+  font-size: 12px;
+  font-weight: 500;
+  color: ${DS2_VARS.ink};
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+`;
+
+const InsPreview = styled.div`
+  font-size: 10.5px;
+  color: ${DS2_VARS.g500};
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+`;
+
+/* ─── Col 4: Недавние чаты ─── */
 
 const ChatRow = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 7px 10px;
   background: none;
   border: none;
-  border-radius: ${DS2_VARS.rControl};
-  color: ${DS2_VARS.g700};
-  font-family: ${DS2_VARS.fontSans};
-  font-size: 12px;
+  border-radius: 7px;
+  color: ${DS2_VARS.ink};
+  font-size: 12.5px;
   cursor: pointer;
   text-align: left;
   width: 100%;
-  transition:
-    background 0.1s ${DS2_VARS.ease},
-    color 0.1s ${DS2_VARS.ease};
+  transition: background 0.1s ${DS2_VARS.ease};
 
   &:hover {
-    background: ${DS2_VARS.g100};
-    color: ${DS2_VARS.ink};
+    background: ${DS2_VARS.bg3};
   }
 
-  &:focus-visible {
-    outline: 2px solid ${DS2_VARS.cSky};
-    outline-offset: -2px;
+  svg {
+    width: 12px;
+    height: 12px;
+    color: ${DS2_VARS.g500};
+    flex-shrink: 0;
   }
 `;
 
@@ -262,27 +527,86 @@ const ChatTitle = styled.span`
   text-overflow: ellipsis;
 `;
 
-const EmptyState = styled.div`
-  grid-column: 1 / -1;
-  padding: ${DS2_SPACE.s8}px;
-  text-align: center;
+const ChatTime = styled.span`
+  font-size: 10px;
+  font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
-  font-family: ${DS2_VARS.fontSans};
-  font-size: 13px;
-  line-height: 1.5;
+  flex-shrink: 0;
 `;
 
-/* Icons */
+/* ─── Footer ─── */
+
+const Foot = styled.div`
+  padding: 10px 22px 14px;
+  border-top: 1px solid ${DS2_VARS.g100};
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+`;
+
+const FootBtn = styled.button`
+  background: none;
+  border: 1px solid ${DS2_VARS.g200};
+  padding: 6px 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: ${DS2_VARS.g500};
+  font-size: 11px;
+  font-family: ${DS2_VARS.fontSans};
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition:
+    border-color 0.1s ${DS2_VARS.ease},
+    color 0.1s ${DS2_VARS.ease};
+
+  &:hover {
+    border-color: ${DS2_VARS.g300};
+    color: ${DS2_VARS.ink};
+  }
+
+  svg {
+    width: 11px;
+    height: 11px;
+  }
+`;
+
+const FootHint = styled.span`
+  flex: 1;
+  font-size: 10px;
+  font-family: ${DS2_VARS.fontMono};
+  color: ${DS2_VARS.g500};
+  text-align: center;
+
+  kbd {
+    background: ${DS2_VARS.bg3};
+    border: 1px solid ${DS2_VARS.g200};
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-family: ${DS2_VARS.fontMono};
+    font-size: 9px;
+    color: ${DS2_VARS.g600};
+    margin: 0 2px;
+  }
+`;
+
+/* Tab view wrapper для overview/manage режимов */
+const TabView = styled.div<{ $active: boolean }>`
+  flex: 1;
+  min-height: 0;
+  display: ${({ $active }) => ($active ? 'flex' : 'none')};
+  flex-direction: column;
+  opacity: ${({ $active }) => ($active ? 1 : 0)};
+  transition: opacity 0.18s ${DS2_VARS.ease};
+`;
+
+/* ─── SVG icons ─── */
 
 const IconPlus: FC = () => (
-  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.6}>
+  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.8}>
     <path d="M6 2v8M2 6h8" />
-  </svg>
-);
-
-const IconFolder: FC = () => (
-  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.4}>
-    <path d="M1 2.5h3l1.5 1.5H11v6H1V2.5z" />
   </svg>
 );
 
@@ -292,32 +616,120 @@ const IconClose: FC = () => (
   </svg>
 );
 
-/* Helpers */
+const IconDaily: FC = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <circle cx="8" cy="8" r="3" />
+    <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.3 3.3l1.4 1.4M11.3 11.3l1.4 1.4M3.3 12.7l1.4-1.4M11.3 4.7l1.4-1.4" />
+  </svg>
+);
 
-function groupSessions(sessions: AiChatSession[]): Record<
-  'today' | 'yesterday' | 'week' | 'older',
-  AiChatSession[]
-> {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const yesterday = today - 24 * 60 * 60 * 1000;
-  const weekAgo = today - 7 * 24 * 60 * 60 * 1000;
-  const groups: Record<
-    'today' | 'yesterday' | 'week' | 'older',
-    AiChatSession[]
-  > = { today: [], yesterday: [], week: [], older: [] };
-  for (const s of sessions) {
-    const changed = s.changed_on
-      ? new Date(s.changed_on).getTime()
-      : s.created_on
-      ? new Date(s.created_on).getTime()
-      : 0;
-    if (changed >= today) groups.today.push(s);
-    else if (changed >= yesterday) groups.yesterday.push(s);
-    else if (changed >= weekAgo) groups.week.push(s);
-    else groups.older.push(s);
+const IconWeekly: FC = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <rect x="2" y="3" width="12" height="11" rx="1.5" />
+    <path d="M2 6h12M6 1v3M10 1v3" />
+  </svg>
+);
+
+const IconAnomaly: FC = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6}>
+    <path d="M8 1.5L1.5 14h13z" />
+    <path d="M8 6.5v3.5M8 11.5v.7" strokeLinecap="round" />
+  </svg>
+);
+
+const IconChatBubble: FC = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <path d="M2 4a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6l-3 2v-2H4a2 2 0 01-2-2V4z" />
+  </svg>
+);
+
+const IconGear: FC = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <circle cx="8" cy="8" r="2" />
+    <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3" />
+  </svg>
+);
+
+const IconBack: FC = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6}>
+    <path d="M6 3L2 7l4 4M2 7h10a2 2 0 012 2v3" />
+  </svg>
+);
+
+const IconReset: FC = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <path d="M13 8a5 5 0 11-1.5-3.5M13 3v2h-2" />
+  </svg>
+);
+
+/* ─── Data types ─── */
+
+interface ActiveJob {
+  id: string;
+  title: string;
+  progress: string;
+}
+
+interface FolderStub {
+  id: string;
+  name: string;
+  color: string;
+  count: number;
+}
+
+interface Insight {
+  id: string;
+  kind: 'daily' | 'weekly' | 'anomaly';
+  title: string;
+  preview: string;
+  badge: string;
+  time: string;
+  severity: 'high' | 'med' | 'info';
+}
+
+/** Палитра для цветных dot'ов папок (детерминистично по индексу). */
+const FOLDER_PALETTE = [
+  '#3B8BD9',
+  '#16A34A',
+  '#8B5CF6',
+  '#E87C3E',
+  '#DC2626',
+  '#E870C0',
+  '#CA8A04',
+  '#CCB604',
+];
+
+/* Insight icon by kind */
+function insightIcon(kind: 'daily' | 'weekly' | 'anomaly'): ReactNode {
+  if (kind === 'daily') return <IconDaily />;
+  if (kind === 'weekly') return <IconWeekly />;
+  return <IconAnomaly />;
+}
+
+/** Короткая метка времени для недавних чатов. */
+function formatRelative(iso?: string): string {
+  if (!iso) return '';
+  const d = new Date(iso).getTime();
+  if (Number.isNaN(d)) return '';
+  const now = Date.now();
+  const diff = now - d;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return t('сейчас');
+  if (mins < 60) return t('%s мин', String(mins));
+  const h = Math.floor(mins / 60);
+  if (h < 24) {
+    const date = new Date(d);
+    return `${String(date.getHours()).padStart(2, '0')}:${String(
+      date.getMinutes(),
+    ).padStart(2, '0')}`;
   }
-  return groups;
+  const days = Math.floor(h / 24);
+  if (days === 1) return t('вчера');
+  if (days < 7) return t('%s д', String(days));
+  const date = new Date(d);
+  return `${String(date.getDate()).padStart(2, '0')}.${String(
+    date.getMonth() + 1,
+  ).padStart(2, '0')}`;
 }
 
 export const AiHistorySheet: FC<AiHistorySheetProps> = ({
@@ -327,24 +739,62 @@ export const AiHistorySheet: FC<AiHistorySheetProps> = ({
   onNewChat,
 }) => {
   const [sessions, setSessions] = useState<AiChatSession[]>([]);
+  const [folders, setFolders] = useState<AiChatFolder[]>([]);
+  const [activeTasks, setActiveTasks] = useState<AiActiveTask[]>([]);
+  const [tab, setTab] = useState<'overview' | 'manage'>('overview');
 
-  // Загружаем историю чатов при открытии sheet.
+  const refreshAll = useCallback(async () => {
+    try {
+      const [s, f, a] = await Promise.allSettled([
+        listAiChatSessions(),
+        listAiChatFolders(),
+        listAiActiveTasks(),
+      ]);
+      setSessions(s.status === 'fulfilled' ? s.value : []);
+      setFolders(f.status === 'fulfilled' ? f.value : []);
+      setActiveTasks(a.status === 'fulfilled' ? a.value : []);
+    } catch {
+      /* ignore — каждая колонка упадёт в «Пусто» */
+    }
+  }, []);
+
+  // Подгружаем реальные данные из API. Пока backend не реализован — API
+  // вернёт пустой массив / 404, и каждая колонка покажет «Пусто».
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     let cancelled = false;
-    listAiChatSessions()
-      .then(list => {
-        if (!cancelled) setSessions(list);
-      })
-      .catch(() => {
-        if (!cancelled) setSessions([]);
-      });
+    refreshAll().then(() => {
+      if (cancelled) return;
+    });
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, [open, refreshAll]);
 
-  // Esc закрывает.
+  const resetAllFolders = useCallback(async () => {
+    // eslint-disable-next-line no-alert
+    const ok = window.confirm(
+      t('Удалить все папки? Чаты останутся без папки.'),
+    );
+    if (!ok) return;
+    const rootIds = folders
+      .filter(f => f.parent_id === null)
+      .map(f => f.id);
+    for (const id of rootIds) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await deleteAiChatFolder(id);
+      } catch {
+        /* continue */
+      }
+    }
+    await refreshAll();
+  }, [folders, refreshAll]);
+
+  // Инсайты пока захардкожены пустым массивом. Когда появится
+  // /api/v1/ai/insights/ — поменяем на fetch.
+  const insights: Insight[] = [];
+
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e: KeyboardEvent) => {
@@ -354,8 +804,50 @@ export const AiHistorySheet: FC<AiHistorySheetProps> = ({
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  const groups = useMemo(() => groupSessions(sessions), [sessions]);
-  const isEmpty = sessions.length === 0;
+  // Последние 8 недавних — для колонки 4.
+  const recents = useMemo(
+    () =>
+      [...sessions]
+        .sort((a, b) => {
+          const ta = a.changed_on ?? a.created_on ?? '';
+          const tb = b.changed_on ?? b.created_on ?? '';
+          return tb.localeCompare(ta);
+        })
+        .slice(0, 8),
+    [sessions],
+  );
+
+  // Корневые папки + счётчики чатов без папки. Цвет папки генерируется
+  // из id (детерминистично) — backend пока не хранит цвет.
+  const rootFolders = useMemo<FolderStub[]>(
+    () =>
+      folders
+        .filter(f => f.parent_id === null)
+        .map((f, idx) => ({
+          id: String(f.id),
+          name: f.name,
+          color: FOLDER_PALETTE[idx % FOLDER_PALETTE.length],
+          count: sessions.filter(s => s.folder_id === f.id).length,
+        })),
+    [folders, sessions],
+  );
+  const noFolderCount = useMemo(
+    () => sessions.filter(s => s.folder_id == null).length,
+    [sessions],
+  );
+
+  const activeJobs = useMemo<ActiveJob[]>(
+    () =>
+      activeTasks.map(task => ({
+        id: String(task.id),
+        title: task.title || t('Задача %s', String(task.id)),
+        progress:
+          typeof task.progress_percent === 'number'
+            ? `${Math.round(task.progress_percent)}%`
+            : '',
+      })),
+    [activeTasks],
+  );
 
   const handleSelect = useCallback(
     (id: number) => {
@@ -364,6 +856,11 @@ export const AiHistorySheet: FC<AiHistorySheetProps> = ({
     },
     [onSelectSession, onClose],
   );
+
+  const handleNewChat = useCallback(() => {
+    onNewChat?.();
+    onClose();
+  }, [onNewChat, onClose]);
 
   return (
     <Sheet
@@ -377,21 +874,14 @@ export const AiHistorySheet: FC<AiHistorySheetProps> = ({
       <Head>
         <HeadTitle>{t('История чатов')}</HeadTitle>
         <HeadActions>
-          <HeadBtn
+          <HeadPrimaryBtn
             type="button"
-            onClick={() => {
-              onNewChat?.();
-              onClose();
-            }}
+            onClick={handleNewChat}
             title={t('Новый чат')}
           >
             <IconPlus />
             {t('Новый чат')}
-          </HeadBtn>
-          <HeadBtn type="button" title={t('Новая папка')}>
-            <IconFolder />
-            {t('Папка')}
-          </HeadBtn>
+          </HeadPrimaryBtn>
           <CloseBtn
             type="button"
             onClick={onClose}
@@ -402,66 +892,154 @@ export const AiHistorySheet: FC<AiHistorySheetProps> = ({
           </CloseBtn>
         </HeadActions>
       </Head>
-      <Body>
-        {isEmpty ? (
-          <EmptyState>
-            {t(
-              'Ваших чатов пока нет. Начните новый через центральную капсулу dock’a или кнопку «Новый чат».',
-            )}
-          </EmptyState>
-        ) : (
-          <>
-            <Col>
-              <ColLabel>{t('Сегодня')}</ColLabel>
-              {groups.today.map(s => (
-                <ChatRow
-                  key={s.id}
-                  type="button"
-                  onClick={() => handleSelect(s.id)}
-                >
-                  <ChatTitle>{s.title || t('Без названия')}</ChatTitle>
-                </ChatRow>
+
+      <TabView $active={tab === 'overview'}>
+        <Body>
+          {/* Col 1: В РАБОТЕ */}
+          <Col>
+          <ColHead>
+            <span>{t('В работе')}</span>
+            <ColHeadCount>{activeJobs.length}</ColHeadCount>
+          </ColHead>
+          {activeJobs.length === 0 ? (
+            <Empty>{t('Нет активных задач')}</Empty>
+          ) : (
+            activeJobs.map(j => (
+              <ActiveRow key={j.id} type="button">
+                <Spinner />
+                <ActiveText>{j.title}</ActiveText>
+                <ActiveTime>{j.progress}</ActiveTime>
+              </ActiveRow>
+            ))
+          )}
+        </Col>
+
+        {/* Col 2: ПАПКИ */}
+        <Col>
+          <ColHead>
+            <span>{t('Папки')}</span>
+            <ColHeadCount>
+              {rootFolders.length + (noFolderCount > 0 ? 1 : 0)}
+            </ColHeadCount>
+          </ColHead>
+          {rootFolders.length === 0 && noFolderCount === 0 ? (
+            <Empty>{t('Папок пока нет')}</Empty>
+          ) : (
+            <>
+              {rootFolders.map(f => (
+                <FolderRow key={f.id} type="button">
+                  <FolderDot $color={f.color} />
+                  <FolderName>{f.name}</FolderName>
+                  <FolderCount>{f.count}</FolderCount>
+                </FolderRow>
               ))}
-            </Col>
-            <Col>
-              <ColLabel>{t('Вчера')}</ColLabel>
-              {groups.yesterday.map(s => (
-                <ChatRow
-                  key={s.id}
-                  type="button"
-                  onClick={() => handleSelect(s.id)}
-                >
-                  <ChatTitle>{s.title || t('Без названия')}</ChatTitle>
-                </ChatRow>
-              ))}
-            </Col>
-            <Col>
-              <ColLabel>{t('На этой неделе')}</ColLabel>
-              {groups.week.map(s => (
-                <ChatRow
-                  key={s.id}
-                  type="button"
-                  onClick={() => handleSelect(s.id)}
-                >
-                  <ChatTitle>{s.title || t('Без названия')}</ChatTitle>
-                </ChatRow>
-              ))}
-            </Col>
-            <Col>
-              <ColLabel>{t('Старше')}</ColLabel>
-              {groups.older.map(s => (
-                <ChatRow
-                  key={s.id}
-                  type="button"
-                  onClick={() => handleSelect(s.id)}
-                >
-                  <ChatTitle>{s.title || t('Без названия')}</ChatTitle>
-                </ChatRow>
-              ))}
-            </Col>
-          </>
-        )}
-      </Body>
+              {noFolderCount > 0 ? (
+                <FolderRow type="button">
+                  <FolderDot $color="transparent" $dashed />
+                  <FolderName $italic>{t('Без папки')}</FolderName>
+                  <FolderCount>{noFolderCount}</FolderCount>
+                </FolderRow>
+              ) : null}
+            </>
+          )}
+        </Col>
+
+        {/* Col 3: ИИ АНАЛИТИКА */}
+        <InsightsCol>
+          <ColHead>
+            <span title={t('Автоматические сводки и найденные аномалии')}>
+              {t('ИИ аналитика')}
+            </span>
+            <ColHeadCount>{insights.length}</ColHeadCount>
+          </ColHead>
+          {insights.length === 0 ? (
+            <Empty>{t('Пока нет инсайтов')}</Empty>
+          ) : (
+            insights.map(ins => (
+              <Insight key={ins.id} type="button" $sev={ins.severity}>
+                <InsHead>
+                  <InsIcon $kind={ins.kind}>{insightIcon(ins.kind)}</InsIcon>
+                  <InsBadge>{ins.badge}</InsBadge>
+                  <InsTime>{ins.time}</InsTime>
+                </InsHead>
+                <InsTitle>{ins.title}</InsTitle>
+                <InsPreview>{ins.preview}</InsPreview>
+              </Insight>
+            ))
+          )}
+        </InsightsCol>
+
+        {/* Col 4: НЕДАВНИЕ */}
+        <Col>
+          <ColHead>
+            <span>{t('Недавние')}</span>
+            <ColHeadCount>{recents.length}</ColHeadCount>
+          </ColHead>
+          {recents.length === 0 ? (
+            <Empty>{t('Пусто')}</Empty>
+          ) : (
+            recents.map(s => (
+              <ChatRow
+                key={s.id}
+                type="button"
+                onClick={() => handleSelect(s.id)}
+              >
+                <IconChatBubble />
+                <ChatTitle>{s.title || t('Без названия')}</ChatTitle>
+                <ChatTime>
+                  {formatRelative(s.changed_on ?? s.created_on ?? '')}
+                </ChatTime>
+              </ChatRow>
+            ))
+          )}
+        </Col>
+        </Body>
+      </TabView>
+
+      <TabView $active={tab === 'manage'}>
+        <AiHistoryManageView
+          folders={folders}
+          sessions={sessions}
+          onChanged={refreshAll}
+        />
+      </TabView>
+
+      {tab === 'overview' ? (
+        <Foot>
+          <FootBtn
+            type="button"
+            onClick={e => {
+              e.stopPropagation();
+              setTab('manage');
+            }}
+            title={t('Управление историей чатов')}
+          >
+            <IconGear />
+            {t('Управление историей чатов')}
+          </FootBtn>
+        </Foot>
+      ) : (
+        <Foot>
+          <FootBtn
+            type="button"
+            onClick={e => {
+              e.stopPropagation();
+              setTab('overview');
+            }}
+          >
+            <IconBack />
+            {t('Назад к истории')}
+          </FootBtn>
+          <FootHint>
+            {t('Перетащите чаты между папками. Максимум ')}
+            <kbd>{t('3 уровня')}</kbd>
+          </FootHint>
+          <FootBtn type="button" onClick={resetAllFolders}>
+            <IconReset />
+            {t('Сбросить')}
+          </FootBtn>
+        </Foot>
+      )}
     </Sheet>
   );
 };

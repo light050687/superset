@@ -233,15 +233,10 @@ export const Shell: FC<ShellProps> = ({
     if (!themeCtx) return;
     const next =
       themeCtx.themeMode === ThemeMode.DARK ? ThemeMode.DEFAULT : ThemeMode.DARK;
+    // data-theme атрибут и анимация (View Transitions API) управляются
+    // централизованно внутри ThemeProvider.setThemeMode — здесь только
+    // делегируем. Ручной setAttribute здесь бы сломал VT-snapshot.
     themeCtx.setThemeMode(next);
-    // Синхронизируем data-theme на html — используется CSS-переменными в
-    // head_custom_extra.html для реактивного переключения glass/dock цветов.
-    if (typeof document !== 'undefined') {
-      document.documentElement.setAttribute(
-        'data-theme',
-        next === ThemeMode.DARK ? 'dark' : 'light',
-      );
-    }
   }, [themeCtx]);
 
   const handleOpenSettings = useCallback(() => {
@@ -297,6 +292,15 @@ export const Shell: FC<ShellProps> = ({
    * Toggle истории чатов (AiHistorySheet). Открывается из dock'а или
    * из кнопки «История» внутри AI overlay.
    */
+  /**
+   * Клик по «История чатов» в dock имеет два разных поведения:
+   *  - overlay закрыт → toggle AiHistorySheet (полноразмерный 4-col sheet)
+   *  - overlay открыт (активный чат) → toggle slide-in боковой панели
+   *    внутри overlay'я (AiSidePanel) с поиском и списком чатов
+   */
+  /** Клик «История чатов» в dock → только toggle полноразмерного Sheet.
+   *  Side-panel внутри overlay'я управляется собственной кнопкой-табом
+   *  на левом крае AI overlay (см. AiFullView). */
   const handleOpenAiHistory = useCallback(() => {
     setAiHistoryOpen(prev => !prev);
   }, []);
@@ -371,10 +375,18 @@ export const Shell: FC<ShellProps> = ({
           onToggleTheme={handleToggleTheme}
           settingsButtonRef={settingsButtonRef}
           calendarButtonRef={calendarButtonRef}
-          calendarBadgeColor={DS2_VARS.cTangerine}
+          /* Бейдж показывается только когда есть новые события извне или
+             запланированное событие «скоро» — сейчас источника нет, поэтому
+             undefined. TODO: завести проверку upcoming events из
+             useCalendarEvents (события в ближайшие 2 часа или сегодня). */
+          calendarBadgeColor={undefined}
           catalogBadgeColor={
             catalogHasUpdates ? DS2_VARS.cTangerine : undefined
           }
+          historyActive={aiHistoryOpen}
+          calendarActive={calendarOpen}
+          settingsActive={settingsOpen}
+          aiActive={aiOpen}
           contexts={effectiveContexts}
           contextId={contextId}
           onContextChange={handleContextChange}
@@ -413,6 +425,7 @@ export const Shell: FC<ShellProps> = ({
           open={calendarOpen}
           onClose={handleCloseCalendar}
           events={calendarEvents}
+          userId={user?.userId ?? user?.username}
         />
         <AiFullView
           open={aiOpen}
