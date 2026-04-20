@@ -49,5 +49,10 @@ export type ButtonProps = Omit<AntdButtonProps, 'css'> & {
   buttonStyle?: ButtonStyle;
   cta?: boolean;
   showMarginRight?: boolean;
-  icon?: IconType;
+  /**
+   * Widened from AntdButtonProps['icon'] (ReactNode) to also accept icon
+   * prop objects used by the Superset Icons wrapper. Callers may pass
+   * either a JSX element or Icon prop spread.
+   */
+  icon?: ReactNode | IconType;
 };

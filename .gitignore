@@ -136,3 +136,7 @@ CLAUDE.local.md
 .claude_rc*
 .env.local
 PROJECT.md
+
+# NTFS junction to sibling my-plugins/ (see feedback_my_plugins_junction.md)
+my-plugins/
+.claude/

@@ -114,7 +114,9 @@ const ControlPopover: FC<React.PropsWithChildren<PopoverProps>> = ({
 
   const handleOnVisibleChange = useCallback(
     (visible: boolean | undefined) => {
-      if (visible === undefined) {
+      // Only toggle scroll-lock when AntD reported a boolean state;
+      // AntD v5 occasionally calls onOpenChange with undefined on unmount.
+      if (visible !== undefined) {
         changeContainerScrollStatus(visible);
       }
 

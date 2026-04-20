@@ -81,7 +81,10 @@ test('calls onChange when the SQL expression changes', async () => {
   const sqlEditor = screen.getByRole('textbox');
   expect(sqlEditor).toBeInTheDocument();
   userEvent.clear(sqlEditor);
-  await userEvent.paste(sqlEditor, input);
+  // user-event v14: paste no longer accepts a target argument; focus the
+  // editor first so the paste event lands on it.
+  (sqlEditor as HTMLElement).focus();
+  await userEvent.paste(input);
   await new Promise(resolve => setTimeout(resolve, 0));
   expect(onChange).toHaveBeenCalledWith(
     expect.objectContaining({ sqlExpression: input }),

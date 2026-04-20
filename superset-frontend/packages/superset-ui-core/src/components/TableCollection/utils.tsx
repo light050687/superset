@@ -91,7 +91,11 @@ export function mapColumns<T extends object>(
   return columns.map(column => {
     const { isSorted, isSortedDesc } = getSortingInfo(headerGroups, column.id);
     return {
-      title: column.Header,
+      // column.Header is a react-table Renderer (ReactNode or a component
+      // that receives header-group props). AntD Table.title accepts ReactNode
+      // directly — consumers in this codebase only pass ReactNode-compatible
+      // headers, so narrow the type here.
+      title: column.Header as ReactNode,
       dataIndex: column.id?.includes('.') ? column.id.split('.') : column.id,
       hidden: column.hidden,
       key: column.id,
@@ -121,7 +125,16 @@ export function mapColumns<T extends object>(
             column,
           });
         }
-        return val;
+        // Default cell renderer: coerce non-renderable values (objects, arrays,
+        // functions) to a string. Primitives (string/number/boolean) are valid
+        // ReactNode already. `null` / `undefined` stays blank.
+        if (val == null) {
+          return null;
+        }
+        if (typeof val === 'object' || typeof val === 'function') {
+          return String(val);
+        }
+        return val as ReactNode;
       },
       className: column.className,
     };

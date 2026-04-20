@@ -368,7 +368,7 @@ function ReportModal({
           }}
           onError={setCronError}
         />
-        <StyledCronError>{cronError}</StyledCronError>
+        <StyledCronError>{cronError?.description}</StyledCronError>
         <div
           className="control-label"
           css={(theme: SupersetTheme) => TimezoneHeaderStyle(theme)}

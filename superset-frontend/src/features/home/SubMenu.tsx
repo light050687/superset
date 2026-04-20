@@ -30,7 +30,6 @@ import {
   type OnClickHandler,
 } from '@superset-ui/core/components';
 import { Icons } from '@superset-ui/core/components/Icons';
-import { IconType } from '@superset-ui/core/components/Icons/types';
 import { MenuObjectProps } from 'src/types/bootstrapTypes';
 import { Typography } from '@superset-ui/core/components/Typography';
 
@@ -143,7 +142,11 @@ export interface ButtonProps {
   'data-test'?: string;
   buttonStyle: 'primary' | 'secondary' | 'dashed' | 'link' | 'tertiary';
   loading?: boolean;
-  icon?: IconType;
+  /**
+   * Forwarded to the core Button's `icon` prop (a JSX element, e.g.
+   * `<Icons.PlusOutlined />`).
+   */
+  icon?: ReactNode;
 }
 
 export interface SubMenuProps {

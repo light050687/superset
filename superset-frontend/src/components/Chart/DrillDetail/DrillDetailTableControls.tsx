@@ -70,10 +70,15 @@ export default function TableControls({
   const filterTags = useMemo(
     () =>
       Object.entries(filterMap)
-        .map(([colName, { val, formattedVal }]) => ({
-          colName,
-          val: formattedVal ?? val,
-        }))
+        .map(([colName, { val, formattedVal }]) => {
+          // `val` is a DataRecordValue (includes Date, bigint, null); render
+          // via String() unless a pre-formatted label is available.
+          const raw = formattedVal ?? val;
+          return {
+            colName,
+            val: raw == null ? '' : String(raw),
+          };
+        })
         .sort((a, b) => a.colName.localeCompare(b.colName)),
     [filterMap],
   );

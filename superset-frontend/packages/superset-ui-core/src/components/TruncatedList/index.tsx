@@ -95,8 +95,10 @@ const StyledPlus = styled.span`
 
 export default function TruncatedList<ListItemType>({
   items,
-  renderVisibleItem = item => item,
-  renderTooltipItem = item => item,
+  // Default identity renderers assume `ListItemType` is already a ReactNode
+  // (the prop documentation notes the override is required when it is not).
+  renderVisibleItem = item => item as ReactNode,
+  renderTooltipItem = item => item as ReactNode,
   getKey = item => item as unknown as Key,
   maxLinks = 20,
 }: TruncatedListProps<ListItemType>) {

@@ -230,7 +230,7 @@ const TileGrid = styled.div`
   gap: 4px;
 `;
 
-const Tile = styled.a`
+const Tile = styled.a<{ $accent: string }>`
   display: flex;
   flex-direction: column;
   align-items: center;

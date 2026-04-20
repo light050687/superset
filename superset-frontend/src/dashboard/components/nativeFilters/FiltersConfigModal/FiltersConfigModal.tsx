@@ -31,6 +31,7 @@ import { useDispatch } from 'react-redux';
 import {
   Constants,
   Form,
+  type FormInstance,
   Icons,
   StyledModal,
 } from '@superset-ui/core/components';
@@ -783,7 +784,10 @@ function FiltersConfigModal({
       <ErrorBoundary>
         <StyledModalBody expanded={expanded}>
           <StyledForm
-            form={form}
+            // StyledForm is `styled(Form)` which strips Form's generic
+            // parameter; downcast to the unknown-values FormInstance that
+            // the wrapped AntD Form accepts.
+            form={form as unknown as FormInstance}
             onValuesChange={handleValuesChange}
             layout="vertical"
           >

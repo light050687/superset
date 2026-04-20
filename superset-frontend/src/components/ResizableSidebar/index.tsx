@@ -52,7 +52,10 @@ type Props = {
   children: (width: number) => ReactNode;
 };
 
-const ResizableSidebar: FC<React.PropsWithChildren<Props>> = ({
+// Render-prop component: children is `(width: number) => ReactNode`.
+// PropsWithChildren would union-collide with the render prop and demote it
+// to an unusable intersection type, so type the component directly with Props.
+const ResizableSidebar: FC<Props> = ({
   id,
   initialWidth,
   minWidth,
