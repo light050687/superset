@@ -150,6 +150,15 @@ export class Theme {
       ...(antdConfig.token || {}),
     };
 
+    // AntD v6: enable CSS variables mode with a Superset-scoped key so
+    // runtime theme switches (dark/light, custom palettes) don't require a
+    // full re-generation of styles. `cssVar: false` remains the right choice
+    // for the embedded SDK bundle (SSR / static style extraction), so the
+    // embedded entry is expected to rebuild its theme without cssVar.
+    if (antdConfig.cssVar === undefined) {
+      antdConfig.cssVar = { key: 'superset' };
+    }
+
     // First phase: Let Ant Design compute the tokens
     const tokens = Theme.getFilteredAntdTheme(antdConfig);
 
@@ -234,11 +243,22 @@ export class Theme {
       setThemeState({ theme, antdConfig, emotionCache });
     };
 
+    // Pass CSP nonce to AntD so v6's runtime-injected <style> tags carry
+    // the nonce from head_custom_extra.html; without this, strict CSP
+    // blocks cssinjs from mounting styles.
+    const cspNonce =
+      typeof window !== 'undefined'
+        ? (window as Window & { __CSP_NONCE__?: string }).__CSP_NONCE__
+        : undefined;
+
     return (
       <EmotionCacheProvider value={themeState.emotionCache}>
         <ThemeProvider theme={themeState.theme}>
           <GlobalStyles />
-          <ConfigProvider theme={themeState.antdConfig}>
+          <ConfigProvider
+            theme={themeState.antdConfig}
+            csp={cspNonce ? { nonce: cspNonce } : undefined}
+          >
             {children}
           </ConfigProvider>
         </ThemeProvider>

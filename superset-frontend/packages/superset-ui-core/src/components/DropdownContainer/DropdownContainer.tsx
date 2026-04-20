@@ -339,7 +339,9 @@ export const DropdownContainer = forwardRef(
 
             <Popover
               styles={{
-                body: {
+                // AntD v6: styles.body → styles.content (Popover semantic names
+                // are root/container/arrow/title/content).
+                content: {
                   maxHeight: `${MAX_HEIGHT}px`,
                   overflow: showOverflow ? 'auto' : 'visible',
                 },

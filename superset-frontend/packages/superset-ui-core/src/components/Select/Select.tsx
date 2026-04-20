@@ -770,7 +770,9 @@ const Select = forwardRef(
           }
           suffixIcon={getSuffixIcon(
             isLoading,
-            shouldShowSearch,
+            // AntD v6 widened showSearch to `boolean | SearchConfig<...>`;
+            // any truthy value means search is enabled.
+            Boolean(shouldShowSearch),
             isDropdownVisible,
           )}
           menuItemSelectedIcon={

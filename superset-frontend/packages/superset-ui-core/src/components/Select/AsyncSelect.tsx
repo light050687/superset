@@ -631,7 +631,13 @@ const AsyncSelect = forwardRef(
           showSearch={allowNewOptions ? true : showSearch}
           tokenSeparators={tokenSeparators}
           value={selectValue}
-          suffixIcon={getSuffixIcon(isLoading, showSearch, isDropdownVisible)}
+          // AntD v6 widened showSearch to `boolean | SearchConfig<...>`;
+          // any truthy value means search is enabled.
+          suffixIcon={getSuffixIcon(
+            isLoading,
+            Boolean(showSearch),
+            isDropdownVisible,
+          )}
           menuItemSelectedIcon={
             invertSelection ? (
               <StyledStopOutlined iconSize="m" aria-label="stop" />
