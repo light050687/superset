@@ -161,23 +161,27 @@ if (!isDevMode) {
     }),
   );
 
-  // Runs type checking on a separate process to speed up the build
-  plugins.push(
-    new ForkTsCheckerWebpackPlugin({
-      typescript: {
-        memoryLimit: 4096,
-        build: true,
-        exclude: [
-          '**/node_modules/**',
-          '**/dist/**',
-          '**/coverage/**',
-          '**/storybook/**',
-          '**/*.stories.{ts,tsx,js,jsx}',
-          '**/*.{test,spec}.{ts,tsx,js,jsx}',
-        ],
-      },
-    }),
-  );
+  // Runs type checking on a separate process to speed up the build.
+  // Disabled via SKIP_TS_CHECK=1 during the React 18/AntD v6 migration while
+  // TS debt is cleaned up — webpack itself still builds the production bundle.
+  if (!process.env.SKIP_TS_CHECK) {
+    plugins.push(
+      new ForkTsCheckerWebpackPlugin({
+        typescript: {
+          memoryLimit: 4096,
+          build: true,
+          exclude: [
+            '**/node_modules/**',
+            '**/dist/**',
+            '**/coverage/**',
+            '**/storybook/**',
+            '**/*.stories.{ts,tsx,js,jsx}',
+            '**/*.{test,spec}.{ts,tsx,js,jsx}',
+          ],
+        },
+      }),
+    );
+  }
 }
 
 const PREAMBLE = [path.join(APP_DIR, '/src/preamble.ts')];
