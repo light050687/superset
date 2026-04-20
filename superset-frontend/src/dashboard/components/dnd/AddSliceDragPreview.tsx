@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { DragLayer, XYCoord } from 'react-dnd';
+import { FC, CSSProperties } from 'react';
+import { useDragLayer, XYCoord } from 'react-dnd';
 import { Slice } from 'src/dashboard/types';
 import AddSliceCard from '../AddSliceCard';
 import {
@@ -31,32 +32,30 @@ interface DragItem {
 }
 
 interface AddSliceDragPreviewProps {
-  dragItem: DragItem | null;
   slices: Slice[] | null;
-  isDragging: boolean;
-  currentOffset: XYCoord | null;
 }
 
-const staticCardStyles: React.CSSProperties = {
+const staticCardStyles: CSSProperties = {
   position: 'fixed',
   pointerEvents: 'none',
   top: 0,
   left: 0,
-  zIndex: 101, // this should be higher than top-level tabs
+  zIndex: 101, // higher than top-level tabs
   width: 376 - 2 * 16,
 };
 
-const AddSliceDragPreview: React.FC<React.PropsWithChildren<AddSliceDragPreviewProps>> = ({
-  dragItem,
-  slices,
-  isDragging,
-  currentOffset,
-}) => {
+const AddSliceDragPreview: FC<AddSliceDragPreviewProps> = ({ slices }) => {
+  const { dragItem, currentOffset, isDragging } = useDragLayer(monitor => ({
+    dragItem: monitor.getItem() as DragItem | null,
+    currentOffset: monitor.getSourceClientOffset() as XYCoord | null,
+    isDragging: monitor.isDragging(),
+  }));
+
   if (!isDragging || !currentOffset || !dragItem || !slices) return null;
 
   const slice = slices[dragItem.index];
 
-  // make sure it's a new component and a chart
+  // Only render the preview for brand-new chart components being dragged in.
   const shouldRender =
     slice &&
     dragItem.parentType === NEW_COMPONENT_SOURCE_TYPE &&
@@ -77,9 +76,4 @@ const AddSliceDragPreview: React.FC<React.PropsWithChildren<AddSliceDragPreviewP
   );
 };
 
-// This injects these props into the component
-export default DragLayer(monitor => ({
-  dragItem: monitor.getItem() as DragItem | null,
-  currentOffset: monitor.getSourceClientOffset(),
-  isDragging: monitor.isDragging(),
-}))(AddSliceDragPreview);
+export default AddSliceDragPreview;

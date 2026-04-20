@@ -228,6 +228,7 @@ export const BentoCard: FC<React.PropsWithChildren<BentoCardProps>> = ({
   };
 
   const [{ isDragging }, drag] = useDrag({
+    type: CATALOG_DRAG_TYPES.ITEM,
     item: dragPayload,
     collect: (monitor: DragSourceMonitor) => ({
       isDragging: monitor.isDragging(),

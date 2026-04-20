@@ -73,6 +73,7 @@ export const DraggableFilter: FC<React.PropsWithChildren<FilterTabTitleProps>> =
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [{ isDragging }, drag] = useDrag({
+    type: FILTER_TYPE,
     item: { filterIds, type: FILTER_TYPE, index },
     collect: (monitor: DragSourceMonitor) => ({
       isDragging: monitor.isDragging(),

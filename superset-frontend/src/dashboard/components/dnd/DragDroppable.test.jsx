@@ -107,23 +107,16 @@ describe('DragDroppable', () => {
       </div>
     ));
 
-    // Create a mock component with the dropIndicator state already set
-    class MockDragDroppable extends DragDroppable {
-      constructor(props) {
-        super(props);
-        this.state = { dropIndicator: true };
-      }
-    }
-
     render(
-      <MockDragDroppable
+      <DragDroppable
         {...props}
         editMode
         isDraggingOver
+        dropIndicatorOverride
         component={newComponentFactory(TAB_TYPE)}
       >
         {renderChild}
-      </MockDragDroppable>,
+      </DragDroppable>,
     );
 
     // Verify the last render included dropIndicatorProps
@@ -151,22 +144,16 @@ describe('DragDroppable', () => {
       </div>
     ));
 
-    class MockDragDroppable extends DragDroppable {
-      constructor(props) {
-        super(props);
-        this.state = { dropIndicator: 'DROP_FORBIDDEN' };
-      }
-    }
-
     render(
-      <MockDragDroppable
+      <DragDroppable
         {...props}
         editMode
         isDraggingOver
+        dropIndicatorOverride="DROP_FORBIDDEN"
         component={newComponentFactory(TAB_TYPE)}
       >
         {renderChild}
-      </MockDragDroppable>,
+      </DragDroppable>,
     );
 
     expect(
@@ -193,23 +180,17 @@ describe('DragDroppable', () => {
       </div>
     ));
 
-    class MockDragDroppable extends DragDroppable {
-      constructor(props) {
-        super(props);
-        this.state = { dropIndicator: true };
-      }
-    }
-
     render(
-      <MockDragDroppable
+      <DragDroppable
         {...props}
         editMode
         isDraggingOver
         disableDragDrop
+        dropIndicatorOverride
         component={newComponentFactory(TAB_TYPE)}
       >
         {renderChild}
-      </MockDragDroppable>,
+      </DragDroppable>,
     );
 
     expect(

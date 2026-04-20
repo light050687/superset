@@ -137,6 +137,7 @@ export const CatalogTreeNode: FC<React.PropsWithChildren<CatalogTreeNodeProps>> 
   };
 
   const [{ isDragging }, drag] = useDrag({
+    type: CATALOG_DRAG_TYPES.FOLDER,
     item: dragItem,
     collect: (monitor: DragSourceMonitor) => ({
       isDragging: monitor.isDragging(),
