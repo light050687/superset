@@ -54,7 +54,7 @@ export function FormModal({
   }, [onSave, resetForm]);
 
   const handleFormSubmit = useCallback(
-    async values => {
+    async (values: any) => {
       try {
         setIsSaving(true);
         await formSubmitHandler(values);

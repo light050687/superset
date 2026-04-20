@@ -350,7 +350,7 @@ export default function TableChart<D extends DataRecord = DataRecord>(
   );
 
   const timestampFormatter = useCallback(
-    value => getTimeFormatterForGranularity(timeGrain)(value),
+    (value: any) => getTimeFormatterForGranularity(timeGrain)(value),
     [timeGrain],
   );
   const [tableSize, setTableSize] = useState<TableSize>({

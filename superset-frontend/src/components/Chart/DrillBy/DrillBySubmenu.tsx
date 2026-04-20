@@ -94,7 +94,7 @@ export const DrillBySubmenu = ({
   const showSearch = columns.length > SHOW_COLUMNS_SEARCH_THRESHOLD;
 
   const handleSelection = useCallback(
-    (event, column) => {
+    (event: any, column: any) => {
       onClick(event as MouseEvent);
       onSelection(column, drillByConfig);
       if (openNewModal && onDrillBy && dataset) {

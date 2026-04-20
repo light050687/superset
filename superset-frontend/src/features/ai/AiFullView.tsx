@@ -25,21 +25,15 @@ import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 import type { BootstrapUser } from 'src/types/bootstrapTypes';
 import {
   analyzeQuestion,
-  createAiChatFolder,
   createAiChatMessage,
   createAiChatSession,
-  deleteAiChatFolder,
-  deleteAiChatSession,
-  isAiBackendConfigured,
   listAiActiveTasks,
   listAiChatFolders,
   listAiChatMessages,
   listAiChatSessions,
-  updateAiChatSession,
 } from './api';
 import { AiEmpty } from './AiEmpty';
 import { AiMessage } from './AiMessage';
-import { AiSidebar } from './AiSidebar';
 import { AiSidePanel } from './AiSidePanel';
 import type {
   AiActiveTask,
@@ -270,20 +264,6 @@ const Chip = styled.button`
 /* InputBox/IconBtn/SendBtn удалены — нижний input-ряд убран в B12
    (ввод идёт через CentralPill в dock'е, которая парит над overlay-ем). */
 
-const MockBanner = styled.div`
-  background: ${DS2_VARS.wnBg};
-  border-bottom: 1px solid rgba(204, 182, 4, 0.25);
-  padding: ${DS2_SPACE.s2}px ${DS2_SPACE.s6}px;
-  font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
-  color: ${DS2_VARS.g700};
-  text-align: center;
-
-  strong {
-    color: ${DS2_VARS.ink};
-  }
-`;
-
 /* Икона side-panel toggle — прямоугольник с вертикальной линией слева
    (sidebar symbol). */
 const IconSidePanel: FC<React.PropsWithChildren<unknown>> = () => (
@@ -347,13 +327,10 @@ export const AiFullView: FC<React.PropsWithChildren<AiFullViewProps>> = ({
 
   const [folders, setFolders] = useState<AiChatFolder[]>([]);
   const [sessions, setSessions] = useState<AiChatSession[]>([]);
-  const [tasks, setTasks] = useState<AiActiveTask[]>([]);
+  const [, setTasks] = useState<AiActiveTask[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
   const [items, setItems] = useState<ChatItem[]>([]);
   const [sending, setSending] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
-  const mockMode = !isAiBackendConfigured();
 
   // Первичная загрузка папок и сессий.
   const refresh = useCallback(async () => {
@@ -424,41 +401,6 @@ export const AiFullView: FC<React.PropsWithChildren<AiFullViewProps>> = ({
     setCurrentSessionId(null);
     setItems([]);
   }, []);
-
-  const handleNewFolder = useCallback(async () => {
-    const name = window.prompt(t('Название новой папки'));
-    if (!name) return;
-    await createAiChatFolder({ name: name.trim() });
-    await refresh();
-  }, [refresh]);
-
-  const handleDeleteFolder = useCallback(
-    async (id: number) => {
-      await deleteAiChatFolder(id);
-      await refresh();
-    },
-    [refresh],
-  );
-
-  const handleDeleteSession = useCallback(
-    async (id: number) => {
-      await deleteAiChatSession(id);
-      if (currentSessionId === id) {
-        setCurrentSessionId(null);
-        setItems([]);
-      }
-      await refresh();
-    },
-    [currentSessionId, refresh],
-  );
-
-  const handleRenameSession = useCallback(
-    async (id: number, title: string) => {
-      await updateAiChatSession(id, { title });
-      await refresh();
-    },
-    [refresh],
-  );
 
   const sendQuery = useCallback(
     async (raw: string) => {

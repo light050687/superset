@@ -70,7 +70,7 @@ const FilterScope: FC<React.PropsWithChildren<FilterScopeProps>> = ({
   );
 
   const updateScopes = useCallback(
-    updatedFormValues => {
+    (updatedFormValues: any) => {
       if (hasScopeBeenModified) {
         return;
       }

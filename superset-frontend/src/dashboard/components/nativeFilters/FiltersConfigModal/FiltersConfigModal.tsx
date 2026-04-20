@@ -674,7 +674,7 @@ function FiltersConfigModal({
   }, [currentFilterId]);
 
   const handleActiveFilterPanelChange = useCallback(
-    key => setActiveFilterPanelKey(key),
+    (key: string | string[]) => setActiveFilterPanelKey(key),
     [setActiveFilterPanelKey],
   );
 

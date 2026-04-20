@@ -68,7 +68,7 @@ export type ComponentType = (typeof componentTypes)[ComponentTypesKeys];
 export type LayoutItem = {
   children: string[];
   parents: string[];
-  type: ComponentType<React.PropsWithChildren<unknown>>;
+  type: ComponentType;
   id: string;
   meta: {
     chartId: number;

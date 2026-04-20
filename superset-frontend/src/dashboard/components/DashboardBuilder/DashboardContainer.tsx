@@ -282,7 +282,7 @@ const DashboardContainer: FC<React.PropsWithChildren<DashboardContainerProps>> =
   }, [onBeforeUnload]);
 
   const renderTabBar = useCallback(() => <></>, []);
-  const handleFocus = useCallback(e => {
+  const handleFocus = useCallback((e: any) => {
     if (
       // prevent scrolling when tabbing to the tab pane
       e.target.classList.contains('ant-tabs-tabpane') &&
@@ -296,7 +296,7 @@ const DashboardContainer: FC<React.PropsWithChildren<DashboardContainerProps>> =
   }, []);
 
   const renderParentSizeChildren = useCallback(
-    ({ width }) => {
+    ({ width }: { width: number }) => {
       // Pages: render ONLY the active page. Both pages share the same chart IDs
       // (COPY_PAGE clones layout IDs but keeps chartId references). Rendering
       // both simultaneously causes duplicate React instances of the same chart,

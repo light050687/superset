@@ -226,7 +226,7 @@ const AgGridDataTable: FunctionComponent<AgGridTableProps> = memo(
     };
 
     const handleColumnHeaderClick = useCallback(
-      params => {
+      (params: any) => {
         const colId = params?.column?.colId;
         const sortDir = params?.column?.sort;
         handleColSort(colId, sortDir);

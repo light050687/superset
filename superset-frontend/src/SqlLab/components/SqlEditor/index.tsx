@@ -630,7 +630,7 @@ const SqlEditor: FC<React.PropsWithChildren<Props>> = ({
   };
 
   const setQueryEditorAndSaveSql = useCallback(
-    sql => {
+    (sql: string) => {
       dispatch(queryEditorSetAndSaveSql(queryEditor, sql));
     },
     [dispatch, queryEditor],

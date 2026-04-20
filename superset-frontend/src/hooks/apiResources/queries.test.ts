@@ -18,7 +18,7 @@
  */
 import rison from 'rison';
 import fetchMock from 'fetch-mock';
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import {
   createWrapper,
   defaultStore as store,
@@ -76,7 +76,7 @@ test('returns api response mapping camelCase keys', async () => {
   const editorId = '23';
   const editorQueryApiRoute = `glob:*/api/v1/query/?q=*`;
   fetchMock.get(editorQueryApiRoute, fakeApiResult);
-  const { result, waitFor } = renderHook(
+  const { result } = renderHook(
     () => useEditorQueriesQuery({ editorId }),
     {
       wrapper: createWrapper({

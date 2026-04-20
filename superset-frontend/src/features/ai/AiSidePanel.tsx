@@ -17,13 +17,6 @@
 import { styled, t } from '@superset-ui/core';
 import { type FC, useEffect, useMemo, useState } from 'react';
 import { DS2_VARS } from 'src/theme/ds2';
-import {
-  createAiChatFolder,
-  deleteAiChatFolder,
-  deleteAiChatSession,
-  updateAiChatFolder,
-  updateAiChatSession,
-} from './api';
 import type { AiChatFolder, AiChatSession } from './types';
 
 interface AiSidePanelProps {
@@ -123,31 +116,6 @@ const SearchInput = styled.input`
   }
 `;
 
-const CloseBtn = styled.button`
-  background: none;
-  border: none;
-  color: ${DS2_VARS.g500};
-  cursor: pointer;
-  padding: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition:
-    background 0.12s ${DS2_VARS.ease},
-    color 0.12s ${DS2_VARS.ease};
-
-  &:hover {
-    background: ${DS2_VARS.g100};
-    color: ${DS2_VARS.ink};
-  }
-
-  svg {
-    width: 12px;
-    height: 12px;
-  }
-`;
-
 /* Primary-кнопка DS 2.0: ink-фон + surface-текст. Контрастно и одинаково
    выразительно в обеих темах (раньше использовался cSky, у которого hex
    разный в light/dark → кнопка выглядела по-разному). */
@@ -200,13 +168,6 @@ const Body = styled.div`
   }
 `;
 
-const SectionLabelRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px 2px;
-`;
-
 const SectionLabel = styled.span`
   font-family: ${DS2_VARS.fontMono};
   font-size: 9.5px;
@@ -217,36 +178,9 @@ const SectionLabel = styled.span`
   flex: 1;
 `;
 
-const SectionAddBtn = styled.button`
-  background: none;
-  border: 1px solid ${DS2_VARS.g200};
-  color: ${DS2_VARS.g500};
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition:
-    border-color 0.1s ${DS2_VARS.ease},
-    color 0.1s ${DS2_VARS.ease},
-    background 0.1s ${DS2_VARS.ease};
-
-  &:hover {
-    border-color: ${DS2_VARS.cSky};
-    color: ${DS2_VARS.cSky};
-    background: rgba(59, 139, 217, 0.12);
-  }
-
-  svg {
-    width: 8px;
-    height: 8px;
-  }
-`;
-
-const FolderRow = styled.div<{ $selected?: boolean }>`
+const FolderRow = styled.button<{ $selected?: boolean }>`
+  border: none;
+  text-align: left;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -265,40 +199,6 @@ const FolderRow = styled.div<{ $selected?: boolean }>`
   &:hover {
     background: ${({ $selected }) =>
       $selected ? 'rgba(59, 139, 217, 0.18)' : DS2_VARS.g100};
-  }
-`;
-
-const RowActions = styled.span`
-  display: none;
-  gap: 2px;
-  margin-left: 4px;
-
-  ${FolderRow}:hover & {
-    display: inline-flex;
-  }
-`;
-
-const RowActBtn = styled.button`
-  background: none;
-  border: none;
-  color: ${DS2_VARS.g500};
-  width: 18px;
-  height: 18px;
-  border-radius: 3px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-
-  &:hover {
-    background: ${DS2_VARS.g200};
-    color: ${DS2_VARS.ink};
-  }
-
-  svg {
-    width: 10px;
-    height: 10px;
   }
 `;
 
@@ -379,12 +279,6 @@ const Empty = styled.div`
 `;
 
 /* ─── icons ─── */
-
-const IconClose: FC<React.PropsWithChildren<unknown>> = () => (
-  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M3 3l6 6M9 3l-6 6" />
-  </svg>
-);
 
 const IconPlus: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.8}>

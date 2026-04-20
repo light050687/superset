@@ -158,7 +158,7 @@ const ColumnSelectPopover = ({
   );
 
   const onSqlExpressionChange = useCallback(
-    sqlExpression => {
+    (sqlExpression: string) => {
       setAdhocColumn({ label, sqlExpression, expressionType: 'SQL' });
       setSelectedSimpleColumn(undefined);
       setSelectedCalculatedColumn(undefined);
@@ -167,7 +167,7 @@ const ColumnSelectPopover = ({
   );
 
   const onCalculatedColumnChange = useCallback(
-    selectedColumnName => {
+    (selectedColumnName: string) => {
       const selectedColumn = calculatedColumns.find(
         col => col.column_name === selectedColumnName,
       );
@@ -182,7 +182,7 @@ const ColumnSelectPopover = ({
   );
 
   const onSimpleColumnChange = useCallback(
-    selectedColumnName => {
+    (selectedColumnName: string) => {
       const selectedColumn = simpleColumns.find(
         col => col.column_name === selectedColumnName,
       );
@@ -266,7 +266,7 @@ const ColumnSelectPopover = ({
   ]);
 
   const onTabChange = useCallback(
-    tab => {
+    (tab: string) => {
       getCurrentTab(tab);
       setSelectedTab(tab);
       // @ts-ignore

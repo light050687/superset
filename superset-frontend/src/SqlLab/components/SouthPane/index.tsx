@@ -133,7 +133,7 @@ const SouthPane = ({
     dispatch(setActiveSouthPaneTab(id));
   };
   const removeTable = useCallback(
-    (key, action) => {
+    (key: any, action: string) => {
       if (action === 'remove') {
         const table = pinnedTables.find(
           ({ dbId, catalog, schema, name }) =>

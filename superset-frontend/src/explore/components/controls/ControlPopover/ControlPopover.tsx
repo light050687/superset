@@ -90,7 +90,7 @@ const ControlPopover: FC<React.PropsWithChildren<PopoverProps>> = ({
   }, [getVisibilityRatio]);
 
   const changeContainerScrollStatus = useCallback(
-    visible => {
+    (visible: boolean) => {
       const element = getSectionContainerElement();
       if (element) {
         element.style.setProperty(
