@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { createRef, useCallback, useMemo } from 'react';
+import React, { createRef, useCallback, useMemo } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { nanoid } from 'nanoid';
 import Tabs from '@superset-ui/core/components/Tabs';
@@ -133,8 +133,8 @@ const SouthPane = ({
     dispatch(setActiveSouthPaneTab(id));
   };
   const removeTable = useCallback(
-    (key: any, action: string) => {
-      if (action === 'remove') {
+    (key: React.MouseEvent | React.KeyboardEvent | string, action: 'add' | 'remove') => {
+      if (action === 'remove' && typeof key === 'string') {
         const table = pinnedTables.find(
           ({ dbId, catalog, schema, name }) =>
             [dbId, catalog, schema, name].join(':') === key,

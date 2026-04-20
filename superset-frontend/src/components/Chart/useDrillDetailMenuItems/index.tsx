@@ -117,7 +117,7 @@ export const useDrillDetailMenuItems = ({
   );
 
   const openModal = useCallback(
-    (filters: any, event: any) => {
+    (filters: BinaryQueryObjectFilterClause[], event: MouseEvent) => {
       onClick(event);
       onSelection();
       setFilters(filters);

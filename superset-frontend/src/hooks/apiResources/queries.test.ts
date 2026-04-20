@@ -116,7 +116,7 @@ test('merges paginated results', async () => {
   const editorId = '23';
   const editorQueryApiRoute = `glob:*/api/v1/query/?q=*`;
   fetchMock.get(editorQueryApiRoute, fakeApiResult);
-  const { waitFor } = renderHook(() => useEditorQueriesQuery({ editorId }), {
+  renderHook(() => useEditorQueriesQuery({ editorId }), {
     wrapper: createWrapper({
       useRedux: true,
       store,

@@ -36,6 +36,18 @@ import DashboardHeader from 'src/dashboard/components/Header';
 import { Icons } from '@superset-ui/core/components/Icons';
 import IconButton from 'src/dashboard/components/IconButton';
 import { Droppable } from 'src/dashboard/components/dnd/DragDroppable';
+
+/**
+ * Shape of the object produced by DragDroppable's drop() handler
+ * (src/dashboard/components/dnd/handleDrop.js) and consumed by the
+ * untyped `handleComponentDrop` thunk.
+ */
+type DashboardDropResult = {
+  source: { id: string | null; type?: string; index: number };
+  destination?: { id: string; type: string; index: number };
+  dragging: { id: string | number; type: string; meta?: Record<string, any> };
+  position?: string;
+};
 import DashboardComponent from 'src/dashboard/containers/DashboardComponent';
 import WithPopoverMenu from 'src/dashboard/components/menu/WithPopoverMenu';
 import getDirectPathToTabIndex from 'src/dashboard/util/getDirectPathToTabIndex';
@@ -618,7 +630,8 @@ const DashboardBuilder = () => {
   }, [dashboardLayout, dispatch]);
 
   const handleDrop = useCallback(
-    (dropResult: any) => dispatch(handleComponentDrop(dropResult)),
+    (dropResult: DashboardDropResult) =>
+      dispatch(handleComponentDrop(dropResult)),
     [dispatch],
   );
 

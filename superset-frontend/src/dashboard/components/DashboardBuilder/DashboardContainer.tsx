@@ -18,7 +18,7 @@
  */
 // ParentSize uses resize observer so the dashboard will update size
 // when its container size changes, due to e.g., builder side panel opening
-import {
+import React, {
   FC,
   memo,
   useCallback,
@@ -282,10 +282,10 @@ const DashboardContainer: FC<React.PropsWithChildren<DashboardContainerProps>> =
   }, [onBeforeUnload]);
 
   const renderTabBar = useCallback(() => <></>, []);
-  const handleFocus = useCallback((e: any) => {
+  const handleFocus = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
     if (
       // prevent scrolling when tabbing to the tab pane
-      e.target.classList.contains('ant-tabs-tabpane') &&
+      (e.target as HTMLElement).classList.contains('ant-tabs-tabpane') &&
       window.scrollY < TOP_OF_PAGE_RANGE
     ) {
       // prevent window from jumping down when tabbing

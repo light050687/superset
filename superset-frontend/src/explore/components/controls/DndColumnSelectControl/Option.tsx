@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { css, styled, t, useTheme } from '@superset-ui/core';
 import { Icons, InfoTooltip } from '@superset-ui/core/components';
 import {
@@ -42,7 +42,7 @@ export default function Option({
 }: OptionProps) {
   const theme = useTheme();
   const onClickClose = useCallback(
-    (e: any) => {
+    (e: React.MouseEvent<HTMLSpanElement>) => {
       e.stopPropagation();
       clickClose(index);
     },

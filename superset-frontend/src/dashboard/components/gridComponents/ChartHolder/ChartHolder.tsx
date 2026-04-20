@@ -17,6 +17,7 @@
  * under the License.
  */
 import { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react';
+import type { ConnectDragSource } from 'react-dnd';
 
 import { ResizeCallback, ResizeStartCallback } from 're-resizable';
 import cx from 'classnames';
@@ -275,7 +276,7 @@ const ChartHolder = ({
   }, []);
 
   const renderChild = useCallback(
-    ({ dragSourceRef }: { dragSourceRef: any }) => (
+    ({ dragSourceRef }: { dragSourceRef?: ConnectDragSource }) => (
       <ResizableContainer
         id={component.id}
         adjustableWidth={parentComponent.type === ROW_TYPE}

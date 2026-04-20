@@ -350,7 +350,19 @@ export default function TableChart<D extends DataRecord = DataRecord>(
   );
 
   const timestampFormatter = useCallback(
-    (value: any) => getTimeFormatterForGranularity(timeGrain)(value),
+    (value: DataRecordValue) => {
+      // getTimeFormatterForGranularity expects Date | number | null | undefined;
+      // coerce other DataRecordValue members (string/boolean/bigint) to null
+      // since only timestamp cells reach this formatter in practice.
+      const coerced =
+        value instanceof Date ||
+        typeof value === 'number' ||
+        value === null ||
+        value === undefined
+          ? value
+          : null;
+      return getTimeFormatterForGranularity(timeGrain)(coerced);
+    },
     [timeGrain],
   );
   const [tableSize, setTableSize] = useState<TableSize>({

@@ -161,7 +161,19 @@ export default function TableChart<D extends DataRecord = DataRecord>(
   );
 
   const timestampFormatter = useCallback(
-    (value: any) => getTimeFormatterForGranularity(timeGrain)(value),
+    (value: DataRecordValue) => {
+      // getTimeFormatterForGranularity expects Date | number | null | undefined;
+      // strings/booleans/bigints are unreachable for timestamp cells but
+      // must be accepted to satisfy GetCrossFilterDataMaskProps.
+      const coerced =
+        value instanceof Date ||
+        typeof value === 'number' ||
+        value === null ||
+        value === undefined
+          ? value
+          : null;
+      return getTimeFormatterForGranularity(timeGrain)(coerced);
+    },
     [timeGrain],
   );
 

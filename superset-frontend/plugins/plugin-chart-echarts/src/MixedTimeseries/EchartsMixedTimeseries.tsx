@@ -57,7 +57,7 @@ export default function EchartsMixedTimeseries({
   );
 
   const getCrossFilterDataMask = useCallback(
-    (seriesName: any, seriesIndex: any) => {
+    (seriesName: string, seriesIndex: number) => {
       const selected: string[] = Object.values(selectedValues || {});
       let values: string[];
       if (selected.includes(seriesName)) {

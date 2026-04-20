@@ -60,10 +60,7 @@ describe('useDashboardDatasets', () => {
       result: mockDatasets,
     });
 
-    const { result} = renderHook(() =>
-      useDashboardDatasets(1),
-    );
-    await waitFor(() => {});
+    const { result } = renderHook(() => useDashboardDatasets(1));
 
     const expectedContent = [
       {
@@ -84,6 +81,8 @@ describe('useDashboardDatasets', () => {
         },
       },
     ];
-    expect(result.current.result).toEqual(expectedContent);
+    await waitFor(() =>
+      expect(result.current.result).toEqual(expectedContent),
+    );
   });
 });

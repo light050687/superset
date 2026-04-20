@@ -26,7 +26,13 @@ import {
 import { useCallback } from 'react';
 import Echart from '../components/Echart';
 import { NULL_STRING } from '../constants';
-import { EventHandlers } from '../types';
+import { EventHandlers, TreePathInfo } from '../types';
+
+type TreemapDataParam = {
+  name?: string;
+  value?: number | number[];
+  children?: unknown[];
+} | null;
 import { extractTreePathInfo } from './constants';
 import { TreemapTransformedProps } from './types';
 import { formatSeriesName } from '../utils/series';
@@ -46,7 +52,7 @@ export default function EchartsTreemap({
   coltypeMapping,
 }: TreemapTransformedProps) {
   const getCrossFilterDataMask = useCallback(
-    (data: any, treePathInfo: any) => {
+    (data: TreemapDataParam, treePathInfo: TreePathInfo[] | undefined) => {
       if (data?.children) {
         return undefined;
       }
@@ -96,7 +102,7 @@ export default function EchartsTreemap({
   );
 
   const handleChange = useCallback(
-    (data: any, treePathInfo: any) => {
+    (data: TreemapDataParam, treePathInfo: TreePathInfo[] | undefined) => {
       if (!emitCrossFilters || groupby.length === 0) {
         return;
       }

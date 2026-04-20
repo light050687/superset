@@ -17,6 +17,7 @@
  * under the License.
  */
 import { useMemo, useRef, useCallback } from 'react';
+import type { IRowNode } from 'ag-grid-community';
 import { GridSize } from 'src/components/GridTable/constants';
 import { GridTable } from 'src/components/GridTable';
 import { type ColDef } from 'src/components/GridTable/types';
@@ -112,7 +113,7 @@ export const FilterableTable = ({
   const keyword = useRef<string | undefined>(filterText);
   keyword.current = filterText;
 
-  const keywordFilter = useCallback((node: any) => {
+  const keywordFilter = useCallback((node: IRowNode<Datum>) => {
     if (keyword.current && node.data) {
       return hasMatch(keyword.current, node.data);
     }
