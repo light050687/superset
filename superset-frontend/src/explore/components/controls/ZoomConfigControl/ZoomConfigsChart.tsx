@@ -28,7 +28,7 @@ import {
   zoomConfigsToData,
 } from './zoomUtil';
 
-export const ZoomConfigsChart: FC<ZoomConfigsChartProps> = ({
+export const ZoomConfigsChart: FC<React.PropsWithChildren<ZoomConfigsChartProps>> = ({
   value,
   onChange = () => {},
 }) => {

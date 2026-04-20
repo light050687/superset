@@ -86,7 +86,7 @@ interface DepartmentTileProps {
   onItemDropped?: () => void;
 }
 
-export const DepartmentTile: FC<DepartmentTileProps> = ({
+export const DepartmentTile: FC<React.PropsWithChildren<DepartmentTileProps>> = ({
   folder,
   onClick,
   onItemDropped,

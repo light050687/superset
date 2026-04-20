@@ -55,7 +55,7 @@ const customIcons = [
   'Undo',
 ] as const;
 
-type CustomIconType = Record<(typeof customIcons)[number], FC<IconType>>;
+type CustomIconType = Record<(typeof customIcons)[number], FC<React.PropsWithChildren<IconType>>>;
 
 const iconOverrides: CustomIconType = {} as CustomIconType;
 customIcons.forEach(customIcon => {
@@ -71,7 +71,7 @@ export type IconNameType =
   | keyof typeof antdEnhancedIcons
   | keyof typeof iconOverrides;
 
-type IconComponentType = Record<IconNameType, FC<IconType>>;
+type IconComponentType = Record<IconNameType, FC<React.PropsWithChildren<IconType>>>;
 
 export const Icons: IconComponentType = {
   ...antdEnhancedIcons,

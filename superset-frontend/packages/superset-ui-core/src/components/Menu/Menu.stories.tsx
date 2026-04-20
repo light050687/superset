@@ -20,7 +20,7 @@ import { Menu, MainNav } from '.';
 
 export default {
   title: 'Components/Menu',
-  component: Menu as React.FC,
+  component: Menu as React.FC<React.PropsWithChildren<unknown>>,
 };
 
 export const MainNavigation = (args: any) => (

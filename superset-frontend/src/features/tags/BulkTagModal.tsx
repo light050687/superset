@@ -44,7 +44,7 @@ interface BulkTagModalProps {
   resourceName: string;
 }
 
-const BulkTagModal: FC<BulkTagModalProps> = ({
+const BulkTagModal: FC<React.PropsWithChildren<BulkTagModalProps>> = ({
   show,
   selected = [],
   onHide,

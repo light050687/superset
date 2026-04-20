@@ -35,9 +35,7 @@ const genAriaLabel = (fileName: string) => {
   return name.toLowerCase();
 };
 
-export const BaseIconComponent: React.FC<
-  BaseIconProps & Omit<IconType, 'component'>
-> = ({
+export const BaseIconComponent: React.FC<React.PropsWithChildren<BaseIconProps & Omit<IconType, 'component'>>> = ({
   component: Component,
   iconColor,
   iconSize,

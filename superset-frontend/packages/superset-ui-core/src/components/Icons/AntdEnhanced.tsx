@@ -289,7 +289,7 @@ type AntdIconNames = keyof typeof AntdIcons;
 
 export const antdEnhancedIcons: Record<
   AntdIconNames,
-  FC<IconType>
+  FC<React.PropsWithChildren<IconType>>
 > = Object.keys(AntdIcons)
   .filter(key => !EXCLUDED_ICONS.some(excluded => key.includes(excluded)))
   .reduce(
@@ -303,5 +303,5 @@ export const antdEnhancedIcons: Record<
       );
       return acc;
     },
-    {} as Record<AntdIconNames, FC<IconType>>,
+    {} as Record<AntdIconNames, FC<React.PropsWithChildren<IconType>>>,
   );

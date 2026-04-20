@@ -27,12 +27,12 @@ export interface RegistryMetadata {
 
 export interface ComponentItem<Metadata = RegistryMetadata> {
   metadata: Metadata;
-  loadComponent: () => Promise<{ default: ComponentType<any> }>;
+  loadComponent: () => Promise<{ default: ComponentType<React.PropsWithChildren<any>> }>;
 }
 
 export interface ComponentRegistry<Metadata = RegistryMetadata> {
   metadata: Metadata;
-  Component: ComponentType<any>;
+  Component: ComponentType<React.PropsWithChildren<any>>;
 }
 
 export type FunctionalRegistryState<RegistryT> = {

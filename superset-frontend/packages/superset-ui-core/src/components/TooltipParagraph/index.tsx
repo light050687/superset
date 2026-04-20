@@ -23,7 +23,7 @@ import {
   Tooltip,
 } from '@superset-ui/core/components';
 
-const TooltipParagraph: FC<ParagraphProps> = ({
+const TooltipParagraph: FC<React.PropsWithChildren<ParagraphProps>> = ({
   children,
   ellipsis,
   ...props

@@ -48,7 +48,7 @@ export type PopoverProps = BasePopoverProps & {
   getVisibilityRatio?: typeof getElementVisibilityRatio;
 };
 
-const ControlPopover: FC<PopoverProps> = ({
+const ControlPopover: FC<React.PropsWithChildren<PopoverProps>> = ({
   getPopupContainer,
   getVisibilityRatio = getElementVisibilityRatio,
   open: visibleProp,

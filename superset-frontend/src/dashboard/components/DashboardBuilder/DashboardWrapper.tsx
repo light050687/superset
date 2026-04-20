@@ -113,7 +113,7 @@ const StyledDiv = styled.div`
   `}
 `;
 
-const DashboardWrapper: FC<PropsWithChildren<{}>> = ({ children }) => {
+const DashboardWrapper: FC<React.PropsWithChildren<PropsWithChildren<{}>>> = ({ children }) => {
   const editMode = useSelector<RootState, boolean>(
     state => state.dashboardState.editMode,
   );

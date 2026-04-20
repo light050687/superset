@@ -32,7 +32,7 @@ interface ShellContextValue {
 
 const ShellContext = createContext<ShellContextValue | null>(null);
 
-export const ShellProvider: FC<{ children: ReactNode }> = ({ children }) => {
+export const ShellProvider: FC<React.PropsWithChildren<{ children: ReactNode }>> = ({ children }) => {
   const [openedDrawer, setOpenedDrawer] = useState<DrawerKind | null>(null);
   const [activeRailId, setActiveRailId] = useState<string | null>(null);
 

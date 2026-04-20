@@ -146,7 +146,7 @@ const createFormValues = (
   };
 };
 
-const ScopingTree: FC<ScopingTreeProps> = ({
+const ScopingTree: FC<React.PropsWithChildren<ScopingTreeProps>> = ({
   formScope,
   initialScope,
   forceUpdate,

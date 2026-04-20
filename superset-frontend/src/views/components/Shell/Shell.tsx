@@ -188,7 +188,7 @@ function extractInitials(user?: BootstrapUser): string {
  * Новый shell (Rail + Drawer + main), заменяет классический <Menu>.
  * Скрывается в embedded-режиме (hideNav=true) — тогда children рендерятся без shell.
  */
-export const Shell: FC<ShellProps> = ({
+export const Shell: FC<React.PropsWithChildren<ShellProps>> = ({
   user,
   menu,
   isFrontendRoute,

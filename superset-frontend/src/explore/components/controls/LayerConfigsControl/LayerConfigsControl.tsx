@@ -79,7 +79,7 @@ const getEmptyEditItem = (): EditItem => ({
   },
 });
 
-export const LayerConfigsControl: FC<LayerConfigsControlProps> = ({
+export const LayerConfigsControl: FC<React.PropsWithChildren<LayerConfigsControlProps>> = ({
   value,
   onChange = () => {},
   name,

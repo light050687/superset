@@ -432,7 +432,7 @@ function parseDrag(raw: string): DragPayload | null {
 
 /* ─── Component ─── */
 
-export const CatalogManageView: FC<CatalogManageViewProps> = ({
+export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProps>> = ({
   folders,
   onChanged,
 }) => {

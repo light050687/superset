@@ -389,7 +389,7 @@ export const TRANSLATIONS = {
   ),
 };
 
-const NotificationMethodAdd: FunctionComponent<NotificationMethodAddProps> = ({
+const NotificationMethodAdd: FunctionComponent<React.PropsWithChildren<NotificationMethodAddProps>> = ({
   status = 'active',
   onClick,
 }) => {
@@ -413,7 +413,7 @@ const NotificationMethodAdd: FunctionComponent<NotificationMethodAddProps> = ({
   );
 };
 
-const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
+const AlertReportModal: FunctionComponent<React.PropsWithChildren<AlertReportModalProps>> = ({
   addDangerToast,
   onAdd,
   onHide,

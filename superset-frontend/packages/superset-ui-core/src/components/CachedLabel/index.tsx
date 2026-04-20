@@ -25,7 +25,7 @@ import { Tooltip } from '../Tooltip';
 import { TooltipContent } from './TooltipContent';
 import type { CacheLabelProps } from './types';
 
-export const CachedLabel: FC<CacheLabelProps> = ({
+export const CachedLabel: FC<React.PropsWithChildren<CacheLabelProps>> = ({
   className,
   onClick,
   cachedTimestamp,

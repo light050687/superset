@@ -33,7 +33,7 @@ export interface IProps {
   showDbInstallInstructions: boolean;
 }
 
-export const ImportErrorAlert: FunctionComponent<IProps> = ({
+export const ImportErrorAlert: FunctionComponent<React.PropsWithChildren<IProps>> = ({
   errorMessage,
   showDbInstallInstructions,
 }) => (

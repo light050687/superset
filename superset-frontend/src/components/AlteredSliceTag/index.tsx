@@ -30,7 +30,7 @@ import {
 import type { AlteredSliceTagProps, ControlMap, RowType } from './types';
 import { getRowsFromDiffs } from './utils';
 
-export const AlteredSliceTag: FC<AlteredSliceTagProps> = props => {
+export const AlteredSliceTag: FC<React.PropsWithChildren<AlteredSliceTagProps>> = props => {
   const [rows, setRows] = useState<RowType[]>([]);
   const [hasDiffs, setHasDiffs] = useState<boolean>(false);
 

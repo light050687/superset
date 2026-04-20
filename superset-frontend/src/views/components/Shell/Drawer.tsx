@@ -197,7 +197,7 @@ const DEFAULT_TITLES: Record<DrawerKind, string> = {
   create: 'Создать',
 };
 
-export const Drawer: FC<DrawerProps> = ({
+export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
   titles = {},
   content = {},
   footer = {},

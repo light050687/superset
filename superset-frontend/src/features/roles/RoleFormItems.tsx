@@ -51,7 +51,7 @@ export const RoleNameField = () => (
   </FormItem>
 );
 
-export const PermissionsField: FC<PermissionsFieldProps> = ({
+export const PermissionsField: FC<React.PropsWithChildren<PermissionsFieldProps>> = ({
   permissions,
 }) => (
   <FormItem name="rolePermissions" label={t('Permissions')}>
@@ -83,7 +83,7 @@ export const UsersField = ({ addDangerToast, loading }: UsersFieldProps) => (
   </FormItem>
 );
 
-export const GroupsField: FC<GroupsFieldProps> = ({ groups }) => (
+export const GroupsField: FC<React.PropsWithChildren<GroupsFieldProps>> = ({ groups }) => (
   <FormItem name="roleGroups" label={t('Groups')}>
     <Select
       mode="multiple"

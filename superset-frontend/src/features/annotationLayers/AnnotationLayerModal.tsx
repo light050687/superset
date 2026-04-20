@@ -85,7 +85,7 @@ const LayerContainer = styled.div`
   }
 `;
 
-const AnnotationLayerModal: FunctionComponent<AnnotationLayerModalProps> = ({
+const AnnotationLayerModal: FunctionComponent<React.PropsWithChildren<AnnotationLayerModalProps>> = ({
   addDangerToast,
   addSuccessToast,
   onLayerAdd,

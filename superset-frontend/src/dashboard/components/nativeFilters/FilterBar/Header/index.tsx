@@ -66,7 +66,7 @@ type HeaderProps = {
   isMobile?: boolean;
 };
 
-const Header: FC<HeaderProps> = ({ toggleFiltersBar, isMobile }) => (
+const Header: FC<React.PropsWithChildren<HeaderProps>> = ({ toggleFiltersBar, isMobile }) => (
   <Wrapper>
     <TitleArea>
       <span>{t('Filters')}</span>

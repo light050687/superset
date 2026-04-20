@@ -32,7 +32,7 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-const Geo: FC<{ id: number }> = ({ id }) => {
+const Geo: FC<React.PropsWithChildren<{ id: number }>> = ({ id }) => {
   const rng = mulberry32(id || 7);
   const dots = Array.from({ length: 10 }, (_, j) => ({
     cx: 15 + Math.floor(rng() * 220),
@@ -61,7 +61,7 @@ const Geo: FC<{ id: number }> = ({ id }) => {
   );
 };
 
-const Table: FC<{ id: number }> = ({ id }) => {
+const Table: FC<React.PropsWithChildren<{ id: number }>> = ({ id }) => {
   const rng = mulberry32(id || 11);
   const rows = Array.from({ length: 4 }, (_, j) => ({
     y: 6 + j * 17,
@@ -97,7 +97,7 @@ const Table: FC<{ id: number }> = ({ id }) => {
   );
 };
 
-const Doc: FC = () => (
+const Doc: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 260 75" style={{ width: '100%', height: '100%' }} aria-hidden>
     <rect x={16} y={8} width={100} height={9} rx={2} fill={DS2_VARS.g300} opacity={0.5} />
     <rect x={16} y={24} width={180} height={5} rx={2} fill={DS2_VARS.g200} opacity={0.4} />
@@ -106,7 +106,7 @@ const Doc: FC = () => (
   </svg>
 );
 
-const Line: FC<{ id: number }> = ({ id }) => {
+const Line: FC<React.PropsWithChildren<{ id: number }>> = ({ id }) => {
   const rng = mulberry32(id || 13);
   const points = Array.from({ length: 10 }, (_, x) => {
     const y = 65 - (12 + Math.floor(rng() * 45));
@@ -129,7 +129,7 @@ const Line: FC<{ id: number }> = ({ id }) => {
   );
 };
 
-const Bars: FC<{ id: number }> = ({ id }) => {
+const Bars: FC<React.PropsWithChildren<{ id: number }>> = ({ id }) => {
   const rng = mulberry32(id || 17);
   const bars = Array.from({ length: 9 }, (_, x) => {
     const h = 10 + Math.floor(rng() * 45);
@@ -157,7 +157,7 @@ const Bars: FC<{ id: number }> = ({ id }) => {
   );
 };
 
-export const BentoPreview: FC<PreviewProps> = ({ id, kind }) => {
+export const BentoPreview: FC<React.PropsWithChildren<PreviewProps>> = ({ id, kind }) => {
   switch (kind) {
     case 'geo':
       return <Geo id={id} />;

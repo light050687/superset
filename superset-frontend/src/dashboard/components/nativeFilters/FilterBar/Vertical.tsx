@@ -114,7 +114,7 @@ const FilterControlsWrapper = styled.div<{ isMobile?: boolean }>`
 `;
 
 export const FilterBarScrollContext = createContext(false);
-const VerticalFilterBar: FC<VerticalBarProps> = ({
+const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
   actions,
   canEdit,
   dataMaskSelected,

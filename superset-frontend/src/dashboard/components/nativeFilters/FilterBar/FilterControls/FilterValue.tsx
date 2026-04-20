@@ -92,7 +92,7 @@ const useShouldFilterRefresh = () => {
   return !isDashboardRefreshing && isFilterRefreshing;
 };
 
-const FilterValue: FC<FilterControlProps> = ({
+const FilterValue: FC<React.PropsWithChildren<FilterControlProps>> = ({
   dataMaskSelected,
   filter,
   onFilterSelectionChange,

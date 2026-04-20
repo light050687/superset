@@ -27,7 +27,7 @@ export interface ListViewCardProps {
   title?: ReactNode;
   subtitle?: ReactNode;
   url?: string;
-  linkComponent?: ComponentType<LinkProps>;
+  linkComponent?: ComponentType<React.PropsWithChildren<LinkProps>>;
   imgURL?: string | null;
   imgFallbackURL?: string;
   imgPosition?: BackgroundPosition;

@@ -136,14 +136,14 @@ const ComingSoonBadge = styled.span`
 
 /* ─── SVG иконки (мокап) ─── */
 
-const IconDashboard: FC = () => (
+const IconDashboard: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <rect x="1" y="1" width="14" height="14" rx="2" />
     <path d="M1 5h14M5 1v14" />
   </svg>
 );
 
-const IconChart: FC = () => (
+const IconChart: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <rect x="2" y="6" width="3" height="8" rx="1" />
     <rect x="6.5" y="3" width="3" height="11" rx="1" />
@@ -151,14 +151,14 @@ const IconChart: FC = () => (
   </svg>
 );
 
-const IconTable: FC = () => (
+const IconTable: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <rect x="2" y="2" width="12" height="12" rx="1" />
     <path d="M2 6h12M2 10h12M6 2v12" />
   </svg>
 );
 
-const IconDoc: FC = () => (
+const IconDoc: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M4 2h6l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" />
     <path d="M10 2v4h4" />
@@ -182,7 +182,7 @@ interface SectionDef {
   items: CreateItem[];
 }
 
-export const CreateDrawer: FC = () => {
+export const CreateDrawer: FC<React.PropsWithChildren<unknown>> = () => {
   const history = useHistory();
   const { closeDrawer } = useShell();
 

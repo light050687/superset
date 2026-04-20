@@ -7,7 +7,7 @@ interface LayerGroupsProps {
   onToggle: (groupId: string) => void;
 }
 
-const LayerGroups: FC<LayerGroupsProps> = ({ groups, onToggle }) => (
+const LayerGroups: FC<React.PropsWithChildren<LayerGroupsProps>> = ({ groups, onToggle }) => (
   <>
     {groups.map(group => (
       <GroupWrapper key={group.id}>

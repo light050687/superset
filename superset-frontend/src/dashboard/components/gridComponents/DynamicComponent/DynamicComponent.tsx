@@ -55,7 +55,7 @@ type DynamicComponentProps = {
   id: string;
 };
 
-const DynamicComponent: FC<DynamicComponentProps> = ({
+const DynamicComponent: FC<React.PropsWithChildren<DynamicComponentProps>> = ({
   component,
   parentComponent,
   index,

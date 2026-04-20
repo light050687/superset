@@ -39,13 +39,10 @@ function DefaultPlaceholder({
   return (
     // since `width` defaults to 100%, we can display the placeholder once
     // height is specified.
-    (height && (
-      <div key="async-asm-placeholder" style={{ width, height, ...style }}>
-        {showLoadingForImport && <Loading position="floating" />}
-      </div>
-    )) ||
-    // `|| null` is for in case of height=0.
-    null
+    ((height && (<div key="async-asm-placeholder" style={{ width, height, ...style }}>
+      {showLoadingForImport && <Loading position="floating" />}
+    </div>)) || // `|| null` is for in case of height=0.
+    null)
   );
 }
 
@@ -55,7 +52,7 @@ function DefaultPlaceholder({
  */
 export function AsyncEsmComponent<
   P = PlaceholderProps,
-  M = ComponentType<P> | { default: ComponentType<P> },
+  M = ComponentType<React.PropsWithChildren<P>> | { default: ComponentType<React.PropsWithChildren<P>> },
 >(
   /**
    * A promise generator that returns the React component to render.
@@ -64,14 +61,12 @@ export function AsyncEsmComponent<
   /**
    * Placeholder while still importing.
    */
-  placeholder: ComponentType<
-    PlaceholderProps & Partial<P>
-  > | null = DefaultPlaceholder,
+  placeholder: ComponentType<React.PropsWithChildren<PlaceholderProps & Partial<P>>> | null = DefaultPlaceholder,
 ) {
   // component props + placeholder props
   type FullProps = P & PlaceholderProps;
   let promise: Promise<M> | undefined;
-  let component: ComponentType<FullProps>;
+  let component: ComponentType<React.PropsWithChildren<FullProps>>;
 
   /**
    * Safely wait for promise, make sure the loader function only execute once.
@@ -84,22 +79,22 @@ export function AsyncEsmComponent<
     }
     if (!component) {
       promise.then(result => {
-        component = ((result as { default?: ComponentType<P> }).default ||
-          result) as ComponentType<FullProps>;
+        component = ((result as { default?: ComponentType<React.PropsWithChildren<P>> }).default ||
+          result) as ComponentType<React.PropsWithChildren<FullProps>>;
       });
     }
     return promise;
   }
 
   type AsyncComponent = ForwardRefExoticComponent<
-    PropsWithoutRef<FullProps> & RefAttributes<ComponentType<FullProps>>
+    PropsWithoutRef<FullProps> & RefAttributes<ComponentType<React.PropsWithChildren<FullProps>>>
   > & {
     preload?: typeof waitForPromise;
   };
 
   const AsyncComponent: AsyncComponent = forwardRef(function AsyncComponent(
     props: FullProps,
-    ref: RefObject<ComponentType<FullProps>>,
+    ref: RefObject<ComponentType<React.PropsWithChildren<FullProps>>>,
   ) {
     const [loaded, setLoaded] = useState(component !== undefined);
     useEffect(() => {
@@ -120,7 +115,7 @@ export function AsyncEsmComponent<
     return Component ? (
       // placeholder does not get the ref
       // @ts-ignore: Suppress TypeScript error for ref assignment
-      <Component ref={Component === component ? ref : null} {...props} />
+      (<Component ref={Component === component ? ref : null} {...props} />)
     ) : null;
   });
   // preload the async component before rendering

@@ -162,7 +162,7 @@ export interface SubMenuProps {
 
 const { SubMenu } = MainNav;
 
-const SubMenuComponent: FunctionComponent<SubMenuProps> = props => {
+const SubMenuComponent: FunctionComponent<React.PropsWithChildren<SubMenuProps>> = props => {
   const [showMenu, setMenu] = useState<MenuMode>('horizontal');
   const [navRightStyle, setNavRightStyle] = useState('nav-right');
   const theme = useTheme();

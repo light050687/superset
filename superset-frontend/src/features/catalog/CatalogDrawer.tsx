@@ -468,7 +468,7 @@ function iconForKind(kind: string) {
   return <IconDashboard />;
 }
 
-export const CatalogDrawer: FC<CatalogDrawerProps> = ({
+export const CatalogDrawer: FC<React.PropsWithChildren<CatalogDrawerProps>> = ({
   canManage = true,
   onSelectFolder,
 }) => {

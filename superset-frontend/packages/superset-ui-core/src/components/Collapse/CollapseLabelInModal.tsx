@@ -26,7 +26,7 @@ interface CollapseLabelInModalProps {
   testId?: string;
 }
 
-export const CollapseLabelInModal: React.FC<CollapseLabelInModalProps> = ({
+export const CollapseLabelInModal: React.FC<React.PropsWithChildren<CollapseLabelInModalProps>> = ({
   title,
   subtitle,
   validateCheckStatus,

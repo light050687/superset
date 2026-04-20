@@ -33,7 +33,7 @@ interface MapCanvasProps {
   onStyleReady: () => void;
 }
 
-const MapCanvas: FC<MapCanvasProps> = ({
+const MapCanvas: FC<React.PropsWithChildren<MapCanvasProps>> = ({
   theme,
   language,
   onMapReady,

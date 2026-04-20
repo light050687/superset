@@ -22,7 +22,7 @@ import { Tag } from 'src/components';
 import { FC } from 'react';
 import { ExtentTagProps } from './types';
 
-export const ExtentTag: FC<ExtentTagProps> = ({
+export const ExtentTag: FC<React.PropsWithChildren<ExtentTagProps>> = ({
   value,
   onClick,
   className,

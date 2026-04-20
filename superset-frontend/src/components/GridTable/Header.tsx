@@ -80,7 +80,7 @@ const IconPlaceholder = styled.div`
   top: 0;
 `;
 
-export const Header: React.FC<Params> = ({
+export const Header: React.FC<React.PropsWithChildren<Params>> = ({
   enableFilterButton,
   enableSorting,
   displayName,

@@ -18,7 +18,7 @@
  */
 import 'src/public-path';
 
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import initPreamble from '../preamble';
 import App from './App';
 
@@ -29,6 +29,7 @@ import App from './App';
     await initPreamble();
   } finally {
     // Always render the app, even if preamble fails
-    ReactDOM.render(<App />, document.getElementById('app'));
+    const container = document.getElementById('app');
+    if (container) createRoot(container).render(<App />);
   }
 })();

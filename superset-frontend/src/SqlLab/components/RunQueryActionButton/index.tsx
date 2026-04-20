@@ -114,8 +114,8 @@ const RunQueryActionButton = ({
   const shouldShowStopBtn =
     !!queryState && ['running', 'pending'].indexOf(queryState) > -1;
 
-  const ButtonComponent: FC<QueryButtonProps> = overlayCreateAsMenu
-    ? (DropdownButton as FC)
+  const ButtonComponent: FC<React.PropsWithChildren<QueryButtonProps>> = overlayCreateAsMenu
+    ? (DropdownButton as FC<React.PropsWithChildren<unknown>>)
     : Button;
 
   const sqlContent = selectedText || sql || '';

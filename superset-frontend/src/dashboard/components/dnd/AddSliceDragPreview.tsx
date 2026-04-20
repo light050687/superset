@@ -46,7 +46,7 @@ const staticCardStyles: React.CSSProperties = {
   width: 376 - 2 * 16,
 };
 
-const AddSliceDragPreview: React.FC<AddSliceDragPreviewProps> = ({
+const AddSliceDragPreview: React.FC<React.PropsWithChildren<AddSliceDragPreviewProps>> = ({
   dragItem,
   slices,
   isDragging,

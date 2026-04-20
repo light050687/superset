@@ -141,7 +141,7 @@ const publishDataMask = debounce(
   Constants.SLOW_DEBOUNCE,
 );
 
-const FilterBar: FC<FiltersBarProps> = ({
+const FilterBar: FC<React.PropsWithChildren<FiltersBarProps>> = ({
   orientation = FilterBarOrientation.Vertical,
   verticalConfig,
   hidden = false,

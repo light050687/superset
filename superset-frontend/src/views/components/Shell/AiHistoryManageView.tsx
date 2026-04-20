@@ -366,7 +366,7 @@ function parseDrag(raw: string): DragPayload | null {
 
 /* ─── Component ─── */
 
-export const AiHistoryManageView: FC<AiHistoryManageViewProps> = ({
+export const AiHistoryManageView: FC<React.PropsWithChildren<AiHistoryManageViewProps>> = ({
   folders,
   sessions,
   onChanged,

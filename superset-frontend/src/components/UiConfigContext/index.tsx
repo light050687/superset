@@ -45,7 +45,7 @@ export const UiConfigContext = createContext<UiConfigType>({
 
 export const useUiConfig = () => useContext(UiConfigContext);
 
-export const EmbeddedUiConfigProvider: FC<EmbeddedUiConfigProviderProps> = ({
+export const EmbeddedUiConfigProvider: FC<React.PropsWithChildren<EmbeddedUiConfigProviderProps>> = ({
   children,
 }) => {
   const config = getUrlParam(URL_PARAMS.uiConfig) || 0;

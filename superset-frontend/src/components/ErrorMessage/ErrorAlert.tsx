@@ -27,7 +27,7 @@ import {
 } from '@superset-ui/core/components';
 import type { ErrorAlertProps } from './types';
 
-export const ErrorAlert: React.FC<ErrorAlertProps> = ({
+export const ErrorAlert: React.FC<React.PropsWithChildren<ErrorAlertProps>> = ({
   errorType = t('Error'),
   message,
   type = 'error',

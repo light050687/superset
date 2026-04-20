@@ -70,7 +70,7 @@ type FilterControlsProps = {
   isMobile?: boolean;
 };
 
-const FilterControls: FC<FilterControlsProps> = ({
+const FilterControls: FC<React.PropsWithChildren<FilterControlsProps>> = ({
   dataMaskSelected,
   onFilterSelectionChange,
   clearAllTriggers,

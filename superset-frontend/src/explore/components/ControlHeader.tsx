@@ -48,7 +48,7 @@ const iconStyles = css`
   }
 `;
 
-const ControlHeader: FC<ControlHeaderProps> = ({
+const ControlHeader: FC<React.PropsWithChildren<ControlHeaderProps>> = ({
   name,
   label,
   description,

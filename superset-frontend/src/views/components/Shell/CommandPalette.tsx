@@ -211,7 +211,7 @@ const Kbd = styled.kbd`
   margin-right: 4px;
 `;
 
-const SearchIcon: FC = () => (
+const SearchIcon: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <circle cx="7" cy="7" r="4" />
     <path d="M10 10l3.5 3.5" />
@@ -338,7 +338,7 @@ interface GroupedRows {
   rows: PaletteRow[];
 }
 
-export const CommandPalette: FC<CommandPaletteProps> = ({
+export const CommandPalette: FC<React.PropsWithChildren<CommandPaletteProps>> = ({
   open,
   onClose,
   onAskAi,

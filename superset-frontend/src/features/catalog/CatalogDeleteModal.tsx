@@ -109,7 +109,7 @@ const DangerBtn = styled(BaseBtn)`
   }
 `;
 
-export const CatalogDeleteModal: FC<CatalogDeleteModalProps> = ({
+export const CatalogDeleteModal: FC<React.PropsWithChildren<CatalogDeleteModalProps>> = ({
   open,
   folderName,
   preserveContents = true,

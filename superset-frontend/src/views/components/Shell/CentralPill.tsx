@@ -361,20 +361,20 @@ const MMode = styled.span`
 
 /* ─── SVG icons (из мокапа) ─── */
 
-const IconPlus: FC = () => (
+const IconPlus: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6}>
     <path d="M8 3v10M3 8h10" />
   </svg>
 );
 
-const IconMic: FC = () => (
+const IconMic: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6}>
     <rect x="6" y="2" width="4" height="8" rx="2" />
     <path d="M3 8a5 5 0 0010 0M8 13v2" />
   </svg>
 );
 
-const IconSend: FC = () => (
+const IconSend: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     viewBox="0 0 16 16"
     fill="none"
@@ -387,20 +387,20 @@ const IconSend: FC = () => (
   </svg>
 );
 
-const IconGear: FC = () => (
+const IconGear: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <circle cx="8" cy="8" r="2" />
     <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3" />
   </svg>
 );
 
-const IconChevronDown: FC = () => (
+const IconChevronDown: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M2 4l3 3 3-3" />
   </svg>
 );
 
-export const CentralPill: FC<CentralPillProps> = ({
+export const CentralPill: FC<React.PropsWithChildren<CentralPillProps>> = ({
   contexts,
   contextId,
   onContextChange,

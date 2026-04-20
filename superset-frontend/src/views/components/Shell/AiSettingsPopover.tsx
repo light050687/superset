@@ -168,7 +168,7 @@ function computePosition(
   return { top, left };
 }
 
-export const AiSettingsPopover: FC<AiSettingsPopoverProps> = ({
+export const AiSettingsPopover: FC<React.PropsWithChildren<AiSettingsPopoverProps>> = ({
   anchor,
   open,
   onClose,

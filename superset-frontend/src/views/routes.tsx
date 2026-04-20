@@ -173,8 +173,8 @@ const GeoMap = lazy(
 
 type Routes = {
   path: string;
-  Component: ComponentType;
-  Fallback?: ComponentType;
+  Component: ComponentType<React.PropsWithChildren<unknown>>;
+  Fallback?: ComponentType<React.PropsWithChildren<unknown>>;
   props?: ComponentProps<any>;
 }[];
 

@@ -31,6 +31,7 @@ const {
   getCompilerHooks,
 } = require('webpack-manifest-plugin');
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
+const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 const parsedArgs = require('yargs').argv;
 const Visualizer = require('webpack-visualizer-plugin2');
 const getProxyConfig = require('./webpack.proxy-config');
@@ -145,6 +146,10 @@ const plugins = [
 
 if (!process.env.CI) {
   plugins.push(new webpack.ProgressPlugin());
+}
+
+if (isDevMode && isDevServer) {
+  plugins.push(new ReactRefreshWebpackPlugin({ overlay: false }));
 }
 
 if (!isDevMode) {
@@ -281,11 +286,9 @@ const config = {
               'prop-types-extra',
               'redux',
               'react-redux',
-              'react-hot-loader',
               'react-sortable-hoc',
               'react-table',
               'react-ace',
-              '@hot-loader.*',
               'webpack.*',
               '@?babel.*',
               'lodash.*',
@@ -407,14 +410,6 @@ const config = {
       {
         test: /ace-builds.*\/worker-.*$/,
         type: 'asset/resource',
-      },
-      // react-hot-loader use "ProxyFacade", which is a wrapper for react Component
-      // see https://github.com/gaearon/react-hot-loader/issues/1311
-      // TODO: refactor recurseReactClone
-      {
-        test: /\.js$/,
-        include: /node_modules\/react-dom/,
-        use: ['react-hot-loader/webpack'],
       },
       {
         test: /\.css$/,

@@ -367,7 +367,7 @@ const BrandFooter = styled.div`
 
 /* ─── SVG Icons ─── */
 
-const IconClose: FC = () => (
+const IconClose: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={12}
     height={12}
@@ -381,7 +381,7 @@ const IconClose: FC = () => (
   </svg>
 );
 
-const IconShield: FC = () => (
+const IconShield: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -397,7 +397,7 @@ const IconShield: FC = () => (
   </svg>
 );
 
-const IconUser: FC = () => (
+const IconUser: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -414,7 +414,7 @@ const IconUser: FC = () => (
   </svg>
 );
 
-const IconUsers: FC = () => (
+const IconUsers: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -433,7 +433,7 @@ const IconUsers: FC = () => (
   </svg>
 );
 
-const IconJournal: FC = () => (
+const IconJournal: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -450,7 +450,7 @@ const IconJournal: FC = () => (
   </svg>
 );
 
-const IconLock: FC = () => (
+const IconLock: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -467,7 +467,7 @@ const IconLock: FC = () => (
   </svg>
 );
 
-const IconDatabase: FC = () => (
+const IconDatabase: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -485,7 +485,7 @@ const IconDatabase: FC = () => (
   </svg>
 );
 
-const IconTable: FC = () => (
+const IconTable: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -502,7 +502,7 @@ const IconTable: FC = () => (
   </svg>
 );
 
-const IconSql: FC = () => (
+const IconSql: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -520,7 +520,7 @@ const IconSql: FC = () => (
   </svg>
 );
 
-const IconCode: FC = () => (
+const IconCode: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -536,7 +536,7 @@ const IconCode: FC = () => (
   </svg>
 );
 
-const IconBell: FC = () => (
+const IconBell: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -553,7 +553,7 @@ const IconBell: FC = () => (
   </svg>
 );
 
-const IconPin: FC = () => (
+const IconPin: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -569,7 +569,7 @@ const IconPin: FC = () => (
   </svg>
 );
 
-const IconProfile: FC = () => (
+const IconProfile: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={14}
     height={14}
@@ -586,7 +586,7 @@ const IconProfile: FC = () => (
   </svg>
 );
 
-const IconGlobe: FC = () => (
+const IconGlobe: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={14}
     height={14}
@@ -603,7 +603,7 @@ const IconGlobe: FC = () => (
   </svg>
 );
 
-const IconLogout: FC = () => (
+const IconLogout: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={14}
     height={14}
@@ -779,7 +779,7 @@ function buildTileDefs(menu: MenuData): {
 
 /* ─── Component ─── */
 
-export const SettingsDropdown: FC<SettingsDropdownProps> = ({
+export const SettingsDropdown: FC<React.PropsWithChildren<SettingsDropdownProps>> = ({
   anchor,
   open,
   onClose,

@@ -156,7 +156,7 @@ function computeAbovePosition(
   return { top, left };
 }
 
-export const ContextPopover: FC<ContextPopoverProps> = ({
+export const ContextPopover: FC<React.PropsWithChildren<ContextPopoverProps>> = ({
   anchor,
   open,
   onClose,

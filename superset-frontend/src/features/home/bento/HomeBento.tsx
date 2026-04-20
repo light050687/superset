@@ -123,7 +123,7 @@ export interface HomeBentoProps {
   user?: User;
 }
 
-export const HomeBento: FC<HomeBentoProps> = ({ user }) => {
+export const HomeBento: FC<React.PropsWithChildren<HomeBentoProps>> = ({ user }) => {
   const history = useHistory();
   const { favorites, recents, loadingFavorites, loadingRecents, error, refresh } =
     useBentoData(user?.userId);

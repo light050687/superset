@@ -286,14 +286,14 @@ const MockBanner = styled.div`
 
 /* Икона side-panel toggle — прямоугольник с вертикальной линией слева
    (sidebar symbol). */
-const IconSidePanel: FC = () => (
+const IconSidePanel: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6}>
     <rect x="2" y="3" width="12" height="10" rx="1.5" />
     <path d="M6 3v10" />
   </svg>
 );
 
-const IconClose: FC = () => (
+const IconClose: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M3 3l10 10M13 3L3 13" />
   </svg>
@@ -327,7 +327,7 @@ function parseBotContent(json: string | null | undefined): AiAnswerBlocks {
   }
 }
 
-export const AiFullView: FC<AiFullViewProps> = ({
+export const AiFullView: FC<React.PropsWithChildren<AiFullViewProps>> = ({
   open,
   onClose,
   user,

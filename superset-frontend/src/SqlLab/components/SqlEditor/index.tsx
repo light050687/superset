@@ -256,7 +256,7 @@ const elementStyle = (
   }px)`,
 });
 
-const SqlEditor: FC<Props> = ({
+const SqlEditor: FC<React.PropsWithChildren<Props>> = ({
   queryEditor,
   defaultQueryLimit,
   maxRow,

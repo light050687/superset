@@ -45,7 +45,7 @@ const StyledEmptyStateWrapper = styled.div`
   }
 `;
 
-const Results: FC<Props> = ({
+const Results: FC<React.PropsWithChildren<Props>> = ({
   latestQueryId,
   height,
   displayLimit,

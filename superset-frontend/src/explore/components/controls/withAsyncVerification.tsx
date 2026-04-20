@@ -99,7 +99,7 @@ export type WithAsyncVerificationOptions = {
     | SharedControlComponent
     // allows custom `baseControl` to not handle some of the <Control />
     // component props.
-    | ComponentType<Partial<FullControlProps>>;
+    | ComponentType<React.PropsWithChildren<Partial<FullControlProps>>>;
   showLoadingState?: boolean;
   quiet?: boolean;
   verify?: AsyncVerify;
@@ -126,7 +126,7 @@ export default function withAsyncVerification({
   quiet = false,
   showLoadingState: defaultShowLoadingState = true,
 }: WithAsyncVerificationOptions) {
-  const ControlComponent: ComponentType<FullControlProps> =
+  const ControlComponent: ComponentType<React.PropsWithChildren<FullControlProps>> =
     typeof baseControl === 'string'
       ? controlComponentMap[baseControl]
       : baseControl;

@@ -52,7 +52,7 @@ type Props = {
   children: (width: number) => ReactNode;
 };
 
-const ResizableSidebar: FC<Props> = ({
+const ResizableSidebar: FC<React.PropsWithChildren<Props>> = ({
   id,
   initialWidth,
   minWidth,

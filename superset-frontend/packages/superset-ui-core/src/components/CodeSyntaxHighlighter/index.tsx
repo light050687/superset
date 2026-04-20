@@ -69,7 +69,7 @@ const registerLanguage = async (language: SupportedLanguage): Promise<void> => {
  * Languages are loaded lazily to improve initial page load performance.
  * Uses ultra-neutral themes for professional, consistent appearance.
  */
-export const CodeSyntaxHighlighter: React.FC<CodeSyntaxHighlighterProps> = ({
+export const CodeSyntaxHighlighter: React.FC<React.PropsWithChildren<CodeSyntaxHighlighterProps>> = ({
   children,
   language = 'sql',
   customStyle = {},

@@ -63,7 +63,7 @@ export const StyledControlFormItem = styled(ControlFormItem)`
   `}
 `;
 
-export const MapViewControl: FC<MapViewConfigsControlProps> = ({
+export const MapViewControl: FC<React.PropsWithChildren<MapViewConfigsControlProps>> = ({
   value,
   onChange = () => {},
   name,

@@ -134,7 +134,7 @@ const ThinSkeleton = styled(Skeleton)`
 
 const paragraphConfig = { rows: 1, width: 150 };
 
-const AnchorLink: FC<LinkProps> = ({ to, children }) => (
+const AnchorLink: FC<React.PropsWithChildren<LinkProps>> = ({ to, children }) => (
   <a href={to}>{children}</a>
 );
 

@@ -335,7 +335,7 @@ type RailSlot =
   | { kind: 'sep' }
   | { kind: 'custom'; node: ReactNode };
 
-export const Rail: FC<RailProps> = ({
+export const Rail: FC<React.PropsWithChildren<RailProps>> = ({
   userInitials = '',
   onOpenCalendar,
   onToggleTheme,
@@ -565,7 +565,7 @@ export const Rail: FC<RailProps> = ({
       {slots.map((slot, i) =>
         slot.kind === 'sep' ? (
           // eslint-disable-next-line react/no-array-index-key
-          <RailSep key={`sep-${i}`} role="presentation" />
+          (<RailSep key={`sep-${i}`} role="presentation" />)
         ) : (
           slot.node
         ),

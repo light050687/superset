@@ -40,7 +40,7 @@ const SectionLine = styled.div`
   background: ${DS2_VARS.g100};
 `;
 
-export const SectionLabel: FC<{ title: string; children?: ReactNode }> = ({
+export const SectionLabel: FC<React.PropsWithChildren<{ title: string; children?: ReactNode }>> = ({
   title,
   children,
 }) => (

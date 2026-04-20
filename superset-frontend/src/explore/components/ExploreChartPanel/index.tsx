@@ -52,7 +52,7 @@ import { ExploreAlert } from '../ExploreAlert';
 import useResizeDetectorByObserver from './useResizeDetectorByObserver';
 
 const extensionsRegistry = getExtensionsRegistry();
-const DefaultHeader: React.FC = ({ children }) => <>{children}</>;
+const DefaultHeader: React.FC<React.PropsWithChildren<unknown>> = ({ children }) => <>{children}</>;
 
 export interface ExploreChartPanelProps {
   actions: {

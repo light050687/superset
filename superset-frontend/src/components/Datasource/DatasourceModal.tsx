@@ -84,7 +84,7 @@ function buildExtraJsonObject(
   });
 }
 
-const DatasourceModal: FunctionComponent<DatasourceModalProps> = ({
+const DatasourceModal: FunctionComponent<React.PropsWithChildren<DatasourceModalProps>> = ({
   addSuccessToast,
   datasource,
   onDatasourceSave,

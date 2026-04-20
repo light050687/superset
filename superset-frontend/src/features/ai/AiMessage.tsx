@@ -327,7 +327,7 @@ const Dots = styled.span`
   }
 `;
 
-const BotIcon: FC = () => (
+const BotIcon: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <circle cx="8" cy="8" r="6" />
     <circle cx="8" cy="8" r="2" />
@@ -343,7 +343,7 @@ interface AiMessageProps {
   onAction?: (label: string, url?: string) => void;
 }
 
-export const AiMessage: FC<AiMessageProps> = ({
+export const AiMessage: FC<React.PropsWithChildren<AiMessageProps>> = ({
   role,
   text,
   blocks,
@@ -428,7 +428,7 @@ export const AiMessage: FC<AiMessageProps> = ({
             </ChartHead>
             {b.chart.svg ? (
               // eslint-disable-next-line react/no-danger
-              <div dangerouslySetInnerHTML={{ __html: b.chart.svg }} />
+              (<div dangerouslySetInnerHTML={{ __html: b.chart.svg }} />)
             ) : (
               <ChartSubtitle>
                 {t('(график будет отрисован через ECharts)')}

@@ -380,19 +380,19 @@ const Empty = styled.div`
 
 /* ─── icons ─── */
 
-const IconClose: FC = () => (
+const IconClose: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M3 3l6 6M9 3l-6 6" />
   </svg>
 );
 
-const IconPlus: FC = () => (
+const IconPlus: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.8}>
     <path d="M6 2v8M2 6h8" />
   </svg>
 );
 
-const IconChatBubble: FC = () => (
+const IconChatBubble: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M2 4a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6l-3 2v-2H4a2 2 0 01-2-2V4z" />
   </svg>
@@ -410,7 +410,7 @@ const FOLDER_PALETTE = [
   '#CCB604',
 ];
 
-export const AiSidePanel: FC<AiSidePanelProps> = ({
+export const AiSidePanel: FC<React.PropsWithChildren<AiSidePanelProps>> = ({
   open,
   onClose,
   folders,

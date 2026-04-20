@@ -49,7 +49,7 @@ const SCHEDULE_TYPE_OPTIONS = [
   },
 ];
 
-export const AlertReportCronScheduler: FC<AlertReportCronSchedulerProps> = ({
+export const AlertReportCronScheduler: FC<React.PropsWithChildren<AlertReportCronSchedulerProps>> = ({
   value,
   onChange,
 }) => {

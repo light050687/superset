@@ -102,7 +102,7 @@ const useNativeFilterScopes = () => {
 
 const TOP_OF_PAGE_RANGE = 220;
 
-const DashboardContainer: FC<DashboardContainerProps> = ({ topLevelTabs, topLevelPages }) => {
+const DashboardContainer: FC<React.PropsWithChildren<DashboardContainerProps>> = ({ topLevelTabs, topLevelPages }) => {
   const nativeFilterScopes = useNativeFilterScopes();
   const nativeFilters = useSelector<RootState, Filters>(
     state => state.nativeFilters?.filters,

@@ -117,7 +117,7 @@ const Count = styled.span`
   flex-shrink: 0;
 `;
 
-export const CatalogTreeNode: FC<CatalogTreeNodeProps> = ({
+export const CatalogTreeNode: FC<React.PropsWithChildren<CatalogTreeNodeProps>> = ({
   node,
   depth,
   isActive,

@@ -64,7 +64,7 @@ interface Props {
   queryEditor: QueryEditor;
 }
 
-const STATE_ICONS: Record<string, FC<IconType>> = {
+const STATE_ICONS: Record<string, FC<React.PropsWithChildren<IconType>>> = {
   started: Icons.CircleSolid,
   stopped: Icons.StopOutlined,
   pending: Icons.CircleSolid,
@@ -76,7 +76,7 @@ const STATE_ICONS: Record<string, FC<IconType>> = {
   failed: Icons.CloseCircleOutlined,
 };
 
-const SqlEditorTabHeader: FC<Props> = ({ queryEditor }) => {
+const SqlEditorTabHeader: FC<React.PropsWithChildren<Props>> = ({ queryEditor }) => {
   const theme = useTheme();
   const qe = useSelector<SqlLabRootState, QueryEditor>(
     ({ sqlLab: { unsavedQueryEditor } }) => ({

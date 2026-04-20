@@ -212,7 +212,7 @@ export interface BentoCardProps {
   onToggleStar?: (item: BentoItem) => void;
 }
 
-export const BentoCard: FC<BentoCardProps> = ({
+export const BentoCard: FC<React.PropsWithChildren<BentoCardProps>> = ({
   item,
   size = 'medium',
   showDepartment = true,

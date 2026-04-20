@@ -135,21 +135,21 @@ const ComingSoonBadge = styled.span`
 /* ─── Inline SVG иконки (16×16 viewBox, stroke currentColor) ─── */
 
 /* Мокап toolDefs — Гео-аналитика, Таблицы, Документы. */
-const IconGeo: FC = () => (
+const IconGeo: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <circle cx="8" cy="8" r="6" />
     <path d="M2 8h12M8 2a8 8 0 010 12M8 2a8 8 0 000 12" />
   </svg>
 );
 
-const IconTablesBig: FC = () => (
+const IconTablesBig: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <rect x="2" y="2" width="12" height="12" rx="1" />
     <path d="M2 6h12M2 10h12M6 2v12" />
   </svg>
 );
 
-const IconDoc: FC = () => (
+const IconDoc: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M4 2h6l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" />
     <path d="M10 2v4h4" />
@@ -173,7 +173,7 @@ interface SectionDef {
   tools: Tool[];
 }
 
-export const ToolsDrawer: FC = () => {
+export const ToolsDrawer: FC<React.PropsWithChildren<unknown>> = () => {
   const history = useHistory();
   const { closeDrawer } = useShell();
 

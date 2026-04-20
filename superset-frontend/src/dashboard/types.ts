@@ -211,7 +211,7 @@ export type LayoutItemMeta = {
 export type LayoutItem = {
   children: string[];
   parents?: string[];
-  type: ComponentType;
+  type: ComponentType<React.PropsWithChildren<unknown>>;
   id: string;
   meta: LayoutItemMeta;
 };
