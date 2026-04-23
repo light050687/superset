@@ -56,16 +56,27 @@ const Body = styled.div`
     gap: ${theme.sizeUnit * 2}px;
     flex: 1;
     min-height: 0;
+    box-sizing: border-box;
     overflow-y: auto;
-    /* Thin scrollbar — чтобы не съедать ширину колонки. */
+    /* DS 2.0 scrollbar, согласованный с ShellMain и DrawerBody. */
     scrollbar-width: thin;
-    scrollbar-color: ${theme.colorBorderSecondary} transparent;
+    scrollbar-color: var(--g300) transparent;
     &::-webkit-scrollbar {
-      width: 6px;
+      width: 10px;
+      height: 10px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
     }
     &::-webkit-scrollbar-thumb {
-      background: ${theme.colorBorderSecondary};
-      border-radius: 3px;
+      background: var(--g300);
+      border-radius: 5px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--g400);
+      background-clip: padding-box;
     }
   `}
 `;

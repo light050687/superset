@@ -30,7 +30,7 @@ import {
   FC,
 } from 'react';
 import cx from 'classnames';
-import { styled, t, useTheme } from '@superset-ui/core';
+import { css, styled, t, useTheme } from '@superset-ui/core';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { EmptyState, Loading } from '@superset-ui/core/components';
 import { getFilterBarTestId } from './utils';
@@ -169,17 +169,39 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
     };
   }, [onScroll]);
 
-  const tabPaneStyle = useMemo(
-    () =>
-      isMobile
-        ? {
-            overflow: 'auto',
-            flex: 1,
-            overscrollBehavior: 'contain',
-            width: '100%',
-            boxSizing: 'border-box' as const,
-          }
-        : { overflow: 'auto', height, overscrollBehavior: 'contain' },
+  /* Unified DS 2.0 scrollbar — тот же стиль, что у ShellMain: thin 10px,
+     g300 thumb c 5px radius, background-clip: padding-box (создаёт
+     2px «отступ» внутри thumb'а), hover → g400. Прописан через emotion
+     css-fragment, чтобы psevdo-classes ::-webkit-scrollbar-* сработали
+     (inline style их не поддерживает). */
+  const tabPaneCss = useMemo(
+    () => css`
+      overflow: auto;
+      overscroll-behavior: contain;
+      box-sizing: border-box;
+      ${isMobile
+        ? 'flex: 1; width: 100%;'
+        : `height: ${typeof height === 'number' ? `${height}px` : height};`}
+      scrollbar-width: thin;
+      scrollbar-color: var(--g300) transparent;
+      &::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: var(--g300);
+        border-radius: 5px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+      }
+      &::-webkit-scrollbar-thumb:hover {
+        background: var(--g400);
+        background-clip: padding-box;
+      }
+    `,
     [height, isMobile],
   );
 
@@ -340,7 +362,7 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
                   <Loading />
                 </div>
               ) : (
-                <div css={tabPaneStyle} onScroll={onScroll}>
+                <div css={tabPaneCss} onScroll={onScroll}>
                   <>
                     <CrossFiltersVertical />
                     {filterControls}

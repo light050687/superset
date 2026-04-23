@@ -185,13 +185,27 @@ const DrawerBody = styled.div<{ $flush: boolean }>`
   display: ${({ $flush }) => ($flush ? 'flex' : 'block')};
   flex-direction: column;
 
+  /* DS 2.0 scrollbar (такой же как в ShellMain): 10px, g300 thumb с
+     padding-box border-clip (2px транспарент-обводка создаёт «воздух»
+     внутри thumb'а). Hover — g400. Firefox получает scrollbar-color. */
+  scrollbar-width: thin;
+  scrollbar-color: ${DS2_VARS.g300} transparent;
   &::-webkit-scrollbar {
-    width: 3px;
+    width: 10px;
+    height: 10px;
   }
-
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
   &::-webkit-scrollbar-thumb {
     background: ${DS2_VARS.g300};
-    border-radius: 2px;
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${DS2_VARS.g400};
+    background-clip: padding-box;
   }
 `;
 
