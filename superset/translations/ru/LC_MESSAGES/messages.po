@@ -1137,7 +1137,7 @@ msgid "Advanced-Analytics"
 msgstr "Продвинутая аналитика"
 
 msgid "Affected Charts"
-msgstr "Связанные диаграммы"
+msgstr "Связанные чарты"
 
 msgid "Affected Dashboards"
 msgstr "Связанные дашборды"
@@ -1273,7 +1273,7 @@ msgid "All Text"
 msgstr "Весь текст"
 
 msgid "All charts"
-msgstr "Все диаграммы"
+msgstr "Все чарты"
 
 msgid "All charts/global scoping"
 msgstr "Все диаграммы (глобальная область)"
@@ -2621,7 +2621,7 @@ msgid "Character to interpret as decimal point"
 msgstr "Символ десятичного разделителя"
 
 msgid "Chart"
-msgstr "Диаграмма"
+msgstr "Чарт"
 
 #, python-format
 msgid "Chart %(id)s not found"
@@ -2745,7 +2745,7 @@ msgid "Chart width"
 msgstr "Ширина диаграммы"
 
 msgid "Charts"
-msgstr "Диаграммы"
+msgstr "Чарты"
 
 msgid "Charts could not be deleted."
 msgstr "Не удалось удалить диаграммы"

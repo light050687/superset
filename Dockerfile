@@ -39,8 +39,10 @@ COPY docker/ /app/docker/
 # Arguments for build configuration
 ARG NPM_BUILD_CMD="build"
 
-# Install system dependencies required for node-gyp
-RUN /app/docker/apt-install.sh build-essential python3 zstd
+# Install system dependencies required for node-gyp. `git` is needed because
+# one of our deps (`dom-to-pdf` → `dom-to-image@github:dmapper/dom-to-image`)
+# is installed from a git URL — npm ci shells out to `git` to fetch it.
+RUN /app/docker/apt-install.sh build-essential python3 zstd git
 
 # Define environment variables for frontend build
 ENV BUILD_CMD=${NPM_BUILD_CMD} \
@@ -62,14 +64,18 @@ RUN mkdir -p /app/superset/static/assets \
 # Note that it's not possible to selectively COPY or mount using blobs.
 RUN --mount=type=bind,source=./superset-frontend/package.json,target=./package.json \
     --mount=type=bind,source=./superset-frontend/package-lock.json,target=./package-lock.json \
+    --mount=type=bind,source=./my-plugins,target=/app/my-plugins \
     --mount=type=cache,target=/root/.cache \
     --mount=type=cache,target=/root/.npm \
     if [ "$DEV_MODE" = "false" ]; then \
-        npm ci; \
+        npm ci --legacy-peer-deps; \
     else \
         echo "Skipping 'npm ci' in dev mode"; \
     fi
 
+# Copy our custom Samberi plugins (referenced from package.json as
+# `file:../my-plugins/*`) into the build context so webpack can resolve them.
+COPY my-plugins /app/my-plugins
 # Runs the webpack build process
 COPY superset-frontend /app/superset-frontend
 

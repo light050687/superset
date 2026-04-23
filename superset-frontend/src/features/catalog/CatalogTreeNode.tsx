@@ -24,6 +24,10 @@ import {
   type DragItemPayload,
 } from './types';
 import type { CatalogTreeNode as TreeNode } from './useCatalogFolders';
+import {
+  deriveDefaultFolderName,
+  useCatalogColumnLabels,
+} from './useCatalogColumnLabels';
 
 /** Собственные пропсы одного узла дерева. */
 export interface CatalogTreeNodeProps {
@@ -190,6 +194,10 @@ export const CatalogTreeNode: FC<React.PropsWithChildren<CatalogTreeNodeProps>> 
   };
 
   const color = node.color ?? 'var(--g400)';
+  const { labels } = useCatalogColumnLabels();
+  const displayName = node.is_default
+    ? deriveDefaultFolderName(labels.dept)
+    : node.name;
 
   return (
     <NodeRow
@@ -199,7 +207,7 @@ export const CatalogTreeNode: FC<React.PropsWithChildren<CatalogTreeNodeProps>> 
       aria-level={depth + 1}
       aria-expanded={hasChildren ? isExpanded : undefined}
       aria-selected={isActive}
-      aria-label={t('Папка %s, %d элементов', node.name, node.item_count)}
+      aria-label={t('Папка %s, %d элементов', displayName, node.item_count)}
       data-test="catalog-tree-node"
       data-folder-id={node.id}
       $depth={depth}
@@ -223,7 +231,7 @@ export const CatalogTreeNode: FC<React.PropsWithChildren<CatalogTreeNodeProps>> 
         ▶
       </Arrow>
       <ColorDot $color={color} />
-      <Name>{node.name}</Name>
+      <Name>{displayName}</Name>
       <Count>{node.item_count}</Count>
     </NodeRow>
   );

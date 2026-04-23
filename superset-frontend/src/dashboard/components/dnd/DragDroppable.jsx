@@ -71,28 +71,6 @@ const propTypes = {
   dropIndicatorOverride: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]),
 };
 
-const defaultProps = {
-  className: null,
-  style: null,
-  parentComponent: null,
-  disableDragDrop: false,
-  dropToChild: false,
-  children() {},
-  onDrop() {},
-  onHover() {},
-  onDropIndicatorChange() {},
-  onDragTab() {},
-  orientation: 'row',
-  useEmptyDragPreview: false,
-  isDragging: false,
-  isDraggingOver: false,
-  isDraggingOverShallow: false,
-  droppableRef() {},
-  dragSourceRef() {},
-  dragPreviewRef() {},
-  dropIndicatorOverride: undefined,
-};
-
 const DragDroppableStyles = styled.div`
   ${({ theme }) => css`
     position: relative;
@@ -129,25 +107,27 @@ const DragDroppableStyles = styled.div`
 // Presentational FC. Takes all drag/drop state as props; the wrappers below
 // (Draggable / Droppable / DragDroppable) inject those via react-dnd hooks.
 export const UnwrappedDragDroppable = forwardRef((props, forwardedRef) => {
+  // Inline defaults replace the legacy `Component.defaultProps`, which React
+  // 18 deprecates on function components.
   const {
-    children,
-    className,
-    orientation,
-    dragSourceRef,
-    dragPreviewRef,
-    droppableRef,
-    disableDragDrop,
-    isDragging,
-    isDraggingOver,
-    style,
+    children = () => {},
+    className = null,
+    orientation = 'row',
+    dragSourceRef = () => {},
+    dragPreviewRef = () => {},
+    droppableRef = () => {},
+    disableDragDrop = false,
+    isDragging = false,
+    isDraggingOver = false,
+    style = null,
     editMode,
     component,
     dragComponentType,
     dragComponentId,
-    onDropIndicatorChange,
-    onDragTab,
+    onDropIndicatorChange = () => {},
+    onDragTab = () => {},
     index,
-    useEmptyDragPreview,
+    useEmptyDragPreview = false,
     dropIndicatorOverride,
   } = props;
 
@@ -308,7 +288,6 @@ export const UnwrappedDragDroppable = forwardRef((props, forwardedRef) => {
 
 UnwrappedDragDroppable.displayName = 'UnwrappedDragDroppable';
 UnwrappedDragDroppable.propTypes = propTypes;
-UnwrappedDragDroppable.defaultProps = defaultProps;
 
 // Shared useLayoutEffect to keep component proxy props up to date; exported as
 // a small hook so wrappers below can attach hover/drop handlers against it.
@@ -369,7 +348,6 @@ export function Draggable(props) {
   );
 }
 Draggable.propTypes = propTypes;
-Draggable.defaultProps = defaultProps;
 
 // Drop-only wrapper (parity with legacy `Droppable` HOC export).
 export function Droppable(props) {
@@ -421,7 +399,6 @@ export function Droppable(props) {
   );
 }
 Droppable.propTypes = propTypes;
-Droppable.defaultProps = defaultProps;
 
 // Combined drag+drop wrapper (primary dashboard grid export).
 export function DragDroppable(props) {
@@ -503,4 +480,3 @@ export function DragDroppable(props) {
   );
 }
 DragDroppable.propTypes = propTypes;
-DragDroppable.defaultProps = defaultProps;

@@ -535,6 +535,15 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
 
         self.init_views()
 
+        # Auto-assign новых Dashboard/Slice/SqlaTable в дефолтную папку
+        # каталога «Без департамента» — кастомный форк. Подключаем после
+        # init_views, чтобы все модели и датасорсы были зарегистрированы.
+        from superset.catalog_folders.listeners import (
+            register_listeners as _register_catalog_listeners,
+        )
+
+        _register_catalog_listeners()
+
     def check_secret_key(self) -> None:
         def log_default_secret_key_warning() -> None:
             top_banner = 80 * "-" + "\n" + 36 * " " + "WARNING\n" + 80 * "-"

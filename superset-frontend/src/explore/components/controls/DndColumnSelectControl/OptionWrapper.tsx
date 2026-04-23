@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useRef } from 'react';
+import { forwardRef, useCallback, useRef } from 'react';
 import {
   useDrag,
   useDrop,
@@ -41,12 +41,16 @@ export const OptionLabel = styled.div`
   white-space: nowrap;
 `;
 
-export default function OptionWrapper(
-  props: OptionProps & {
+// forwardRef so AntD Tooltip/Popover triggers can attach refs through
+// @rc-component/trigger (AntD v6). We merge the forwarded ref with the
+// internal drag/drop ref via a ref callback.
+const OptionWrapper = forwardRef<
+  HTMLDivElement,
+  OptionProps & {
     type: string;
     onShiftOptions: (dragIndex: number, hoverIndex: number) => void;
-  },
-) {
+  }
+>((props, forwardedRef) => {
   const {
     index,
     label,
@@ -62,8 +66,20 @@ export default function OptionWrapper(
     tooltipOverlay,
     ...rest
   } = props;
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
   const labelRef = useRef<HTMLDivElement>(null);
+
+  const composedRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      ref.current = node;
+      if (typeof forwardedRef === 'function') {
+        forwardedRef(node);
+      } else if (forwardedRef) {
+        (forwardedRef as { current: HTMLDivElement | null }).current = node;
+      }
+    },
+    [forwardedRef],
+  );
 
   const [{ isDragging }, drag] = useDrag({
     type,
@@ -181,7 +197,7 @@ export default function OptionWrapper(
   drag(drop(ref));
 
   return (
-    <DragContainer ref={ref} {...rest}>
+    <DragContainer ref={composedRef} {...rest}>
       <Option
         index={index}
         clickClose={clickClose}
@@ -194,4 +210,7 @@ export default function OptionWrapper(
       </Option>
     </DragContainer>
   );
-}
+});
+OptionWrapper.displayName = 'OptionWrapper';
+
+export default OptionWrapper;

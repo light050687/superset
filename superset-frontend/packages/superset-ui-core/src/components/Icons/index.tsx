@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { FC } from 'react';
+import { ForwardRefExoticComponent, RefAttributes, forwardRef } from 'react';
 import { antdEnhancedIcons } from './AntdEnhanced';
 import AsyncIcon from './AsyncIcon';
 
@@ -55,23 +55,29 @@ const customIcons = [
   'Undo',
 ] as const;
 
-type CustomIconType = Record<(typeof customIcons)[number], FC<React.PropsWithChildren<IconType>>>;
+type IconComponent = ForwardRefExoticComponent<
+  React.PropsWithChildren<IconType> & RefAttributes<HTMLSpanElement>
+>;
+
+type CustomIconType = Record<(typeof customIcons)[number], IconComponent>;
 
 const iconOverrides: CustomIconType = {} as CustomIconType;
 customIcons.forEach(customIcon => {
   const fileName = customIcon
     .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
     .toLowerCase();
-  iconOverrides[customIcon] = (props: IconType) => (
-    <AsyncIcon customIcons fileName={fileName} {...props} />
-  );
+  const Wrapped = forwardRef<HTMLSpanElement, IconType>((props, ref) => (
+    <AsyncIcon ref={ref} customIcons fileName={fileName} {...props} />
+  ));
+  Wrapped.displayName = customIcon;
+  iconOverrides[customIcon] = Wrapped;
 });
 
 export type IconNameType =
   | keyof typeof antdEnhancedIcons
   | keyof typeof iconOverrides;
 
-type IconComponentType = Record<IconNameType, FC<React.PropsWithChildren<IconType>>>;
+type IconComponentType = Record<IconNameType, IconComponent>;
 
 export const Icons: IconComponentType = {
   ...antdEnhancedIcons,

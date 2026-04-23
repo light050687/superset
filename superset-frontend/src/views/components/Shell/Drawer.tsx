@@ -89,14 +89,36 @@ const DragHandle = styled.div`
   flex-shrink: 0;
 `;
 
-/* Мокап `.drawer-head`: padding 8 22 10. */
+/* Мокап `.drawer-head`: padding 8 22 10. 3-колоночный layout чтобы
+   кастомные drawer-ы могли инжектить свой UI по центру (например,
+   CatalogDrawer кладёт туда ScopeToggle через React Portal). Центр
+   выравнивается по оси независимо от ширины title/close. */
 const DrawerHead = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 8px 22px 10px;
   flex-shrink: 0;
+  gap: 12px;
 `;
+
+const DrawerHeadCenter = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+`;
+
+const DrawerHeadRight = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+`;
+
+/** id-mount для React Portal-а из drawer-чайлдов (CatalogDrawer
+ *  инжектит ScopeToggle — «Дашборды/Чарты»). Общий id используется
+ *  для lookup'а через document.getElementById внутри portal-обёртки. */
+export const DRAWER_HEAD_CENTER_ID = 'shell-drawer-header-center';
 
 /* Мокап `.drawer-title`: font 12 / weight 700 / uppercase / ls 0.06em sans. */
 const DrawerTitle = styled.span`
@@ -195,6 +217,8 @@ const DEFAULT_TITLES: Record<DrawerKind, string> = {
   catalog: 'Каталог',
   tools: 'Инструменты',
   create: 'Создать',
+  filters: 'Фильтры дашборда',
+  pages: 'Страницы дашборда',
 };
 
 export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
@@ -241,6 +265,18 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
           el.matches('nav[aria-label]'),
       );
       if (inRail) return false;
+      /* Модалки каталога (create/rename/delete/confirm) монтируются через
+         React portal в document.body — DOM-путь не проходит через drawer.
+         Без этой проверки клик на «Сохранить»/«Удалить» в модалке
+         воспринимается как клик ВНЕ drawer → drawer закрывается,
+         CatalogManageView размонтируется, handleSubmit не успевает
+         завершить API-вызов. Маркер выставляется в CatalogModalBox. */
+      const inCatalogModal = path.some(
+        el =>
+          el instanceof Element &&
+          el.getAttribute?.('data-catalog-modal') === 'true',
+      );
+      if (inCatalogModal) return false;
       return true;
     };
 
@@ -291,14 +327,17 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
           <DragHandle role="presentation" />
           <DrawerHead>
             <DrawerTitle>{title}</DrawerTitle>
-            <DrawerClose
-              type="button"
-              onClick={closeDrawer}
-              aria-label={t('Закрыть панель')}
-              title={t('Закрыть (Esc)')}
-            >
-              <IconClose />
-            </DrawerClose>
+            <DrawerHeadCenter id={DRAWER_HEAD_CENTER_ID} />
+            <DrawerHeadRight>
+              <DrawerClose
+                type="button"
+                onClick={closeDrawer}
+                aria-label={t('Закрыть панель')}
+                title={t('Закрыть (Esc)')}
+              >
+                <IconClose />
+              </DrawerClose>
+            </DrawerHeadRight>
           </DrawerHead>
           <DrawerBody $flush={kind === 'catalog'}>
             {bodyNode ?? (

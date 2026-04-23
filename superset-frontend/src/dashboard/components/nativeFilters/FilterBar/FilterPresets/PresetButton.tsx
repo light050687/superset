@@ -18,7 +18,7 @@
  */
 import { useCallback, useState } from 'react';
 import { css, DataMaskState, Filters, styled, t } from '@superset-ui/core';
-import { Popover } from 'antd';
+import { Popover } from '@superset-ui/core/components';
 import { useSelector } from 'react-redux';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { RootState } from 'src/dashboard/types';

@@ -27,6 +27,7 @@ from typing import Any
 
 from flask_appbuilder import Model
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     Enum,
@@ -38,6 +39,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import false as sql_false
 
 from superset.models.helpers import AuditMixinNullable, UUIDMixin
 
@@ -85,6 +87,24 @@ class CatalogFolder(Model, AuditMixinNullable, UUIDMixin):
     color = Column(String(7), nullable=True)
     # Порядок среди сестёр внутри одного parent_id. Ставится фронтендом при D&D.
     position = Column(Integer, nullable=False, default=0)
+    # Флаг «дефолтной» папки. Может быть только одна на всю систему (enforced
+    # через partial unique index в PostgreSQL). Дефолтная папка:
+    # - создаётся миграцией c3d4e5f6a7b8 («Без департамента»)
+    # - не может быть удалена через API
+    # - принимает все новые дашборды/чарты/датасеты, не привязанные явно к
+    #   другой папке, и все осиротевшие элементы при удалении родительской папки
+    is_default = Column(
+        Boolean, nullable=False, default=False, server_default=sql_false()
+    )
+    # Scope — разделение иерархий по типу объекта (dashboard/chart).
+    # Введено миграцией d4e5f6a7b8c9. Семантика:
+    #   - 'dashboard': папка видна только в режиме «Дашборды» (UI scope=dashboard)
+    #   - 'chart':     видна только в «Чартах»
+    #   - NULL:        shared — видна в обоих режимах (дефолтная папка
+    #                  «Без департамента» и унаследованные до миграции записи)
+    # Валидация enum-значений — на уровне API-схемы (marshmallow), чтобы не
+    # городить DB-enum с миграциями (проще расширяться в будущем).
+    scope = Column(String(16), nullable=True, index=True)
 
     parent = relationship(
         "CatalogFolder",

@@ -11,10 +11,14 @@
  */
 import { styled, t } from '@superset-ui/core';
 import { type FC, useCallback, useMemo, useState } from 'react';
-import { useHistory } from 'react-router-dom';
-import { useCatalogFolders } from 'src/features/catalog';
+import { useItemToFolderMap } from 'src/features/catalog';
+import {
+  deriveDefaultFolderName,
+  useCatalogColumnLabels,
+} from 'src/features/catalog/useCatalogColumnLabels';
 import { DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
-import type { User } from 'src/types/bootstrapTypes';
+import type { User, UserWithPermissionsAndRoles } from 'src/types/bootstrapTypes';
+import { toggleFavorite } from './api';
 import { BentoCard } from './BentoCard';
 import {
   BentoGrid,
@@ -23,7 +27,6 @@ import {
   SectionLabel,
   Skeleton,
 } from './BentoLayout';
-import { DepartmentTile } from './DepartmentTile';
 import { useBentoData } from './useBentoData';
 import type { BentoCardKind, BentoCardSize, BentoItem } from './types';
 
@@ -49,12 +52,6 @@ const Title = styled.span`
   color: ${DS2_VARS.ink};
 `;
 
-const Subtitle = styled.span`
-  font-family: ${DS2_VARS.fontMono};
-  font-size: 11px;
-  color: ${DS2_VARS.g500};
-`;
-
 const Spacer = styled.div`
   flex: 1;
 `;
@@ -66,7 +63,8 @@ const Pills = styled.div`
   margin: ${DS2_SPACE.s3}px 0 ${DS2_SPACE.s2}px;
 `;
 
-const Pill = styled.button<{ $active: boolean }>`
+const Pill = styled.button<{ $active: boolean; $disabled?: boolean }>`
+  position: relative;
   font-family: ${DS2_VARS.fontMono};
   font-size: 11px;
   padding: 5px 14px;
@@ -75,8 +73,10 @@ const Pill = styled.button<{ $active: boolean }>`
     ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.g200)};
   background: ${({ $active }) =>
     $active ? 'rgba(59, 139, 217, 0.08)' : 'transparent'};
-  color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.g500)};
-  cursor: pointer;
+  color: ${({ $active, $disabled }) =>
+    $disabled ? DS2_VARS.g500 : $active ? DS2_VARS.cSky : DS2_VARS.g500};
+  cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
+  opacity: ${({ $disabled }) => ($disabled ? 0.72 : 1)};
   transition:
     border-color 0.12s ${DS2_VARS.ease},
     color 0.12s ${DS2_VARS.ease},
@@ -84,9 +84,14 @@ const Pill = styled.button<{ $active: boolean }>`
   white-space: nowrap;
 
   &:hover {
-    border-color: ${({ $active }) =>
-      $active ? DS2_VARS.cSky : DS2_VARS.g400};
-    color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.ink)};
+    border-color: ${({ $active, $disabled }) =>
+      $disabled ? DS2_VARS.g200 : $active ? DS2_VARS.cSky : DS2_VARS.g400};
+    color: ${({ $active, $disabled }) =>
+      $disabled
+        ? DS2_VARS.g500
+        : $active
+          ? DS2_VARS.cSky
+          : DS2_VARS.ink};
   }
 
   &:focus-visible {
@@ -95,10 +100,24 @@ const Pill = styled.button<{ $active: boolean }>`
   }
 `;
 
-const DeptGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: ${DS2_SPACE.s2}px;
+/* «Скоро» бейдж на pill — единый стиль с CreateDrawer/ToolsDrawer:
+   cAmber фон, тёмный текст, моно-шрифт, прилипает к правому-верхнему углу. */
+const PillComingSoonBadge = styled.span`
+  position: absolute;
+  top: -7px;
+  right: -8px;
+  font-family: ${DS2_VARS.fontMono};
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #0a0a0a;
+  background: ${DS2_VARS.cAmber};
+  padding: 1px 5px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  white-space: nowrap;
 `;
 
 type PillKind = 'all' | BentoCardKind;
@@ -106,11 +125,16 @@ type PillKind = 'all' | BentoCardKind;
 const PILL_LABELS: Record<PillKind, string> = {
   all: 'Все',
   dashboard: 'Дашборд',
-  chart: 'Диаграмма',
+  chart: 'Чарт',
   geo: 'Гео',
   table: 'Таблица',
   doc: 'Документ',
 };
+
+/* Pill'ы, которые пока не реализованы — показываются с бейджем «Скоро»
+   и не переключают фильтр при клике. Синхронизировано с CreateDrawer и
+   ToolsDrawer (ext-* плагины таблиц/документов пока в бэклоге). */
+const DISABLED_PILLS = new Set<PillKind>(['table', 'doc']);
 
 /** Размеры для favorites: первые две карточки — wide, остальные medium. */
 function favoriteSize(index: number): BentoCardSize {
@@ -123,40 +147,93 @@ export interface HomeBentoProps {
   user?: User;
 }
 
+/** Админ видит всё. Не-админы на «Главной» видят только dashboards —
+ *  чарты скрываются из фильтров и из Избранного/Недавних. Такое правило
+ *  обсуждалось: аналитикам нужны чарты в каталоге, но конечным пользователям
+ *  на главной они не нужны — чтобы не засорять визуальный скан. */
+function isAdminUser(user?: User): boolean {
+  if (!user) return false;
+  const roles = (user as UserWithPermissionsAndRoles).roles;
+  if (!roles) return false;
+  return Object.keys(roles).some(
+    r => r === 'Admin' || r.toLowerCase() === 'admin',
+  );
+}
+
 export const HomeBento: FC<React.PropsWithChildren<HomeBentoProps>> = ({ user }) => {
-  const history = useHistory();
   const { favorites, recents, loadingFavorites, loadingRecents, error, refresh } =
     useBentoData(user?.userId);
-  const {
-    folders,
-    loading: foldersLoading,
-    error: foldersError,
-  } = useCatalogFolders();
   const [activePill, setActivePill] = useState<PillKind>('all');
+  const isAdmin = useMemo(() => isAdminUser(user), [user]);
+  const { itemFolderMap } = useItemToFolderMap();
+  const { labels } = useCatalogColumnLabels();
 
-  const rootFolders = useMemo(
-    () =>
-      folders
-        .filter(f => f.parent_id === null)
-        .sort((a, b) => a.position - b.position || a.id - b.id),
-    [folders],
-  );
-
-  const handleSelectFolder = useCallback(
-    (id: number) => {
-      history.push(`/dashboard/list/?catalog_folder=${id}`);
+  /** Обогащает BentoItem полями department/departmentColor из каталога.
+   *  Для дефолтной папки «Без департамента» name выводится из названия
+   *  колонки департаментов (динамический лейбл). */
+  const enrichWithFolder = useCallback(
+    (item: BentoItem): BentoItem => {
+      const info = itemFolderMap.get(`${item.objectType}:${item.id}`);
+      if (!info) return item;
+      const name = info.isDefault
+        ? deriveDefaultFolderName(labels.dept)
+        : info.folderName;
+      return {
+        ...item,
+        department: name,
+        departmentColor: info.folderColor ?? undefined,
+      };
     },
-    [history],
+    [itemFolderMap, labels.dept],
   );
 
+  /** Применяет pill-фильтр + скрывает чарты для не-админов. */
   const filterByPill = useCallback(
-    (items: BentoItem[]) =>
-      activePill === 'all' ? items : items.filter(i => i.kind === activePill),
-    [activePill],
+    (items: BentoItem[]) => {
+      const roleFiltered = isAdmin
+        ? items
+        : items.filter(i => i.kind !== 'chart' && i.kind !== 'geo');
+      return activePill === 'all'
+        ? roleFiltered
+        : roleFiltered.filter(i => i.kind === activePill);
+    },
+    [activePill, isAdmin],
   );
+
+  /** Кросс-референс: помечает item.starred=true, если он есть в favorites.
+   *  Нужно чтобы recents корректно показывали звезду на уже избранных. */
+  const favoriteKeys = useMemo(() => {
+    const s = new Set<string>();
+    favorites.forEach(f => s.add(`${f.objectType}:${f.id}`));
+    return s;
+  }, [favorites]);
 
   const favoritesFiltered = filterByPill(favorites);
-  const recentsFiltered = filterByPill(recents);
+  const recentsFiltered = useMemo(
+    () =>
+      filterByPill(recents).map(item =>
+        favoriteKeys.has(`${item.objectType}:${item.id}`)
+          ? { ...item, starred: true }
+          : item,
+      ),
+    [recents, filterByPill, favoriteKeys],
+  );
+
+  const handleToggleStar = useCallback(
+    async (item: BentoItem) => {
+      if (item.objectType !== 'dashboard' && item.objectType !== 'chart') {
+        return; // для dataset/ai-документа API избранного нет
+      }
+      try {
+        await toggleFavorite(item.objectType, item.id, !!item.starred);
+        await refresh();
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('Не удалось переключить избранное:', err);
+      }
+    },
+    [refresh],
+  );
 
   const renderSkeletons = (count: number) =>
     Array.from({ length: count }, (_, i) => <Skeleton key={`sk-${i}`} />);
@@ -165,45 +242,57 @@ export const HomeBento: FC<React.PropsWithChildren<HomeBentoProps>> = ({ user })
     items: BentoItem[],
     sizeFn: (index: number) => BentoCardSize,
   ) =>
-    items.map((item, i) => (
+    items.map(enrichWithFolder).map((item, i) => (
       <BentoCard
         key={`${item.objectType}-${item.id}-${i}`}
         item={item}
         size={sizeFn(i)}
         showDepartment={!!item.department}
+        onToggleStar={handleToggleStar}
       />
     ));
 
-  const pillOrder: PillKind[] = [
-    'all',
-    'dashboard',
-    'chart',
-    'geo',
-    'table',
-    'doc',
-  ];
+  /* Порядок pill'ов. 'geo' убран — у нас нет отдельного geo-виза в bento,
+     гео-чарты шли тем же kind='geo' что и обычные chart'ы, создавая
+     пустой фильтр. Таблица/Документ — «скоро». 'chart' показывается
+     только админам: конечные пользователи не должны видеть отдельные
+     чарты на «Главной» — только дашборды. */
+  const pillOrder: PillKind[] = isAdmin
+    ? ['all', 'dashboard', 'chart', 'table', 'doc']
+    : ['all', 'dashboard', 'table', 'doc'];
 
   return (
     <Page>
       <MainHeader>
         <Title>{t('Главная')}</Title>
-        <Subtitle>{t('Избранное, недавние и департаменты')}</Subtitle>
         <Spacer />
       </MainHeader>
 
       <Pills role="tablist" aria-label={t('Фильтр по типу')}>
-        {pillOrder.map(k => (
-          <Pill
-            key={k}
-            role="tab"
-            aria-selected={activePill === k}
-            $active={activePill === k}
-            type="button"
-            onClick={() => setActivePill(k)}
-          >
-            {t(PILL_LABELS[k])}
-          </Pill>
-        ))}
+        {pillOrder.map(k => {
+          const isDisabled = DISABLED_PILLS.has(k);
+          return (
+            <Pill
+              key={k}
+              role="tab"
+              aria-selected={activePill === k}
+              aria-disabled={isDisabled}
+              $active={!isDisabled && activePill === k}
+              $disabled={isDisabled}
+              type="button"
+              onClick={() => {
+                if (isDisabled) return;
+                setActivePill(k);
+              }}
+              title={isDisabled ? t('Скоро будет доступно') : undefined}
+            >
+              {t(PILL_LABELS[k])}
+              {isDisabled ? (
+                <PillComingSoonBadge>{t('Скоро')}</PillComingSoonBadge>
+              ) : null}
+            </Pill>
+          );
+        })}
       </Pills>
 
       {error ? (
@@ -241,36 +330,6 @@ export const HomeBento: FC<React.PropsWithChildren<HomeBentoProps>> = ({ user })
             )
             : renderBentoItems(recentsFiltered, () => 'medium')}
       </BentoGrid>
-
-      <SectionLabel title={t('Департаменты')} />
-      {foldersError ? (
-        <EmptyBlock>{foldersError}</EmptyBlock>
-      ) : foldersLoading && rootFolders.length === 0 ? (
-        <DeptGrid>
-          {renderSkeletons(6).map((s, i) => (
-            <div key={i} style={{ height: 74 }}>
-              {s}
-            </div>
-          ))}
-        </DeptGrid>
-      ) : rootFolders.length === 0 ? (
-        <EmptyBlock>
-          {t(
-            'Папок каталога пока нет. Создайте департаменты через «Каталог → Управление».',
-          )}
-        </EmptyBlock>
-      ) : (
-        <DeptGrid>
-          {rootFolders.map(folder => (
-            <DepartmentTile
-              key={folder.id}
-              folder={folder}
-              onClick={f => handleSelectFolder(f.id)}
-              onItemDropped={refresh}
-            />
-          ))}
-        </DeptGrid>
-      )}
     </Page>
   );
 };

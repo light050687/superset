@@ -21,6 +21,12 @@ HEX_COLOR = validate.Regexp(
     error="color должен быть в формате #RRGGBB",
 )
 
+# Допустимые значения scope. NULL (None) — shared, разрешён явно как
+# `allow_none=True` в полях ниже. Список держим здесь, чтобы переиспользовать
+# в POST/PUT/GET (?scope=...).
+CATALOG_SCOPE_VALUES = ["dashboard", "chart"]
+SCOPE_FIELD = validate.OneOf(CATALOG_SCOPE_VALUES)
+
 openapi_spec_methods_override = {
     "get": {"get": {"summary": "Получить папку каталога"}},
     "get_list": {
@@ -45,6 +51,12 @@ class CatalogFolderPostSchema(Schema):
     description = fields.String(allow_none=True, load_default=None)
     color = fields.String(allow_none=True, validate=HEX_COLOR, load_default=None)
     position = fields.Integer(load_default=0)
+    # Scope папки. Новые папки, создаваемые UI, всегда имеют scope — клиент
+    # передаёт текущий dashboard/chart-режим. NULL остаётся только за
+    # дефолтной папкой и legacy-записями.
+    scope = fields.String(
+        allow_none=True, validate=SCOPE_FIELD, load_default=None
+    )
 
 
 class CatalogFolderPutSchema(Schema):
@@ -55,6 +67,7 @@ class CatalogFolderPutSchema(Schema):
     description = fields.String(required=False, allow_none=True)
     color = fields.String(required=False, allow_none=True, validate=HEX_COLOR)
     position = fields.Integer(required=False)
+    scope = fields.String(required=False, allow_none=True, validate=SCOPE_FIELD)
 
 
 class CatalogFolderTreeNodeSchema(Schema):
@@ -64,8 +77,36 @@ class CatalogFolderTreeNodeSchema(Schema):
     description = fields.String(allow_none=True)
     color = fields.String(allow_none=True)
     position = fields.Integer()
+    scope = fields.String(
+        allow_none=True,
+        metadata={
+            "description": (
+                "dashboard|chart|null. NULL — shared (дефолтная папка и "
+                "унаследованные записи)."
+            )
+        },
+    )
+    is_default = fields.Boolean(
+        metadata={
+            "description": (
+                "True для системной дефолтной папки «Без департамента». "
+                "Удаление запрещено; клиент должен скрыть кнопку Delete."
+            )
+        }
+    )
     item_count = fields.Integer(
         metadata={"description": "Количество элементов именно в этой папке"}
+    )
+    item_counts_by_type = fields.Dict(
+        keys=fields.String(),
+        values=fields.Integer(),
+        metadata={
+            "description": (
+                "Счётчик элементов с разбивкой по типу объекта: "
+                "{'dashboard': N, 'chart': N, 'dataset': N, ...}. "
+                "Используется UI для показа breakdown «1 дашборд · 7 чартов»."
+            )
+        },
     )
 
 

@@ -66,7 +66,9 @@ const propTypes = {
   updateComponents: PropTypes.func.isRequired,
 };
 
-const defaultProps = {
+// React 18 deprecates `defaultProps` on function components. Defaults are
+// now merged inline at the start of `Tabs` via spread over `rawProps`.
+const propDefaults = {
   setActiveTab() {},
   onResizeStart() {},
   onResize() {},
@@ -92,7 +94,8 @@ const CloseIconWithDropIndicator = props => (
   </>
 );
 
-const Tabs = props => {
+const Tabs = rawProps => {
+  const props = { ...propDefaults, ...rawProps };
   const theme = useTheme();
 
   const nativeFilters = useSelector(state => state.nativeFilters);
@@ -534,6 +537,5 @@ const Tabs = props => {
 };
 
 Tabs.propTypes = propTypes;
-Tabs.defaultProps = defaultProps;
 
 export default memo(Tabs);

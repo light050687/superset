@@ -26,6 +26,7 @@ import {
   useCallback,
   useRef,
   ClipboardEvent,
+  type CSSProperties,
   Ref,
   ReactElement,
 } from 'react';
@@ -120,6 +121,8 @@ const Select = forwardRef(
       oneLine,
       maxTagCount: propsMaxTagCount,
       virtual = undefined,
+      dropdownStyle,
+      styles: stylesProp,
       ...props
     }: SelectProps,
     ref: Ref<RefSelectProps>,
@@ -787,6 +790,25 @@ const Select = forwardRef(
           oneLine={oneLine}
           css={props.css}
           {...props}
+          // AntD v6 renamed dropdownStyle → styles.popup.root.
+          // Accept both for backward compatibility and merge into v6 shape.
+          styles={
+            dropdownStyle
+              ? {
+                  ...stylesProp,
+                  popup: {
+                    ...(stylesProp as { popup?: { root?: CSSProperties } })
+                      ?.popup,
+                    root: {
+                      ...(stylesProp as {
+                        popup?: { root?: CSSProperties };
+                      })?.popup?.root,
+                      ...dropdownStyle,
+                    },
+                  },
+                }
+              : stylesProp
+          }
           showSearch={shouldShowSearch}
           ref={ref}
         />

@@ -88,7 +88,14 @@ function reducer(draft: DataMask, action: DataMaskAction) {
   }
 }
 
-const StyledSpace = styled(Space)<{
+// `shouldForwardProp` keeps style-driver props out of the rendered DOM
+// element. AntD v6 + Emotion v11 don't auto-filter unknown props, so leaks
+// like `appSection="embedded"` or `inverseSelection={true}` would otherwise
+// show up as DOM attributes and trigger React warnings.
+const StyledSpace = styled(Space, {
+  shouldForwardProp: prop =>
+    prop !== 'inverseSelection' && prop !== 'appSection',
+})<{
   inverseSelection: boolean;
   appSection: AppSection;
 }>`

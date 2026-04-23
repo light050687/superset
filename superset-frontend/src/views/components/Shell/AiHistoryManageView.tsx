@@ -69,7 +69,7 @@ const Col = styled.div`
   padding: 0 16px;
   border-right: 1px solid ${DS2_VARS.g100};
 
-  &:first-child {
+  &:first-of-type {
     padding-left: 0;
   }
   &:last-child {

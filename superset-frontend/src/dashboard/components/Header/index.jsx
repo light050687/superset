@@ -619,6 +619,7 @@ const Header = () => {
     () => [
       !editMode && (
         <PublishedStatus
+          key="published-status"
           dashboardId={dashboardInfo.id}
           isPublished={isPublished}
           savePublished={boundActionCreators.savePublished}
@@ -628,7 +629,9 @@ const Header = () => {
         />
       ),
       // On mobile, metadata is shown in separate metadata-panel (not here)
-      !editMode && !isEmbedded && !isMobile && metadataBar,
+      !editMode && !isEmbedded && !isMobile && metadataBar ? (
+        <div key="metadata-bar">{metadataBar}</div>
+      ) : null,
     ],
     [
       boundActionCreators.savePublished,

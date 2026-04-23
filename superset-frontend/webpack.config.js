@@ -261,6 +261,10 @@ const config = {
     },
   ],
   performance: {
+    // Large chart-vendor chunks legitimately exceed 244 KiB (ECharts + D3 +
+    // deck.gl pulled through @superset-ui). Suppress the default webpack
+    // warning — real size budget is tracked in the bundle-analyzer report.
+    hints: false,
     assetFilter(assetFilename) {
       // don't throw size limit warning on geojson and font files
       return !/\.(map|geojson|woff2)$/.test(assetFilename);

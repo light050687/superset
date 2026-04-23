@@ -310,7 +310,7 @@ export class ChartCreation extends PureComponent<
       <StyledContainer>
         <h3>{t('Create a new chart')}</h3>
         <Steps
-          direction="vertical"
+          orientation="vertical"
           size="small"
           items={[
             {
@@ -318,7 +318,7 @@ export class ChartCreation extends PureComponent<
                 <StyledStepTitle>{t('Choose a dataset')}</StyledStepTitle>
               ),
               status: this.state.datasource?.value ? 'finish' : 'process',
-              description: (
+              content: (
                 <StyledStepDescription className="dataset">
                   <AsyncSelect
                     autoFocus
@@ -340,7 +340,7 @@ export class ChartCreation extends PureComponent<
                 <StyledStepTitle>{t('Choose chart type')}</StyledStepTitle>
               ),
               status: this.state.vizType ? 'finish' : 'process',
-              description: (
+              content: (
                 <StyledStepDescription>
                   <VizTypeGallery
                     denyList={denyList}

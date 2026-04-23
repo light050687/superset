@@ -19,10 +19,14 @@
 import { ReactNode, useState, useEffect, FunctionComponent } from 'react';
 
 import { Link, useHistory } from 'react-router-dom';
-import { styled, SupersetTheme, css, t, useTheme } from '@superset-ui/core';
+import { styled, css, t, useTheme } from '@superset-ui/core';
 import cx from 'classnames';
 import { debounce } from 'lodash';
-import { Menu, MenuMode, MainNav } from '@superset-ui/core/components/Menu';
+import {
+  Menu,
+  MenuMode,
+  type MenuItem,
+} from '@superset-ui/core/components/Menu';
 import {
   Button,
   Tooltip,
@@ -30,7 +34,10 @@ import {
   type OnClickHandler,
 } from '@superset-ui/core/components';
 import { Icons } from '@superset-ui/core/components/Icons';
-import { MenuObjectProps } from 'src/types/bootstrapTypes';
+import {
+  MenuObjectChildProps,
+  MenuObjectProps,
+} from 'src/types/bootstrapTypes';
 import { Typography } from '@superset-ui/core/components/Typography';
 
 const StyledHeader = styled.div<{ backgroundColor?: string }>`
@@ -112,19 +119,6 @@ const StyledHeader = styled.div<{ backgroundColor?: string }>`
   }
 `;
 
-const styledDisabled = (theme: SupersetTheme) => css`
-  color: ${theme.colorTextDisabled};
-  cursor: not-allowed;
-
-  &:hover {
-    color: ${theme.colorTextDisabled};
-  }
-
-  .ant-menu-item-selected {
-    background-color: ${theme.colorBgContainerDisabled};
-  }
-`;
-
 type MenuChild = {
   label: string;
   name: string;
@@ -162,8 +156,6 @@ export interface SubMenuProps {
   dropDownLinks?: Array<MenuObjectProps>;
   backgroundColor?: string;
 }
-
-const { SubMenu } = MainNav;
 
 const SubMenuComponent: FunctionComponent<React.PropsWithChildren<SubMenuProps>> = props => {
   const [showMenu, setMenu] = useState<MenuMode>('horizontal');
@@ -251,52 +243,59 @@ const SubMenuComponent: FunctionComponent<React.PropsWithChildren<SubMenuProps>>
           })}
         />
         <div className={navRightStyle}>
-          <Menu mode="horizontal" triggerSubMenuAction="click" disabledOverflow>
-            {props.dropDownLinks?.map((link, i) => (
-              <SubMenu
-                css={css`
-                  [data-icon='caret-down'] {
-                    color: ${theme.colorIcon};
-                    font-size: ${theme.fontSizeXS}px;
-                    margin-left: ${theme.sizeUnit}px;
-                  }
-                `}
-                key={i}
-                title={link.label}
-                icon={<Icons.CaretDownOutlined />}
-                popupOffset={[10, 20]}
-                className="dropdown-menu-links"
-              >
-                {link.childs?.map(item => {
-                  if (typeof item === 'object') {
-                    return item.disable ? (
-                      <MainNav.Item
-                        key={item.label}
-                        css={styledDisabled}
-                        disabled
-                      >
-                        <Tooltip
-                          placement="top"
-                          title={t(
-                            "Enable 'Allow file uploads to database' in any database's settings",
-                          )}
-                        >
-                          {item.label}
-                        </Tooltip>
-                      </MainNav.Item>
-                    ) : (
-                      <MainNav.Item key={item.label}>
-                        <Typography.Link href={item.url} onClick={item.onClick}>
-                          {item.label}
-                        </Typography.Link>
-                      </MainNav.Item>
-                    );
-                  }
-                  return null;
-                })}
-              </SubMenu>
-            ))}
-          </Menu>
+          <Menu
+            mode="horizontal"
+            triggerSubMenuAction="click"
+            disabledOverflow
+            css={css`
+              .ant-menu-submenu-title [data-icon='caret-down'] {
+                color: ${theme.colorIcon};
+                font-size: ${theme.fontSizeXS}px;
+                margin-left: ${theme.sizeUnit}px;
+              }
+            `}
+            items={props.dropDownLinks?.map<MenuItem>((link, i) => ({
+              key: `submenu-${i}`,
+              label: link.label,
+              icon: <Icons.CaretDownOutlined />,
+              popupOffset: [10, 20],
+              popupClassName: 'dropdown-menu-links-popup',
+              className: 'dropdown-menu-links',
+              children: link.childs
+                ?.filter(
+                  (item): item is MenuObjectChildProps =>
+                    typeof item === 'object',
+                )
+                .map<MenuItem>(item =>
+                  item.disable
+                    ? {
+                        key: item.label,
+                        disabled: true,
+                        label: (
+                          <Tooltip
+                            placement="top"
+                            title={t(
+                              "Enable 'Allow file uploads to database' in any database's settings",
+                            )}
+                          >
+                            {item.label}
+                          </Tooltip>
+                        ),
+                      }
+                    : {
+                        key: item.label,
+                        label: (
+                          <Typography.Link
+                            href={item.url}
+                            onClick={item.onClick}
+                          >
+                            {item.label}
+                          </Typography.Link>
+                        ),
+                      },
+                ),
+            }))}
+          />
           {props.buttons?.map((btn, i) => (
             <Button
               key={i}

@@ -29,6 +29,7 @@ import {
   useCallback,
   useImperativeHandle,
   ClipboardEvent,
+  type CSSProperties,
 } from 'react';
 
 import {
@@ -144,6 +145,8 @@ const AsyncSelect = forwardRef(
       getPopupContainer,
       oneLine,
       maxTagCount: propsMaxTagCount,
+      dropdownStyle,
+      styles: stylesProp,
       ...props
     }: AsyncSelectProps,
     ref: RefObject<AsyncSelectRef>,
@@ -647,6 +650,23 @@ const AsyncSelect = forwardRef(
           }
           oneLine={oneLine}
           {...props}
+          styles={
+            dropdownStyle
+              ? {
+                  ...stylesProp,
+                  popup: {
+                    ...(stylesProp as { popup?: { root?: CSSProperties } })
+                      ?.popup,
+                    root: {
+                      ...(stylesProp as {
+                        popup?: { root?: CSSProperties };
+                      })?.popup?.root,
+                      ...dropdownStyle,
+                    },
+                  },
+                }
+              : stylesProp
+          }
           ref={ref}
         />
       </StyledContainer>

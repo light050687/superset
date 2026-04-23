@@ -46,7 +46,7 @@ interface PaletteRow {
 
 const KIND_LABELS: Record<PaletteRow['kind'], string> = {
   dashboard: 'Дашборд',
-  chart: 'Диаграмма',
+  chart: 'Чарт',
   dataset: 'Датасет',
   action: 'Действие',
   ai: 'ИИ',
@@ -310,7 +310,7 @@ function buildDefaultActions(askAi?: () => void): PaletteRow[] {
     },
     {
       key: 'new-chart',
-      label: t('Создать диаграмму'),
+      label: t('Создать чарт'),
       url: '/chart/add',
       kind: 'action',
     },
@@ -402,7 +402,7 @@ export const CommandPalette: FC<React.PropsWithChildren<CommandPaletteProps>> = 
     const datasets = resultRows.filter(r => r.kind === 'dataset');
     if (dashboards.length)
       groups.push({ label: t('Дашборды'), rows: dashboards });
-    if (charts.length) groups.push({ label: t('Диаграммы'), rows: charts });
+    if (charts.length) groups.push({ label: t('Чарты'), rows: charts });
     if (datasets.length)
       groups.push({ label: t('Датасеты'), rows: datasets });
     if (groups.length === 0 && !onAskAi) {

@@ -47,7 +47,7 @@
     "core:cover": "cross-env NODE_ENV=test NODE_OPTIONS=\"--max-old-space-size=4096\" jest --coverage --coverageThreshold='{\"global\":{\"statements\":100,\"branches\":100,\"functions\":100,\"lines\":100}}' --collectCoverageFrom='[\"packages/**/src/**/*.{js,ts}\", \"!packages/superset-ui-demo/**/*\"]' packages",
     "cover": "cross-env NODE_ENV=test NODE_OPTIONS=\"--max-old-space-size=4096\" jest --coverage",
     "dev": "webpack --mode=development --color --watch",
-    "dev-server": "cross-env NODE_ENV=development BABEL_ENV=development node --max_old_space_size=4096 ./node_modules/webpack-dev-server/bin/webpack-dev-server.js --mode=development",
+    "dev-server": "cross-env NODE_ENV=development BABEL_ENV=development USE_REACT_REFRESH=true node --max_old_space_size=4096 ./node_modules/webpack-dev-server/bin/webpack-dev-server.js --mode=development",
     "eslint": "eslint --ignore-path=.eslintignore --ext .js,.jsx,.ts,tsx --quiet",
     "format": "npm run _prettier -- --write",
     "lint": "npm run eslint -- . && npm run type",
@@ -136,6 +136,7 @@
     "dom-to-image-more": "^3.6.0",
     "dom-to-pdf": "^0.3.2",
     "echarts": "^5.6.0",
+    "echarts-for-react": "^3.0.2",
     "eslint-plugin-i18n-strings": "file:eslint-rules/eslint-plugin-i18n-strings",
     "fast-glob": "^3.3.2",
     "fs-extra": "^11.2.0",
@@ -181,7 +182,6 @@
     "react-intersection-observer": "^9.16.0",
     "react-json-tree": "^0.20.0",
     "react-lines-ellipsis": "^0.16.1",
-    "react-loadable": "^5.5.0",
     "react-redux": "^7.2.9",
     "react-resize-detector": "^7.1.2",
     "react-reverse-portal": "^2.1.2",
@@ -268,7 +268,6 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/react-json-tree": "^0.6.11",
-    "@types/react-loadable": "^5.5.11",
     "@types/react-redux": "^7.1.10",
     "@types/react-resizable": "^3.0.8",
     "@types/react-router-dom": "^5.3.3",
@@ -381,7 +380,8 @@
       "react": "^18",
       "react-dom": "^18",
       "@types/react": "^18"
-    }
+    },
+    "rc-resize-observer": "npm:@rc-component/resize-observer@^1.1.2"
   },
   "readme": "ERROR: No README data found!",
   "scarfSettings": {

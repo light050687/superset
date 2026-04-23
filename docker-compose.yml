@@ -152,6 +152,12 @@ services:
         required: true
       - path: docker/.env-local # optional override
         required: false
+    # Форк: не загружаем Superset-examples. Тестовые дашборды/чарты удалены
+    # из БД вручную, а на rebuild-контейнере docker-init.sh иначе восстановит
+    # их через `superset load_examples`. Оверрайд берёт верх над docker/.env,
+    # где прописано SUPERSET_LOAD_EXAMPLES=yes.
+    environment:
+      SUPERSET_LOAD_EXAMPLES: "no"
     depends_on:
       db:
         condition: service_started

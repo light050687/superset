@@ -53,6 +53,7 @@ const Grid = styled.div`
 `;
 
 const Tile = styled.button<{ $disabled?: boolean }>`
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -63,7 +64,7 @@ const Tile = styled.button<{ $disabled?: boolean }>`
   border: 1px solid transparent;
   border-radius: 10px;
   cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
-  opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
+  opacity: ${({ $disabled }) => ($disabled ? 0.72 : 1)};
   transition:
     background 0.12s ${DS2_VARS.ease},
     border-color 0.12s ${DS2_VARS.ease},
@@ -113,23 +114,26 @@ const TileName = styled.span<{ $disabled?: boolean }>`
   line-height: 1.1;
 `;
 
+/* «Скоро» бейдж — absolutely-positioned относительно Tile (не TileIcon!),
+   чтобы остаться цветным: grayscale-фильтр на TileIcon обесцвечивал бы
+   вложенный бейдж. Единый цвет cAmber для всех бейджей «Скоро» по DS 2.0. */
 const ComingSoonBadge = styled.span`
   position: absolute;
-  top: -6px;
-  right: -10px;
+  top: 8px;
+  right: 14px;
   font-family: ${DS2_VARS.fontMono};
   font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: ${DS2_VARS.ink};
+  color: #0a0a0a;
   background: ${DS2_VARS.cAmber};
   padding: 1px 5px;
   border-radius: 4px;
-  box-shadow: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
   pointer-events: none;
   white-space: nowrap;
-  z-index: 1;
+  z-index: 2;
 `;
 
 /* ─── Inline SVG иконки (16×16 viewBox, stroke currentColor) ─── */
@@ -252,10 +256,10 @@ export const ToolsDrawer: FC<React.PropsWithChildren<unknown>> = () => {
               >
                 <TileIcon $accent={tool.accent} $disabled={tool.disabled}>
                   {tool.icon}
-                  {tool.disabled ? (
-                    <ComingSoonBadge>{t('Скоро')}</ComingSoonBadge>
-                  ) : null}
                 </TileIcon>
+                {tool.disabled ? (
+                  <ComingSoonBadge>{t('Скоро')}</ComingSoonBadge>
+                ) : null}
                 <TileName $disabled={tool.disabled}>{tool.label}</TileName>
               </Tile>
             ))}

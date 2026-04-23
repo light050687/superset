@@ -19,6 +19,13 @@ import {
   type DragFolderPayload,
   type DragItemPayload,
 } from 'src/features/catalog';
+import {
+  deriveDefaultFolderName,
+  formatCatalogCounts,
+  useCatalogColumnLabels,
+  visibleCatalogCount,
+  type CatalogTypeCounts,
+} from 'src/features/catalog/useCatalogColumnLabels';
 import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 
 const Tile = styled.button<{ $over: boolean }>`
@@ -84,12 +91,16 @@ interface DepartmentTileProps {
   folder: CatalogFolderNode;
   onClick: (folder: CatalogFolderNode) => void;
   onItemDropped?: () => void;
+  /** Админ видит все объекты, не-админ — только dashboards. Для тайла
+   *  это меняет отображаемый счётчик: админ «9 объектов», юзер «1 объект». */
+  isAdmin?: boolean;
 }
 
 export const DepartmentTile: FC<React.PropsWithChildren<DepartmentTileProps>> = ({
   folder,
   onClick,
   onItemDropped,
+  isAdmin = false,
 }) => {
   const ref = useRef<HTMLButtonElement>(null);
 
@@ -117,21 +128,34 @@ export const DepartmentTile: FC<React.PropsWithChildren<DepartmentTileProps>> = 
   });
   drop(ref);
 
+  const { labels } = useCatalogColumnLabels();
+  const displayName = folder.is_default
+    ? deriveDefaultFolderName(labels.dept)
+    : folder.name;
+  const visible = visibleCatalogCount(
+    folder.item_count,
+    folder.item_counts_by_type as CatalogTypeCounts | undefined,
+    isAdmin,
+  );
+  const countsText = formatCatalogCounts(visible);
+
   return (
     <Tile
       ref={ref}
       type="button"
       $over={isOver && canDrop}
       onClick={() => onClick(folder)}
-      aria-label={t('Папка каталога: %s, %d элементов', folder.name, folder.item_count)}
+      aria-label={t(
+        'Папка каталога: %s, %d элементов',
+        displayName,
+        visible,
+      )}
     >
       <Header>
         <Dot $color={folder.color ?? DS2_VARS.g400} />
-        <Name>{folder.name}</Name>
+        <Name>{displayName}</Name>
       </Header>
-      <Count>
-        {folder.item_count} {t('объектов')}
-      </Count>
+      <Count>{countsText}</Count>
     </Tile>
   );
 };

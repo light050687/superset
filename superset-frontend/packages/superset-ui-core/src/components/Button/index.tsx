@@ -16,9 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { Children, ReactElement, Fragment } from 'react';
+import { Children, ReactElement, Fragment, forwardRef } from 'react';
 import cx from 'classnames';
 import { Button as AntdButton } from 'antd';
+
+type ButtonRef = HTMLButtonElement | HTMLAnchorElement;
 import { useTheme } from '@superset-ui/core';
 import { Tooltip } from '../Tooltip';
 import type {
@@ -30,7 +32,10 @@ import type {
   OnClickHandler,
 } from './types';
 
-export function Button(props: ButtonProps) {
+// forwardRef is required so AntD Dropdown / Tooltip triggers can attach refs
+// through @rc-component/trigger (AntD v6). Otherwise React emits
+// "Function components cannot be given refs".
+export const Button = forwardRef<ButtonRef, ButtonProps>((props, ref) => {
   const {
     tooltip,
     placement,
@@ -100,6 +105,7 @@ export function Button(props: ButtonProps) {
 
   const button = (
     <AntdButton
+      ref={ref}
       href={disabled ? undefined : href}
       disabled={disabled}
       type={antdType}
@@ -170,6 +176,7 @@ export function Button(props: ButtonProps) {
   }
 
   return button;
-}
+});
+Button.displayName = 'Button';
 
 export type { ButtonProps, OnClickHandler };

@@ -561,7 +561,7 @@ export const Rail: FC<React.PropsWithChildren<RailProps>> = ({
   );
 
   return (
-    <RailNav aria-label={t('Главная навигация')}>
+    <RailNav aria-label={t('Главная навигация')} data-shell-rail="main">
       {slots.map((slot, i) =>
         slot.kind === 'sep' ? (
           // eslint-disable-next-line react/no-array-index-key
