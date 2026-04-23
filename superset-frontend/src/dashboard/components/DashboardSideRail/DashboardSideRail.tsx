@@ -179,12 +179,24 @@ const IconFilter = (): JSX.Element => (
   </svg>
 );
 
+/* IconPages — stacked pages (Notion/Confluence pattern): задняя страница
+   слегка смещена вверх-вправо, передняя лежит поверх с контент-линиями.
+   Однозначно читается как «несколько страниц», не конфликтует с
+   IconTools (2×2 grid) в главном dock'е. */
 const IconPages = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor">
-    <rect x="3.5" y="3.5" width="6" height="6" rx="1" />
-    <rect x="10.5" y="3.5" width="6" height="6" rx="1" />
-    <rect x="3.5" y="10.5" width="6" height="6" rx="1" />
-    <rect x="10.5" y="10.5" width="6" height="6" rx="1" />
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* Задняя страница (peek) */}
+    <path d="M8 3.5h7a1 1 0 011 1v10" />
+    {/* Передняя страница */}
+    <rect x="4" y="5.5" width="11" height="11" rx="1" />
+    {/* Контент-линии */}
+    <path d="M6.5 9.5h6M6.5 12.5h4" />
   </svg>
 );
 
