@@ -132,6 +132,7 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
   presetButton,
   topLevelPages,
   editMode,
+  hideInternalHeader,
 }) => {
   const theme = useTheme();
   const [isScrolling, setIsScrolling] = useState(false);
@@ -292,7 +293,12 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
             />
           ) : (
             <>
-              <Header toggleFiltersBar={toggleFiltersBar} isMobile={isMobile} />
+              {!hideInternalHeader && (
+                <Header
+                  toggleFiltersBar={toggleFiltersBar}
+                  isMobile={isMobile}
+                />
+              )}
               {presetButton && (
                 <div
                   css={{

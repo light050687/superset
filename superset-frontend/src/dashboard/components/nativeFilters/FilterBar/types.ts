@@ -49,6 +49,10 @@ interface VerticalBarConfig {
   isMobile?: boolean;
   topLevelPages?: any;
   editMode?: boolean;
+  /** Скрыть внутренний `<Header>` (Фильтры + шестерёнка + крестик) —
+   *  используется когда FilterBar монтируется внутри drawer'а, у которого
+   *  свой header. Gear-иконку FiltersDrawer отрендерит сам через portal. */
+  hideInternalHeader?: boolean;
 }
 
 export interface FiltersBarProps {

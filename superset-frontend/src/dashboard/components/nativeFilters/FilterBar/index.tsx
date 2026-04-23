@@ -475,6 +475,7 @@ const FilterBar: FC<React.PropsWithChildren<FiltersBarProps>> = ({
         presetButton={presetButton}
         topLevelPages={verticalConfig.topLevelPages}
         editMode={verticalConfig.editMode}
+        hideInternalHeader={verticalConfig.hideInternalHeader}
       />
     ) : null;
 

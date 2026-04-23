@@ -20,15 +20,18 @@
  */
 import { css, styled } from '@superset-ui/core';
 import { type FC, useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 import { DS2_VARS } from 'src/theme/ds2';
 import FilterBar from 'src/dashboard/components/nativeFilters/FilterBar';
+import FilterBarSettings from 'src/dashboard/components/nativeFilters/FilterBar/FilterBarSettings';
 import { FilterBarOrientation, type RootState } from 'src/dashboard/types';
 import { PAGES_TYPE } from 'src/dashboard/util/componentTypes';
 import {
   DASHBOARD_GRID_ID,
   DASHBOARD_ROOT_ID,
 } from 'src/dashboard/util/constants';
+import { DRAWER_HEAD_CENTER_ID } from 'src/views/components/Shell/Drawer';
 import { useShell } from 'src/views/components/Shell/ShellContext';
 
 /* FilterBar-based контент внутри drawer'а. Задаём высоту 100% чтобы
@@ -121,8 +124,31 @@ export const FiltersDrawer: FC = () => {
           offset: 0,
           topLevelPages,
           editMode,
+          /* Внутренний Header FilterBar'а («Фильтры» + шестерёнка + ×)
+             скрываем — у drawer'а есть свой заголовок «ФИЛЬТРЫ ДАШБОРДА»
+             и своя кнопка закрытия. Шестерёнку (FilterBarSettings)
+             рендерим ниже через Portal в шапку drawer'а. */
+          hideInternalHeader: true,
         }}
       />
+      {/* Portal: шестерёнка (FilterBarSettings) в центр drawer-шапки,
+          рядом с title и close. */}
+      <DrawerHeadSettingsPortal />
     </DrawerBody>
   );
+};
+
+/**
+ * FilterBarSettings живёт в шапке drawer'а через React Portal — mount
+ * в существующий DrawerHeadCenter (id=DRAWER_HEAD_CENTER_ID). Node
+ * lookup через document.getElementById, корректно переживает
+ * mount/unmount drawer'а.
+ */
+const DrawerHeadSettingsPortal: FC = () => {
+  const [mount, setMount] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setMount(document.getElementById(DRAWER_HEAD_CENTER_ID));
+  }, []);
+  if (!mount) return null;
+  return createPortal(<FilterBarSettings />, mount);
 };
