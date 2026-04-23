@@ -113,12 +113,17 @@ const DrawerHeadRight = styled.div`
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  gap: 8px;
 `;
 
 /** id-mount для React Portal-а из drawer-чайлдов (CatalogDrawer
  *  инжектит ScopeToggle — «Дашборды/Чарты»). Общий id используется
  *  для lookup'а через document.getElementById внутри portal-обёртки. */
 export const DRAWER_HEAD_CENTER_ID = 'shell-drawer-header-center';
+/** id-mount для Portal'а в правую часть drawer-шапки, СЛЕВА от кнопки
+ *  закрытия (крестика). FiltersDrawer инжектит сюда шестерёнку
+ *  (FilterBarSettings) — она визуально стоит рядом с ×. */
+export const DRAWER_HEAD_RIGHT_ID = 'shell-drawer-header-right';
 
 /* Мокап `.drawer-title`: font 12 / weight 700 / uppercase / ls 0.06em sans. */
 const DrawerTitle = styled.span`
@@ -329,6 +334,10 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
             <DrawerTitle>{title}</DrawerTitle>
             <DrawerHeadCenter id={DRAWER_HEAD_CENTER_ID} />
             <DrawerHeadRight>
+              <div
+                id={DRAWER_HEAD_RIGHT_ID}
+                style={{ display: 'flex', alignItems: 'center' }}
+              />
               <DrawerClose
                 type="button"
                 onClick={closeDrawer}

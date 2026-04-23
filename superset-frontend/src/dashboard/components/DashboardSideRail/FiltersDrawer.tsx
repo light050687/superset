@@ -31,7 +31,7 @@ import {
   DASHBOARD_GRID_ID,
   DASHBOARD_ROOT_ID,
 } from 'src/dashboard/util/constants';
-import { DRAWER_HEAD_CENTER_ID } from 'src/views/components/Shell/Drawer';
+import { DRAWER_HEAD_RIGHT_ID } from 'src/views/components/Shell/Drawer';
 import { useShell } from 'src/views/components/Shell/ShellContext';
 
 /* FilterBar-based контент внутри drawer'а. Задаём высоту 100% чтобы
@@ -139,15 +139,16 @@ export const FiltersDrawer: FC = () => {
 };
 
 /**
- * FilterBarSettings живёт в шапке drawer'а через React Portal — mount
- * в существующий DrawerHeadCenter (id=DRAWER_HEAD_CENTER_ID). Node
- * lookup через document.getElementById, корректно переживает
- * mount/unmount drawer'а.
+ * FilterBarSettings живёт в правой части шапки drawer'а через React
+ * Portal — mount в слот DRAWER_HEAD_RIGHT_ID, который Drawer.tsx
+ * рендерит СЛЕВА от кнопки закрытия. Шестерёнка визуально стоит
+ * вплотную к крестику. Node lookup через document.getElementById,
+ * корректно переживает mount/unmount drawer'а.
  */
 const DrawerHeadSettingsPortal: FC = () => {
   const [mount, setMount] = useState<HTMLElement | null>(null);
   useEffect(() => {
-    setMount(document.getElementById(DRAWER_HEAD_CENTER_ID));
+    setMount(document.getElementById(DRAWER_HEAD_RIGHT_ID));
   }, []);
   if (!mount) return null;
   return createPortal(<FilterBarSettings />, mount);
