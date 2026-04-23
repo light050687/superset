@@ -33,11 +33,15 @@ const Column = styled.div<{ $isOver: boolean }>`
     border: 1px solid
       ${$isOver ? theme.colorPrimary : theme.colorBorderSecondary};
     border-radius: ${theme.borderRadius}px;
-    /* Фиксированные размеры: высота 480px, ширина задаётся grid'ом
-       (320px). Внутри scrollable body — контент (карточки/preset-
-       panel) прокручивается по вертикали, а head с actions sticky сверху. */
-    height: 480px;
-    min-height: 120px;
+    /* Высота колонки = расстояние между drawer-header'ом и footer-slot
+       с кнопками Применить/Сбросить. Вычисляется от drawer'а:
+       max drawer = min(640px, 80vh). Минус 14 handle + 50 head +
+       60 footer + 28+24 body-paddings ≈ 208px → content height.
+       Колонка ограничена 432px (cap), ниже — пропорционально 80vh.
+       При стандартных размерах 640 → 432 колонка, конец виден внутри
+       drawer-body, footer с кнопками фиксирован ниже. */
+    height: min(432px, calc(80vh - 208px));
+    min-height: 160px;
     overflow: hidden;
     transition:
       border-color 160ms ease,
@@ -58,6 +62,12 @@ const Body = styled.div`
     min-height: 0;
     box-sizing: border-box;
     overflow-y: auto;
+    /* overscroll-behavior: auto — когда колонка проскроллена до
+       top/bottom и юзер продолжает крутить колесо, событие wheel
+       естественно пробрасывается в родительский drawer body, и он
+       подхватывает скролл. Default в браузерах, но явно — защита
+       от будущих overrides. */
+    overscroll-behavior: auto;
     /* DS 2.0 scrollbar, согласованный с ShellMain и DrawerBody. */
     scrollbar-width: thin;
     scrollbar-color: var(--g300) transparent;
