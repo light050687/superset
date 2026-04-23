@@ -32,6 +32,7 @@ import { FilterBarOrientation } from 'src/dashboard/types';
 import FilterControl from '../FilterControls/FilterControl';
 import FilterDivider from '../FilterControls/FilterDivider';
 import { useFilters } from '../state';
+import { useFilterConfigModal } from '../FilterConfigurationLink/useFilterConfigModal';
 import { useFilterCategories } from './useFilterCategories';
 import { useFilterSearch } from './FilterSearchContext';
 import FilterKanbanColumn from './FilterKanbanColumn';
@@ -103,6 +104,14 @@ const FilterKanban: FC<FilterKanbanProps> = ({
   const { query } = useFilterSearch();
   const normalizedQuery = query.trim().toLowerCase();
 
+  /* Модалка «Add and edit filters» — родная FiltersConfigModal. Юзер
+     открывает её по клику ➕ в любой колонке kanban'а (unified add-
+     flow). После Save новые фильтры автоматом попадают в «Нераспре-
+     делённые» (как нераспределённые — юзер dragg'ает в нужную
+     колонку либо использует ➕ выбрать категорию). */
+  const { openFilterConfigModal, FilterConfigModalComponent } =
+    useFilterConfigModal({ dashboardId });
+
   const {
     categories,
     uncategorizedName,
@@ -168,15 +177,6 @@ const FilterKanban: FC<FilterKanbanProps> = ({
     );
   };
 
-  /** Опции «Добавить фильтр» для конкретной категории — все фильтры,
-   *  которых нет в ней сейчас. */
-  const buildAvailableFor = (currentFilterIds: string[]) => {
-    const present = new Set(currentFilterIds);
-    return allFilterIds
-      .filter(id => !present.has(id) && filters[id] && !isFilterDivider(filters[id]))
-      .map(id => ({ id, name: (filters[id] as Filter).name || id }));
-  };
-
   return (
     <GridWrap>
       {/* Preset-колонка с inline-panel (search + Корпоративные/Личные
@@ -202,6 +202,7 @@ const FilterKanban: FC<FilterKanbanProps> = ({
         onRename={name => renameSpecial('uncategorized', name)}
         onDelete={null}
         isDefault
+        onAddFilter={openFilterConfigModal}
       />
       {categories.map(cat => {
         const validIds = cat.filterIds.filter(id => filters[id]);
@@ -218,7 +219,7 @@ const FilterKanban: FC<FilterKanbanProps> = ({
             onMoveFilter={moveFilter}
             onRename={name => renameCategory(cat.id, name)}
             onDelete={() => deleteCategory(cat.id)}
-            availableFilters={buildAvailableFor(validIds)}
+            onAddFilter={openFilterConfigModal}
           />
         );
       })}
@@ -230,6 +231,7 @@ const FilterKanban: FC<FilterKanbanProps> = ({
         <span>＋</span>
         <span>{t('Добавить колонку')}</span>
       </AddColBtn>
+      {FilterConfigModalComponent}
     </GridWrap>
   );
 };

@@ -173,19 +173,12 @@ const FilterBarSettings = () => {
   const menuItems = useMemo(() => {
     const items: MenuProps['items'] = [];
 
-    if (canEdit) {
-      items.push({
-        key: ADD_EDIT_FILTERS_MENU_KEY,
-        label: (
-          <FilterConfigurationLink>
-            {t('Add or edit filters')}
-          </FilterConfigurationLink>
-        ),
-      });
-      if (canEdit) {
-        items.push({ type: 'divider' });
-      }
-    }
+    /* «Add or edit filters» удалён из gear-меню — вместо него юзер
+       использует «+» (PlusOutlined) в шапке любой kanban-колонки,
+       который открывает тот же FiltersConfigModal. Пункт в gear'е
+       в нашем форке и не работал корректно (FilterConfigurationLink
+       ожидал clickable-trigger внутри себя, а меню-item-рендер
+       ломал клик-handler). */
     if (canEdit) {
       items.push({
         key: CROSS_FILTERS_MENU_KEY,

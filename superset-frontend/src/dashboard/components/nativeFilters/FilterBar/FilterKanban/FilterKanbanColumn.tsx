@@ -10,14 +10,12 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 import { css, styled, t } from '@superset-ui/core';
-import { Dropdown } from '@superset-ui/core/components';
 import { Icons } from '@superset-ui/core/components/Icons';
 import {
   type FC,
   type KeyboardEvent,
   type ReactNode,
   useCallback,
-  useMemo,
   useState,
 } from 'react';
 import { useDrop } from 'react-dnd';
@@ -167,11 +165,6 @@ const EmptyHint = styled.div`
   `}
 `;
 
-interface AvailableFilterOption {
-  id: string;
-  name: string;
-}
-
 interface FilterKanbanColumnProps {
   /** ID категории. null для дефолтного bucket'а «нераспределённые». */
   categoryId: string | null;
@@ -191,9 +184,10 @@ interface FilterKanbanColumnProps {
   /** Кастомный контент (для пресетов). Если задан — карточки не
    *  рендерятся, DnD-drop отключён. */
   customContent?: ReactNode;
-  /** Список фильтров, которых в этой колонке ещё нет — показываем в
-   *  popover add-filter-кнопки. Если undefined или пустой — кнопка скрыта. */
-  availableFilters?: AvailableFilterOption[];
+  /** Callback ➕ «Добавить фильтр» — открывает `FiltersConfigModal`
+   *  для создания/редактирования фильтров. Если undefined — кнопка скрыта
+   *  (preset/default колонки). */
+  onAddFilter?: () => void;
   /** Дополнительные action-кнопки в правой части head'а (перед delete).
    *  Для preset-колонки: сбросить фильтры, создать, импортировать. */
   headerActions?: ReactNode;
@@ -210,7 +204,7 @@ const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
   isDefault = false,
   isPresetColumn = false,
   customContent,
-  availableFilters,
+  onAddFilter,
   headerActions,
 }) => {
   const [editing, setEditing] = useState(false);
@@ -262,21 +256,7 @@ const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
     }),
   }), [categoryId, onMoveFilter, isPresetColumn]);
 
-  const addFilterMenuItems = useMemo(
-    () =>
-      (availableFilters ?? []).map(opt => ({
-        key: opt.id,
-        label: opt.name,
-        onClick: () => onMoveFilter(opt.id, categoryId),
-      })),
-    [availableFilters, categoryId, onMoveFilter],
-  );
-
-  const canAddFilter =
-    !isDefault &&
-    !isPresetColumn &&
-    Array.isArray(availableFilters) &&
-    availableFilters.length > 0;
+  const canAddFilter = !isPresetColumn && typeof onAddFilter === 'function';
 
   return (
     <Column ref={dropRef as any} $isOver={isOver}>
@@ -307,25 +287,20 @@ const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
         )}
         {headerActions}
         {canAddFilter && (
-          <Dropdown
-            menu={{ items: addFilterMenuItems }}
-            trigger={['click']}
-            placement="bottomRight"
+          <IconBtn
+            type="button"
+            onClick={onAddFilter}
+            aria-label={t('Добавить или изменить фильтры')}
+            title={t('Добавить или изменить фильтры')}
+            css={css`
+              &:hover {
+                color: var(--ant-color-primary);
+                background: var(--ant-color-primary-bg);
+              }
+            `}
           >
-            <IconBtn
-              type="button"
-              aria-label={t('Добавить фильтр в колонку')}
-              title={t('Добавить фильтр в колонку')}
-              css={css`
-                &:hover {
-                  color: var(--ant-color-primary);
-                  background: var(--ant-color-primary-bg);
-                }
-              `}
-            >
-              <Icons.PlusOutlined iconSize="s" />
-            </IconBtn>
-          </Dropdown>
+            <Icons.PlusOutlined iconSize="s" />
+          </IconBtn>
         )}
         {onDelete && !isDefault && !isPresetColumn && (
           <IconBtn
