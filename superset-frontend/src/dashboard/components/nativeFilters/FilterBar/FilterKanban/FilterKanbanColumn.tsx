@@ -1,0 +1,247 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ */
+import { css, styled, t } from '@superset-ui/core';
+import { Icons } from '@superset-ui/core/components/Icons';
+import {
+  type FC,
+  type KeyboardEvent,
+  type ReactNode,
+  useCallback,
+  useState,
+} from 'react';
+import { useDrop } from 'react-dnd';
+import FilterKanbanCard, { FILTER_CARD_DND_TYPE } from './FilterKanbanCard';
+
+const Column = styled.div<{ $isOver: boolean }>`
+  ${({ theme, $isOver }) => css`
+    display: flex;
+    flex-direction: column;
+    gap: ${theme.sizeUnit * 2}px;
+    padding: ${theme.sizeUnit * 3}px;
+    background: ${theme.colorBgContainer};
+    border: 1px solid
+      ${$isOver ? theme.colorPrimary : theme.colorBorderSecondary};
+    border-radius: ${theme.borderRadius}px;
+    min-height: 120px;
+    transition:
+      border-color 160ms ease,
+      background 160ms ease;
+    ${$isOver &&
+    `
+      background: ${theme.colorPrimaryBg};
+    `}
+  `}
+`;
+
+const Head = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.sizeUnit}px;
+  margin-bottom: ${({ theme }) => theme.sizeUnit}px;
+`;
+
+const Title = styled.h4`
+  ${({ theme }) => css`
+    flex: 1;
+    margin: 0;
+    font-size: ${theme.fontSizeSM}px;
+    font-weight: ${theme.fontWeightStrong};
+    color: ${theme.colorText};
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: text;
+    border-radius: ${theme.borderRadiusXS}px;
+    padding: ${theme.sizeUnit / 2}px ${theme.sizeUnit}px;
+    &:hover {
+      background: ${theme.colorBgTextHover};
+    }
+  `}
+`;
+
+const TitleInput = styled.input`
+  ${({ theme }) => css`
+    flex: 1;
+    font-size: ${theme.fontSizeSM}px;
+    font-weight: ${theme.fontWeightStrong};
+    color: ${theme.colorText};
+    background: ${theme.colorBgLayout};
+    border: 1px solid ${theme.colorPrimaryBorder};
+    border-radius: ${theme.borderRadiusXS}px;
+    padding: ${theme.sizeUnit / 2}px ${theme.sizeUnit}px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    outline: none;
+    min-width: 0;
+  `}
+`;
+
+const IconBtn = styled.button`
+  ${({ theme }) => css`
+    background: transparent;
+    border: none;
+    padding: ${theme.sizeUnit}px;
+    color: ${theme.colorTextTertiary};
+    cursor: pointer;
+    border-radius: ${theme.borderRadiusXS}px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 120ms ease;
+    &:hover {
+      color: ${theme.colorError};
+      background: ${theme.colorErrorBg};
+    }
+    &:focus-visible {
+      outline: 2px solid ${theme.colorPrimaryBorder};
+      outline-offset: 1px;
+    }
+  `}
+`;
+
+const EmptyHint = styled.div`
+  ${({ theme }) => css`
+    color: ${theme.colorTextTertiary};
+    font-size: ${theme.fontSizeSM}px;
+    text-align: center;
+    padding: ${theme.sizeUnit * 3}px ${theme.sizeUnit * 2}px;
+    border: 1px dashed ${theme.colorBorderSecondary};
+    border-radius: ${theme.borderRadius}px;
+  `}
+`;
+
+interface FilterKanbanColumnProps {
+  /** ID категории. null для дефолтного bucket'а «нераспределённые». */
+  categoryId: string | null;
+  title: string;
+  filterIds: string[];
+  renderFilterNode: (filterId: string) => ReactNode;
+  /** filterId → toCategoryId (null для bucket'а). */
+  onMoveFilter: (filterId: string, toCategoryId: string | null) => void;
+  /** null — rename запрещён (дефолтный bucket). */
+  onRename: ((name: string) => void) | null;
+  /** null — delete запрещён (дефолтный bucket). */
+  onDelete: (() => void) | null;
+  /** Дефолтная колонка «Нераспределённые» — без rename/delete. */
+  isDefault?: boolean;
+}
+
+const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
+  categoryId,
+  title,
+  filterIds,
+  renderFilterNode,
+  onMoveFilter,
+  onRename,
+  onDelete,
+  isDefault = false,
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(title);
+
+  const startEdit = useCallback(() => {
+    if (!onRename) return;
+    setDraft(title);
+    setEditing(true);
+  }, [onRename, title]);
+
+  const commitEdit = useCallback(() => {
+    if (!onRename) {
+      setEditing(false);
+      return;
+    }
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== title) onRename(trimmed);
+    setEditing(false);
+  }, [draft, onRename, title]);
+
+  const cancelEdit = useCallback(() => {
+    setDraft(title);
+    setEditing(false);
+  }, [title]);
+
+  const onKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        commitEdit();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelEdit();
+      }
+    },
+    [cancelEdit, commitEdit],
+  );
+
+  const [{ isOver }, dropRef] = useDrop(() => ({
+    accept: FILTER_CARD_DND_TYPE,
+    drop: (item: { filterId: string }) => {
+      onMoveFilter(item.filterId, categoryId);
+    },
+    collect: monitor => ({ isOver: monitor.isOver({ shallow: true }) }),
+  }), [categoryId, onMoveFilter]);
+
+  return (
+    <Column ref={dropRef as any} $isOver={isOver}>
+      <Head>
+        {editing ? (
+          <TitleInput
+            autoFocus
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={onKeyDown}
+            aria-label={t('Переименовать колонку')}
+          />
+        ) : (
+          <Title
+            tabIndex={onRename ? 0 : -1}
+            onClick={startEdit}
+            onKeyDown={e => {
+              if (onRename && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                startEdit();
+              }
+            }}
+            title={onRename ? t('Кликните для переименования') : undefined}
+          >
+            {title || t('Без названия')}
+          </Title>
+        )}
+        {onDelete && !isDefault && (
+          <IconBtn
+            type="button"
+            onClick={onDelete}
+            aria-label={t('Удалить колонку')}
+            title={t('Удалить колонку')}
+          >
+            <Icons.DeleteOutlined iconSize="s" />
+          </IconBtn>
+        )}
+      </Head>
+      {filterIds.length === 0 ? (
+        <EmptyHint>
+          {isDefault
+            ? t('Всё распределено')
+            : t('Перетащите сюда фильтр')}
+        </EmptyHint>
+      ) : (
+        filterIds.map(filterId => (
+          <FilterKanbanCard key={filterId} filterId={filterId}>
+            {renderFilterNode(filterId)}
+          </FilterKanbanCard>
+        ))
+      )}
+    </Column>
+  );
+};
+
+export default FilterKanbanColumn;

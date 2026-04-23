@@ -476,6 +476,8 @@ const FilterBar: FC<React.PropsWithChildren<FiltersBarProps>> = ({
         topLevelPages={verticalConfig.topLevelPages}
         editMode={verticalConfig.editMode}
         hideInternalHeader={verticalConfig.hideInternalHeader}
+        useKanban={verticalConfig.useKanban}
+        dashboardId={dashboardId}
       />
     ) : null;
 

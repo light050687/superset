@@ -129,6 +129,9 @@ export const FiltersDrawer: FC = () => {
              и своя кнопка закрытия. Шестерёнку (FilterBarSettings)
              рендерим ниже через Portal в шапку drawer'а. */
           hideInternalHeader: true,
+          /* Kanban-grid: фильтры распределены по колонкам-категориям с
+             drag-drop; колонки юзер создаёт/переименовывает/удаляет. */
+          useKanban: true,
         }}
       />
       {/* Portal: шестерёнка (FilterBarSettings) в центр drawer-шапки,

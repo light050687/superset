@@ -36,6 +36,7 @@ import { EmptyState, Loading } from '@superset-ui/core/components';
 import { getFilterBarTestId } from './utils';
 import { VerticalBarProps } from './types';
 import Header from './Header';
+import FilterKanban from './FilterKanban';
 import FilterControls from './FilterControls/FilterControls';
 import CrossFiltersVertical from './CrossFilters/Vertical';
 import PagesPanel from './PagesPanel';
@@ -133,6 +134,8 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
   topLevelPages,
   editMode,
   hideInternalHeader,
+  useKanban,
+  dashboardId,
 }) => {
   const theme = useTheme();
   const [isScrolling, setIsScrolling] = useState(false);
@@ -195,6 +198,14 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
             }
           />
         </FilterBarEmptyStateContainer>
+      ) : useKanban && dashboardId ? (
+        <FilterKanban
+          dashboardId={dashboardId}
+          dataMaskSelected={dataMaskSelected}
+          onFilterSelectionChange={onSelectionChange}
+          clearAllTriggers={clearAllTriggers}
+          onClearAllComplete={onClearAllComplete}
+        />
       ) : (
         <FilterControlsWrapper isMobile={isMobile}>
           <FilterControls
@@ -206,7 +217,17 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
           />
         </FilterControlsWrapper>
       ),
-    [canEdit, dataMaskSelected, filterValues.length, onSelectionChange, isMobile],
+    [
+      canEdit,
+      dataMaskSelected,
+      filterValues.length,
+      onSelectionChange,
+      isMobile,
+      useKanban,
+      dashboardId,
+      clearAllTriggers,
+      onClearAllComplete,
+    ],
   );
 
   return (
