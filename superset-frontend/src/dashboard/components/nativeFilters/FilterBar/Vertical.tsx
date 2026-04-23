@@ -169,19 +169,23 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
     };
   }, [onScroll]);
 
-  /* Unified DS 2.0 scrollbar — тот же стиль, что у ShellMain: thin 10px,
-     g300 thumb c 5px radius, background-clip: padding-box (создаёт
-     2px «отступ» внутри thumb'а), hover → g400. Прописан через emotion
-     css-fragment, чтобы psevdo-classes ::-webkit-scrollbar-* сработали
-     (inline style их не поддерживает). */
+  /* Unified DS 2.0 scrollbar фрагмент: thin 10px, g300 thumb, 5px radius,
+     background-clip:padding-box, hover→g400. Прописан через emotion
+     css-fragment — inline-style не поддерживает ::-webkit-scrollbar-*.
+     Только вертикальный scroll: overflow-x: hidden (без горизонтальной
+     полосы), overflow-y: auto.
+     В kanban-режиме scroll отдаётся родительскому drawer body — чтобы
+     не было двойных полос. Поэтому overflow: visible и нет height. */
   const tabPaneCss = useMemo(
     () => css`
-      overflow: auto;
-      overscroll-behavior: contain;
       box-sizing: border-box;
-      ${isMobile
-        ? 'flex: 1; width: 100%;'
-        : `height: ${typeof height === 'number' ? `${height}px` : height};`}
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+      ${useKanban
+        ? 'overflow-y: visible; height: auto; width: 100%;'
+        : isMobile
+          ? 'overflow-y: auto; flex: 1; width: 100%;'
+          : `overflow-y: auto; height: ${typeof height === 'number' ? `${height}px` : height};`}
       scrollbar-width: thin;
       scrollbar-color: var(--g300) transparent;
       &::-webkit-scrollbar {
@@ -202,7 +206,7 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
         background-clip: padding-box;
       }
     `,
-    [height, isMobile],
+    [height, isMobile, useKanban],
   );
 
   const filterControls = useMemo(

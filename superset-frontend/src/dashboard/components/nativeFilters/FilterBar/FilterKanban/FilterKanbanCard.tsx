@@ -24,6 +24,20 @@ const Card = styled.div<{ $dragging: boolean }>`
     padding: ${theme.sizeUnit * 2}px;
     opacity: ${$dragging ? 0.4 : 1};
     cursor: grab;
+    /* Клипаем горизонтальное переполнение внутренностей FilterControl
+       (Range-picker, autocomplete и т.п. могут иметь свой overflow-x:auto,
+       что рождает лишнюю горизонтальную полосу в карточке). В карточке
+       h-scroll не нужен — контент должен либо ellipse'иться, либо
+       wrap'аться по месту. */
+    overflow-x: hidden;
+    overflow-y: visible;
+    /* min-width: 0 на прямых потомках снимает их min-content-минимум —
+       flex/grid children смогут ужиматься до реального доступного места,
+       а не распирать контейнер. */
+    & > * {
+      min-width: 0;
+      max-width: 100%;
+    }
     transition:
       border-color 160ms ease,
       opacity 120ms ease;
