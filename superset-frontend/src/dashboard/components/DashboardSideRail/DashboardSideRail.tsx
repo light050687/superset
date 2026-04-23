@@ -50,7 +50,10 @@ import type { RootState } from 'src/dashboard/types';
    Z-index 100 < 101 главного dock'а: если мини-панель всё-таки
    частично перекрывается с dock'ом на 1-2px для anti-aliasing,
    dock остаётся визуально выше. */
-const Rail = styled.nav<{ $metrics: DockMetrics | null }>`
+const Rail = styled.nav<{
+  $metrics: DockMetrics | null;
+  $collapsed: boolean;
+}>`
   /* Горизонтальная полоска, «сидит» на главном floating dock'е как
      крышка ноутбука. Ширина динамически совпадает с шириной
      главного dock'а (измеряется через ResizeObserver). Нижний
@@ -85,7 +88,10 @@ const Rail = styled.nav<{ $metrics: DockMetrics | null }>`
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: flex-end;
+  /* По запросу юзера: иконки центрированы в mini-rail'е (раньше flex-end
+     справа), чтобы не конкурировать с top-edge grabber'ом и смотреть
+     симметрично относительно dock'а. */
+  justify-content: center;
   gap: 4px;
   background: ${DS2_VARS.aiSideBg};
   backdrop-filter: ${DS2_VARS.dockFilter};
@@ -100,12 +106,30 @@ const Rail = styled.nav<{ $metrics: DockMetrics | null }>`
      панели сзади, выглядывающей из-под главного dock'а». */
   z-index: 99;
 
+  /* Collapse-to-handle sync: когда main dock свёрнут в pill,
+     mini-rail визуально уходит вниз (translateY) и фейдится, чтобы
+     вместе с доком формировать единую compound-анимацию. Триггерится
+     через ShellContext.isDockCollapsed. */
+  transform: ${({ $collapsed }) =>
+    $collapsed ? 'translateY(100%)' : 'translateY(0)'};
+  opacity: ${({ $collapsed }) => ($collapsed ? 0 : 1)};
+  pointer-events: ${({ $collapsed }) => ($collapsed ? 'none' : 'auto')};
+  transition:
+    transform 280ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 180ms ease;
+
   @media print {
     display: none;
   }
   /* Mobile: скрываем — drawer'ы triggered через нижний dock. */
   @media (max-width: 768px) {
     display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: opacity 120ms ease;
+    transform: ${({ $collapsed }) =>
+      $collapsed ? 'translateY(100%)' : 'none'};
   }
 `;
 
@@ -253,9 +277,18 @@ function useMainDockMetrics(): DockMetrics | null {
 }
 
 export const DashboardSideRail: FC = () => {
-  const { openedDrawer, toggleDrawer } = useShell();
+  const { openedDrawer, toggleDrawer, isDockCollapsed, setHasMiniRail } =
+    useShell();
   const onDashboard = useOnDashboardRoute();
   const dockMetrics = useMainDockMetrics();
+
+  /* Сообщаем Shell'у что mini-rail присутствует — Rail.tsx прокинет
+     эту инфу в top-edge grabber, чтобы тот позиционировался ВЫШЕ
+     mini-rail'а на дашбордах, а не перекрывался с его иконками. */
+  useEffect(() => {
+    if (onDashboard) setHasMiniRail(true);
+    return () => setHasMiniRail(false);
+  }, [onDashboard, setHasMiniRail]);
 
   /* Pages-иконка имеет смысл только если:
      - у дашборда есть Pages-структура (topLevelPages с >1 child), либо
@@ -295,7 +328,9 @@ export const DashboardSideRail: FC = () => {
   return (
     <Rail
       aria-label={t('Панель управления дашбордом')}
+      aria-hidden={isDockCollapsed}
       $metrics={dockMetrics}
+      $collapsed={isDockCollapsed}
     >
       {items.map(item => {
         if (item.visible === false) return null;

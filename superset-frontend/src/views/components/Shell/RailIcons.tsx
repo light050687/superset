@@ -121,3 +121,10 @@ export const IconClose: FC<React.PropsWithChildren<unknown>> = () => (
     <path d="M3 3l10 10M13 3L3 13" />
   </svg>
 );
+
+/** Chevron-down для кнопки «Свернуть dock в handle». */
+export const IconCollapse: FC<React.PropsWithChildren<unknown>> = () => (
+  <svg {...base} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 6l5 5 5-5" />
+  </svg>
+);
