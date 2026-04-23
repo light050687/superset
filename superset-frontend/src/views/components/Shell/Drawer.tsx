@@ -124,6 +124,10 @@ export const DRAWER_HEAD_CENTER_ID = 'shell-drawer-header-center';
  *  закрытия (крестика). FiltersDrawer инжектит сюда шестерёнку
  *  (FilterBarSettings) — она визуально стоит рядом с ×. */
 export const DRAWER_HEAD_RIGHT_ID = 'shell-drawer-header-right';
+/** id-mount для Portal'а в футер drawer'а (sticky-footer вне scrollable
+ *  body). FiltersDrawer.Vertical-Kanban инжектит сюда Apply/Reset
+ *  действия — кнопки не ездят со скроллом и не перекрывают его. */
+export const DRAWER_FOOTER_SLOT_ID = 'shell-drawer-footer-slot';
 
 /* Мокап `.drawer-title`: font 12 / weight 700 / uppercase / ls 0.06em sans. */
 const DrawerTitle = styled.span`
@@ -239,6 +243,12 @@ const DrawerFooter = styled.div`
   padding: 10px 22px 14px;
   border-top: 1px solid ${DS2_VARS.g100};
   flex-shrink: 0;
+  background: ${DS2_VARS.drawerBg};
+  /* Пустой footer-slot (без portal-контента) невидим — иначе
+     drawer снизу получает лишнюю 24px полосу с border-top. */
+  &:empty {
+    display: none;
+  }
 `;
 
 const DrawerPlaceholder = styled.div`
@@ -416,6 +426,10 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
               </DrawerPlaceholder>
             )}
           </DrawerBody>
+          {/* Footer-slot — куда FiltersDrawer портирует Apply/Reset.
+              Всегда присутствует; если портала нет — пустой DrawerFooter
+              с границей border-top визуально не выделяется (min-height). */}
+          <DrawerFooter id={DRAWER_FOOTER_SLOT_ID} />
           {footerNode ? <DrawerFooter>{footerNode}</DrawerFooter> : null}
         </>
       ) : null}

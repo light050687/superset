@@ -43,11 +43,11 @@ const GridWrap = styled.div`
   display: grid;
   gap: ${({ theme }) => theme.sizeUnit * 3}px;
   padding: ${({ theme }) => theme.sizeUnit * 3}px;
-  /* Адаптивная сетка: минимум 200px, stretch до 1fr — при типичной
-     drawer-width 985-1200px это даёт 4 колонки: (985-padding48-gap72)/4
-     = 216px на колонку. Минимум 200px оставляет место даже на узких
-     экранах. Column-height фиксирована (см. FilterKanbanColumn). */
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  /* Жёстко 4 колонки в ряд. Каждая занимает 1fr — равное деление
+     доступной ширины (минимум 180px, иначе wrap). Пятый-плюс элемент
+     (например «+ Добавить колонку») уходит на следующий ряд.
+     Вариант с auto-fill давал 5-6 в ряд на широких экранах. */
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
   align-items: start;
 `;
 

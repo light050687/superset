@@ -37,6 +37,7 @@ import { getFilterBarTestId } from './utils';
 import { VerticalBarProps } from './types';
 import Header from './Header';
 import FilterKanban from './FilterKanban';
+import { DrawerFooterActionsPortal } from './FilterKanban/DrawerFooterActionsPortal';
 import FilterControls from './FilterControls/FilterControls';
 import CrossFiltersVertical from './CrossFilters/Vertical';
 import PagesPanel from './PagesPanel';
@@ -373,7 +374,15 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
                   </>
                 </div>
               )}
-              {actions}
+              {/* В kanban-режиме actions портируются в footer-slot
+                  drawer'а (см. DrawerFooterActionsPortal) — чтобы не
+                  плыть со скроллом и не перекрывать его. В classic
+                  sidebar — рендерятся на месте как раньше. */}
+              {useKanban ? (
+                <DrawerFooterActionsPortal>{actions}</DrawerFooterActionsPortal>
+              ) : (
+                actions
+              )}
             </>
           )}
         </Bar>
