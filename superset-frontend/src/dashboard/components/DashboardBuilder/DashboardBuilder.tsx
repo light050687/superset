@@ -280,7 +280,7 @@ const DashboardContentWrapper = styled.div`
         width: 100%;
       }
 
-      & > .empty-droptarget:first-child:not(.empty-droptarget--full) {
+      & > .empty-droptarget:first-of-type:not(.empty-droptarget--full) {
         height: ${theme.sizeUnit * 4}px;
         top: 0;
       }
@@ -326,7 +326,7 @@ const StyledDashboardContent = styled.div<{
     `}
 
       /* this is the ParentSize wrapper */
-    & > div:first-child {
+    & > div:first-of-type {
         height: 100% !important;
       }
     }
@@ -723,25 +723,11 @@ const DashboardBuilder = () => {
   const filterBarHeight = `calc(100vh - ${offset}px)`;
   const filterBarOffset = dashboardFiltersOpen ? 0 : barTopOffset + 20;
 
-  const draggableStyle = useMemo(
-    () => ({
-      marginLeft:
-        dashboardFiltersOpen ||
-        editMode ||
-        !nativeFiltersEnabled ||
-        filterBarOrientation === FilterBarOrientation.Horizontal ||
-        isMobile
-          ? 0
-          : -32,
-    }),
-    [
-      dashboardFiltersOpen,
-      editMode,
-      filterBarOrientation,
-      nativeFiltersEnabled,
-      isMobile,
-    ],
-  );
+  /* В апстриме сюда ставили marginLeft:-32 как компенсацию под закрытый
+     вертикальный FilterBar (ResizableSidebar был 32px wide в collapsed).
+     В нашем форке FilterBar удалён полностью, поэтому любая такая
+     компенсация тянет шапку влево за пределы viewport'а — убрано. */
+  const draggableStyle = useMemo(() => ({ marginLeft: 0 }), []);
 
   // If a new tab was added, update the directPathToChild to reflect it
   const currentTopLevelTabs = useRef(topLevelTabs);
@@ -865,27 +851,16 @@ const DashboardBuilder = () => {
     ],
   );
 
-  const hasPages = (topLevelPages?.children?.length || 0) > 1;
-  const isVerticalFilterBarVisible =
-    (showFilterBar && filterBarOrientation === FilterBarOrientation.Vertical) ||
-    hasPages ||
-    editMode;
-  const headerFilterBarWidth =
-    isVerticalFilterBarVisible && !isMobile ? currentFilterBarWidth : 0;
+  /* Desktop вертикальный FilterBar и ResizableSidebar удалены — фильтры
+     и pages теперь живут в отдельных Shell.Drawer'ах, которые триггерятся
+     узкой icon-колонкой <DashboardSideRail /> слева (монтируется в
+     Shell.tsx). Это освобождает место под грид и унифицирует UX.
+
+     MobileFilterBar ниже остаётся — на mobile drawer-pattern свой. */
+  const headerFilterBarWidth = 0;
 
   return (
     <DashboardWrapper>
-      {isVerticalFilterBarVisible && !isMobile && (
-        <ResizableSidebar
-          id={`dashboard:${dashboardId}`}
-          enable={dashboardFiltersOpen}
-          minWidth={OPEN_FILTER_BAR_WIDTH}
-          maxWidth={OPEN_FILTER_BAR_MAX_WIDTH}
-          initialWidth={OPEN_FILTER_BAR_WIDTH}
-        >
-          {renderChild}
-        </ResizableSidebar>
-      )}
       <StyledHeader
         data-test="dashboard-header-wrapper"
         ref={headerRef}

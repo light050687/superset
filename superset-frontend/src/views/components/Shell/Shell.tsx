@@ -51,6 +51,11 @@ import { SettingsDropdown } from './SettingsDropdown';
 import { ShellProvider } from './ShellContext';
 import { ToolsDrawer } from './ToolsDrawer';
 import type { DrawerKind } from './types';
+import {
+  DashboardSideRail,
+  FiltersDrawer,
+  PagesDrawer,
+} from 'src/dashboard/components/DashboardSideRail';
 
 /**
  * Shell = «окно приложения». С переходом на Floating Dock (Этап 1):
@@ -133,6 +138,18 @@ const ShellRoot = styled.div`
 `;
 
 const ShellMain = styled.main`
+  /* ShellMain занимает всю высоту viewport'а (100vh = 100% от ShellRoot).
+     FloatingDock — position: fixed поверх — может перекрывать нижние
+     пиксели контента, поэтому резервируем внутренний padding-bottom
+     (--dock-content-pad = 88px).
+
+     КРИТИЧНО: box-sizing: border-box. При default content-box
+     height:100% + padding-bottom:88px дают общий box 100%+88, и нижние
+     88px (включая scrollbar-track и dead-space под dock) обрезаются
+     ShellRoot'ом с overflow:hidden. Border-box втягивает padding внутрь
+     100% высоты: scrollbar полностью виден, dead-space живёт внутри
+     viewport'а, dock сидит над ним без обрезки контента. */
+  box-sizing: border-box;
   height: 100%;
   width: 100%;
   min-width: 0;
@@ -141,8 +158,33 @@ const ShellMain = styled.main`
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  /* Резервируем нижний отступ под FloatingDock (height + bottom + gap). */
   padding-bottom: ${DS2_VARS.dockContentPad};
+  /* scroll-padding-bottom — anchor-scroll (клик по TOC/«перейти к чарту»)
+     оставляет зазор поверх target'а, чтобы он не ложился под dock. */
+  scroll-padding-bottom: ${DS2_VARS.dockContentPad};
+
+  /* Явный styled-scrollbar — тонкий, всегда виден, видимо даже на
+     странице дашборда, где mini-rail мог визуально «перекрыть» часть.
+     На Firefox используется scrollbar-color (альтернатива webkit). */
+  scrollbar-width: thin;
+  scrollbar-color: ${DS2_VARS.g300} transparent;
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${DS2_VARS.g300};
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${DS2_VARS.g400};
+    background-clip: padding-box;
+  }
 
   @media print {
     padding-bottom: 0;
@@ -244,6 +286,24 @@ export const Shell: FC<React.PropsWithChildren<ShellProps>> = ({
   }, []);
   const handleCloseSettings = useCallback(() => setSettingsOpen(false), []);
 
+  /* После смены языка SettingsDropdown делает full reload страницы
+     (иначе t()-переводы не обновятся). Чтобы юзер не потерял контекст
+     модалки — перед reload ставит флаг в sessionStorage, а здесь, на
+     первом рендере Shell'а после reload, мы читаем флаг, открываем
+     модалку заново и флаг снимаем. Используем sessionStorage (а не
+     localStorage), чтобы флаг не залипал между сессиями/вкладками. */
+  useEffect(() => {
+    try {
+      const key = 'superset-reopen-settings-after-lang-switch';
+      if (window.sessionStorage.getItem(key) === '1') {
+        window.sessionStorage.removeItem(key);
+        setSettingsOpen(true);
+      }
+    } catch {
+      // sessionStorage недоступен — пропускаем restore без ошибки.
+    }
+  }, []);
+
   /* handleOpenPalette больше не вызывается из Rail (rail-search удалён —
      заменён CentralPill). CommandPalette открывается только по Ctrl+K
      (глобальный хоткей — см. эффект ниже). */
@@ -338,6 +398,11 @@ export const Shell: FC<React.PropsWithChildren<ShellProps>> = ({
       catalog: <CatalogDrawer />,
       tools: <ToolsDrawer />,
       create: <CreateDrawer />,
+      /* Dashboard-only drawer'ы. Триггерятся DashboardSideRail (узкая
+         icon-колонка слева, видна только на /dashboard/:id). FilterBar и
+         PagesPanel переиспользуются через тонкие обёртки. */
+      filters: <FiltersDrawer />,
+      pages: <PagesDrawer />,
       ...drawerContent,
     }),
     [drawerContent],
@@ -404,6 +469,10 @@ export const Shell: FC<React.PropsWithChildren<ShellProps>> = ({
           }
         />
         <Drawer content={mergedDrawerContent} />
+        {/* Dashboard-only вертикальная icon-панель слева. Компонент сам
+            проверяет URL и возвращает null на не-dashboard страницах,
+            поэтому безопасно рендерить его глобально здесь. */}
+        <DashboardSideRail />
         <ShellMain>{children}</ShellMain>
         {menu ? (
           <SettingsDropdown

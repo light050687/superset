@@ -34,6 +34,19 @@ const StyledDiv = styled.div`
     grid-template-columns: auto 1fr;
     grid-template-rows: auto 1fr;
     flex: 1;
+    /* padding-left удалён: шапка (StyledHeader) должна идти от края
+       до края viewport'а, а grid-container (контент ниже) уже имеет
+       собственный margin: 16px и не прилипает к краю.
+
+       Нижний буфер: mini-rail + main dock занимают ~106px от низа
+       viewport'а; хотим видимый зазор ~20px между последним чартом
+       и mini-rail. ShellMain даёт --dock-content-pad (88). Наш
+       padding-bottom добавляет ещё 64px → суммарно 152px, из которых
+       106 — под доком + rail, 46 — зазор сверху. */
+    padding-bottom: ${theme.sizeUnit * 8}px;
+    @media (max-width: 768px) {
+      padding-bottom: 0;
+    }
     /* Special cases */
 
     &.dragdroppable--dragging {
