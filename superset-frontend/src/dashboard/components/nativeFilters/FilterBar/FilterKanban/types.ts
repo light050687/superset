@@ -26,6 +26,11 @@ export interface FilterCategory {
 /** Персистентная форма сохраняется в localStorage на дашборд. */
 export interface FilterCategoriesState {
   categories: FilterCategory[];
+  /** Переопределённое название колонки «Нераспределённые». null/undef —
+   *  используется дефолт. Позволяет юзеру её переименовать. */
+  uncategorizedName?: string | null;
+  /** Переопределённое название колонки «Пресеты». */
+  presetsName?: string | null;
   /** Версия схемы — пригодится при миграции формата. */
   version: 1;
 }

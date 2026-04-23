@@ -67,6 +67,10 @@ export interface KanbanPresetSectionProps {
   onClearAll: () => void;
   onPresetChange: (id: number | null, name: string | null) => void;
   onPresetsRefresh: () => void;
+  /** Заголовок колонки (переопределённое имя или дефолт «Пресеты»). */
+  title?: string;
+  /** Callback переименования колонки «Пресеты». Null — rename запрещён. */
+  onRename?: ((name: string) => void) | null;
 }
 
 const KanbanPresetSection: FC<KanbanPresetSectionProps> = ({
@@ -78,6 +82,8 @@ const KanbanPresetSection: FC<KanbanPresetSectionProps> = ({
   onClearAll,
   onPresetChange,
   onPresetsRefresh,
+  title,
+  onRename,
 }) => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -158,11 +164,11 @@ const KanbanPresetSection: FC<KanbanPresetSectionProps> = ({
     <>
       <FilterKanbanColumn
         categoryId="__presets__"
-        title={t('Пресеты')}
+        title={title || t('Пресеты')}
         filterIds={[]}
         renderFilterNode={() => null}
         onMoveFilter={() => {}}
-        onRename={null}
+        onRename={onRename ?? null}
         onDelete={null}
         isPresetColumn
         headerActions={headerActions}

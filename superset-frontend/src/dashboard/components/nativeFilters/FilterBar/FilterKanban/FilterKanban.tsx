@@ -33,6 +33,7 @@ import FilterControl from '../FilterControls/FilterControl';
 import FilterDivider from '../FilterControls/FilterDivider';
 import { useFilters } from '../state';
 import { useFilterCategories } from './useFilterCategories';
+import { useFilterSearch } from './FilterSearchContext';
 import FilterKanbanColumn from './FilterKanbanColumn';
 import KanbanPresetSection, {
   type KanbanPresetSectionProps,
@@ -100,11 +101,16 @@ const FilterKanban: FC<FilterKanbanProps> = ({
 }) => {
   const filters = useFilters();
   const allFilterIds = useMemo(() => Object.keys(filters), [filters]);
+  const { query } = useFilterSearch();
+  const normalizedQuery = query.trim().toLowerCase();
 
   const {
     categories,
+    uncategorizedName,
+    presetsName,
     addCategory,
     renameCategory,
+    renameSpecial,
     deleteCategory,
     moveFilter,
     uncategorizedFilterIds,
@@ -113,6 +119,25 @@ const FilterKanban: FC<FilterKanbanProps> = ({
   const uncategorized = useMemo(
     () => uncategorizedFilterIds(allFilterIds),
     [allFilterIds, uncategorizedFilterIds],
+  );
+
+  /** Фильтрует массив filterId по глобальному query (по filter.name). */
+  const applySearch = (ids: string[]): string[] => {
+    if (!normalizedQuery) return ids;
+    return ids.filter(id => {
+      const f = filters[id];
+      if (!f) return false;
+      if (isFilterDivider(f)) return false;
+      return ((f as Filter).name || '')
+        .toLowerCase()
+        .includes(normalizedQuery);
+    });
+  };
+
+  const uncategorizedFiltered = useMemo(
+    () => applySearch(uncategorized),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [uncategorized, normalizedQuery, filters],
   );
 
   // Мапа id → React-node для рендера одного фильтра. Единая фабрика,
@@ -159,28 +184,37 @@ const FilterKanban: FC<FilterKanbanProps> = ({
           collapsible + pinned favorite) и header actions (сбросить /
           создать / импорт). */}
       {kanbanPresetCtx && (
-        <KanbanPresetSection key="__presets__" {...kanbanPresetCtx} />
+        <KanbanPresetSection
+          key="__presets__"
+          {...kanbanPresetCtx}
+          title={presetsName || t('Пресеты')}
+          onRename={name => renameSpecial('presets', name)}
+        />
       )}
-      {/* Бакет с нераспределёнными — всегда после пресетов, без rename/delete. */}
+      {/* Бакет с нераспределёнными — после пресетов. Rename разрешён
+          (хранится в useFilterCategories.uncategorizedName), delete нет. */}
       <FilterKanbanColumn
         key="__uncategorized__"
         categoryId={null}
-        title={t('Нераспределённые')}
-        filterIds={uncategorized}
+        title={uncategorizedName || t('Нераспределённые')}
+        filterIds={uncategorizedFiltered}
         renderFilterNode={renderFilterNode}
         onMoveFilter={moveFilter}
-        onRename={null}
+        onRename={name => renameSpecial('uncategorized', name)}
         onDelete={null}
         isDefault
       />
       {categories.map(cat => {
         const validIds = cat.filterIds.filter(id => filters[id]);
+        const filteredIds = applySearch(validIds);
+        // Скрываем колонку, если поиск активен и нет совпадений.
+        if (normalizedQuery && filteredIds.length === 0) return null;
         return (
           <FilterKanbanColumn
             key={cat.id}
             categoryId={cat.id}
             title={cat.name}
-            filterIds={validIds}
+            filterIds={filteredIds}
             renderFilterNode={renderFilterNode}
             onMoveFilter={moveFilter}
             onRename={name => renameCategory(cat.id, name)}

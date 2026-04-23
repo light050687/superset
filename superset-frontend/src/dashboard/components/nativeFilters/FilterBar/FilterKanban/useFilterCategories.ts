@@ -27,26 +27,43 @@ const STORAGE_PREFIX = 'superset:filter-categories:';
 const newId = (): string =>
   `cat_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
-function loadFromStorage(dashboardId: number): FilterCategory[] {
+interface LoadResult {
+  categories: FilterCategory[];
+  uncategorizedName: string | null;
+  presetsName: string | null;
+}
+
+function loadFromStorage(dashboardId: number): LoadResult {
+  const fallback: LoadResult = {
+    categories: [],
+    uncategorizedName: null,
+    presetsName: null,
+  };
   try {
     const raw = window.localStorage.getItem(`${STORAGE_PREFIX}${dashboardId}`);
-    if (!raw) return [];
+    if (!raw) return fallback;
     const parsed = JSON.parse(raw) as FilterCategoriesState;
     if (parsed?.version === 1 && Array.isArray(parsed.categories)) {
-      return parsed.categories;
+      return {
+        categories: parsed.categories,
+        uncategorizedName: parsed.uncategorizedName ?? null,
+        presetsName: parsed.presetsName ?? null,
+      };
     }
-    return [];
+    return fallback;
   } catch {
-    return [];
+    return fallback;
   }
 }
 
-function saveToStorage(
-  dashboardId: number,
-  categories: FilterCategory[],
-): void {
+function saveToStorage(dashboardId: number, state: LoadResult): void {
   try {
-    const payload: FilterCategoriesState = { version: 1, categories };
+    const payload: FilterCategoriesState = {
+      version: 1,
+      categories: state.categories,
+      uncategorizedName: state.uncategorizedName ?? null,
+      presetsName: state.presetsName ?? null,
+    };
     window.localStorage.setItem(
       `${STORAGE_PREFIX}${dashboardId}`,
       JSON.stringify(payload),
@@ -58,10 +75,17 @@ function saveToStorage(
 
 export interface UseFilterCategoriesResult {
   categories: FilterCategory[];
+  /** Переопределённое название колонки «Нераспределённые» (или null,
+   *  тогда потребитель использует дефолт t('Нераспределённые')). */
+  uncategorizedName: string | null;
+  /** Переопределённое название колонки «Пресеты». */
+  presetsName: string | null;
   /** Создать новую категорию в конец списка. Возвращает id новой. */
   addCategory: (name?: string) => string;
   /** Переименовать категорию. */
   renameCategory: (categoryId: string, name: string) => void;
+  /** Переименовать спец-колонку (uncategorized | presets). */
+  renameSpecial: (kind: 'uncategorized' | 'presets', name: string) => void;
   /** Удалить категорию. Её фильтры становятся нераспределёнными. */
   deleteCategory: (categoryId: string) => void;
   /**
@@ -79,19 +103,32 @@ export interface UseFilterCategoriesResult {
 export function useFilterCategories(
   dashboardId: number,
 ): UseFilterCategoriesResult {
-  const [categories, setCategories] = useState<FilterCategory[]>(() =>
-    loadFromStorage(dashboardId),
+  const [categories, setCategories] = useState<FilterCategory[]>(
+    () => loadFromStorage(dashboardId).categories,
+  );
+  const [uncategorizedName, setUncategorizedName] = useState<string | null>(
+    () => loadFromStorage(dashboardId).uncategorizedName,
+  );
+  const [presetsName, setPresetsName] = useState<string | null>(
+    () => loadFromStorage(dashboardId).presetsName,
   );
 
   // Перезагружаем при смене дашборда.
   useEffect(() => {
-    setCategories(loadFromStorage(dashboardId));
+    const loaded = loadFromStorage(dashboardId);
+    setCategories(loaded.categories);
+    setUncategorizedName(loaded.uncategorizedName);
+    setPresetsName(loaded.presetsName);
   }, [dashboardId]);
 
   // Любая мутация — сразу пишем в localStorage.
   useEffect(() => {
-    saveToStorage(dashboardId, categories);
-  }, [dashboardId, categories]);
+    saveToStorage(dashboardId, {
+      categories,
+      uncategorizedName,
+      presetsName,
+    });
+  }, [dashboardId, categories, uncategorizedName, presetsName]);
 
   const addCategory = useCallback((name = ''): string => {
     const id = newId();
@@ -104,6 +141,16 @@ export function useFilterCategories(
       setCategories(prev =>
         prev.map(c => (c.id === categoryId ? { ...c, name } : c)),
       );
+    },
+    [],
+  );
+
+  const renameSpecial = useCallback(
+    (kind: 'uncategorized' | 'presets', name: string): void => {
+      const trimmed = name.trim();
+      const value = trimmed ? trimmed : null;
+      if (kind === 'uncategorized') setUncategorizedName(value);
+      else setPresetsName(value);
     },
     [],
   );
@@ -143,8 +190,11 @@ export function useFilterCategories(
 
   return {
     categories,
+    uncategorizedName,
+    presetsName,
     addCategory,
     renameCategory,
+    renameSpecial,
     deleteCategory,
     moveFilter,
     uncategorizedFilterIds,

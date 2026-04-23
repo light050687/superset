@@ -237,8 +237,16 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
   // Esc закрывает drawer; click-outside — тоже, но с mousedown-tracking.
   useEffect(() => {
     if (!openedDrawer) return undefined;
+    const isAnyModalOpen = () =>
+      document.querySelector('.ant-modal-wrap, [role="dialog"].ant-modal') !==
+      null;
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        /* Если поверх drawer'а открыт AntD-modal — даём модалке
+           поймать Escape первой (она закроется), drawer не трогаем.
+           Иначе оба закрываются одновременно и юзер теряет контекст. */
+        if (isAnyModalOpen()) return;
         closeDrawer();
       }
     };
@@ -282,6 +290,19 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
           el.getAttribute?.('data-catalog-modal') === 'true',
       );
       if (inCatalogModal) return false;
+      /* AntD-модалки (CreatePresetModal, ImportPresetModal и любые другие)
+         тоже рендерятся portal'ом в body. Клик по overlay/content модалки
+         НЕ должен закрывать drawer под ней — иначе create/import/edit
+         preset прерывают взаимодействие. */
+      const inAntdModal = path.some(
+        el =>
+          el instanceof Element &&
+          typeof el.matches === 'function' &&
+          (el.matches('.ant-modal') ||
+            el.matches('.ant-modal-wrap') ||
+            el.matches('.ant-modal-mask')),
+      );
+      if (inAntdModal) return false;
       return true;
     };
 

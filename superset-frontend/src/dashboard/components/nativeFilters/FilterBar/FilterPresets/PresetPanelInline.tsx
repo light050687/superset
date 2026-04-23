@@ -20,9 +20,10 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { css, styled, t, useTheme } from '@superset-ui/core';
-import { Input, message } from 'antd';
+import { message } from 'antd';
 import { Tooltip } from '@superset-ui/core/components';
 import { Icons } from '@superset-ui/core/components/Icons';
+import { useFilterSearch } from '../FilterKanban/FilterSearchContext';
 import type { FilterPreset } from './types';
 import {
   deletePreset,
@@ -39,13 +40,6 @@ const Container = styled.div`
   gap: ${({ theme }) => theme.sizeUnit}px;
   height: 100%;
   min-height: 0;
-`;
-
-const SearchWrapper = styled.div`
-  ${({ theme }) => css`
-    padding-bottom: ${theme.sizeUnit}px;
-    border-bottom: 1px solid ${theme.colorBorderSecondary};
-  `}
 `;
 
 const PinnedBlock = styled.div`
@@ -195,39 +189,38 @@ const PresetPanelInline = ({
   onPresetsRefresh,
 }: PresetPanelInlineProps) => {
   const theme = useTheme();
+  const { query: searchQuery } = useFilterSearch();
   const [presets, setPresets] = useState<FilterPreset[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [adminOpen, setAdminOpen] = useState(true);
   const [personalOpen, setPersonalOpen] = useState(true);
 
-  const loadPresets = useCallback(
-    async (query?: string) => {
-      setLoading(true);
-      const result = await fetchPresets(dashboardId, query);
-      setPresets(result);
-      setLoading(false);
-    },
-    [dashboardId],
-  );
+  /** Грузим ВСЕ пресеты без query — фильтрация по имени применяется
+   *  клиентом. Раньше query шёл в `fetchPresets` (backend `?q=...`) и
+   *  для общих запросов («Period», «Регион») возвращал 0 пресетов —
+   *  пресеты пропадали даже на точечном совпадении по имени. */
+  const loadPresets = useCallback(async () => {
+    setLoading(true);
+    const result = await fetchPresets(dashboardId);
+    setPresets(result);
+    setLoading(false);
+  }, [dashboardId]);
 
   useEffect(() => {
     loadPresets();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dashboardId, refreshKey]);
-
-  const handleSearch = useCallback(
-    (value: string) => {
-      setSearchQuery(value);
-      loadPresets(value || undefined);
-    },
-    [loadPresets],
-  );
+  }, [loadPresets, refreshKey]);
 
   const refresh = useCallback(() => {
-    loadPresets(searchQuery || undefined);
+    loadPresets();
     onPresetsRefresh?.();
-  }, [loadPresets, onPresetsRefresh, searchQuery]);
+  }, [loadPresets, onPresetsRefresh]);
+
+  /** Client-side фильтрация по названию пресета. */
+  const filteredPresets = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return presets;
+    return presets.filter(p => p.name.toLowerCase().includes(q));
+  }, [presets, searchQuery]);
 
   const handleToggleDefault = useCallback(
     async (preset: FilterPreset) => {
@@ -269,17 +262,19 @@ const PresetPanelInline = ({
     [dashboardId, refresh],
   );
 
+  /** Избранный preset всегда виден сверху независимо от поиска —
+   *  юзер ожидает, что default всегда под рукой. */
   const defaultPreset = useMemo(
     () => presets.find(p => p.isDefault) ?? null,
     [presets],
   );
   const adminPresets = useMemo(
-    () => presets.filter(p => p.isAdminPreset),
-    [presets],
+    () => filteredPresets.filter(p => p.isAdminPreset),
+    [filteredPresets],
   );
   const personalPresets = useMemo(
-    () => presets.filter(p => !p.isAdminPreset),
-    [presets],
+    () => filteredPresets.filter(p => !p.isAdminPreset),
+    [filteredPresets],
   );
 
   const renderPresetItem = (preset: FilterPreset) => {
@@ -377,20 +372,10 @@ const PresetPanelInline = ({
   };
 
   const hasAny = presets.length > 0;
+  const hasFiltered = filteredPresets.length > 0;
 
   return (
     <Container role="listbox" aria-label={t('Пресеты фильтров')}>
-      <SearchWrapper>
-        <Input
-          placeholder={t('Поиск пресетов...')}
-          value={searchQuery}
-          onChange={e => handleSearch(e.target.value)}
-          allowClear
-          size="small"
-          aria-label={t('Поиск пресетов')}
-        />
-      </SearchWrapper>
-
       {/* Избранный preset продублирован сверху: виден всегда, даже если
           поиск отфильтровал. Применяется одним кликом. */}
       {defaultPreset && (
@@ -402,11 +387,10 @@ const PresetPanelInline = ({
 
       <ScrollArea>
         {!hasAny && !loading && (
-          <EmptyState>
-            {searchQuery
-              ? t('Пресеты не найдены')
-              : t('Нет сохранённых пресетов')}
-          </EmptyState>
+          <EmptyState>{t('Нет сохранённых пресетов')}</EmptyState>
+        )}
+        {hasAny && !hasFiltered && !loading && searchQuery && (
+          <EmptyState>{t('По запросу пресетов не найдено')}</EmptyState>
         )}
 
         {adminPresets.length > 0 && (
