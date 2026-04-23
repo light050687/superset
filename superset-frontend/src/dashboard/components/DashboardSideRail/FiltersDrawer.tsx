@@ -19,7 +19,7 @@
  * когда юзер открывает drawer — side-effects safe.
  */
 import { css, styled } from '@superset-ui/core';
-import { type FC, useCallback } from 'react';
+import { type FC, useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { DS2_VARS } from 'src/theme/ds2';
 import FilterBar from 'src/dashboard/components/nativeFilters/FilterBar';
@@ -45,6 +45,27 @@ const DrawerBody = styled.div`
 
 export const FiltersDrawer: FC = () => {
   const { closeDrawer } = useShell();
+
+  /* Измеряем фактическую ширину drawer-тела через ResizeObserver —
+     FilterBar.Vertical использует prop width как конкретный px (и
+     `width: ${width}px` в стилях). Раньше сюда передавалось 9999 как
+     «бесконечность», что превращало PresetButton в полосу 9967px,
+     выезжающую за пределы drawer'а (пустая тёмно-синяя полоска из
+     бага). Теперь width соответствует реальной ширине контейнера. */
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [barWidth, setBarWidth] = useState(320);
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return undefined;
+    const update = () => {
+      const w = el.getBoundingClientRect().width;
+      if (w > 0) setBarWidth(Math.max(280, Math.floor(w)));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   /* topLevelPages нужен FilterBar'у для логики PagesPanel (он инжектит
      её внутри, если pagesOpen). Мы здесь pagesOpen не включаем, но
@@ -75,6 +96,7 @@ export const FiltersDrawer: FC = () => {
 
   return (
     <DrawerBody
+      ref={bodyRef}
       css={css`
         /* Убираем внутренние рамки FilterBar'а: он рассчитан на sidebar
            со своей границей, внутри drawer'а это лишние линии. */
@@ -94,7 +116,7 @@ export const FiltersDrawer: FC = () => {
         verticalConfig={{
           filtersOpen: true,
           toggleFiltersBar,
-          width: 9999,
+          width: barWidth,
           height: 560,
           offset: 0,
           topLevelPages,
