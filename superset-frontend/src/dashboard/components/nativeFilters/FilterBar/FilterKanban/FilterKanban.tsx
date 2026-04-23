@@ -56,15 +56,21 @@ const GridWrap = styled.div`
   align-items: start;
 `;
 
+const Wrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.sizeUnit}px;
+`;
+
 const AddColBtn = styled.button`
   ${({ theme }) => `
-    align-self: start;
-    height: 100%;
-    min-height: 64px;
-    display: flex;
+    align-self: center;
+    margin-top: ${theme.sizeUnit}px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: ${theme.sizeUnit}px;
+    padding: ${theme.sizeUnit}px ${theme.sizeUnit * 2}px;
     background: transparent;
     border: 1px dashed ${theme.colorBorderSecondary};
     border-radius: ${theme.borderRadius}px;
@@ -182,6 +188,7 @@ const FilterKanban: FC<FilterKanbanProps> = ({
   };
 
   return (
+    <Wrap>
     <GridWrap>
       {/* Preset-колонка с inline-panel (search + Корпоративные/Личные
           collapsible + pinned favorite) и header actions (сбросить /
@@ -227,16 +234,17 @@ const FilterKanban: FC<FilterKanbanProps> = ({
           />
         );
       })}
-      <AddColBtn
-        type="button"
-        onClick={() => addCategory(t('Новая категория'))}
-        aria-label={t('Добавить колонку')}
-      >
-        <span>＋</span>
-        <span>{t('Добавить колонку')}</span>
-      </AddColBtn>
       {FilterConfigModalComponent}
     </GridWrap>
+    <AddColBtn
+      type="button"
+      onClick={() => addCategory(t('Новая категория'))}
+      aria-label={t('Добавить колонку')}
+    >
+      <span>＋</span>
+      <span>{t('Добавить колонку')}</span>
+    </AddColBtn>
+    </Wrap>
   );
 };
 

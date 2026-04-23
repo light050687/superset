@@ -32,14 +32,12 @@ const Column = styled.div<{ $isOver: boolean }>`
     border: 1px solid
       ${$isOver ? theme.colorPrimary : theme.colorBorderSecondary};
     border-radius: ${theme.borderRadius}px;
-    /* Высота колонки = расстояние между drawer-header'ом и footer-slot
-       с кнопками Применить/Сбросить. Вычисляется от drawer'а:
-       max drawer = min(640px, 80vh). Минус 14 handle + 50 head +
-       60 footer + 28+24 body-paddings ≈ 208px → content height.
-       Колонка ограничена 432px (cap), ниже — пропорционально 80vh.
-       При стандартных размерах 640 → 432 колонка, конец виден внутри
-       drawer-body, footer с кнопками фиксирован ниже. */
-    height: min(432px, calc(80vh - 208px));
+    /* Высота колонки = расстояние drawer-header'а до footer-slot'а
+       (Применить/Сбросить) с запасом под кнопку «+ Добавить колонку»
+       под гридом. При drawer max 640 → column 400: 640 - 14 handle -
+       46 head - 32 footer - 48 add-btn - 24+24 paddings - 24 buffer
+       ≈ 420. Cap 400 даёт гарантированный 1 ряд без scroll'а. */
+    height: min(400px, calc(80vh - 240px));
     min-height: 160px;
     overflow: hidden;
     transition:

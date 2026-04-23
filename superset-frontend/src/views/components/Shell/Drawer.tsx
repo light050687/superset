@@ -249,12 +249,12 @@ const DrawerBody = styled.div<{ $flush: boolean }>`
 `;
 
 const DrawerFooter = styled.div`
-  padding: 10px 22px 14px;
+  padding: 4px 22px 6px;
   border-top: 1px solid ${DS2_VARS.g100};
   flex-shrink: 0;
   background: ${DS2_VARS.drawerBg};
   /* Пустой footer-slot (без portal-контента) невидим — иначе
-     drawer снизу получает лишнюю 24px полосу с border-top. */
+     drawer снизу получает лишнюю полосу с border-top. */
   &:empty {
     display: none;
   }
