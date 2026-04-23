@@ -185,7 +185,16 @@ const DrawerBody = styled.div<{ $flush: boolean }>`
   box-sizing: border-box;
   overflow-y: ${({ $flush }) => ($flush ? 'hidden' : 'auto')};
   overflow-x: hidden;
-  padding: ${({ $flush }) => ($flush ? '0' : '4px 22px 18px')};
+  /* scrollbar-gutter: stable — всегда резервируем 15px справа под
+     scrollbar, даже когда он скрыт. Это позволяет контенту иметь
+     одинаковую ширину при scroll/no-scroll, и визуально выровнять
+     правый край kanban-колонок с крестиком ×. */
+  scrollbar-gutter: stable;
+  /* Правый padding уменьшен с 22 до 7: 22 (visual) − 15 (scrollbar-
+     gutter) = 7. После такого сдвига scrollbar стоит ровно там, где
+     была раньше правая граница padding'а drawer-body, и контент
+     занимает то же пространство, где раньше был padding. */
+  padding: ${({ $flush }) => ($flush ? '0' : '4px 7px 18px 22px')};
   display: ${({ $flush }) => ($flush ? 'flex' : 'block')};
   flex-direction: column;
 

@@ -15,6 +15,7 @@ import {
   type FC,
   type KeyboardEvent,
   type ReactNode,
+  type WheelEvent,
   useCallback,
   useState,
 } from 'react';
@@ -244,6 +245,36 @@ const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
     [cancelEdit, commitEdit],
   );
 
+  /* Scroll-chaining workaround: Chrome/Edge при overflow-y:auto
+     перехватывают wheel у Body даже когда scrollHeight <= clientHeight
+     («nothing to scroll» bug). Руками пробрасываем wheel в первый
+     scrollable-предок, если у нас нечего скроллить. */
+  const handleBodyWheel = useCallback(
+    (e: WheelEvent<HTMLDivElement>) => {
+      const el = e.currentTarget;
+      const canScroll = el.scrollHeight > el.clientHeight + 1;
+      const atTop = el.scrollTop <= 0 && e.deltaY < 0;
+      const atBottom =
+        el.scrollTop + el.clientHeight >= el.scrollHeight - 1 && e.deltaY > 0;
+      if (canScroll && !atTop && !atBottom) return; // default: колонка скроллит
+      // Бросаем event в ближайший scrollable-ancestor.
+      let p = el.parentElement as HTMLElement | null;
+      while (p) {
+        const s = window.getComputedStyle(p);
+        if (
+          (s.overflowY === 'auto' || s.overflowY === 'scroll') &&
+          p.scrollHeight > p.clientHeight
+        ) {
+          p.scrollTop += e.deltaY;
+          e.preventDefault();
+          return;
+        }
+        p = p.parentElement;
+      }
+    },
+    [],
+  );
+
   const [{ isOver }, dropRef] = useDrop(() => ({
     accept: FILTER_CARD_DND_TYPE,
     canDrop: () => !isPresetColumn,
@@ -313,7 +344,7 @@ const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
           </IconBtn>
         )}
       </Head>
-      <Body>
+      <Body onWheel={handleBodyWheel}>
         {customContent ? (
           <>{customContent}</>
         ) : filterIds.length === 0 ? (

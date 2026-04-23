@@ -43,11 +43,15 @@ import KanbanPresetSection, {
 const GridWrap = styled.div`
   display: grid;
   gap: ${({ theme }) => theme.sizeUnit * 3}px;
-  padding: ${({ theme }) => theme.sizeUnit * 3}px;
+  /* Горизонтальный padding = 0: drawer-body уже имеет padding 4px 22px
+     18px, этого хватает, чтобы левая кромка первой колонки совпала с
+     левой кромкой drawer-заголовка «ФИЛЬТРЫ ДАШБОРДА», а правая кромка
+     последней колонки — с правой кромкой крестика. Вертикальный
+     padding сохраняем для воздуха между scrollbar и верхом/низом. */
+  padding: ${({ theme }) => theme.sizeUnit * 3}px 0;
   /* Жёстко 4 колонки в ряд. Каждая занимает 1fr — равное деление
      доступной ширины (минимум 180px, иначе wrap). Пятый-плюс элемент
-     (например «+ Добавить колонку») уходит на следующий ряд.
-     Вариант с auto-fill давал 5-6 в ряд на широких экранах. */
+     (например «+ Добавить колонку») уходит на следующий ряд. */
   grid-template-columns: repeat(4, minmax(180px, 1fr));
   align-items: start;
 `;
