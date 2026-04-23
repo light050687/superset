@@ -27,7 +27,7 @@ import {
   styled,
   t,
 } from '@superset-ui/core';
-import { type FC, useMemo } from 'react';
+import { type FC, type ReactNode, useMemo } from 'react';
 import { FilterBarOrientation } from 'src/dashboard/types';
 import FilterControl from '../FilterControls/FilterControl';
 import FilterDivider from '../FilterControls/FilterDivider';
@@ -80,6 +80,9 @@ interface FilterKanbanProps {
   onFilterSelectionChange: (filter: Filter, dataMask: DataMask) => void;
   clearAllTriggers?: Record<string, boolean>;
   onClearAllComplete?: (filterId: string) => void;
+  /** React-node с PresetButton'ом. Если передан — рендерится первой
+   *  колонкой «Пресеты» в kanban-grid'е. */
+  presetSlot?: ReactNode;
 }
 
 const FilterKanban: FC<FilterKanbanProps> = ({
@@ -88,6 +91,7 @@ const FilterKanban: FC<FilterKanbanProps> = ({
   onFilterSelectionChange,
   clearAllTriggers,
   onClearAllComplete,
+  presetSlot,
 }) => {
   const filters = useFilters();
   const allFilterIds = useMemo(() => Object.keys(filters), [filters]);
@@ -135,9 +139,34 @@ const FilterKanban: FC<FilterKanbanProps> = ({
     );
   };
 
+  /** Опции «Добавить фильтр» для конкретной категории — все фильтры,
+   *  которых нет в ней сейчас. */
+  const buildAvailableFor = (currentFilterIds: string[]) => {
+    const present = new Set(currentFilterIds);
+    return allFilterIds
+      .filter(id => !present.has(id) && filters[id] && !isFilterDivider(filters[id]))
+      .map(id => ({ id, name: (filters[id] as Filter).name || id }));
+  };
+
   return (
     <GridWrap>
-      {/* Бакет с нераспределёнными — всегда слева, без rename/delete. */}
+      {/* Пресет-колонка: PresetButton + ActivePresetLabel. Без rename/
+          delete/add/DnD — это кастомный контент, не категория. */}
+      {presetSlot && (
+        <FilterKanbanColumn
+          key="__presets__"
+          categoryId="__presets__"
+          title={t('Пресеты')}
+          filterIds={[]}
+          renderFilterNode={() => null}
+          onMoveFilter={() => {}}
+          onRename={null}
+          onDelete={null}
+          isPresetColumn
+          customContent={presetSlot}
+        />
+      )}
+      {/* Бакет с нераспределёнными — всегда после пресетов, без rename/delete. */}
       <FilterKanbanColumn
         key="__uncategorized__"
         categoryId={null}
@@ -149,18 +178,22 @@ const FilterKanban: FC<FilterKanbanProps> = ({
         onDelete={null}
         isDefault
       />
-      {categories.map(cat => (
-        <FilterKanbanColumn
-          key={cat.id}
-          categoryId={cat.id}
-          title={cat.name}
-          filterIds={cat.filterIds.filter(id => filters[id])}
-          renderFilterNode={renderFilterNode}
-          onMoveFilter={moveFilter}
-          onRename={name => renameCategory(cat.id, name)}
-          onDelete={() => deleteCategory(cat.id)}
-        />
-      ))}
+      {categories.map(cat => {
+        const validIds = cat.filterIds.filter(id => filters[id]);
+        return (
+          <FilterKanbanColumn
+            key={cat.id}
+            categoryId={cat.id}
+            title={cat.name}
+            filterIds={validIds}
+            renderFilterNode={renderFilterNode}
+            onMoveFilter={moveFilter}
+            onRename={name => renameCategory(cat.id, name)}
+            onDelete={() => deleteCategory(cat.id)}
+            availableFilters={buildAvailableFor(validIds)}
+          />
+        );
+      })}
       <AddColBtn
         type="button"
         onClick={() => addCategory(t('Новая категория'))}

@@ -205,6 +205,7 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
           onFilterSelectionChange={onSelectionChange}
           clearAllTriggers={clearAllTriggers}
           onClearAllComplete={onClearAllComplete}
+          presetSlot={presetButton}
         />
       ) : (
         <FilterControlsWrapper isMobile={isMobile}>
@@ -320,7 +321,9 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
                   isMobile={isMobile}
                 />
               )}
-              {presetButton && (
+              {/* В kanban-режиме preset уходит первой колонкой — здесь
+                  рендерим только когда НЕ kanban (classic sidebar). */}
+              {!useKanban && presetButton && (
                 <div
                   css={{
                     padding: `0 ${theme.sizeUnit * 4}px`,

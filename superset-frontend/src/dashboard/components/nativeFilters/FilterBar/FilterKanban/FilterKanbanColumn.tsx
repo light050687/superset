@@ -10,12 +10,14 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 import { css, styled, t } from '@superset-ui/core';
+import { Dropdown } from '@superset-ui/core/components';
 import { Icons } from '@superset-ui/core/components/Icons';
 import {
   type FC,
   type KeyboardEvent,
   type ReactNode,
   useCallback,
+  useMemo,
   useState,
 } from 'react';
 import { useDrop } from 'react-dnd';
@@ -118,6 +120,11 @@ const EmptyHint = styled.div`
   `}
 `;
 
+interface AvailableFilterOption {
+  id: string;
+  name: string;
+}
+
 interface FilterKanbanColumnProps {
   /** ID категории. null для дефолтного bucket'а «нераспределённые». */
   categoryId: string | null;
@@ -126,12 +133,20 @@ interface FilterKanbanColumnProps {
   renderFilterNode: (filterId: string) => ReactNode;
   /** filterId → toCategoryId (null для bucket'а). */
   onMoveFilter: (filterId: string, toCategoryId: string | null) => void;
-  /** null — rename запрещён (дефолтный bucket). */
+  /** null — rename запрещён (дефолтный bucket или пресеты). */
   onRename: ((name: string) => void) | null;
-  /** null — delete запрещён (дефолтный bucket). */
+  /** null — delete запрещён (дефолтный bucket или пресеты). */
   onDelete: (() => void) | null;
-  /** Дефолтная колонка «Нераспределённые» — без rename/delete. */
+  /** Дефолтная колонка «Нераспределённые» — без rename/delete/add. */
   isDefault?: boolean;
+  /** Колонка «Пресеты» — кастомный контент, без rename/delete/add/DnD. */
+  isPresetColumn?: boolean;
+  /** Кастомный контент (для пресетов). Если задан — карточки не
+   *  рендерятся, DnD-drop отключён. */
+  customContent?: ReactNode;
+  /** Список фильтров, которых в этой колонке ещё нет — показываем в
+   *  popover add-filter-кнопки. Если undefined или пустой — кнопка скрыта. */
+  availableFilters?: AvailableFilterOption[];
 }
 
 const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
@@ -143,6 +158,9 @@ const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
   onRename,
   onDelete,
   isDefault = false,
+  isPresetColumn = false,
+  customContent,
+  availableFilters,
 }) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(title);
@@ -183,11 +201,31 @@ const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
 
   const [{ isOver }, dropRef] = useDrop(() => ({
     accept: FILTER_CARD_DND_TYPE,
+    canDrop: () => !isPresetColumn,
     drop: (item: { filterId: string }) => {
+      if (isPresetColumn) return;
       onMoveFilter(item.filterId, categoryId);
     },
-    collect: monitor => ({ isOver: monitor.isOver({ shallow: true }) }),
-  }), [categoryId, onMoveFilter]);
+    collect: monitor => ({
+      isOver: !isPresetColumn && monitor.isOver({ shallow: true }),
+    }),
+  }), [categoryId, onMoveFilter, isPresetColumn]);
+
+  const addFilterMenuItems = useMemo(
+    () =>
+      (availableFilters ?? []).map(opt => ({
+        key: opt.id,
+        label: opt.name,
+        onClick: () => onMoveFilter(opt.id, categoryId),
+      })),
+    [availableFilters, categoryId, onMoveFilter],
+  );
+
+  const canAddFilter =
+    !isDefault &&
+    !isPresetColumn &&
+    Array.isArray(availableFilters) &&
+    availableFilters.length > 0;
 
   return (
     <Column ref={dropRef as any} $isOver={isOver}>
@@ -216,7 +254,28 @@ const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
             {title || t('Без названия')}
           </Title>
         )}
-        {onDelete && !isDefault && (
+        {canAddFilter && (
+          <Dropdown
+            menu={{ items: addFilterMenuItems }}
+            trigger={['click']}
+            placement="bottomRight"
+          >
+            <IconBtn
+              type="button"
+              aria-label={t('Добавить фильтр в колонку')}
+              title={t('Добавить фильтр в колонку')}
+              css={css`
+                &:hover {
+                  color: var(--ant-color-primary);
+                  background: var(--ant-color-primary-bg);
+                }
+              `}
+            >
+              <Icons.PlusOutlined iconSize="s" />
+            </IconBtn>
+          </Dropdown>
+        )}
+        {onDelete && !isDefault && !isPresetColumn && (
           <IconBtn
             type="button"
             onClick={onDelete}
@@ -227,11 +286,13 @@ const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
           </IconBtn>
         )}
       </Head>
-      {filterIds.length === 0 ? (
+      {customContent ? (
+        <>{customContent}</>
+      ) : filterIds.length === 0 ? (
         <EmptyHint>
           {isDefault
             ? t('Всё распределено')
-            : t('Перетащите сюда фильтр')}
+            : t('Пусто. Добавьте фильтр ➕ или перетащите карточку сюда')}
         </EmptyHint>
       ) : (
         filterIds.map(filterId => (
