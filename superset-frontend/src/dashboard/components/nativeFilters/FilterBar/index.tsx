@@ -419,6 +419,25 @@ const FilterBar: FC<React.PropsWithChildren<FiltersBarProps>> = ({
     />
   ) : undefined;
 
+  /* Контекст для kanban preset-колонки (inline-panel без popover'а).
+     Все колбэки те же, что у PresetButton — переиспользуем логику
+     apply/clear/refresh без дубликации. */
+  const kanbanPresetCtx = dashboardId
+    ? {
+        dashboardId,
+        dataMaskSelected,
+        filters,
+        activePresetId,
+        onApplyPreset: handleApplyPreset,
+        onClearAll: handleClearAll,
+        onPresetChange: (id: number | null, name: string | null) => {
+          setActivePresetId(id);
+          setActivePresetName(name);
+        },
+        onPresetsRefresh: refreshPresets,
+      }
+    : undefined;
+
   const actions = useMemo(
     () => (
       <ActionButtons
@@ -478,6 +497,7 @@ const FilterBar: FC<React.PropsWithChildren<FiltersBarProps>> = ({
         hideInternalHeader={verticalConfig.hideInternalHeader}
         useKanban={verticalConfig.useKanban}
         dashboardId={dashboardId}
+        kanbanPresetCtx={kanbanPresetCtx}
       />
     ) : null;
 

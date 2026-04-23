@@ -73,4 +73,7 @@ export type VerticalBarProps = Omit<FiltersBarProps, 'orientation'> &
   VerticalBarConfig & {
     presetButton?: ReactNode;
     dashboardId?: number;
+    /** Контекст для kanban-preset-колонки — весь набор callbacks и
+     *  данных, нужных для inline-preset-panel'а без popover'а. */
+    kanbanPresetCtx?: import('./FilterKanban/KanbanPresetSection').KanbanPresetSectionProps;
   };

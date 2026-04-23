@@ -136,6 +136,7 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
   hideInternalHeader,
   useKanban,
   dashboardId,
+  kanbanPresetCtx,
 }) => {
   const theme = useTheme();
   const [isScrolling, setIsScrolling] = useState(false);
@@ -205,7 +206,7 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
           onFilterSelectionChange={onSelectionChange}
           clearAllTriggers={clearAllTriggers}
           onClearAllComplete={onClearAllComplete}
-          presetSlot={presetButton}
+          kanbanPresetCtx={kanbanPresetCtx}
         />
       ) : (
         <FilterControlsWrapper isMobile={isMobile}>
@@ -228,6 +229,7 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
       dashboardId,
       clearAllTriggers,
       onClearAllComplete,
+      kanbanPresetCtx,
     ],
   );
 

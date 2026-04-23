@@ -27,23 +27,28 @@ import {
   styled,
   t,
 } from '@superset-ui/core';
-import { type FC, type ReactNode, useMemo } from 'react';
+import { type FC, useMemo } from 'react';
 import { FilterBarOrientation } from 'src/dashboard/types';
 import FilterControl from '../FilterControls/FilterControl';
 import FilterDivider from '../FilterControls/FilterDivider';
 import { useFilters } from '../state';
 import { useFilterCategories } from './useFilterCategories';
 import FilterKanbanColumn from './FilterKanbanColumn';
+import KanbanPresetSection, {
+  type KanbanPresetSectionProps,
+} from './KanbanPresetSection';
 
 const GridWrap = styled.div`
   display: grid;
   gap: ${({ theme }) => theme.sizeUnit * 3}px;
   padding: ${({ theme }) => theme.sizeUnit * 3}px;
-  /* Авто-колонки: min 240px, заполнение оставшегося места. 4×2, 4×4,
-     сколько влезет — столько рендерим (пользователь добавляет сколько
-     нужно, grid распределит сам). */
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  /* Колонки фиксированной ширины 320px (auto-fill по всей ширине
+     drawer'а). Сколько влезло в строку — столько, остальные уйдут
+     на следующий ряд. Высота колонок тоже фиксирована (см. Column),
+     со внутренним скроллом — значит drawer не разрастается. */
+  grid-template-columns: repeat(auto-fill, 320px);
   align-items: start;
+  justify-content: start;
 `;
 
 const AddColBtn = styled.button`
@@ -80,9 +85,9 @@ interface FilterKanbanProps {
   onFilterSelectionChange: (filter: Filter, dataMask: DataMask) => void;
   clearAllTriggers?: Record<string, boolean>;
   onClearAllComplete?: (filterId: string) => void;
-  /** React-node с PresetButton'ом. Если передан — рендерится первой
-   *  колонкой «Пресеты» в kanban-grid'е. */
-  presetSlot?: ReactNode;
+  /** Контекст inline-preset-колонки — если задан, рендерим preset-
+   *  секцию первой колонкой (PresetPanelInline + header actions). */
+  kanbanPresetCtx?: KanbanPresetSectionProps;
 }
 
 const FilterKanban: FC<FilterKanbanProps> = ({
@@ -91,7 +96,7 @@ const FilterKanban: FC<FilterKanbanProps> = ({
   onFilterSelectionChange,
   clearAllTriggers,
   onClearAllComplete,
-  presetSlot,
+  kanbanPresetCtx,
 }) => {
   const filters = useFilters();
   const allFilterIds = useMemo(() => Object.keys(filters), [filters]);
@@ -150,21 +155,11 @@ const FilterKanban: FC<FilterKanbanProps> = ({
 
   return (
     <GridWrap>
-      {/* Пресет-колонка: PresetButton + ActivePresetLabel. Без rename/
-          delete/add/DnD — это кастомный контент, не категория. */}
-      {presetSlot && (
-        <FilterKanbanColumn
-          key="__presets__"
-          categoryId="__presets__"
-          title={t('Пресеты')}
-          filterIds={[]}
-          renderFilterNode={() => null}
-          onMoveFilter={() => {}}
-          onRename={null}
-          onDelete={null}
-          isPresetColumn
-          customContent={presetSlot}
-        />
+      {/* Preset-колонка с inline-panel (search + Корпоративные/Личные
+          collapsible + pinned favorite) и header actions (сбросить /
+          создать / импорт). */}
+      {kanbanPresetCtx && (
+        <KanbanPresetSection key="__presets__" {...kanbanPresetCtx} />
       )}
       {/* Бакет с нераспределёнными — всегда после пресетов, без rename/delete. */}
       <FilterKanbanColumn

@@ -33,7 +33,12 @@ const Column = styled.div<{ $isOver: boolean }>`
     border: 1px solid
       ${$isOver ? theme.colorPrimary : theme.colorBorderSecondary};
     border-radius: ${theme.borderRadius}px;
+    /* Фиксированные размеры: высота 480px, ширина задаётся grid'ом
+       (320px). Внутри scrollable body — контент (карточки/preset-
+       panel) прокручивается по вертикали, а head с actions sticky сверху. */
+    height: 480px;
     min-height: 120px;
+    overflow: hidden;
     transition:
       border-color 160ms ease,
       background 160ms ease;
@@ -41,6 +46,27 @@ const Column = styled.div<{ $isOver: boolean }>`
     `
       background: ${theme.colorPrimaryBg};
     `}
+  `}
+`;
+
+const Body = styled.div`
+  ${({ theme }) => css`
+    display: flex;
+    flex-direction: column;
+    gap: ${theme.sizeUnit * 2}px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    /* Thin scrollbar — чтобы не съедать ширину колонки. */
+    scrollbar-width: thin;
+    scrollbar-color: ${theme.colorBorderSecondary} transparent;
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: ${theme.colorBorderSecondary};
+      border-radius: 3px;
+    }
   `}
 `;
 
@@ -147,6 +173,9 @@ interface FilterKanbanColumnProps {
   /** Список фильтров, которых в этой колонке ещё нет — показываем в
    *  popover add-filter-кнопки. Если undefined или пустой — кнопка скрыта. */
   availableFilters?: AvailableFilterOption[];
+  /** Дополнительные action-кнопки в правой части head'а (перед delete).
+   *  Для preset-колонки: сбросить фильтры, создать, импортировать. */
+  headerActions?: ReactNode;
 }
 
 const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
@@ -161,6 +190,7 @@ const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
   isPresetColumn = false,
   customContent,
   availableFilters,
+  headerActions,
 }) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(title);
@@ -254,6 +284,7 @@ const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
             {title || t('Без названия')}
           </Title>
         )}
+        {headerActions}
         {canAddFilter && (
           <Dropdown
             menu={{ items: addFilterMenuItems }}
@@ -286,21 +317,23 @@ const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
           </IconBtn>
         )}
       </Head>
-      {customContent ? (
-        <>{customContent}</>
-      ) : filterIds.length === 0 ? (
-        <EmptyHint>
-          {isDefault
-            ? t('Всё распределено')
-            : t('Пусто. Добавьте фильтр ➕ или перетащите карточку сюда')}
-        </EmptyHint>
-      ) : (
-        filterIds.map(filterId => (
-          <FilterKanbanCard key={filterId} filterId={filterId}>
-            {renderFilterNode(filterId)}
-          </FilterKanbanCard>
-        ))
-      )}
+      <Body>
+        {customContent ? (
+          <>{customContent}</>
+        ) : filterIds.length === 0 ? (
+          <EmptyHint>
+            {isDefault
+              ? t('Всё распределено')
+              : t('Пусто. Добавьте фильтр ➕ или перетащите карточку сюда')}
+          </EmptyHint>
+        ) : (
+          filterIds.map(filterId => (
+            <FilterKanbanCard key={filterId} filterId={filterId}>
+              {renderFilterNode(filterId)}
+            </FilterKanbanCard>
+          ))
+        )}
+      </Body>
     </Column>
   );
 };
