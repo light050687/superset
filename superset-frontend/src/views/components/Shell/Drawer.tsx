@@ -198,6 +198,10 @@ const DrawerBody = styled.div<{ $flush: boolean }>`
   }
   &::-webkit-scrollbar-track {
     background: transparent;
+    /* Отступы track'а, чтобы стрелки (scrollbar-button) не клипались
+       rounded-corner'ами DrawerSheet (radius 18px). Нижняя стрелка
+       уходила за пределы скругления без этого margin'а. */
+    margin: 4px 0 20px 0;
   }
   &::-webkit-scrollbar-thumb {
     background: ${DS2_VARS.g300};
