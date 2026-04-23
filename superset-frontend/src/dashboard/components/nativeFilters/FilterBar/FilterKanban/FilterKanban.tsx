@@ -43,13 +43,12 @@ const GridWrap = styled.div`
   display: grid;
   gap: ${({ theme }) => theme.sizeUnit * 3}px;
   padding: ${({ theme }) => theme.sizeUnit * 3}px;
-  /* Колонки фиксированной ширины 320px (auto-fill по всей ширине
-     drawer'а). Сколько влезло в строку — столько, остальные уйдут
-     на следующий ряд. Высота колонок тоже фиксирована (см. Column),
-     со внутренним скроллом — значит drawer не разрастается. */
-  grid-template-columns: repeat(auto-fill, 320px);
+  /* Адаптивная сетка: минимум 200px, stretch до 1fr — при типичной
+     drawer-width 985-1200px это даёт 4 колонки: (985-padding48-gap72)/4
+     = 216px на колонку. Минимум 200px оставляет место даже на узких
+     экранах. Column-height фиксирована (см. FilterKanbanColumn). */
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   align-items: start;
-  justify-content: start;
 `;
 
 const AddColBtn = styled.button`

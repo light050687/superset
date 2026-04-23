@@ -41,6 +41,10 @@ interface ActionButtonsProps {
   isApplyDisabled: boolean;
   filterBarOrientation?: FilterBarOrientation;
   isMobile?: boolean;
+  /** В kanban-drawer-е рендерим action-кнопки в одну строку, статически
+   *  в потоке (без position:fixed), чтобы они не перекрывали scrollbar
+   *  и не прыгали при скролле. Аналог mobileStyle. */
+  useKanbanLayout?: boolean;
 }
 
 const containerStyle = (theme: SupersetTheme) => css`
@@ -121,10 +125,11 @@ const ButtonsContainer = styled.div<{
   isVertical: boolean;
   width: number;
   isMobile?: boolean;
+  useKanbanLayout?: boolean;
 }>`
-  ${({ theme, isVertical, width, isMobile }) => css`
+  ${({ theme, isVertical, width, isMobile, useKanbanLayout }) => css`
     ${containerStyle(theme)};
-    ${isMobile
+    ${isMobile || useKanbanLayout
       ? mobileStyle(theme)
       : isVertical
         ? verticalStyle(theme, width)
@@ -141,6 +146,7 @@ const ActionButtons = ({
   isApplyDisabled,
   filterBarOrientation = FilterBarOrientation.Vertical,
   isMobile,
+  useKanbanLayout,
 }: ActionButtonsProps) => {
   const isClearAllEnabled = useMemo(
     () =>
@@ -159,6 +165,7 @@ const ActionButtons = ({
       isVertical={isVertical}
       width={width}
       isMobile={isMobile}
+      useKanbanLayout={useKanbanLayout}
       data-test="filterbar-action-buttons"
     >
       <Button

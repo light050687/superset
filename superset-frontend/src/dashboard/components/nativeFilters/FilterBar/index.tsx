@@ -449,11 +449,13 @@ const FilterBar: FC<React.PropsWithChildren<FiltersBarProps>> = ({
         dataMaskApplied={dataMaskApplied}
         isApplyDisabled={isApplyDisabled}
         isMobile={verticalConfig?.isMobile}
+        useKanbanLayout={verticalConfig?.useKanban}
       />
     ),
     [
       orientation,
       verticalConfig?.width,
+      verticalConfig?.useKanban,
       handleApply,
       handleClearAll,
       dataMaskSelected,
