@@ -185,10 +185,12 @@ const DrawerBody = styled.div<{ $flush: boolean }>`
   display: ${({ $flush }) => ($flush ? 'flex' : 'block')};
   flex-direction: column;
 
-  /* DS 2.0 scrollbar (такой же как в ShellMain): 10px, g300 thumb с
-     padding-box border-clip (2px транспарент-обводка создаёт «воздух»
-     внутри thumb'а). Hover — g400. Firefox получает scrollbar-color. */
-  scrollbar-width: thin;
+  /* DS 2.0 scrollbar — 10px, g300 thumb, padding-box clip (2px пусто
+     внутри thumb'а). Hover → g400. Firefox — scrollbar-color.
+     ВАЖНО: scrollbar-width:thin в современном Chrome заставляет
+     спрятать ::-webkit-scrollbar-button (у thin-scroll нет кнопок).
+     Поэтому оставляем только scrollbar-color для Firefox и не
+     трогаем webkit — он отрендерит наши стрелки из SVG. */
   scrollbar-color: ${DS2_VARS.g300} transparent;
   &::-webkit-scrollbar {
     width: 10px;
@@ -206,6 +208,26 @@ const DrawerBody = styled.div<{ $flush: boolean }>`
   &::-webkit-scrollbar-thumb:hover {
     background: ${DS2_VARS.g400};
     background-clip: padding-box;
+  }
+  &::-webkit-scrollbar-button {
+    display: block;
+    height: 12px;
+    width: 10px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 7px 7px;
+  }
+  &::-webkit-scrollbar-button:vertical:start:decrement {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8" fill="none" stroke="%23737373" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 5.5 4 3l2.5 2.5"/></svg>');
+  }
+  &::-webkit-scrollbar-button:vertical:end:increment {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8" fill="none" stroke="%23737373" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 2.5 4 5l2.5-2.5"/></svg>');
+  }
+  /* Скрываем «лишние» parts (double arrows у concat-paired buttons). */
+  &::-webkit-scrollbar-button:vertical:start:increment,
+  &::-webkit-scrollbar-button:vertical:end:decrement,
+  &::-webkit-scrollbar-button:horizontal {
+    display: none;
   }
 `;
 
