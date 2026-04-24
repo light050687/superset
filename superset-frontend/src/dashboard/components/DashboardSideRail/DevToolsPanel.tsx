@@ -597,8 +597,18 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
       }
       const panel = panelRef.current;
       if (!panel) return;
-      e.preventDefault();
       const r = panel.getBoundingClientRect();
+      /* Native CSS `resize: both` использует правый нижний угол
+         (~14×14px UA-shadow hit-zone). Если mousedown попал туда —
+         НЕ начинаем drag и НЕ preventDefault'им, чтобы браузер мог
+         запустить собственный resize. Без этой проверки mousedown
+         блокировал native resize и юзер не мог масштабировать окно. */
+      const RESIZE_HANDLE_SIZE = 18;
+      const inResizeHandle =
+        e.clientX >= r.right - RESIZE_HANDLE_SIZE &&
+        e.clientY >= r.bottom - RESIZE_HANDLE_SIZE;
+      if (inResizeHandle) return;
+      e.preventDefault();
       dragRef.current = { dx: e.clientX - r.left, dy: e.clientY - r.top };
       const onMove = (ev: MouseEvent) => {
         if (!dragRef.current || !panelRef.current) return;
