@@ -30,7 +30,15 @@
  *   - скрывается на mobile (<768px) — там drawer полноэкранный
  */
 import { styled, t } from '@superset-ui/core';
-import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  type FC,
+  type MouseEvent as ReactMouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { DS2_VARS } from 'src/theme/ds2';
@@ -43,13 +51,141 @@ import {
   setEditMode as setEditModeAction,
   setUnsavedChanges as setUnsavedChangesAction,
 } from 'src/dashboard/actions/dashboardState';
-import { clearDashboardHistory as clearDashboardHistoryAction } from 'src/dashboard/actions/dashboardLayout';
+import {
+  clearDashboardHistory as clearDashboardHistoryAction,
+  undoLayoutAction,
+  redoLayoutAction,
+} from 'src/dashboard/actions/dashboardLayout';
 import { addSuccessToast as addSuccessToastAction } from 'src/components/MessageToasts/actions';
 import {
   LOG_ACTIONS_FORCE_REFRESH_DASHBOARD,
   LOG_ACTIONS_TOGGLE_EDIT_DASHBOARD,
 } from 'src/logger/LogUtils';
 import { logEvent as logEventAction } from 'src/logger/actions';
+
+/* ─── DevTools panel constants ───────────────────────────────────── */
+
+/** localStorage-ключ для persist'а позиции DevToolsPanel и pinned-state.
+ *  Хранит JSON `{x:number, y:number, pinned:boolean}`. */
+const DEVTOOLS_LS_KEY = 'superset.shell.devtools.panel.v1';
+
+/* ─── Styled ─────────────────────────────────────────────────────── */
+
+/** Floating панель «Инструменты разработчика» — position: fixed,
+ *  draggable за шапку. Pin/unpin: в unpinned режиме закрывается при
+ *  клике вне, в pinned — остаётся открытой (юзер перемещает по
+ *  экрану и использует как плавающее рабочее окно). */
+const DevToolsFloat = styled.div`
+  position: fixed;
+  min-width: 240px;
+  max-width: 320px;
+  background: ${DS2_VARS.drawerBg};
+  backdrop-filter: ${DS2_VARS.dockFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.dockFilter};
+  border: 1px solid ${DS2_VARS.dockBorder};
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  z-index: 110; /* выше mini-rail'а (99) и главного dock'а (101) */
+  overflow: hidden;
+  user-select: none;
+`;
+
+const DevToolsHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid ${DS2_VARS.g200};
+  cursor: grab;
+  &:active {
+    cursor: grabbing;
+  }
+`;
+
+const DevToolsTitle = styled.span`
+  flex: 1;
+  font-family: ${DS2_VARS.fontSans};
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: ${DS2_VARS.g600};
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const DevToolsHeaderBtn = styled.button<{ $active?: boolean }>`
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: ${({ $active }) =>
+    $active ? DS2_VARS.dockBtnActiveBg : 'transparent'};
+  color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.g500)};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+  &:hover {
+    background: ${DS2_VARS.g100};
+    color: ${DS2_VARS.ink};
+  }
+  &:focus-visible {
+    outline: 2px solid ${DS2_VARS.cSky};
+    outline-offset: 2px;
+  }
+  svg {
+    width: 13px;
+    height: 13px;
+    stroke-width: 1.6;
+  }
+`;
+
+const DevToolsMenu = styled.div`
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+`;
+
+const DevToolsMenuItem = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: ${DS2_VARS.ink};
+  font-family: ${DS2_VARS.fontSans};
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s ease;
+  &:hover:not(:disabled) {
+    background: ${DS2_VARS.g100};
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  &:focus-visible {
+    outline: 2px solid ${DS2_VARS.cSky};
+    outline-offset: -2px;
+  }
+  svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 1.6;
+    flex-shrink: 0;
+    color: ${DS2_VARS.g500};
+  }
+`;
 
 /* ─── Styled ─────────────────────────────────────────────────────── */
 
@@ -257,6 +393,105 @@ const IconSave = (): JSX.Element => (
   </svg>
 );
 
+/* IconUndo — дуга со стрелкой влево. */
+const IconUndo = (): JSX.Element => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M5 9h8a4 4 0 010 8h-2" />
+    <path d="M7.5 6L5 9l2.5 3" />
+  </svg>
+);
+
+/* IconRedo — дуга со стрелкой вправо (зеркало IconUndo). */
+const IconRedo = (): JSX.Element => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M15 9H7a4 4 0 000 8h2" />
+    <path d="M12.5 6L15 9l-2.5 3" />
+  </svg>
+);
+
+/* IconDiscard — корзина (discard = выкинуть несохранённые изменения). */
+const IconDiscard = (): JSX.Element => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M4 6h12" />
+    <path d="M7.5 6V4.5h5V6" />
+    <path d="M5.5 6l.8 9.5a1 1 0 001 .9h5.4a1 1 0 001-.9L14.5 6" />
+    <path d="M8.5 9v5M11.5 9v5" />
+  </svg>
+);
+
+/* IconWrench — гаечный ключ, канонический символ «инструменты». */
+const IconWrench = (): JSX.Element => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M13 3a4 4 0 013.9 5L15 10l2.5 2.5a1.5 1.5 0 11-2.1 2.1L13 12l-2 1.9A4 4 0 115 7.1L7 9 9 7 7.1 5A4 4 0 0113 3z" />
+  </svg>
+);
+
+/* IconPin — канцелярская кнопка. */
+const IconPin = (): JSX.Element => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M10 3v4l-2.5 3.5h5L10 7" />
+    <path d="M10 11v5M6 10.5h8" />
+  </svg>
+);
+
+/* IconPinSlash — канцелярская кнопка с диагональной чертой = unpin. */
+const IconPinSlash = (): JSX.Element => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M10 3v4l-2.5 3.5h5L10 7" />
+    <path d="M10 11v5M6 10.5h8" />
+    <path d="M3.5 3.5l13 13" />
+  </svg>
+);
+
+/* IconClose — крестик для закрытия панели. */
+const IconCloseX = (): JSX.Element => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M5 5l10 10M15 5L5 15" />
+  </svg>
+);
+
 /* ─── Component ──────────────────────────────────────────────────── */
 
 /**
@@ -362,6 +597,74 @@ function useMainDockMetrics(): DockMetrics | null {
   return metrics;
 }
 
+/** Hydrate persisted DevToolsPanel state из localStorage один раз при
+ *  mount'е. Держим position и pinned-флаг между перезагрузками, чтобы
+ *  юзер не перетаскивал панель каждый раз в удобное место. */
+interface DevToolsPanelState {
+  x: number;
+  y: number;
+  pinned: boolean;
+}
+function useDevToolsPanelState(): {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  pinned: boolean;
+  setPinned: (v: boolean) => void;
+  position: { x: number; y: number };
+  setPosition: (p: { x: number; y: number }) => void;
+} {
+  const [open, setOpen] = useState(false);
+  const [pinned, setPinnedInner] = useState(false);
+  const [position, setPositionInner] = useState<{ x: number; y: number }>({
+    x: 40,
+    y: 140,
+  });
+  /* Read once */
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DEVTOOLS_LS_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<DevToolsPanelState>;
+      if (
+        typeof parsed.x === 'number' &&
+        typeof parsed.y === 'number'
+      ) {
+        setPositionInner({ x: parsed.x, y: parsed.y });
+      }
+      if (typeof parsed.pinned === 'boolean') {
+        setPinnedInner(parsed.pinned);
+      }
+    } catch {
+      /* ignore corrupt JSON */
+    }
+  }, []);
+  /* Persist on change */
+  const persist = (next: Partial<DevToolsPanelState>) => {
+    try {
+      const current: DevToolsPanelState = {
+        x: position.x,
+        y: position.y,
+        pinned,
+      };
+      localStorage.setItem(
+        DEVTOOLS_LS_KEY,
+        JSON.stringify({ ...current, ...next }),
+      );
+    } catch {
+      /* quota / sandboxed iframe */
+    }
+  };
+  const setPinned = (v: boolean) => {
+    setPinnedInner(v);
+    persist({ pinned: v });
+  };
+  const setPosition = (p: { x: number; y: number }) => {
+    setPositionInner(p);
+    persist({ x: p.x, y: p.y });
+  };
+  return { open, setOpen, pinned, setPinned, position, setPosition };
+}
+
 export const DashboardSideRail: FC = () => {
   const { openedDrawer, toggleDrawer, isDockCollapsed, setHasMiniRail } =
     useShell();
@@ -369,6 +672,8 @@ export const DashboardSideRail: FC = () => {
   const dockMetrics = useMainDockMetrics();
   const dispatch = useDispatch();
   const chartIds = useChartIds();
+  const devtools = useDevToolsPanelState();
+  const devToolsPanelRef = useRef<HTMLDivElement | null>(null);
 
   /* Сообщаем Shell'у что mini-rail присутствует — Rail.tsx прокинет
      эту инфу в top-edge grabber, чтобы тот позиционировался ВЫШЕ
@@ -398,6 +703,15 @@ export const DashboardSideRail: FC = () => {
   );
   const dashboardId = useSelector<RootState, number | undefined>(
     state => state.dashboardInfo?.id,
+  );
+  /* Длины undo/redo-стеков. dashboardLayout — это undo/redo-reducer
+     (state.past / state.future). В edit-mode показываем/отключаем
+     кнопки Undo/Redo по соответствующей длине. */
+  const undoLength = useSelector<RootState, number>(
+    state => (state.dashboardLayout as any)?.past?.length ?? 0,
+  );
+  const redoLength = useSelector<RootState, number>(
+    state => (state.dashboardLayout as any)?.future?.length ?? 0,
   );
 
   /* ─── Action handlers ───────────────────────────────────────────── */
@@ -431,6 +745,28 @@ export const DashboardSideRail: FC = () => {
     btn?.click();
   }, []);
 
+  /* Undo/Redo — прямые layout-actions над dashboardLayout
+     redux-undo-reducer'ом. Disabled когда past/future пусты (нет
+     чего отменять/повторять). */
+  const handleUndo = useCallback(() => {
+    dispatch(undoLayoutAction());
+  }, [dispatch]);
+
+  const handleRedo = useCallback(() => {
+    // @ts-ignore redoLayoutAction — setUnsavedChangesAfterAction thunk
+    dispatch(redoLayoutAction());
+  }, [dispatch]);
+
+  /* Discard changes — повторяет discardChanges() из Header.jsx:
+     удаляем из URL параметр `edit` и перезагружаем страницу.
+     Reload стирает в-памяти state → несохранённые изменения
+     откатываются до последнего persisted-состояния дашборда. */
+  const handleDiscard = useCallback(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('edit');
+    window.location.assign(url.toString());
+  }, []);
+
   /* Refresh — logEvent + onRefresh thunk. Disabled-логику убрал:
      оригинал через `if (!isLoading)` просто молча ничего не делал, а
      юзер видел disabled-кнопку и писал «не работает». Пусть всегда
@@ -452,8 +788,13 @@ export const DashboardSideRail: FC = () => {
     dispatch(addSuccessToastAction(t('Обновление чартов')));
   }, [dispatch, chartIds, dashboardId]);
 
-  const items: SideRailItem[] = useMemo(
-    () => [
+  /* Toggle DevTools floating panel. */
+  const handleToggleDevTools = useCallback(() => {
+    devtools.setOpen(!devtools.open);
+  }, [devtools]);
+
+  const items: SideRailItem[] = useMemo(() => {
+    const arr: SideRailItem[] = [
       {
         kind: 'drawer',
         drawer: 'filters',
@@ -467,8 +808,6 @@ export const DashboardSideRail: FC = () => {
         icon: <IconPages />,
         visible: topLevelPagesCount > 1 || editMode,
       },
-      /* Refresh — видно и в view, и в edit-режиме. В edit можно
-         обновить данные, не выходя из режима. */
       {
         kind: 'action',
         id: 'refresh',
@@ -476,70 +815,220 @@ export const DashboardSideRail: FC = () => {
         icon: <IconRefresh />,
         onClick: handleRefresh,
       },
-      /* Edit ↔ Save toggle: в одном слоте mini-rail'а кнопка меняет
-         смысл в зависимости от editMode. view → карандаш (Edit),
-         edit → дискета (Save). Muscle-memory сохранена, юзер жмёт
-         на ту же позицию, чтобы сохранить. */
-      editMode
-        ? {
-            kind: 'action' as const,
-            id: 'save',
-            label: t('Сохранить дашборд'),
-            icon: <IconSave />,
-            onClick: handleSave,
-          }
-        : {
-            kind: 'action' as const,
-            id: 'edit',
-            label: t('Редактировать дашборд'),
-            icon: <IconEdit />,
-            onClick: handleEdit,
-            visible: userCanEdit,
-          },
-    ],
-    [
-      topLevelPagesCount,
-      editMode,
-      userCanEdit,
-      handleRefresh,
-      handleEdit,
-      handleSave,
-    ],
+      /* «Инструменты разработчика» — единая иконка (гаечный ключ),
+         которая открывает floating-панель. В панели: Редактировать
+         дашборд (view), или Отменить изменения / Отменить действие /
+         Повторить действие (edit). Панель pin'абл — остаётся
+         открытой и перемещается по экрану для удобной работы. */
+      {
+        kind: 'action',
+        id: 'devtools',
+        label: t('Инструменты разработчика'),
+        icon: <IconWrench />,
+        onClick: handleToggleDevTools,
+      },
+    ];
+    /* Save — отдельной иконкой только в edit-mode, рядом с DevTools.
+       Мышечная память: справа = «сохранить и выйти». */
+    if (editMode) {
+      arr.push({
+        kind: 'action',
+        id: 'save',
+        label: t('Сохранить дашборд'),
+        icon: <IconSave />,
+        onClick: handleSave,
+      });
+    }
+    return arr;
+  }, [
+    topLevelPagesCount,
+    editMode,
+    handleRefresh,
+    handleToggleDevTools,
+    handleSave,
+  ]);
+
+  /* ─── Drag-handler для DevTools panel ───────────────────────────── */
+  const dragOffsetRef = useRef<{ dx: number; dy: number } | null>(null);
+  const handleDragStart = useCallback(
+    (e: ReactMouseEvent) => {
+      /* Игнорируем клик на кнопках внутри header'а (pin/close) —
+         у них свой click-handler. Определяем по tag==='BUTTON'. */
+      if ((e.target as HTMLElement).closest('button')) return;
+      const panel = devToolsPanelRef.current;
+      if (!panel) return;
+      e.preventDefault();
+      const r = panel.getBoundingClientRect();
+      dragOffsetRef.current = {
+        dx: e.clientX - r.left,
+        dy: e.clientY - r.top,
+      };
+      const onMove = (ev: MouseEvent) => {
+        if (!dragOffsetRef.current) return;
+        /* Сохраняем в bounds viewport'а — минимум 10px от каждой грани,
+           чтобы панель не убежала за край и не потерялась. */
+        const pw = panel.offsetWidth;
+        const ph = panel.offsetHeight;
+        const nx = Math.max(
+          10,
+          Math.min(window.innerWidth - pw - 10, ev.clientX - dragOffsetRef.current.dx),
+        );
+        const ny = Math.max(
+          10,
+          Math.min(window.innerHeight - ph - 10, ev.clientY - dragOffsetRef.current.dy),
+        );
+        devtools.setPosition({ x: nx, y: ny });
+      };
+      const onUp = () => {
+        dragOffsetRef.current = null;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    },
+    [devtools],
   );
+
+  /* Click-outside закрывает panel ТОЛЬКО когда он не pinned. */
+  useEffect(() => {
+    if (!devtools.open || devtools.pinned) return undefined;
+    const onDown = (e: MouseEvent) => {
+      const panel = devToolsPanelRef.current;
+      if (!panel) return;
+      if (panel.contains(e.target as Node)) return;
+      /* Клик по mini-rail DevTools-кнопке тоже не закрывает — он сам
+         toggle'ит панель; иначе получим open→instant-close. */
+      const target = e.target as Element;
+      if (target.closest?.('button[aria-label="Инструменты разработчика"]'))
+        return;
+      devtools.setOpen(false);
+    };
+    document.addEventListener('mousedown', onDown, true);
+    return () => document.removeEventListener('mousedown', onDown, true);
+  }, [devtools.open, devtools.pinned, devtools]);
+
+  /* Esc закрывает panel (standard dismiss). Unpin при желании сначала. */
+  useEffect(() => {
+    if (!devtools.open) return undefined;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') devtools.setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [devtools.open, devtools]);
 
   if (!onDashboard) return null;
 
   return (
-    <Rail
-      aria-label={t('Панель управления дашбордом')}
-      aria-hidden={isDockCollapsed}
-      $metrics={dockMetrics}
-      $collapsed={isDockCollapsed}
-    >
-      {items.map(item => {
-        if (item.visible === false) return null;
-        const key = item.kind === 'drawer' ? item.drawer : item.id;
-        const isDrawerItem = item.kind === 'drawer';
-        const isActive = isDrawerItem && openedDrawer === item.drawer;
-        return (
-          <RailBtn
-            key={key}
-            type="button"
-            $active={isActive}
-            aria-pressed={isActive}
-            aria-label={item.label}
-            title={item.label}
-            disabled={item.kind === 'action' ? item.disabled : undefined}
-            onClick={() =>
-              item.kind === 'drawer'
-                ? toggleDrawer(item.drawer)
-                : item.onClick()
-            }
-          >
-            {item.icon}
-          </RailBtn>
-        );
-      })}
-    </Rail>
+    <>
+      <Rail
+        aria-label={t('Панель управления дашбордом')}
+        aria-hidden={isDockCollapsed}
+        $metrics={dockMetrics}
+        $collapsed={isDockCollapsed}
+      >
+        {items.map(item => {
+          if (item.visible === false) return null;
+          const key = item.kind === 'drawer' ? item.drawer : item.id;
+          const isDrawerItem = item.kind === 'drawer';
+          const isActive = isDrawerItem
+            ? openedDrawer === item.drawer
+            : item.kind === 'action' &&
+              item.id === 'devtools' &&
+              devtools.open;
+          return (
+            <RailBtn
+              key={key}
+              type="button"
+              $active={isActive}
+              aria-pressed={isActive}
+              aria-label={item.label}
+              title={item.label}
+              disabled={item.kind === 'action' ? item.disabled : undefined}
+              onClick={() =>
+                item.kind === 'drawer'
+                  ? toggleDrawer(item.drawer)
+                  : item.onClick()
+              }
+            >
+              {item.icon}
+            </RailBtn>
+          );
+        })}
+      </Rail>
+      {devtools.open && (
+        <DevToolsFloat
+          ref={devToolsPanelRef}
+          role="dialog"
+          aria-label={t('Инструменты разработчика')}
+          style={{ left: devtools.position.x, top: devtools.position.y }}
+        >
+          <DevToolsHeader onMouseDown={handleDragStart}>
+            <DevToolsTitle>{t('Инструменты разработчика')}</DevToolsTitle>
+            <DevToolsHeaderBtn
+              type="button"
+              $active={devtools.pinned}
+              aria-label={devtools.pinned ? t('Открепить') : t('Закрепить')}
+              title={devtools.pinned ? t('Открепить') : t('Закрепить')}
+              onClick={() => devtools.setPinned(!devtools.pinned)}
+            >
+              {devtools.pinned ? <IconPinSlash /> : <IconPin />}
+            </DevToolsHeaderBtn>
+            <DevToolsHeaderBtn
+              type="button"
+              aria-label={t('Закрыть')}
+              title={t('Закрыть (Esc)')}
+              onClick={() => devtools.setOpen(false)}
+            >
+              <IconCloseX />
+            </DevToolsHeaderBtn>
+          </DevToolsHeader>
+          <DevToolsMenu>
+            {editMode ? (
+              <>
+                <DevToolsMenuItem
+                  type="button"
+                  onClick={handleUndo}
+                  disabled={undoLength < 1}
+                >
+                  <IconUndo />
+                  {t('Отменить действие')}
+                </DevToolsMenuItem>
+                <DevToolsMenuItem
+                  type="button"
+                  onClick={handleRedo}
+                  disabled={redoLength < 1}
+                >
+                  <IconRedo />
+                  {t('Повторить действие')}
+                </DevToolsMenuItem>
+                <DevToolsMenuItem
+                  type="button"
+                  onClick={handleDiscard}
+                >
+                  <IconDiscard />
+                  {t('Отменить изменения')}
+                </DevToolsMenuItem>
+              </>
+            ) : (
+              userCanEdit && (
+                <DevToolsMenuItem
+                  type="button"
+                  onClick={() => {
+                    handleEdit();
+                    /* После входа в edit оставляем панель открытой —
+                       юзер часто сразу хочет undo/redo/discard. */
+                  }}
+                >
+                  <IconEdit />
+                  {t('Редактировать дашборд')}
+                </DevToolsMenuItem>
+              )
+            )}
+          </DevToolsMenu>
+        </DevToolsFloat>
+      )}
+    </>
   );
 };
