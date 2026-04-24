@@ -62,8 +62,14 @@ const DrawerSheet = styled.aside<{ $open: boolean; $kind: 'catalog' | 'other' }>
   display: flex;
   flex-direction: column;
   pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};
+  /* max-height/height из transition'ов убран: в Chromium
+     transitions на значениях с viewport-unit min(..., 80vh) в
+     редких случаях застревают в startTime=0 — drawer оставался
+     height:0 пока юзер вручную не ресайзил окно. Теперь размер
+     применяется мгновенно, плавность появления держат transform +
+     opacity (стандартные свойства, никаких vh) — визуально почти
+     идентично предыдущему поведению. */
   transition:
-    max-height 0.28s ${DS2_VARS.ease},
     transform 0.28s ${DS2_VARS.ease},
     opacity 0.2s ${DS2_VARS.ease};
   /* Выше ShellMain контента (1) и ниже dropdowns/AI overlay/dock. */
@@ -289,6 +295,7 @@ const DEFAULT_TITLES: Record<DrawerKind, string> = {
   create: 'Создать',
   filters: 'Фильтры дашборда',
   pages: 'Страницы дашборда',
+  builder: 'Конструктор',
 };
 
 export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({

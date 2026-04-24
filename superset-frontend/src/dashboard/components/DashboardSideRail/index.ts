@@ -12,3 +12,4 @@
 export { DashboardSideRail } from './DashboardSideRail';
 export { FiltersDrawer } from './FiltersDrawer';
 export { PagesDrawer } from './PagesDrawer';
+export { BuilderDrawer } from './BuilderDrawer';

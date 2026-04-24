@@ -951,7 +951,10 @@ const DashboardBuilder = () => {
             ) : (
               <Loading />
             )}
-            {editMode && <BuilderComponentPane topOffset={barTopOffset} />}
+            {/* Старый sticky-sidebar BuilderComponentPane убран — его
+                содержимое (SliceAdder + layout-элементы) теперь живёт
+                в Shell-drawer'е kind='builder' (BuilderDrawer.tsx),
+                открывается кнопкой «Конструктор» в mini-rail'е. */}
           </StyledDashboardContent>
         </DashboardContentWrapper>
       </StyledContent>

@@ -55,6 +55,7 @@ import {
   DashboardSideRail,
   FiltersDrawer,
   PagesDrawer,
+  BuilderDrawer,
 } from 'src/dashboard/components/DashboardSideRail';
 
 /**
@@ -403,6 +404,7 @@ export const Shell: FC<React.PropsWithChildren<ShellProps>> = ({
          PagesPanel переиспользуются через тонкие обёртки. */
       filters: <FiltersDrawer />,
       pages: <PagesDrawer />,
+      builder: <BuilderDrawer />,
       ...drawerContent,
     }),
     [drawerContent],

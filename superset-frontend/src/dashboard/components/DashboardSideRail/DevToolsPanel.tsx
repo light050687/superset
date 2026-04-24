@@ -527,6 +527,16 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
   }, [dispatch]);
 
   const handleDiscard = useCallback(() => {
+    /* Перед reload'ом ставим флаг, чтобы после перезагрузки
+       DashboardSideRail сразу же восстановил DevToolsPanel-open.
+       Юзер жаловался: «после нажатия отменить изменения не
+       сворачивай окно инструменты разработчика». Reload стирает
+       React-state, поэтому сохраняем намерение в sessionStorage. */
+    try {
+      sessionStorage.setItem('superset.shell.devtools.reopenAfterReload', '1');
+    } catch {
+      /* noop */
+    }
     const url = new URL(window.location.href);
     url.searchParams.delete('edit');
     window.location.assign(url.toString());

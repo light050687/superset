@@ -160,6 +160,23 @@ const IconRefresh = (): JSX.Element => (
   </svg>
 );
 
+/* IconBuilder — «stacked blocks» (2×2 grid + plus в углу).
+   Читается как «конструктор / собрать из блоков». */
+const IconBuilder = (): JSX.Element => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="3" width="6" height="6" rx="1" />
+    <rect x="11" y="3" width="6" height="6" rx="1" />
+    <rect x="3" y="11" width="6" height="6" rx="1" />
+    <path d="M14 11v6M11 14h6" />
+  </svg>
+);
+
 /* IconDevTools — «code brackets» </> с молнией-точкой внутри.
    Комбинирует визуальный язык разработчика (code-brackets, как в
    Heroicons/Lucide `CodeBracket`) и "взаимодействия/runtime"
@@ -263,7 +280,23 @@ export const DashboardSideRail: FC = () => {
   const dockMetrics = useMainDockMetrics();
   const dispatch = useDispatch();
   const chartIds = useChartIds();
-  const [devToolsOpen, setDevToolsOpen] = useState(false);
+  /* Восстанавливаем DevTools-open после reload, если Discard выставил
+     флаг. Юзер попросил: после «Отменить изменения» панель не должна
+     закрываться. Флаг разовый (удаляется после чтения). */
+  const [devToolsOpen, setDevToolsOpen] = useState(() => {
+    try {
+      if (
+        sessionStorage.getItem('superset.shell.devtools.reopenAfterReload') ===
+        '1'
+      ) {
+        sessionStorage.removeItem('superset.shell.devtools.reopenAfterReload');
+        return true;
+      }
+    } catch {
+      /* noop */
+    }
+    return false;
+  });
 
   useEffect(() => {
     if (onDashboard) setHasMiniRail(true);
@@ -320,6 +353,17 @@ export const DashboardSideRail: FC = () => {
         label: t('Страницы'),
         icon: <IconPages />,
         visible: topLevelPagesCount > 1 || editMode,
+      },
+      /* Конструктор — только в edit-mode. Открывает drawer, в
+         котором живут SliceAdder (чарты) и layout-элементы (Row/
+         Column/Tabs/Markdown/Divider/Header). Раньше это был
+         sticky-sidebar справа (BuilderComponentPane). */
+      {
+        kind: 'drawer',
+        drawer: 'builder',
+        label: t('Конструктор'),
+        icon: <IconBuilder />,
+        visible: editMode,
       },
       {
         kind: 'action',
