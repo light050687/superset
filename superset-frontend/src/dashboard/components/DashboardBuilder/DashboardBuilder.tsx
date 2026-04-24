@@ -318,12 +318,12 @@ const StyledDashboardContent = styled.div<{
       margin: ${theme.sizeUnit * 4}px;
       margin-left: ${marginLeft}px;
 
-      ${editMode &&
-      `
-      max-width: calc(100% - ${
-        BUILDER_SIDEPANEL_WIDTH + theme.sizeUnit * 16
-      }px);
-    `}
+      /* В edit-mode раньше здесь была компенсация
+         max-width calc(100% - BUILDER_SIDEPANEL_WIDTH) —
+         резервировала 374px справа под sticky-sidebar
+         BuilderComponentPane. Sidebar убран (его роль теперь у
+         BuilderDrawer'а), компенсация не нужна — дашборд
+         занимает всю ширину с симметричными margin 32px. */
 
       /* this is the ParentSize wrapper */
     & > div:first-of-type {

@@ -182,8 +182,11 @@ const TileHost = styled.div<{ $accent: string }>`
 
     /* Оригинальный NewComponent переделываем в вертикальный tile.
        styled'ный NewComponent не пропускает data-test → в DOM его
-       нет. Используем [draggable="true"] как стабильный хук. */
-    & > [draggable='true'] {
+       нет. Используем [draggable="true"] как стабильный хук.
+       Descendant-селектор (без >): DragDroppable-обёртка рендерит
+       .dragdroppable div между TileHost и draggable, прямой child
+       не матчится. */
+    & [draggable='true'] {
       flex: 1;
       display: flex;
       flex-direction: column;
