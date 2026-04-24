@@ -172,20 +172,6 @@ const IconWrench = (): JSX.Element => (
   </svg>
 );
 
-const IconSave = (): JSX.Element => (
-  <svg
-    viewBox="0 0 20 20"
-    fill="none"
-    stroke="currentColor"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M4 4.5v11a1 1 0 001 1h10a1 1 0 001-1V7.5l-3-3H5a1 1 0 00-1 1z" />
-    <path d="M7 4.5v3.5h5V4.5" />
-    <path d="M6.5 16v-5h7v5" />
-  </svg>
-);
-
 /* ─── Types ──────────────────────────────────────────────────────── */
 
 type SideRailItem =
@@ -309,12 +295,6 @@ export const DashboardSideRail: FC = () => {
     dispatch(addSuccessToastAction(t('Обновление чартов')));
   }, [dispatch, chartIds, dashboardId]);
 
-  const handleSave = useCallback(() => {
-    document
-      .querySelector<HTMLButtonElement>('[data-test="header-save-button"]')
-      ?.click();
-  }, []);
-
   const handleToggleDevTools = useCallback(() => {
     setDevToolsOpen(v => !v);
   }, []);
@@ -350,15 +330,6 @@ export const DashboardSideRail: FC = () => {
         active: devToolsOpen,
       },
     ];
-    if (editMode) {
-      arr.push({
-        kind: 'action',
-        id: 'save',
-        label: t('Сохранить дашборд'),
-        icon: <IconSave />,
-        onClick: handleSave,
-      });
-    }
     return arr;
   }, [
     topLevelPagesCount,
@@ -366,7 +337,6 @@ export const DashboardSideRail: FC = () => {
     devToolsOpen,
     handleRefresh,
     handleToggleDevTools,
-    handleSave,
   ]);
 
   if (!onDashboard) return null;

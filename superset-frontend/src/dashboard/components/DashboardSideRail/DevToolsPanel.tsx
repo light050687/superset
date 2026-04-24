@@ -56,43 +56,58 @@ import { logEvent as logEventAction } from 'src/logger/actions';
 
 /* ─── localStorage key + types ───────────────────────────────────── */
 
-/* v3 — свежий ключ. В v2 оставались stale записи (pinned:false +
-   огромные w/h после эксперимента с ресайзом), которые тянули
-   default-state в сломанное положение. С v3 начинается чистая база,
-   а pinned-флаг вообще больше не сохраняется (см. writePersist). */
-const LS_KEY = 'superset.shell.devtools.panel.v3';
+/* v4 — ключ с полным набором полей, включая pinned. По запросу:
+   «координаты должны сохраняться всегда». Храним pinned + x/y + w/h,
+   чтобы при повторном открытии панель восстановила своё состояние
+   как было закрыто (pinned или floating с конкретной позицией). */
+const LS_KEY = 'superset.shell.devtools.panel.v4';
 
 interface PersistState {
+  pinned: boolean;
   x: number;
   y: number;
   w: number;
   h: number;
 }
 
-/* Значения по умолчанию для unpinned-режима (первый раз после
-   click'а «открепить» — откуда начнём floating). */
-const DEFAULT_UNPINNED_W = 640;
-const DEFAULT_UNPINNED_H = 400;
-const DEFAULT_UNPINNED_X = 80;
-const DEFAULT_UNPINNED_Y = 120;
+/* Default-позиция = стандартный bottom-sheet (как Shell Drawer):
+   1200×640 по центру горизонтально, прижат к низу viewport'а над
+   dock'ом (92px = DS2_VARS.drawerBottom). Используется при первом
+   открытии и после клика «Сбросить позицию». */
+const DEFAULT_BOTTOM_GAP = 92;
+
+function defaultSize(): { w: number; h: number } {
+  return {
+    w: Math.min(1200, Math.round(window.innerWidth * 0.96)),
+    h: Math.min(640, Math.round(window.innerHeight * 0.8)),
+  };
+}
+function defaultPos(w: number, h: number): { x: number; y: number } {
+  return {
+    x: Math.max(0, Math.round((window.innerWidth - w) / 2)),
+    y: Math.max(0, window.innerHeight - h - DEFAULT_BOTTOM_GAP),
+  };
+}
+function defaultPersist(): PersistState {
+  const { w, h } = defaultSize();
+  const { x, y } = defaultPos(w, h);
+  return { pinned: true, x, y, w, h };
+}
 
 /* ─── Styled ─────────────────────────────────────────────────────── */
 
 /** Основной контейнер.
  *
- *  ВАЖНО: x/y/w/h для unpinned-режима применяются через **inline style**
- *  (вне styled-components), а не через styled-props. Почему: если положить
- *  $w/$h в styled-template, каждая смена размера или позиции:
- *    setSize → React re-render → styled generates new class → браузер
- *    layouts новый width → ResizeObserver fires → setSize → ∞ loop
- *  (юзер видел «бесконечно увеличивается окно»).
+ *  Позиция/размер ВСЕГДА применяются через inline-style на DOM-ref'е
+ *  (left/top/width/height), независимо от pinned. Так мы полностью
+ *  уходим от React state → styled class → layout → ResizeObserver loop.
  *
- *  Теперь: styled держит только статичные стили + pinned-ветку (там
- *  CSS fixed `min(96vw, 1200px)` без React state), unpinned-ветка
- *  просто включает `resize: both` + min-размеры. Position/размер в
- *  unpinned пишем inline'ом — ResizeObserver читает offsetWidth/Height
- *  и persist'ит в localStorage без setState. Нет re-render'а → нет
- *  loop'а.
+ *  $pinned контролирует ТОЛЬКО:
+ *   • `resize: none` (pinned) vs `resize: both` (unpinned);
+ *   • cursor на header'е (grab в unpinned, default в pinned).
+ *
+ *  Т.е. «pin» = «зафиксировать окно на текущем месте», а не вернуть
+ *  в default. Для возврата в default — отдельная кнопка reset.
  */
 const Panel = styled.div<{ $pinned: boolean; $animateIn: boolean }>`
   position: fixed;
@@ -106,38 +121,33 @@ const Panel = styled.div<{ $pinned: boolean; $animateIn: boolean }>`
   display: flex;
   flex-direction: column;
   z-index: 110;
-  overflow: hidden;
+  /* overflow: auto нужен для того, чтобы CSS resize:both отрисовывал
+     native resize-handle в правом нижнем углу. С overflow:hidden
+     handle тоже рисуется, но в некоторых сборках Chromium хит-зона
+     слишком маленькая → юзер не мог потянуть угол. Переключаемся на
+     auto: overflow берёт на себя Body внутри. */
+  overflow: ${({ $pinned }) => ($pinned ? 'hidden' : 'auto')};
   user-select: none;
 
-  ${({ $pinned }) =>
-    $pinned
-      ? `
-          left: 50%;
-          bottom: ${DS2_VARS.drawerBottom};
-          transform: translateX(-50%);
-          width: min(96vw, 1200px);
-          height: min(640px, 80vh);
-        `
-      : `
-          min-width: 320px;
-          min-height: 200px;
-          max-width: 96vw;
-          max-height: 96vh;
-          resize: both;
-        `}
+  min-width: 320px;
+  min-height: 200px;
+  max-width: 100vw;
+  max-height: 100vh;
+  resize: ${({ $pinned }) => ($pinned ? 'none' : 'both')};
 
-  ${({ $animateIn, $pinned }) =>
-    $animateIn && $pinned
+  ${({ $animateIn }) =>
+    $animateIn
       ? `animation: devtoolsEnter 0.28s cubic-bezier(0.32, 0.72, 0, 1);`
       : ''}
 
   @keyframes devtoolsEnter {
     from {
       opacity: 0;
-      transform: translateX(-50%) translateY(20px);
+      transform: translateY(20px);
     }
     to {
       opacity: 1;
+      transform: translateY(0);
     }
   }
 `;
@@ -383,22 +393,18 @@ function readPersist(): Partial<PersistState> {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    /* Sanity-check: если w/h аномально большие (> viewport'а сейчас) —
-       игнорируем и начинаем с defaults. Спасает юзеров у которых в LS
-       мог остаться раздутый размер из прошлых багов. */
+    const pinned =
+      typeof parsed.pinned === 'boolean' ? parsed.pinned : undefined;
     const w = typeof parsed.w === 'number' ? parsed.w : undefined;
     const h = typeof parsed.h === 'number' ? parsed.h : undefined;
     const x = typeof parsed.x === 'number' ? parsed.x : undefined;
     const y = typeof parsed.y === 'number' ? parsed.y : undefined;
-    return { x, y, w, h };
+    return { pinned, x, y, w, h };
   } catch {
     return {};
   }
 }
 
-/** Пишем ТОЛЬКО x/y/w/h. pinned-флаг не сохраняется — каждое
- *  открытие панели начинается в pinned-режиме, юзер явно кликает
- *  «Открепить» если хочет плавать. */
 function writePersist(patch: Partial<PersistState>): void {
   try {
     const curr = readPersist();
@@ -429,34 +435,49 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
   const redoLength = useSelector<RootState, number>(
     state => (state.dashboardLayout as any)?.future?.length ?? 0,
   );
+  const hasUnsavedChanges = useSelector<RootState, boolean>(
+    state => state.dashboardState?.hasUnsavedChanges ?? false,
+  );
 
   /* ─── Pinned state (React) ─────────────────────────────────────── */
 
-  /* По умолчанию pinned=true — юзер просил: «при появлении док
-     должен быть пин». НЕ читаем из localStorage: каждое открытие
-     панели начинается в стандартной bottom-sheet позиции. Только
-     position/size в unpinned-режиме сохраняются между открытиями —
-     чтобы юзер не перетаскивал каждый раз заново. */
-  const [pinned, setPinned] = useState<boolean>(true);
+  /* pinned/position/size восстанавливаются из localStorage. Если
+     юзер закрыл панель в unpinned-режиме в левом верхнем углу —
+     при следующем открытии она появится там же. Если pinned — в
+     стандартной позиции. Default при первом запуске = pinned=true. */
+  const [pinned, setPinnedState] = useState<boolean>(() => {
+    const p = readPersist().pinned;
+    return p === undefined ? true : p;
+  });
+  const setPinned = useCallback(
+    (next: boolean | ((prev: boolean) => boolean)) => {
+      setPinnedState(prev => {
+        const v = typeof next === 'function' ? next(prev) : next;
+        writePersist({ pinned: v });
+        return v;
+      });
+    },
+    [],
+  );
 
   /* ─── Persisted position/size (ref, не React state) ────────────── */
 
   /* Храним в ref чтобы НЕ ре-рендерить Panel при каждом пиксельном
-     движении drag'а или resize. Панель читает эти значения только
-     один раз (при входе в unpinned-режим) и применяет через inline
-     style. Дальше браузер сам управляет width/height через
-     `resize: both`, а мы только наблюдаем через ResizeObserver и
-     писать в localStorage без setState.
+     движении drag'а или resize. Панель читает эти значения один раз
+     при mount'е и применяет через inline style. Дальше браузер сам
+     управляет width/height через CSS `resize: both`, а мы только
+     наблюдаем через ResizeObserver и пишем в localStorage без setState.
      Это ломает прошлый loop: setSize → re-render → styled class →
      layout → ResizeObserver → setSize → ∞. */
   const persistedRef = useRef<Partial<PersistState>>(readPersist());
+  const defaults = useRef<PersistState>(defaultPersist());
   const posRef = useRef<{ x: number; y: number }>({
-    x: persistedRef.current.x ?? DEFAULT_UNPINNED_X,
-    y: persistedRef.current.y ?? DEFAULT_UNPINNED_Y,
+    x: persistedRef.current.x ?? defaults.current.x,
+    y: persistedRef.current.y ?? defaults.current.y,
   });
   const sizeRef = useRef<{ w: number; h: number }>({
-    w: persistedRef.current.w ?? DEFAULT_UNPINNED_W,
-    h: persistedRef.current.h ?? DEFAULT_UNPINNED_H,
+    w: persistedRef.current.w ?? defaults.current.w,
+    h: persistedRef.current.h ?? defaults.current.h,
   });
 
   /* ─── Action handlers ──────────────────────────────────────────── */
@@ -491,14 +512,17 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
     window.location.assign(url.toString());
   }, []);
 
-  /* ─── Unpinned style apply (inline, ref-based) ─────────────────── */
+  /* ─── Inline-style apply (ВСЕГДА, ref-based) ───────────────────── */
 
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   /** Записывает текущие posRef/sizeRef в inline-style панели
-   *  (left/top/width/height) и clamp'ит в bounds viewport'а.
-   *  Используется при unpin и при window.resize. */
-  const applyUnpinnedStyle = useCallback(() => {
+   *  (left/top/width/height) и clamp'ит в bounds viewport'а. Вызывается
+   *  при mount'е и window.resize. Style всегда управляется inline-ом
+   *  — и в pinned, и в unpinned, — styled лишь toggle'ит cursor и
+   *  resize-свойство. Это значит «pin» фиксирует окно на текущем
+   *  месте, не возвращает его в default. */
+  const applyStyle = useCallback(() => {
     const el = panelRef.current;
     if (!el) return;
     const w = Math.min(
@@ -519,28 +543,12 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
     el.style.height = `${h}px`;
   }, []);
 
-  /** Очищает unpinned inline-style (для перехода в pinned — pinned
-   *  ветка styled'а задаёт position через CSS, inline style'ы должны
-   *  быть убраны, иначе они перекрывают). */
-  const clearUnpinnedStyle = useCallback(() => {
-    const el = panelRef.current;
-    if (!el) return;
-    el.style.left = '';
-    el.style.top = '';
-    el.style.width = '';
-    el.style.height = '';
-  }, []);
-
-  /* При входе в unpinned — apply'им сохранённую позицию/размер.
-     При переходе в pinned — очищаем inline-style, чтобы styled
-     pinned-ветка применилась правильно. */
+  /* Apply один раз при mount'е и каждый раз когда toggle'ится pinned
+     (на случай если юзер нажал reset — posRef/sizeRef обновились,
+     но panel не знает — форсим apply). */
   useEffect(() => {
-    if (pinned) {
-      clearUnpinnedStyle();
-    } else {
-      applyUnpinnedStyle();
-    }
-  }, [pinned, applyUnpinnedStyle, clearUnpinnedStyle]);
+    applyStyle();
+  }, [pinned, applyStyle]);
 
   /* ─── Drag (только unpinned) ───────────────────────────────────── */
 
@@ -613,9 +621,8 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
   /* ─── Bounds clamp on window resize ────────────────────────────── */
 
   useEffect(() => {
-    if (pinned) return undefined;
     const onResize = () => {
-      applyUnpinnedStyle();
+      applyStyle();
       writePersist({
         x: posRef.current.x,
         y: posRef.current.y,
@@ -625,7 +632,7 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
     };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  }, [pinned, applyUnpinnedStyle]);
+  }, [applyStyle]);
 
   /* ─── Esc to close ─────────────────────────────────────────────── */
 
@@ -643,22 +650,20 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
     setPinned(v => !v);
   }, []);
 
-  /* Reset — возвращает в default pinned-state (стандартная
-     bottom-sheet позиция и размер как у Shell Drawer'а). Также
-     сбрасывает сохранённые unpinned-координаты/размер в localStorage,
-     чтобы следующий unpin начал с дефолтов, а не из потерянной
-     позиции. */
+  /* Reset — возвращает в default bottom-sheet позицию и размер
+     (1200×640 по центру снизу, как Shell Drawer). Также pinned=true
+     — default state. Persist обновляется. Inline-style применится
+     через useEffect[pinned] на следующем рендере. */
   const handleReset = useCallback(() => {
+    const d = defaultPersist();
+    posRef.current = { x: d.x, y: d.y };
+    sizeRef.current = { w: d.w, h: d.h };
+    writePersist({ x: d.x, y: d.y, w: d.w, h: d.h, pinned: true });
     setPinned(true);
-    posRef.current = { x: DEFAULT_UNPINNED_X, y: DEFAULT_UNPINNED_Y };
-    sizeRef.current = { w: DEFAULT_UNPINNED_W, h: DEFAULT_UNPINNED_H };
-    writePersist({
-      x: DEFAULT_UNPINNED_X,
-      y: DEFAULT_UNPINNED_Y,
-      w: DEFAULT_UNPINNED_W,
-      h: DEFAULT_UNPINNED_H,
-    });
-  }, []);
+    /* Если pinned уже был true, useEffect на [pinned] не зафайрит
+       (значение не меняется) — форсим apply вручную. */
+    applyStyle();
+  }, [setPinned, applyStyle]);
 
   /* ─── Enter-animation один раз при mount'е ─────────────────────── */
 
@@ -679,7 +684,11 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
     disabled: boolean;
   }
 
-  /* Главная кнопка меняется Edit ↔ Save по editMode. */
+  /* Главная кнопка меняется Edit ↔ Save по editMode. В edit-mode
+     Save disabled пока нет несохранённых изменений (hasUnsavedChanges
+     — тот же флаг, что гасит header-save-button). Без изменений
+     нечего сохранять: кнопка серая, активна только «Отменить
+     изменения» — выход из edit-режима. */
   const mainTile: TileDef = editMode
     ? {
         key: 'save',
@@ -687,7 +696,7 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
         accent: DS2_VARS.cSky,
         icon: <IconSave />,
         onClick: handleSave,
-        disabled: false,
+        disabled: !hasUnsavedChanges,
       }
     : {
         key: 'edit',
@@ -733,6 +742,14 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
       aria-label={t('Инструменты разработчика')}
       $pinned={pinned}
       $animateIn={animateIn}
+      /* Initial inline-style с первого рендера — чтобы не было flash
+         из 0,0 пока не отработает useEffect с applyStyle. */
+      style={{
+        left: posRef.current.x,
+        top: posRef.current.y,
+        width: sizeRef.current.w,
+        height: sizeRef.current.h,
+      }}
     >
       {pinned && <DragHandle />}
       <Header
