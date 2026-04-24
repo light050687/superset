@@ -121,10 +121,13 @@ const Panel = styled.div<{ $pinned: boolean; $animateIn: boolean }>`
   display: flex;
   flex-direction: column;
   z-index: 110;
-  /* overflow: hidden — наружные scroll'ы не появляются, содержимое
-     скроллит Body внутри (overflow-y: auto). Native CSS resize-handle
-     при resize:both рендерится UA-shadow'ом и overflow не влияет. */
-  overflow: hidden;
+  /* overflow: auto — нужен для того, чтобы CSS resize:both
+     отрисовывал и КЛИК'АЛ native resize-handle в правом нижнем углу.
+     С overflow:hidden handle иногда не реагирует на mouse в
+     Chromium (зависит от версии). Чтобы scroll'ы не появлялись —
+     выставлен min-width/height достаточный для всего контента
+     (400×240), а Body внутри имеет свой overflow-y:auto. */
+  overflow: auto;
   user-select: none;
 
   /* Min-width 400 = header'у (Title 240 + HeaderRight 80 + gap 12 +
