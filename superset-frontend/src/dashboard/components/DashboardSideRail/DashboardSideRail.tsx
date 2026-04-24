@@ -160,7 +160,12 @@ const IconRefresh = (): JSX.Element => (
   </svg>
 );
 
-const IconWrench = (): JSX.Element => (
+/* IconDevTools — «code brackets» </> с молнией-точкой внутри.
+   Комбинирует визуальный язык разработчика (code-brackets, как в
+   Heroicons/Lucide `CodeBracket`) и "взаимодействия/runtime"
+   (центральная точка-акцент), без клише шестерёнки/гаечного ключа.
+   Тонкий 1.6 stroke, симметрия — вписывается в проектный DS2 стиль. */
+const IconDevTools = (): JSX.Element => (
   <svg
     viewBox="0 0 20 20"
     fill="none"
@@ -168,7 +173,9 @@ const IconWrench = (): JSX.Element => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M13 3a4 4 0 013.9 5L15 10l2.5 2.5a1.5 1.5 0 11-2.1 2.1L13 12l-2 1.9A4 4 0 115 7.1L7 9 9 7 7.1 5A4 4 0 0113 3z" />
+    <path d="M7.5 5L3 10l4.5 5" />
+    <path d="M12.5 5l4.5 5-4.5 5" />
+    <circle cx="10" cy="10" r="1.2" fill="currentColor" stroke="none" />
   </svg>
 );
 
@@ -325,7 +332,7 @@ export const DashboardSideRail: FC = () => {
         kind: 'action',
         id: 'devtools',
         label: t('Инструменты разработчика'),
-        icon: <IconWrench />,
+        icon: <IconDevTools />,
         onClick: handleToggleDevTools,
         active: devToolsOpen,
       },

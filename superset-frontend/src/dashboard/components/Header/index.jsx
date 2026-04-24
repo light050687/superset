@@ -658,7 +658,14 @@ const Header = () => {
         {userCanSaveAs && (
           <div className="button-container" data-test="dashboard-edit-actions">
             {editMode && (
-              <div css={actionButtonsStyle}>
+              /* Undo/Redo/Discard/Save убраны из header'а — их функции
+                 доступны через DevToolsPanel (mini-rail → иконка
+                 «Инструменты разработчика»). Save-кнопка оставлена
+                 ВИЗУАЛЬНО СКРЫТОЙ (display:none), но остаётся в DOM —
+                 DevToolsPanel.handleSave триггерит её клик по
+                 data-test="header-save-button", чтобы не дублировать
+                 тяжёлую overwriteDashboard-логику. */
+              <div css={[actionButtonsStyle, { display: 'none' }]}>
                 <div className="undoRedo">
                   <Tooltip
                     id="dashboard-undo-tooltip"

@@ -121,19 +121,35 @@ const Panel = styled.div<{ $pinned: boolean; $animateIn: boolean }>`
   display: flex;
   flex-direction: column;
   z-index: 110;
-  /* overflow: auto нужен для того, чтобы CSS resize:both отрисовывал
-     native resize-handle в правом нижнем углу. С overflow:hidden
-     handle тоже рисуется, но в некоторых сборках Chromium хит-зона
-     слишком маленькая → юзер не мог потянуть угол. Переключаемся на
-     auto: overflow берёт на себя Body внутри. */
-  overflow: ${({ $pinned }) => ($pinned ? 'hidden' : 'auto')};
+  /* overflow: hidden — наружные scroll'ы не появляются, содержимое
+     скроллит Body внутри (overflow-y: auto). Native CSS resize-handle
+     при resize:both рендерится UA-shadow'ом и overflow не влияет. */
+  overflow: hidden;
   user-select: none;
 
-  min-width: 320px;
-  min-height: 200px;
+  /* Min-width 400 = header'у (Title 240 + HeaderRight 80 + gap 12 +
+     padding 44 ≈ 376) хватает места, крест не вылезает, даже при
+     самом маленьком ресайзе. */
+  min-width: 400px;
+  min-height: 240px;
   max-width: 100vw;
   max-height: 100vh;
+  /* Только resize отличается — disabled когда pinned (фиксация),
+     both когда unpinned (юзер может ресайзить углом). */
   resize: ${({ $pinned }) => ($pinned ? 'none' : 'both')};
+
+  /* Плавный transition между pin/unpin — опацити/тень, без layout-
+     свойств (position/size — inline, не участвуют). */
+  transition:
+    box-shadow 0.18s ${DS2_VARS.ease},
+    border-color 0.18s ${DS2_VARS.ease};
+
+  /* В unpinned курсор grab на всей панели — drag any-where. Кнопки/
+     tile'ы внутри имеют свой cursor:pointer и перебивают. */
+  cursor: ${({ $pinned }) => ($pinned ? 'default' : 'grab')};
+  &:active {
+    cursor: ${({ $pinned }) => ($pinned ? 'default' : 'grabbing')};
+  }
 
   ${({ $animateIn }) =>
     $animateIn
@@ -163,17 +179,13 @@ const DragHandle = styled.div`
   flex-shrink: 0;
 `;
 
-const Header = styled.div<{ $cursorGrab: boolean }>`
+const Header = styled.div`
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   padding: 8px 22px 10px;
   flex-shrink: 0;
   gap: 12px;
-  cursor: ${({ $cursorGrab }) => ($cursorGrab ? 'grab' : 'default')};
-  &:active {
-    cursor: ${({ $cursorGrab }) => ($cursorGrab ? 'grabbing' : 'default')};
-  }
 `;
 
 const Title = styled.span`
@@ -183,6 +195,11 @@ const Title = styled.span`
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: ${DS2_VARS.g600};
+  /* Ellipsis когда панель узкая — чтобы длинный заголовок не
+     выталкивал кнопки за правый край Panel'а. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 `;
 
@@ -441,10 +458,10 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
 
   /* ─── Pinned state (React) ─────────────────────────────────────── */
 
-  /* pinned/position/size восстанавливаются из localStorage. Если
-     юзер закрыл панель в unpinned-режиме в левом верхнем углу —
-     при следующем открытии она появится там же. Если pinned — в
-     стандартной позиции. Default при первом запуске = pinned=true. */
+  /* pinned: при ПЕРВОМ открытии (LS пустой) — true (default). При
+     повторных открытиях — восстанавливаем сохранённое значение,
+     чтобы юзер снова увидел панель в том же состоянии (pinned или
+     unpinned), в каком закрыл. Координаты тоже persist'ятся. */
   const [pinned, setPinnedState] = useState<boolean>(() => {
     const p = readPersist().pinned;
     return p === undefined ? true : p;
@@ -554,10 +571,27 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
 
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
 
-  const handleHeaderMouseDown = useCallback(
+  /** mousedown на ЛЮБОМ месте панели кроме интерактивных элементов
+   *  (кнопки, ссылки, input'ы, tile'ы). Юзер может схватить окно за
+   *  любое место — требование из фидбека «хочу хватать окно за
+   *  любое место а не только за верх». */
+  const handlePanelMouseDown = useCallback(
     (e: ReactMouseEvent) => {
       if (pinned) return;
-      if ((e.target as HTMLElement).closest('button')) return;
+      const target = e.target as HTMLElement;
+      /* Не начинаем drag если клик был по:
+         - button (close/pin/reset/tile)
+         - любому элементу с role=button
+         - input/textarea/select
+         - ссылкам
+         Это даёт юзеру взаимодействовать с содержимым без драга. */
+      if (
+        target.closest(
+          'button, a, input, textarea, select, [role="button"], [contenteditable="true"]',
+        )
+      ) {
+        return;
+      }
       const panel = panelRef.current;
       if (!panel) return;
       e.preventDefault();
@@ -575,8 +609,6 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
           0,
           Math.min(window.innerHeight - ph, ev.clientY - dragRef.current.dy),
         );
-        /* Пишем в inline-style напрямую — никакого setState → никакого
-           re-render'а → никакого ResizeObserver-loop'а. */
         panelRef.current.style.left = `${nx}px`;
         panelRef.current.style.top = `${ny}px`;
         posRef.current = { x: nx, y: ny };
@@ -585,7 +617,6 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
         dragRef.current = null;
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
-        /* Persist финальной позиции один раз в конце drag'а. */
         writePersist({ x: posRef.current.x, y: posRef.current.y });
       };
       document.addEventListener('mousemove', onMove);
@@ -742,6 +773,7 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
       aria-label={t('Инструменты разработчика')}
       $pinned={pinned}
       $animateIn={animateIn}
+      onMouseDown={handlePanelMouseDown}
       /* Initial inline-style с первого рендера — чтобы не было flash
          из 0,0 пока не отработает useEffect с applyStyle. */
       style={{
@@ -752,10 +784,7 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
       }}
     >
       {pinned && <DragHandle />}
-      <Header
-        $cursorGrab={!pinned}
-        onMouseDown={handleHeaderMouseDown}
-      >
+      <Header>
         <Title>{t('Инструменты разработчика')}</Title>
         <HeaderRight>
           <IconBtn
