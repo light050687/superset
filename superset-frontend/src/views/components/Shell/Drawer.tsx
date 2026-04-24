@@ -430,6 +430,68 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
     };
   }, [openedDrawer, measureOverflow]);
 
+  /**
+   * Unified wheel forwarding — «свободный скролл по всей поверхности
+   * drawer'а». Классический scroll-chaining bug в Chromium: когда
+   * wheel event попадает на элемент без собственного scroll'а (gap
+   * между grid-item'ами, <button> типа «+ Добавить колонку», empty
+   * state), Chrome иногда НЕ пробрасывает событие к scrollable
+   * ancestor'у — пользователь видит, что колесо «не работает» в этих
+   * областях.
+   *
+   * Решение (см. обсуждения crbug/MDN): вешаем глобальный wheel
+   * listener на body-контейнер drawer'а с passive:false. Если в
+   * ancestry wheel-target'а есть child-scrollable (Column Body), у
+   * которого ЕСТЬ запас скролла в направлении deltaY — выходим,
+   * native scroll обрабатывает child. Иначе вручную скроллим
+   * DrawerBody и preventDefault.
+   *
+   * Итого: inner scroll внутри kanban-колонки работает как раньше,
+   * но wheel над ЛЮБОЙ точкой drawer-body всегда приводит к скроллу.
+   */
+  useEffect(() => {
+    if (!openedDrawer) return undefined;
+    const body = bodyRef.current;
+    if (!body) return undefined;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY === 0) return;
+      let node: HTMLElement | null = e.target as HTMLElement | null;
+      // Ищем в ancestry (до body) scrollable-child, у которого есть
+      // реальный запас скролла в направлении deltaY.
+      while (node && node !== body) {
+        const cs = window.getComputedStyle(node);
+        if (
+          (cs.overflowY === 'auto' || cs.overflowY === 'scroll') &&
+          node.scrollHeight > node.clientHeight
+        ) {
+          const atTop = node.scrollTop <= 0;
+          const atBottom =
+            node.scrollTop + node.clientHeight >= node.scrollHeight - 1;
+          const scrollingUp = e.deltaY < 0;
+          const scrollingDown = e.deltaY > 0;
+          if (
+            (scrollingUp && !atTop) ||
+            (scrollingDown && !atBottom)
+          ) {
+            // Native scroll у child'а — выходим.
+            return;
+          }
+        }
+        node = node.parentElement;
+      }
+      // Ни один child не может проскроллить в этом направлении —
+      // двигаем сам DrawerBody.
+      if (body.scrollHeight > body.clientHeight) {
+        body.scrollTop += e.deltaY;
+        e.preventDefault();
+      }
+    };
+
+    body.addEventListener('wheel', onWheel, { passive: false });
+    return () => body.removeEventListener('wheel', onWheel);
+  }, [openedDrawer]);
+
   const kind = openedDrawer;
   const isOpen = kind !== null;
   const title = kind ? titles[kind] ?? t(DEFAULT_TITLES[kind]) : '';
