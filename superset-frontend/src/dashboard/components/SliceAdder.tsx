@@ -19,7 +19,10 @@
 /* eslint-env browser */
 import { Component } from 'react';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import { FixedSizeList as List } from 'react-window';
+import {
+  FixedSizeGrid as Grid,
+  FixedSizeList as List,
+} from 'react-window';
 // @ts-ignore
 import { createFilter } from 'react-search-input';
 import { t, styled, css } from '@superset-ui/core';
@@ -72,6 +75,11 @@ export type SliceAdderProps = {
   selectedSliceIds?: number[];
   editMode?: boolean;
   dashboardId: number;
+  /** Количество колонок в grid'е чартов. Default 1 — классический
+   *  вертикальный список (как в старом sticky-sidebar). Когда
+   *  SliceAdder живёт в широком drawer'е (BuilderDrawer), задаётся
+   *  3 для grid-лейаута. */
+  columnCount?: number;
 };
 
 type SliceAdderState = {
@@ -329,6 +337,31 @@ class SliceAdder extends Component<SliceAdderProps, SliceAdderState> {
     );
   }
 
+  /** Ячейка grid'а — обёртка над rowRenderer для FixedSizeGrid. */
+  cellRenderer = ({
+    columnIndex,
+    rowIndex,
+    style,
+  }: {
+    columnIndex: number;
+    rowIndex: number;
+    style: React.CSSProperties;
+  }) => {
+    const columnCount = this.props.columnCount || 1;
+    const index = rowIndex * columnCount + columnIndex;
+    if (index >= this.state.filteredSlices.length) return null;
+    /* Небольшой gap между ячейками через padding. Компенсируется
+       в расчёте размеров grid'а ниже. */
+    const gap = 8;
+    const cellStyle = {
+      ...style,
+      paddingRight: gap,
+      paddingBottom: gap,
+      boxSizing: 'border-box' as const,
+    };
+    return this.rowRenderer({ index, style: cellStyle });
+  };
+
   onShowOnlyMyCharts = (showOnlyMyCharts: boolean) => {
     if (!showOnlyMyCharts) {
       this.slicesRequest = this.props.fetchSlices(
@@ -428,17 +461,52 @@ class SliceAdder extends Component<SliceAdderProps, SliceAdderState> {
         {!this.props.isLoading && this.state.filteredSlices.length > 0 && (
           <ChartList>
             <AutoSizer>
-              {({ height, width }: { height: number; width: number }) => (
-                <List
-                  width={width}
-                  height={height}
-                  itemCount={this.state.filteredSlices.length}
-                  itemSize={DEFAULT_CELL_HEIGHT}
-                  itemKey={index => this.state.filteredSlices[index].slice_id}
-                >
-                  {this.rowRenderer}
-                </List>
-              )}
+              {({ height, width }: { height: number; width: number }) => {
+                const columnCount = this.props.columnCount || 1;
+                if (columnCount > 1) {
+                  const rowCount = Math.ceil(
+                    this.state.filteredSlices.length / columnCount,
+                  );
+                  return (
+                    <Grid
+                      columnCount={columnCount}
+                      columnWidth={Math.floor(width / columnCount)}
+                      rowCount={rowCount}
+                      rowHeight={DEFAULT_CELL_HEIGHT}
+                      width={width}
+                      height={height}
+                      itemKey={({
+                        columnIndex,
+                        rowIndex,
+                      }: {
+                        columnIndex: number;
+                        rowIndex: number;
+                      }) => {
+                        const idx = rowIndex * columnCount + columnIndex;
+                        return (
+                          this.state.filteredSlices[idx]?.slice_id ??
+                          `ph-${idx}`
+                        );
+                      }}
+                    >
+                      {this.cellRenderer}
+                    </Grid>
+                  );
+                }
+                return (
+                  <List
+                    width={width}
+                    height={height}
+                    itemCount={this.state.filteredSlices.length}
+                    itemSize={DEFAULT_CELL_HEIGHT}
+                    itemKey={index =>
+                      this.state.filteredSlices[index].slice_id
+                    }
+                  >
+                    {this.rowRenderer}
+                  </List>
+                );
+              }}
             </AutoSizer>
           </ChartList>
         )}

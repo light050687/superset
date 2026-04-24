@@ -895,7 +895,10 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
       accent: isPublished ? DS2_VARS.up : DS2_VARS.cSky,
       icon: isPublished ? <IconUnpublish /> : <IconPublish />,
       onClick: handleTogglePublish,
-      disabled: !userCanEdit || dashboardId === undefined,
+      /* В edit-mode публикация блокируется — сначала «Сохранить»
+         изменения. Юзер в edit может нагрести неполный лейаут, и
+         опубликование здесь рисковано (заказчики увидят draft). */
+      disabled: editMode || !userCanEdit || dashboardId === undefined,
     },
   ];
 

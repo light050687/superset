@@ -126,15 +126,19 @@ const ChartsPanel = styled.div`
   & > div {
     height: 100%;
   }
-  /* Скрываем дублирующие элементы из SliceAdder'а — их функции
-     подняты в header drawer'а (кнопки «+» и «Только мои» рядом с
-     крестиком). Селекторы: первый child SliceAdder'а —
-     NewChartButtonContainer; div содержащий checkbox «Show only
-     my charts». */
+  /* Скрываем дублирующие элементы SliceAdder'а — их функции уже в
+     header drawer'а (+ и «Только мои» рядом с крестиком). Структура
+     SliceAdder root div:
+       1. NewChartButtonContainer (скрыть — :first-child)
+       2. Controls (search + sort, оставляем)
+       3. <div> с Checkbox + «Show only my charts» (скрыть)
+       4. ChartList / Loading
+     AntD Checkbox оборачивает input глубоко (.ant-checkbox-wrapper
+     > span.ant-checkbox > input). Поэтому :has() без прямого >. */
   & > div > :first-child {
     display: none;
   }
-  & > div > div:has(> input[type='checkbox']) {
+  & > div > div:has(input[type='checkbox']) {
     display: none;
   }
 `;
@@ -176,9 +180,10 @@ const TileHost = styled.div<{ $accent: string }>`
     border-radius: 10px;
     overflow: hidden;
 
-    /* Весь оригинальный NewComponent переделываем в вертикальный
-       tile. data-test="new-component" — стабильный селектор. */
-    & [data-test='new-component'] {
+    /* Оригинальный NewComponent переделываем в вертикальный tile.
+       styled'ный NewComponent не пропускает data-test → в DOM его
+       нет. Используем [draggable="true"] как стабильный хук. */
+    & > [draggable='true'] {
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -400,7 +405,11 @@ export const BuilderDrawer: FC = () => {
       {rightEl ? createPortal(headRightActions, rightEl) : null}
       {activeTab === 'charts' ? (
         <ChartsPanel>
-          <SliceAdder />
+          {/* columnCount=3 — рендерим чарты в 3-колоночной сетке
+              (внутри SliceAdder переключается на FixedSizeGrid вместо
+              вертикального FixedSizeList). Drawer 1200px ширины это
+              позволяет, а ранее sticky-sidebar 374px — нет. */}
+          <SliceAdder columnCount={3} />
         </ChartsPanel>
       ) : (
         <LayoutSections>
