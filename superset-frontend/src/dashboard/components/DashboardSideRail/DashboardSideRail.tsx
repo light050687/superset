@@ -30,13 +30,25 @@
  *   - скрывается на mobile (<768px) — там drawer полноэкранный
  */
 import { styled, t } from '@superset-ui/core';
-import { type FC, useEffect, useMemo, useState } from 'react';
+import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { DS2_VARS } from 'src/theme/ds2';
 import { useShell } from 'src/views/components/Shell/ShellContext';
 import type { DrawerKind } from 'src/views/components/Shell/types';
 import type { RootState } from 'src/dashboard/types';
+import { useChartIds } from 'src/dashboard/util/charts/useChartIds';
+import {
+  onRefresh as onRefreshAction,
+  setEditMode as setEditModeAction,
+} from 'src/dashboard/actions/dashboardState';
+import { addSuccessToast as addSuccessToastAction } from 'src/components/MessageToasts/actions';
+import { URL_PARAMS } from 'src/constants';
+import { getUrlParam } from 'src/utils/urlUtils';
+import getDashboardUrl from 'src/dashboard/util/getDashboardUrl';
+import { getActiveFilters } from 'src/dashboard/util/activeDashboardFilters';
+import { LOG_ACTIONS_FORCE_REFRESH_DASHBOARD } from 'src/logger/LogUtils';
+import { logEvent as logEventAction } from 'src/logger/actions';
 
 /* ─── Styled ─────────────────────────────────────────────────────── */
 
@@ -200,17 +212,88 @@ const IconPages = (): JSX.Element => (
   </svg>
 );
 
+/* IconEdit — карандаш, классический паттерн для «редактирования». */
+const IconEdit = (): JSX.Element => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M3.5 14.5v3h3l9-9-3-3-9 9z" />
+    <path d="M12 5l3 3" />
+  </svg>
+);
+
+/* IconRefresh — круговая стрелка. */
+const IconRefresh = (): JSX.Element => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M16.5 10a6.5 6.5 0 1 1-1.9-4.6" />
+    <path d="M16.5 3.5v3h-3" />
+  </svg>
+);
+
+/* IconFullscreen — 4 угловые «скобки» (expand). */
+const IconFullscreen = (): JSX.Element => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M4 7.5V4h3.5M16 7.5V4h-3.5M4 12.5V16h3.5M16 12.5V16h-3.5" />
+  </svg>
+);
+
+/* IconFullscreenExit — скобки «внутрь» (collapse). */
+const IconFullscreenExit = (): JSX.Element => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M7.5 4v3.5H4M12.5 4v3.5H16M7.5 16v-3.5H4M12.5 16v-3.5H16" />
+  </svg>
+);
+
 /* ─── Component ──────────────────────────────────────────────────── */
 
-interface SideRailItem {
-  id: DrawerKind;
-  label: string;
-  icon: JSX.Element;
-  /** Показывать только если условие true. Если условие undefined —
-   *  всегда показывать. Используется для Pages: скрыть если у
-   *  дашборда нет multi-pages структуры и не edit-mode. */
-  visible?: boolean;
-}
+/**
+ * Item в mini-rail'е может быть:
+ *   - Drawer-item: открывает/закрывает shell-drawer (фильтры/страницы)
+ *     — поле `drawer` задано;
+ *   - Action-item: inline-кнопка-действие (edit/refresh/fullscreen) —
+ *     задан `onClick`. Никакой drawer не открывается.
+ * На уровне UI обе варианта рендерятся одинаково (RailBtn), но state
+ * `$active` выставляется только у drawer-item'ов (по openedDrawer).
+ */
+type SideRailItem =
+  | {
+      kind: 'drawer';
+      drawer: DrawerKind;
+      label: string;
+      icon: JSX.Element;
+      visible?: boolean;
+    }
+  | {
+      kind: 'action';
+      id: string;
+      label: string;
+      icon: JSX.Element;
+      onClick: () => void;
+      visible?: boolean;
+      disabled?: boolean;
+    };
 
 /** True, если текущий URL — это страница дашборда (не список, не чарт,
  *  не SQL Lab). Покрывает и view, и edit, и new. */
@@ -293,6 +376,8 @@ export const DashboardSideRail: FC = () => {
     useShell();
   const onDashboard = useOnDashboardRoute();
   const dockMetrics = useMainDockMetrics();
+  const dispatch = useDispatch();
+  const chartIds = useChartIds();
 
   /* Сообщаем Shell'у что mini-rail присутствует — Rail.tsx прокинет
      эту инфу в top-edge grabber, чтобы тот позиционировался ВЫШЕ
@@ -317,22 +402,116 @@ export const DashboardSideRail: FC = () => {
   const editMode = useSelector<RootState, boolean>(
     state => state.dashboardState?.editMode ?? false,
   );
+  const userCanEdit = useSelector<RootState, boolean>(
+    state => state.dashboardInfo?.dash_edit_perm ?? false,
+  );
+  const isEmbedded = useSelector<RootState, boolean>(
+    state => !state.dashboardInfo?.userId,
+  );
+  const dashboardId = useSelector<RootState, number | undefined>(
+    state => state.dashboardInfo?.id,
+  );
+  /* isLoading вычисляется как «есть ли хоть один chart в состоянии
+     loading». Используем тот же паттерн, что в Header.jsx. */
+  const isLoading = useSelector<RootState, boolean>(state => {
+    const charts = state.charts || {};
+    return Object.values(charts).some(
+      (c: any) => c?.chartStatus === 'loading',
+    );
+  });
+
+  /* ─── Action handlers ───────────────────────────────────────────── */
+
+  const handleEdit = useCallback(() => {
+    dispatch(setEditModeAction(true));
+  }, [dispatch]);
+
+  const handleRefresh = useCallback(() => {
+    if (isLoading || dashboardId === undefined) return;
+    dispatch(
+      logEventAction(LOG_ACTIONS_FORCE_REFRESH_DASHBOARD, {
+        force: true,
+        interval: 0,
+        chartCount: chartIds.length,
+      }),
+    );
+    // @ts-ignore — onRefresh thunk не типизирован
+    dispatch(onRefreshAction(chartIds, true, 0, dashboardId));
+    dispatch(addSuccessToastAction(t('Обновление чартов')));
+  }, [dispatch, chartIds, dashboardId, isLoading]);
+
+  const isStandalone = Number(getUrlParam(URL_PARAMS.standalone)) === 1;
+  const handleFullscreen = useCallback(() => {
+    const url = getDashboardUrl({
+      pathname: window.location.pathname,
+      filters: getActiveFilters(),
+      hash: window.location.hash,
+      standalone: isStandalone ? null : 1,
+    });
+    window.location.replace(url);
+  }, [isStandalone]);
 
   const items: SideRailItem[] = useMemo(
     () => [
       {
-        id: 'filters',
+        kind: 'drawer',
+        drawer: 'filters',
         label: t('Фильтры'),
         icon: <IconFilter />,
       },
       {
-        id: 'pages',
+        kind: 'drawer',
+        drawer: 'pages',
         label: t('Страницы'),
         icon: <IconPages />,
         visible: topLevelPagesCount > 1 || editMode,
       },
+      /* Action: Refresh dashboard — прячется в edit-mode (как и в gear
+         меню: editMode ⇒ нет смысла обновлять чарты, нужно сохранять). */
+      {
+        kind: 'action',
+        id: 'refresh',
+        label: t('Обновить дашборд'),
+        icon: <IconRefresh />,
+        onClick: handleRefresh,
+        visible: !editMode,
+        disabled: isLoading,
+      },
+      /* Action: Fullscreen — стандалон-режим. Скрывается в edit-mode и
+         для embedded дашбордов (как в оригинальном dropdown). */
+      {
+        kind: 'action',
+        id: 'fullscreen',
+        label: isStandalone
+          ? t('Выйти из полноэкранного режима')
+          : t('Полноэкранный режим'),
+        icon: isStandalone ? <IconFullscreenExit /> : <IconFullscreen />,
+        onClick: handleFullscreen,
+        visible: !editMode && !isEmbedded,
+      },
+      /* Action: Enter edit mode — видно только юзерам с правом edit и
+         не в edit-mode. Единственная кнопка «редактировать» — убрали
+         primary-button из Header'а. */
+      {
+        kind: 'action',
+        id: 'edit',
+        label: t('Редактировать дашборд'),
+        icon: <IconEdit />,
+        onClick: handleEdit,
+        visible: userCanEdit && !editMode,
+      },
     ],
-    [topLevelPagesCount, editMode],
+    [
+      topLevelPagesCount,
+      editMode,
+      isEmbedded,
+      isLoading,
+      isStandalone,
+      userCanEdit,
+      handleRefresh,
+      handleFullscreen,
+      handleEdit,
+    ],
   );
 
   if (!onDashboard) return null;
@@ -346,15 +525,23 @@ export const DashboardSideRail: FC = () => {
     >
       {items.map(item => {
         if (item.visible === false) return null;
+        const key = item.kind === 'drawer' ? item.drawer : item.id;
+        const isDrawerItem = item.kind === 'drawer';
+        const isActive = isDrawerItem && openedDrawer === item.drawer;
         return (
           <RailBtn
-            key={item.id}
+            key={key}
             type="button"
-            $active={openedDrawer === item.id}
-            aria-pressed={openedDrawer === item.id}
+            $active={isActive}
+            aria-pressed={isActive}
             aria-label={item.label}
             title={item.label}
-            onClick={() => toggleDrawer(item.id)}
+            disabled={item.kind === 'action' ? item.disabled : undefined}
+            onClick={() =>
+              item.kind === 'drawer'
+                ? toggleDrawer(item.drawer)
+                : item.onClick()
+            }
           >
             {item.icon}
           </RailBtn>

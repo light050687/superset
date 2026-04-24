@@ -215,24 +215,13 @@ export const useHeaderActionsMenu = ({
 
     const menuItems: MenuItem[] = [];
 
-    // Refresh dashboard
-    if (!editMode) {
-      menuItems.push({
-        key: MenuKeys.RefreshDashboard,
-        label: t('Refresh dashboard'),
-        disabled: isLoading,
-      });
-    }
-
-    // Toggle fullscreen
-    if (!editMode && !isEmbedded) {
-      menuItems.push({
-        key: MenuKeys.ToggleFullscreen,
-        label: getUrlParam(URL_PARAMS.standalone)
-          ? t('Exit fullscreen')
-          : t('Enter fullscreen'),
-      });
-    }
+    /* «Refresh dashboard» и «Enter fullscreen» перенесены на
+       DashboardSideRail (mini-rail) в виде action-иконок — вместе с
+       «Edit dashboard». Из gear-меню удалены, чтобы не дублировать
+       действие двумя путями. Handler'ы в handleMenuClick остаются
+       неиспользуемыми ветками switch (dead-код minimal, оставлен
+       специально — при желании вернуть пункт достаточно push'нуть
+       item обратно в menuItems). */
 
     // Edit properties
     if (editMode) {

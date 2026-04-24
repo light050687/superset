@@ -734,20 +734,13 @@ const Header = () => {
         {editMode ? (
           <UndoRedoKeyListeners onUndo={handleCtrlZ} onRedo={handleCtrlY} />
         ) : (
+          /* «Edit dashboard» кнопка перенесена на DashboardSideRail
+             (mini-rail над главным dock'ом) как action-иконка — чтобы
+             юзер управлял редактированием через единую нижнюю панель
+             вместе с Обновить/Полноэкранный. Здесь оставлен только
+             NavExtension (расширения от плагинов). */
           <div css={actionButtonsStyle}>
             {NavExtension && <NavExtension />}
-            {userCanEdit && (
-              <Button
-                buttonStyle="secondary"
-                onClick={handleEnterEditMode}
-                data-test="edit-dashboard-button"
-                className="action-button"
-                css={editButtonStyle}
-                aria-label={t('Edit dashboard')}
-              >
-                {t('Edit dashboard')}
-              </Button>
-            )}
           </div>
         )}
       </div>
