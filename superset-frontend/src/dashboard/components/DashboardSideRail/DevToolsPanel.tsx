@@ -45,13 +45,20 @@ import type { RootState } from 'src/dashboard/types';
 import {
   setEditMode as setEditModeAction,
   setUnsavedChanges as setUnsavedChangesAction,
+  savePublished as savePublishedAction,
+  onRefresh as onRefreshAction,
 } from 'src/dashboard/actions/dashboardState';
+import { useChartIds } from 'src/dashboard/util/charts/useChartIds';
+import { addSuccessToast as addSuccessToastAction } from 'src/components/MessageToasts/actions';
 import {
   clearDashboardHistory as clearDashboardHistoryAction,
   undoLayoutAction,
   redoLayoutAction,
 } from 'src/dashboard/actions/dashboardLayout';
-import { LOG_ACTIONS_TOGGLE_EDIT_DASHBOARD } from 'src/logger/LogUtils';
+import {
+  LOG_ACTIONS_FORCE_REFRESH_DASHBOARD,
+  LOG_ACTIONS_TOGGLE_EDIT_DASHBOARD,
+} from 'src/logger/LogUtils';
 import { logEvent as logEventAction } from 'src/logger/actions';
 
 /* ─── localStorage key + types ───────────────────────────────────── */
@@ -384,6 +391,31 @@ const IconDiscard = (): JSX.Element => (
   </svg>
 );
 
+/* IconRefreshTile — круговая стрелка для tile «Обновить дашборд». */
+const IconRefreshTile = (): JSX.Element => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16.5 10a6.5 6.5 0 1 1-1.9-4.6" />
+    <path d="M16.5 3.5v3h-3" />
+  </svg>
+);
+
+/* IconPublish — глобус с галочкой: «опубликовано/доступно всем». */
+const IconPublish = (): JSX.Element => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="10" cy="10" r="7" />
+    <path d="M3 10h14M10 3a10 10 0 010 14M10 3a10 10 0 000 14" />
+  </svg>
+);
+
+/* IconUnpublish — глобус с чертой: «снять с публикации». */
+const IconUnpublish = (): JSX.Element => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="10" cy="10" r="7" />
+    <path d="M3 10h14M10 3a10 10 0 010 14M10 3a10 10 0 000 14" />
+    <path d="M4 4l12 12" />
+  </svg>
+);
+
 /* Pin: вертикальная кнопка с шапкой. Active = pinned. */
 const IconPin = (): JSX.Element => (
   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
@@ -458,6 +490,12 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
   const hasUnsavedChanges = useSelector<RootState, boolean>(
     state => state.dashboardState?.hasUnsavedChanges ?? false,
   );
+  const isPublished = useSelector<RootState, boolean>(
+    state => state.dashboardState?.isPublished ?? false,
+  );
+  const dashboardId = useSelector<RootState, number | undefined>(
+    state => state.dashboardInfo?.id,
+  );
 
   /* ─── Pinned state (React) ─────────────────────────────────────── */
 
@@ -525,6 +563,35 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
     // @ts-ignore — redoLayoutAction это setUnsavedChangesAfterAction thunk
     dispatch(redoLayoutAction());
   }, [dispatch]);
+
+  /* Refresh dashboard — перенесён из mini-rail'а по запросу юзера:
+     случайно задевая иконку он заставлял чарты пересчитываться. В
+     DevToolsPanel'е tile с осознанным кликом — не мигает лишнего. */
+  const chartIds = useChartIds();
+  const handleRefresh = useCallback(() => {
+    if (dashboardId === undefined) return;
+    dispatch(
+      logEventAction(LOG_ACTIONS_FORCE_REFRESH_DASHBOARD, {
+        force: true,
+        interval: 0,
+        chartCount: chartIds.length,
+      }),
+    );
+    // @ts-ignore — onRefresh thunk не типизирован
+    dispatch(onRefreshAction(chartIds, true, 0, dashboardId));
+    dispatch(addSuccessToastAction(t('Обновление чартов')));
+  }, [dispatch, chartIds, dashboardId]);
+
+  /* Publish / Unpublish. Не триггерит полный refresh дашборда —
+     dispatch'им savePublished thunk, он патчит только поле
+     `published` через PUT /api/v1/dashboard/:id и обновляет
+     dashboardState.isPublished. Чарты не пересчитываются, лейаут
+     не мигает. */
+  const handleTogglePublish = useCallback(() => {
+    if (dashboardId === undefined) return;
+    // @ts-ignore — savePublished thunk не типизирован
+    dispatch(savePublishedAction(dashboardId, !isPublished));
+  }, [dispatch, dashboardId, isPublished]);
 
   const handleDiscard = useCallback(() => {
     /* Перед reload'ом ставим флаг, чтобы после перезагрузки
@@ -786,6 +853,32 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
       icon: <IconDiscard />,
       onClick: handleDiscard,
       disabled: !editMode,
+    },
+    /* Refresh — перенесён из mini-rail в tile, чтобы случайно не
+       триггерить полный пересчёт чартов. В rail'е осталась только
+       навигация; действия типа refresh/publish/edit — все здесь. */
+    {
+      key: 'refresh',
+      label: t('Обновить дашборд'),
+      accent: DS2_VARS.cTangerine,
+      icon: <IconRefreshTile />,
+      onClick: handleRefresh,
+      disabled: dashboardId === undefined,
+    },
+    /* Publish toggle — виден всегда, если юзер может редактировать
+       дашборд. Иконка/лейбл меняются по isPublished. Dispatch
+       savePublished thunk — патчит только `published`, не триггерит
+       полный refresh чартов (юзер просил «чтобы не мигало и не
+       пересчитывало дашборд»). */
+    {
+      key: 'publish',
+      label: isPublished
+        ? t('Снять с публикации')
+        : t('Опубликовать дашборд'),
+      accent: isPublished ? DS2_VARS.up : DS2_VARS.cSky,
+      icon: isPublished ? <IconUnpublish /> : <IconPublish />,
+      onClick: handleTogglePublish,
+      disabled: !userCanEdit || dashboardId === undefined,
     },
   ];
 

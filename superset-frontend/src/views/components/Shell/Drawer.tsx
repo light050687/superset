@@ -387,6 +387,17 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
             el.matches('.ant-modal-mask')),
       );
       if (inAntdModal) return false;
+      /* DevToolsPanel — плавающее окно mini-rail'а, существует параллельно
+         с любым Shell-drawer'ом. Клик в него не должен закрывать открытый
+         drawer (например, Конструктор) — иначе юзер, нажимая Undo в
+         DevTools'е поверх BuilderDrawer'а, теряет драфт конструктора. */
+      const inDevTools = path.some(
+        el =>
+          el instanceof Element &&
+          typeof el.matches === 'function' &&
+          el.matches('[role="dialog"][aria-label*="Инструменты"]'),
+      );
+      if (inDevTools) return false;
       return true;
     };
 

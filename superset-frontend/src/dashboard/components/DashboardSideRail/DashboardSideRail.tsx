@@ -365,13 +365,10 @@ export const DashboardSideRail: FC = () => {
         icon: <IconBuilder />,
         visible: editMode,
       },
-      {
-        kind: 'action',
-        id: 'refresh',
-        label: t('Обновить дашборд'),
-        icon: <IconRefresh />,
-        onClick: handleRefresh,
-      },
+      /* Refresh переехал в DevToolsPanel как tile — юзер жаловался,
+         что случайно задевая иконку в mini-rail'е пересчитываются
+         все чарты и дашборд «мигает». В rail'е остались только
+         навигационные icons + DevTools trigger. */
       {
         kind: 'action',
         id: 'devtools',
