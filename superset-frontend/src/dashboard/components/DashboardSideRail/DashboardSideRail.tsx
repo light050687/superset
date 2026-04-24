@@ -41,13 +41,14 @@ import { useChartIds } from 'src/dashboard/util/charts/useChartIds';
 import {
   onRefresh as onRefreshAction,
   setEditMode as setEditModeAction,
+  setUnsavedChanges as setUnsavedChangesAction,
 } from 'src/dashboard/actions/dashboardState';
+import { clearDashboardHistory as clearDashboardHistoryAction } from 'src/dashboard/actions/dashboardLayout';
 import { addSuccessToast as addSuccessToastAction } from 'src/components/MessageToasts/actions';
-import { URL_PARAMS } from 'src/constants';
-import { getUrlParam } from 'src/utils/urlUtils';
-import getDashboardUrl from 'src/dashboard/util/getDashboardUrl';
-import { getActiveFilters } from 'src/dashboard/util/activeDashboardFilters';
-import { LOG_ACTIONS_FORCE_REFRESH_DASHBOARD } from 'src/logger/LogUtils';
+import {
+  LOG_ACTIONS_FORCE_REFRESH_DASHBOARD,
+  LOG_ACTIONS_TOGGLE_EDIT_DASHBOARD,
+} from 'src/logger/LogUtils';
 import { logEvent as logEventAction } from 'src/logger/actions';
 
 /* ─── Styled ─────────────────────────────────────────────────────── */
@@ -240,8 +241,9 @@ const IconRefresh = (): JSX.Element => (
   </svg>
 );
 
-/* IconFullscreen — 4 угловые «скобки» (expand). */
-const IconFullscreen = (): JSX.Element => (
+/* IconSave — дискета (classic save). В edit-mode подменяет IconEdit
+   на той же позиции mini-rail'а, сохраняя muscle-memory юзера. */
+const IconSave = (): JSX.Element => (
   <svg
     viewBox="0 0 20 20"
     fill="none"
@@ -249,20 +251,9 @@ const IconFullscreen = (): JSX.Element => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M4 7.5V4h3.5M16 7.5V4h-3.5M4 12.5V16h3.5M16 12.5V16h-3.5" />
-  </svg>
-);
-
-/* IconFullscreenExit — скобки «внутрь» (collapse). */
-const IconFullscreenExit = (): JSX.Element => (
-  <svg
-    viewBox="0 0 20 20"
-    fill="none"
-    stroke="currentColor"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M7.5 4v3.5H4M12.5 4v3.5H16M7.5 16v-3.5H4M12.5 16v-3.5H16" />
+    <path d="M4 4.5v11a1 1 0 001 1h10a1 1 0 001-1V7.5l-3-3H5a1 1 0 00-1 1z" />
+    <path d="M7 4.5v3.5h5V4.5" />
+    <path d="M6.5 16v-5h7v5" />
   </svg>
 );
 
@@ -405,29 +396,48 @@ export const DashboardSideRail: FC = () => {
   const userCanEdit = useSelector<RootState, boolean>(
     state => state.dashboardInfo?.dash_edit_perm ?? false,
   );
-  const isEmbedded = useSelector<RootState, boolean>(
-    state => !state.dashboardInfo?.userId,
-  );
   const dashboardId = useSelector<RootState, number | undefined>(
     state => state.dashboardInfo?.id,
   );
-  /* isLoading вычисляется как «есть ли хоть один chart в состоянии
-     loading». Используем тот же паттерн, что в Header.jsx. */
-  const isLoading = useSelector<RootState, boolean>(state => {
-    const charts = state.charts || {};
-    return Object.values(charts).some(
-      (c: any) => c?.chartStatus === 'loading',
-    );
-  });
 
   /* ─── Action handlers ───────────────────────────────────────────── */
 
+  /* Enter edit mode — повторяет handleEnterEditMode из Header.jsx
+     один-в-один: logEvent + setEditMode(true) + clearDashboardHistory
+     + setUnsavedChanges(false). Без clearDashboardHistory и
+     setUnsavedChanges toolbar/sidebar чартов рендерится, но undo/redo
+     history остаётся из прошлой сессии и hasUnsavedChanges может
+     остаться true — некоторые компоненты блокируют DnD в таком
+     состоянии. Поэтому делаем ТАК ЖЕ как оригинал. */
   const handleEdit = useCallback(() => {
+    dispatch(
+      logEventAction(LOG_ACTIONS_TOGGLE_EDIT_DASHBOARD, { edit_mode: true }),
+    );
     dispatch(setEditModeAction(true));
+    dispatch(clearDashboardHistoryAction());
+    dispatch(setUnsavedChangesAction(false));
   }, [dispatch]);
 
+  /* Save в edit-mode — триггерим существующую primary-кнопку Save в
+     Header'е (она уже держит всю тяжёлую overwriteDashboard-логику:
+     сбор metadata, position-data limit check, onSave thunk). Кликаем
+     её программно — логика edit-mode полностью совпадает, никаких
+     дублей кода. Если кнопка disabled (hasUnsavedChanges === false),
+     клик no-op. */
+  const handleSave = useCallback(() => {
+    const btn = document.querySelector<HTMLButtonElement>(
+      '[data-test="header-save-button"]',
+    );
+    btn?.click();
+  }, []);
+
+  /* Refresh — logEvent + onRefresh thunk. Disabled-логику убрал:
+     оригинал через `if (!isLoading)` просто молча ничего не делал, а
+     юзер видел disabled-кнопку и писал «не работает». Пусть всегда
+     clickable: при повторном клике во время загрузки thunk сам
+     разберётся (onRefresh идемпотентен). */
   const handleRefresh = useCallback(() => {
-    if (isLoading || dashboardId === undefined) return;
+    if (dashboardId === undefined) return;
     dispatch(
       logEventAction(LOG_ACTIONS_FORCE_REFRESH_DASHBOARD, {
         force: true,
@@ -435,21 +445,12 @@ export const DashboardSideRail: FC = () => {
         chartCount: chartIds.length,
       }),
     );
-    // @ts-ignore — onRefresh thunk не типизирован
-    dispatch(onRefreshAction(chartIds, true, 0, dashboardId));
+    dispatch(
+      // @ts-ignore — onRefresh thunk не типизирован
+      onRefreshAction(chartIds, true, 0, dashboardId),
+    );
     dispatch(addSuccessToastAction(t('Обновление чартов')));
-  }, [dispatch, chartIds, dashboardId, isLoading]);
-
-  const isStandalone = Number(getUrlParam(URL_PARAMS.standalone)) === 1;
-  const handleFullscreen = useCallback(() => {
-    const url = getDashboardUrl({
-      pathname: window.location.pathname,
-      filters: getActiveFilters(),
-      hash: window.location.hash,
-      standalone: isStandalone ? null : 1,
-    });
-    window.location.replace(url);
-  }, [isStandalone]);
+  }, [dispatch, chartIds, dashboardId]);
 
   const items: SideRailItem[] = useMemo(
     () => [
@@ -466,51 +467,43 @@ export const DashboardSideRail: FC = () => {
         icon: <IconPages />,
         visible: topLevelPagesCount > 1 || editMode,
       },
-      /* Action: Refresh dashboard — прячется в edit-mode (как и в gear
-         меню: editMode ⇒ нет смысла обновлять чарты, нужно сохранять). */
+      /* Refresh — видно и в view, и в edit-режиме. В edit можно
+         обновить данные, не выходя из режима. */
       {
         kind: 'action',
         id: 'refresh',
         label: t('Обновить дашборд'),
         icon: <IconRefresh />,
         onClick: handleRefresh,
-        visible: !editMode,
-        disabled: isLoading,
       },
-      /* Action: Fullscreen — стандалон-режим. Скрывается в edit-mode и
-         для embedded дашбордов (как в оригинальном dropdown). */
-      {
-        kind: 'action',
-        id: 'fullscreen',
-        label: isStandalone
-          ? t('Выйти из полноэкранного режима')
-          : t('Полноэкранный режим'),
-        icon: isStandalone ? <IconFullscreenExit /> : <IconFullscreen />,
-        onClick: handleFullscreen,
-        visible: !editMode && !isEmbedded,
-      },
-      /* Action: Enter edit mode — видно только юзерам с правом edit и
-         не в edit-mode. Единственная кнопка «редактировать» — убрали
-         primary-button из Header'а. */
-      {
-        kind: 'action',
-        id: 'edit',
-        label: t('Редактировать дашборд'),
-        icon: <IconEdit />,
-        onClick: handleEdit,
-        visible: userCanEdit && !editMode,
-      },
+      /* Edit ↔ Save toggle: в одном слоте mini-rail'а кнопка меняет
+         смысл в зависимости от editMode. view → карандаш (Edit),
+         edit → дискета (Save). Muscle-memory сохранена, юзер жмёт
+         на ту же позицию, чтобы сохранить. */
+      editMode
+        ? {
+            kind: 'action' as const,
+            id: 'save',
+            label: t('Сохранить дашборд'),
+            icon: <IconSave />,
+            onClick: handleSave,
+          }
+        : {
+            kind: 'action' as const,
+            id: 'edit',
+            label: t('Редактировать дашборд'),
+            icon: <IconEdit />,
+            onClick: handleEdit,
+            visible: userCanEdit,
+          },
     ],
     [
       topLevelPagesCount,
       editMode,
-      isEmbedded,
-      isLoading,
-      isStandalone,
       userCanEdit,
       handleRefresh,
-      handleFullscreen,
       handleEdit,
+      handleSave,
     ],
   );
 
