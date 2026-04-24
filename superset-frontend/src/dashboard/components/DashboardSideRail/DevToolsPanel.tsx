@@ -50,6 +50,7 @@ import {
 } from 'src/dashboard/actions/dashboardState';
 import { useChartIds } from 'src/dashboard/util/charts/useChartIds';
 import { addSuccessToast as addSuccessToastAction } from 'src/components/MessageToasts/actions';
+import { useShell } from 'src/views/components/Shell/ShellContext';
 import {
   clearDashboardHistory as clearDashboardHistoryAction,
   undoLayoutAction,
@@ -399,6 +400,16 @@ const IconRefreshTile = (): JSX.Element => (
   </svg>
 );
 
+/* IconBuilderTile — «stacked blocks» для tile «Конструктор». */
+const IconBuilderTile = (): JSX.Element => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="6" height="6" rx="1" />
+    <rect x="11" y="3" width="6" height="6" rx="1" />
+    <rect x="3" y="11" width="6" height="6" rx="1" />
+    <path d="M14 11v6M11 14h6" />
+  </svg>
+);
+
 /* IconPublish — глобус с галочкой: «опубликовано/доступно всем». */
 const IconPublish = (): JSX.Element => (
   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
@@ -475,6 +486,7 @@ interface DevToolsPanelProps {
 
 export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
   const dispatch = useDispatch();
+  const { toggleDrawer, openedDrawer } = useShell();
   const editMode = useSelector<RootState, boolean>(
     state => state.dashboardState?.editMode ?? false,
   );
@@ -854,16 +866,21 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
       onClick: handleDiscard,
       disabled: !editMode,
     },
-    /* Refresh — перенесён из mini-rail в tile, чтобы случайно не
-       триггерить полный пересчёт чартов. В rail'е осталась только
-       навигация; действия типа refresh/publish/edit — все здесь. */
+    /* Конструктор — перенесён сюда по запросу юзера. Открывает
+       Shell-drawer kind='builder' (SliceAdder + layout-элементы).
+       Toggle: если builder уже открыт — tile просто закрывает его.
+       Виден только в edit-mode (конструктор нужен только при
+       редактировании лейаута). */
     {
-      key: 'refresh',
-      label: t('Обновить дашборд'),
-      accent: DS2_VARS.cTangerine,
-      icon: <IconRefreshTile />,
-      onClick: handleRefresh,
-      disabled: dashboardId === undefined,
+      key: 'builder',
+      label:
+        openedDrawer === 'builder'
+          ? t('Закрыть конструктор')
+          : t('Открыть конструктор'),
+      accent: DS2_VARS.cViolet,
+      icon: <IconBuilderTile />,
+      onClick: () => toggleDrawer('builder'),
+      disabled: !editMode,
     },
     /* Publish toggle — виден всегда, если юзер может редактировать
        дашборд. Иконка/лейбл меняются по isPublished. Dispatch

@@ -126,10 +126,15 @@ const ChartsPanel = styled.div`
   & > div {
     height: 100%;
   }
-  /* Скрываем кнопку «Create new chart» и checkbox «Show only my charts»
-     из SliceAdder — их функции подняты в header drawer'а (кнопки «+»
-     и «Только мои» рядом с крестиком). Снимает дублирование. */
-  & a[href*="/chart/add"] {
+  /* Скрываем дублирующие элементы из SliceAdder'а — их функции
+     подняты в header drawer'а (кнопки «+» и «Только мои» рядом с
+     крестиком). Селекторы: первый child SliceAdder'а —
+     NewChartButtonContainer; div содержащий checkbox «Show only
+     my charts». */
+  & > div > :first-child {
+    display: none;
+  }
+  & > div > div:has(> input[type='checkbox']) {
     display: none;
   }
 `;
@@ -159,64 +164,61 @@ const LayoutGrid = styled.div`
   gap: ${DS2_SPACE.s1 + 2}px;
 `;
 
-/* Внешняя обёртка для New*-компонента: выравнивает их в ряд tile-
-   иконок как в ToolsDrawer. New*-компоненты уже имеют draggable и
-   содержимое — мы просто стилизуем их background/border/hover. */
+/* TileHost оборачивает оригинальный New*-компонент и переопределяет
+   его горизонтальный layout на вертикальный (icon сверху, label
+   снизу) — как tile'ы в ToolsDrawer. Оригинальный label New*-
+   компонента сохраняется (не дублируется свой сверху). */
 const TileHost = styled.div<{ $accent: string }>`
   ${({ theme, $accent }) => css`
     position: relative;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 14px 10px 12px;
-    background: transparent;
-    border: 1px solid transparent;
+    align-items: stretch;
     border-radius: 10px;
-    cursor: grab;
-    transition:
-      background 0.12s ${DS2_VARS.ease},
-      border-color 0.12s ${DS2_VARS.ease};
-    &:hover {
-      background: ${DS2_VARS.tileHoverBg};
-      border-color: ${DS2_VARS.tileHoverBorder};
+    overflow: hidden;
+
+    /* Весь оригинальный NewComponent переделываем в вертикальный
+       tile. data-test="new-component" — стабильный селектор. */
+    & [data-test='new-component'] {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: ${DS2_SPACE.s2}px;
+      padding: 14px 10px 12px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      cursor: grab;
+      font-size: 12px;
+      font-weight: 600;
+      color: ${DS2_VARS.ink};
+      text-align: center;
+      line-height: 1.1;
+      transition:
+        background 0.12s ${DS2_VARS.ease},
+        border-color 0.12s ${DS2_VARS.ease};
+      &:hover {
+        background: ${DS2_VARS.tileHoverBg};
+        border-color: ${DS2_VARS.tileHoverBorder};
+      }
     }
-    /* Цветная «плитка» под иконкой — как у ToolsDrawer'а (accent 12%
-       над bg3). New*-компоненты внутри приобретают эту подложку. */
-    & .new-component,
-    & [class*="NewStatic"],
-    & > div {
+
+    /* Icon-плитка 38×38 с accent-подложкой — как в ToolsDrawer. */
+    & .new-component-placeholder {
       width: 38px;
       height: 38px;
+      margin-right: 0;
       border-radius: 10px;
       background: color-mix(in oklab, ${$accent} 12%, ${DS2_VARS.bg3});
       border: 1px solid ${theme.colorBorderSecondary};
       color: ${$accent};
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-sizing: border-box;
-      padding: 0;
-      /* Исходные лейблы внутри New*-компонентов сами переедут под
-         иконку (см. TileLabel ниже). Здесь сжимаем только иконочную
-         часть. */
-      & > span:first-of-type {
-        color: ${$accent};
-      }
-      /* Лейбл внутри New*-компонента прячем — мы показываем свой. */
-      & > *:not(:first-of-type) {
-        display: none;
-      }
+    }
+    & .new-component-placeholder svg {
+      width: 19px;
+      height: 19px;
+      color: ${$accent};
     }
   `}
-`;
-
-const TileLabel = styled.span`
-  margin-top: ${DS2_SPACE.s2}px;
-  font-size: 12px;
-  font-weight: 600;
-  color: ${DS2_VARS.ink};
-  text-align: center;
-  line-height: 1.1;
 `;
 
 /* ─── Component ──────────────────────────────────────────────────── */
@@ -269,27 +271,83 @@ export const BuilderDrawer: FC = () => {
     [activeTab],
   );
 
-  /* «+ Создать чарт» в правой части header'а drawer'а (слева от
-     крестика). Открывает в новой вкладке форму создания чарта с
-     привязкой к текущему дашборду. */
+  /* Header right actions: «Создать чарт» (+) и toggle «Только мои».
+     Рендерятся в DRAWER_HEAD_RIGHT через Portal. Видны только на
+     табе «Чарты» (layout-таб их не использует). */
+  const [showOnlyMy, setShowOnlyMy] = useState<boolean>(() => {
+    try {
+      return (
+        localStorage.getItem('dashboard:sliceAdder:showOnlyMyCharts') === 'true'
+      );
+    } catch {
+      return false;
+    }
+  });
+
+  /* Синхронизация toggle'а с внутренним SliceAdder: дергаем его
+     checkbox программно — checkbox имеет state + onChange callback,
+     который пишет в localStorage. Этого достаточно чтобы SliceAdder
+     обновил свой state. */
+  const toggleOnlyMy = () => {
+    const next = !showOnlyMy;
+    setShowOnlyMy(next);
+    try {
+      localStorage.setItem(
+        'dashboard:sliceAdder:showOnlyMyCharts',
+        next ? 'true' : 'false',
+      );
+    } catch {
+      /* noop */
+    }
+    /* Ищем hidden checkbox SliceAdder'а и клик'аем, если его
+       current checked state !== next — это триггерит onShowOnlyMyCharts. */
+    const cb = document.querySelector<HTMLInputElement>(
+      '[role="dialog"][aria-label="Конструктор"] input[type="checkbox"]',
+    );
+    if (cb && cb.checked !== next) cb.click();
+  };
+
   const headRightActions = useMemo(
     () =>
       activeTab === 'charts' ? (
-        <HeadIconBtn
-          type="button"
-          aria-label={t('Создать чарт')}
-          title={t('Создать чарт')}
-          onClick={() => {
-            if (dashboardId === undefined) return;
-            navigateTo(`/chart/add?dashboard_id=${dashboardId}`, {
-              newWindow: true,
-            });
-          }}
-        >
-          <Icons.PlusOutlined iconSize="m" />
-        </HeadIconBtn>
+        <>
+          <HeadIconBtn
+            type="button"
+            aria-label={
+              showOnlyMy
+                ? t('Показать все чарты')
+                : t('Показать только мои чарты')
+            }
+            title={
+              showOnlyMy
+                ? t('Показать все чарты')
+                : t('Показать только мои чарты')
+            }
+            aria-pressed={showOnlyMy}
+            onClick={toggleOnlyMy}
+            style={
+              showOnlyMy ? { color: DS2_VARS.cSky } : undefined
+            }
+          >
+            <Icons.UserOutlined iconSize="m" />
+          </HeadIconBtn>
+          <HeadIconBtn
+            type="button"
+            aria-label={t('Создать чарт')}
+            title={t('Создать чарт')}
+            onClick={() => {
+              if (dashboardId === undefined) return;
+              navigateTo(`/chart/add?dashboard_id=${dashboardId}`, {
+                newWindow: true,
+              });
+            }}
+          >
+            <Icons.PlusOutlined iconSize="m" />
+          </HeadIconBtn>
+        </>
       ) : null,
-    [activeTab, dashboardId],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeTab, dashboardId, showOnlyMy],
   );
 
   const layoutItems: Array<{
@@ -349,10 +407,9 @@ export const BuilderDrawer: FC = () => {
           <SecLabel>{t('Базовые блоки')}</SecLabel>
           <LayoutGrid>
             {layoutItems.map(item => (
-              <div key={item.key}>
-                <TileHost $accent={item.accent}>{item.node}</TileHost>
-                <TileLabel>{item.label}</TileLabel>
-              </div>
+              <TileHost key={item.key} $accent={item.accent}>
+                {item.node}
+              </TileHost>
             ))}
           </LayoutGrid>
           {dashboardComponents.getAll().length > 0 && (
@@ -362,15 +419,12 @@ export const BuilderDrawer: FC = () => {
                 {dashboardComponents
                   .getAll()
                   .map(({ key: componentKey, metadata }) => (
-                    <div key={componentKey}>
-                      <TileHost $accent={DS2_VARS.cSky}>
-                        <NewDynamicComponent
-                          metadata={metadata}
-                          componentKey={componentKey}
-                        />
-                      </TileHost>
-                      <TileLabel>{metadata.name || componentKey}</TileLabel>
-                    </div>
+                    <TileHost key={componentKey} $accent={DS2_VARS.cSky}>
+                      <NewDynamicComponent
+                        metadata={metadata}
+                        componentKey={componentKey}
+                      />
+                    </TileHost>
                   ))}
               </LayoutGrid>
             </>

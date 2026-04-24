@@ -354,21 +354,16 @@ export const DashboardSideRail: FC = () => {
         icon: <IconPages />,
         visible: topLevelPagesCount > 1 || editMode,
       },
-      /* Конструктор — только в edit-mode. Открывает drawer, в
-         котором живут SliceAdder (чарты) и layout-элементы (Row/
-         Column/Tabs/Markdown/Divider/Header). Раньше это был
-         sticky-sidebar справа (BuilderComponentPane). */
+      /* Конструктор переехал в DevToolsPanel как tile. Юзер
+         попросил убрать из mini-rail, чтобы там остались только
+         фильтры/страницы и DevTools. */
       {
-        kind: 'drawer',
-        drawer: 'builder',
-        label: t('Конструктор'),
-        icon: <IconBuilder />,
-        visible: editMode,
+        kind: 'action',
+        id: 'refresh',
+        label: t('Обновить дашборд'),
+        icon: <IconRefresh />,
+        onClick: handleRefresh,
       },
-      /* Refresh переехал в DevToolsPanel как tile — юзер жаловался,
-         что случайно задевая иконку в mini-rail'е пересчитываются
-         все чарты и дашборд «мигает». В rail'е остались только
-         навигационные icons + DevTools trigger. */
       {
         kind: 'action',
         id: 'devtools',

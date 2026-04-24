@@ -617,17 +617,9 @@ const Header = () => {
 
   const titlePanelAdditionalItems = useMemo(
     () => [
-      !editMode && (
-        <PublishedStatus
-          key="published-status"
-          dashboardId={dashboardInfo.id}
-          isPublished={isPublished}
-          savePublished={boundActionCreators.savePublished}
-          userCanEdit={userCanEdit}
-          userCanSave={userCanSaveAs}
-          visible={!editMode}
-        />
-      ),
+      /* PublishedStatus-бейдж («Черновик» / «Опубликовано») убран из
+         header'а — статус и переключатель публикации теперь живут в
+         DevToolsPanel-tile «Опубликовать / Снять с публикации». */
       // On mobile, metadata is shown in separate metadata-panel (not here)
       !editMode && !isEmbedded && !isMobile && metadataBar ? (
         <div key="metadata-bar">{metadataBar}</div>
