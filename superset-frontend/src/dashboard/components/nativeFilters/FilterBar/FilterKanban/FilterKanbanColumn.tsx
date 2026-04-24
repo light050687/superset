@@ -26,6 +26,11 @@ const Column = styled.div<{ $isOver: boolean }>`
   ${({ theme, $isOver }) => css`
     display: flex;
     flex-direction: column;
+    /* box-sizing: border-box — padding (12×2) и border (1×2) считаются
+       ВНУТРИ объявленной height: 432px. Без этого outer box = 458px,
+       grid row = 458, GridWrap total = 482, а DrawerBody content =
+       481 → 1px overflow и ложный скроллбар справа. */
+    box-sizing: border-box;
     gap: ${theme.sizeUnit * 2}px;
     padding: ${theme.sizeUnit * 3}px;
     background: ${theme.colorBgContainer};

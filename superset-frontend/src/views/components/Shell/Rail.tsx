@@ -75,7 +75,12 @@ const RailNav = styled.nav<{ $collapsed: boolean }>`
   display: flex;
   flex-direction: row;
   align-items: center;
-  overflow: hidden;
+  /* overflow:hidden нужен ТОЛЬКО в collapsed: кнопки внутри fade'ают
+     и должны клипаться за pill'ом 64×6. В expanded state overflow
+     обязан быть visible — иначе hover-magnification (translateY(-3px)
+     scale(1.08)) и focus-ring/outline у кнопок обрезаются по границе
+     dock'а (иконки «съедаются» сверху, focus-ring не видно снаружи). */
+  overflow: ${({ $collapsed }) => ($collapsed ? 'hidden' : 'visible')};
   gap: ${({ $collapsed }) => ($collapsed ? '0' : '2px')};
   padding: ${({ $collapsed }) => ($collapsed ? '0' : '6px')};
   background: ${({ $collapsed }) =>

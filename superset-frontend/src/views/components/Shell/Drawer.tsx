@@ -15,7 +15,14 @@
  * Закрывается: Esc, клик по той же rail-кнопке, клик вне sheet'а.
  */
 import { styled, t } from '@superset-ui/core';
-import { type FC, type ReactNode, useEffect, useRef } from 'react';
+import {
+  type FC,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 import { IconClose } from './RailIcons';
 import { useShell } from './ShellContext';
@@ -185,16 +192,11 @@ const DrawerBody = styled.div<{ $flush: boolean }>`
   box-sizing: border-box;
   overflow-y: ${({ $flush }) => ($flush ? 'hidden' : 'auto')};
   overflow-x: hidden;
-  /* scrollbar-gutter: stable — всегда резервируем 15px справа под
-     scrollbar, даже когда он скрыт. Это позволяет контенту иметь
-     одинаковую ширину при scroll/no-scroll, и визуально выровнять
-     правый край kanban-колонок с крестиком ×. */
-  scrollbar-gutter: stable;
-  /* Правый padding уменьшен с 22 до 7: 22 (visual) − 15 (scrollbar-
-     gutter) = 7. После такого сдвига scrollbar стоит ровно там, где
-     была раньше правая граница padding'а drawer-body, и контент
-     занимает то же пространство, где раньше был padding. */
-  padding: ${({ $flush }) => ($flush ? '0' : '4px 7px 18px 22px')};
+  /* БЕЗ scrollbar-gutter: юзер не хочет видеть резервную полосу справа,
+     когда скролла нет. Scrollbar появляется in-flow только при реальном
+     overflow (см. HasOverflowContext ниже — на основе этого же признака
+     DrawerFooter рисует border-top). */
+  padding: ${({ $flush }) => ($flush ? '0' : '4px 22px 18px')};
   display: ${({ $flush }) => ($flush ? 'flex' : 'block')};
   flex-direction: column;
 
@@ -248,13 +250,17 @@ const DrawerBody = styled.div<{ $flush: boolean }>`
   }
 `;
 
-const DrawerFooter = styled.div`
+const DrawerFooter = styled.div<{ $hasOverflow?: boolean }>`
   padding: 10px 22px 14px;
-  border-top: 1px solid ${DS2_VARS.g100};
+  /* Нижний разделитель — только когда body реально проскроллен
+     (scrollHeight > clientHeight). Без overflow линия снизу выглядит
+     как лишняя рамка на пустом месте — юзер просил убрать. */
+  border-top: 1px solid
+    ${({ $hasOverflow }) => ($hasOverflow ? DS2_VARS.g100 : 'transparent')};
   flex-shrink: 0;
   background: ${DS2_VARS.drawerBg};
   /* Пустой footer-slot (без portal-контента) невидим — иначе
-     drawer снизу получает лишнюю 24px полосу с border-top. */
+     drawer снизу получает лишнюю 24px полосу. */
   &:empty {
     display: none;
   }
@@ -292,6 +298,18 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
 }) => {
   const { openedDrawer, closeDrawer } = useShell();
   const asideRef = useRef<HTMLElement | null>(null);
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  const [hasOverflow, setHasOverflow] = useState(false);
+
+  /* Детектируем, помещается ли содержимое body целиком. Результат
+     используется DrawerFooter'ом: border-top рисуется только когда
+     контент реально скроллится (2-й ряд kanban-колонок, длинный
+     catalog и т.п.). Иначе линия снизу выглядит как лишняя рамка. */
+  const measureOverflow = useCallback(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    setHasOverflow(el.scrollHeight > el.clientHeight + 1);
+  }, []);
 
   // Esc закрывает drawer; click-outside — тоже, но с mousedown-tracking.
   useEffect(() => {
@@ -390,6 +408,28 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
     };
   }, [openedDrawer, closeDrawer]);
 
+  /* Следим за содержимым DrawerBody: ResizeObserver ловит изменение
+     client-размеров, MutationObserver — добавление/удаление child-ов
+     (новые kanban-колонки, фильтры, каталог-карточки). На каждое
+     изменение пересчитываем hasOverflow. */
+  useEffect(() => {
+    if (!openedDrawer) {
+      setHasOverflow(false);
+      return undefined;
+    }
+    const el = bodyRef.current;
+    if (!el) return undefined;
+    measureOverflow();
+    const ro = new ResizeObserver(measureOverflow);
+    ro.observe(el);
+    const mo = new MutationObserver(measureOverflow);
+    mo.observe(el, { childList: true, subtree: true });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
+  }, [openedDrawer, measureOverflow]);
+
   const kind = openedDrawer;
   const isOpen = kind !== null;
   const title = kind ? titles[kind] ?? t(DEFAULT_TITLES[kind]) : '';
@@ -428,7 +468,7 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
               </DrawerClose>
             </DrawerHeadRight>
           </DrawerHead>
-          <DrawerBody $flush={kind === 'catalog'}>
+          <DrawerBody ref={bodyRef} $flush={kind === 'catalog'}>
             {bodyNode ?? (
               <DrawerPlaceholder>
                 {t('Содержимое появится в следующем этапе.')}
@@ -438,8 +478,10 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
           {/* Footer-slot — куда FiltersDrawer портирует Apply/Reset.
               Всегда присутствует; если портала нет — пустой DrawerFooter
               с границей border-top визуально не выделяется (min-height). */}
-          <DrawerFooter id={DRAWER_FOOTER_SLOT_ID} />
-          {footerNode ? <DrawerFooter>{footerNode}</DrawerFooter> : null}
+          <DrawerFooter id={DRAWER_FOOTER_SLOT_ID} $hasOverflow={hasOverflow} />
+          {footerNode ? (
+            <DrawerFooter $hasOverflow={hasOverflow}>{footerNode}</DrawerFooter>
+          ) : null}
         </>
       ) : null}
     </DrawerSheet>

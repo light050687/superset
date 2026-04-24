@@ -59,6 +59,10 @@ const GridWrap = styled.div`
 const AddColBtn = styled.button`
   ${({ theme }) => `
     align-self: start;
+    /* box-sizing: border-box — чтобы border 1px не давал AddColBtn
+       лишних 2px над row height при height:100%. См. Column —
+       та же защита от 1px overflow у DrawerBody. */
+    box-sizing: border-box;
     height: 100%;
     min-height: 64px;
     display: flex;

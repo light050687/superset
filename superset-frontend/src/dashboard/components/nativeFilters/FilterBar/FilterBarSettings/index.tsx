@@ -190,48 +190,9 @@ const FilterBarSettings = () => {
       });
       items.push({ type: 'divider' });
     }
-    if (canEdit && !isMobile) {
-      items.push({
-        key: 'placement',
-        label: t('Orientation of filter bar'),
-        className: 'filter-bar-orientation-submenu',
-        children: [
-          {
-            key: FilterBarOrientation.Vertical,
-            label: (
-              <Space>
-                {t('Vertical (Left)')}
-                {selectedFilterBarOrientation ===
-                  FilterBarOrientation.Vertical && (
-                  <Icons.CheckOutlined
-                    iconColor={theme.colorPrimary}
-                    iconSize="m"
-                  />
-                )}
-              </Space>
-            ),
-          },
-          {
-            key: FilterBarOrientation.Horizontal,
-            label: (
-              <Space>
-                {t('Horizontal (Top)')}
-                {selectedFilterBarOrientation ===
-                  FilterBarOrientation.Horizontal && (
-                  <Icons.CheckOutlined
-                    iconSize="m"
-                    css={css`
-                      vertical-align: middle;
-                    `}
-                  />
-                )}
-              </Space>
-            ),
-          },
-        ],
-        ...{ 'data-test': 'dropdown-selectable-icon-submenu' },
-      });
-    }
+    /* Пункт «Orientation of filter bar» убран по продуктовому решению:
+       FilterBar теперь всегда живёт в Shell-drawer'е (kanban), выбор
+       горизонтальной/вертикальной ориентации больше не актуален. */
     return items;
   }, [
     selectedFilterBarOrientation,

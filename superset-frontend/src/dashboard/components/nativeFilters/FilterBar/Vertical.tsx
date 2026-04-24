@@ -67,8 +67,11 @@ const Bar = styled.div<{ width: number; isMobile?: boolean }>`
     flex-grow: 1;
     width: ${isMobile ? '100%' : `${width}px`};
     background: ${theme.colorBgContainer};
-    ${isMobile ? '' : `border-right: 1px solid ${theme.colorSplit};`}
-    ${isMobile ? '' : `border-bottom: 1px solid ${theme.colorSplit};`}
+    /* Border-right и border-bottom убраны: FilterBar теперь живёт
+       внутри Shell-drawer'а, а не на sidebar'е. Эти рамки давали
+       лишние линии справа/снизу ВНУТРИ drawer-body и читались как
+       «рамки окна». Drawer сам рисует свой контур (border+radius
+       в Shell/Drawer.tsx). */
     min-height: ${isMobile ? 'auto' : '100%'};
     display: ${isMobile ? 'flex' : 'none'};
     ${isMobile ? 'flex: 1; overflow: hidden;' : ''}
