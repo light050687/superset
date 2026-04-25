@@ -31,6 +31,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { EmptyState, Loading } from '@superset-ui/core/components';
 import { ErrorBoundary, BasicErrorAlert } from 'src/components';
+import { DS2_VARS } from 'src/theme/ds2';
 import BuilderComponentPane from 'src/dashboard/components/BuilderComponentPane';
 import DashboardHeader from 'src/dashboard/components/Header';
 import { Icons } from '@superset-ui/core/components/Icons';
@@ -400,8 +401,14 @@ const StyledDashboardContent = styled.div<{
       flex-direction: column !important;
     }
 
+    /*
+       View-mode: чарт уважает inline width от re-resizable
+       (widthMultiple * columnWidth) — РАВНО как в edit-mode. Никакого
+       width:100%/max-width:100% override — это раньше распирало чарт
+       на всю колонку, и view-mode выглядел иначе чем edit. Сохраняем
+       только вертикальный flex-chain для equal-height stretch.
+    */
     &[data-view-mode="true"] .resizable-container {
-      flex: 1 1 auto !important;
       display: flex !important;
       flex-direction: column !important;
       /* Override inline height — let flex chain control height */
@@ -471,87 +478,23 @@ const StyledDashboardContent = styled.div<{
     }
 
     /*
-     * Responsive layout — view mode only.
-     * Uses @container queries on .grid-container so layout reacts to
-     * actual container width (not viewport), adapting when filter panel opens.
-     * container-type is only set in view mode to protect edit mode.
+     * View-mode layout = edit-mode layout. Чарты уважают widthMultiple
+     * grid (re-resizable inline width). Никаких @container query overrides,
+     * которые меняют доли колонок — это раньше делало view-mode визуально
+     * отличным от edit-mode, и юзер видел разные размеры графиков.
+     *
+     * Оставляем только узкий мобильный сценарий: при ширине контейнера
+     * ниже 425px (телефон) колонки складываются в одну для читаемости.
+     * Compression на промежуточных viewport'ах handled через
+     * ChartHolder.isResponsive (RO-based, см. ChartHolder.tsx).
      */
-
-    /* ── View mode: enable container queries + fill containers ── */
     &[data-view-mode="true"] .grid-container {
       container-type: inline-size;
       container-name: grid;
       margin: clamp(4px, 1vw, 32px) !important;
     }
-    &[data-view-mode="true"] .resizable-container {
-      width: 100% !important;
-      max-width: 100% !important;
-    }
 
-    /* ── Wide container ≥1440px: 1 row, uniform gap ── */
-    @container grid (min-width: 1440px) {
-      .grid-row {
-        flex-wrap: nowrap !important;
-        gap: clamp(8px, 1cqi, 24px) !important;
-      }
-      .grid-row > :not(:last-child):not(.hover-menu) {
-        margin-right: 0 !important;
-      }
-      /* Vertical gap between row wrappers (override GridContent margin-bottom) */
-      .dragdroppable-row {
-        margin-bottom: clamp(8px, 1cqi, 24px) !important;
-      }
-      .dragdroppable-row:last-child {
-        margin-bottom: 0 !important;
-      }
-      .dragdroppable-column {
-        flex: 1 1 0% !important;
-      }
-    }
-
-    /* ── Medium container 800–1439px: 3 columns per row ── */
-    @container grid (min-width: 800px) and (max-width: 1439px) {
-      .grid-row {
-        flex-wrap: wrap !important;
-        gap: clamp(8px, 1cqi, 24px) !important;
-      }
-      .grid-row > :not(:last-child):not(.hover-menu) {
-        margin-right: 0 !important;
-      }
-      .dragdroppable-row {
-        margin-bottom: clamp(8px, 1cqi, 24px) !important;
-      }
-      .dragdroppable-row:last-child {
-        margin-bottom: 0 !important;
-      }
-      .dragdroppable-column {
-        flex: 1 1 calc(33.333% - clamp(6px, 0.7cqi, 16px)) !important;
-        min-width: calc(33.333% - clamp(6px, 0.7cqi, 16px)) !important;
-      }
-    }
-
-    /* ── Small container 425–799px: 2 columns ── */
-    @container grid (min-width: 425px) and (max-width: 799px) {
-      .grid-row {
-        flex-wrap: wrap !important;
-        gap: clamp(4px, 1cqi, 16px) !important;
-      }
-      .grid-row > :not(:last-child):not(.hover-menu) {
-        margin-right: 0 !important;
-      }
-      .dragdroppable-row {
-        margin-bottom: clamp(4px, 1cqi, 16px) !important;
-      }
-      .dragdroppable-row:last-child {
-        margin-bottom: 0 !important;
-      }
-      .dragdroppable-column {
-        flex: 1 1 calc(50% - clamp(2px, 0.5cqi, 8px)) !important;
-        min-width: calc(50% - clamp(2px, 0.5cqi, 8px)) !important;
-      }
-    }
-
-    /* ── Narrow container <425px: 1 column ── */
+    /* ── Mobile (<425px): single column, для читаемости на телефонах ── */
     @container grid (max-width: 424px) {
       .grid-row {
         flex-wrap: wrap !important;
@@ -583,6 +526,93 @@ const StyledDashboardContent = styled.div<{
 const ELEMENT_ON_SCREEN_OPTIONS = {
   threshold: [1],
 };
+
+/* SaveOverlay — квадратная карточка по центру экрана с иконкой сверху
+   и подписью снизу. Появляется на время saveDashboardRequest (PUT
+   /api/v1/dashboard/:id). Заменяет дефолтный <Loading floating/> —
+   юзер просил квадрат с иконкой и подписью, не plain spinner. */
+const SaveOverlayBackdrop = styled.div`
+  position: fixed;
+  inset: 0;
+  background: ${DS2_VARS.drawerBg};
+  backdrop-filter: ${DS2_VARS.drawerFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.drawerFilter};
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: saveOverlayFadeIn 0.18s ${DS2_VARS.ease};
+
+  @keyframes saveOverlayFadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+`;
+
+const SaveOverlayCard = styled.div`
+  width: 200px;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: ${DS2_VARS.s};
+  border: 1px solid ${DS2_VARS.g200};
+  border-radius: 16px;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.18),
+    0 4px 12px rgba(0, 0, 0, 0.06);
+
+  .save-icon {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: color-mix(in oklab, ${DS2_VARS.cSky} 12%, ${DS2_VARS.bg3});
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${DS2_VARS.cSky};
+  }
+
+  /* Spinning progress ring around the icon. Классический CSS-spinner:
+     один окрашенный border-top + transparent остальные, rotate. Чистый
+     и кросс-браузерный, без mask-composite quirks. */
+  .save-icon::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 18px;
+    border: 2px solid transparent;
+    border-top-color: ${DS2_VARS.cSky};
+    border-right-color: ${DS2_VARS.cSky};
+    animation: saveRing 1s linear infinite;
+  }
+
+  .save-icon svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  .save-caption {
+    font-family: ${DS2_VARS.fontSans};
+    font-size: 13px;
+    font-weight: 600;
+    color: ${DS2_VARS.ink};
+    letter-spacing: 0.01em;
+  }
+
+  @keyframes saveRing {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
 
 const DashboardBuilder = () => {
   const dispatch = useDispatch();
@@ -959,13 +989,14 @@ const DashboardBuilder = () => {
         </DashboardContentWrapper>
       </StyledContent>
       {dashboardIsSaving && (
-        <Loading
-          css={css`
-            && {
-              position: fixed;
-            }
-          `}
-        />
+        <SaveOverlayBackdrop role="status" aria-live="polite">
+          <SaveOverlayCard>
+            <span className="save-icon" aria-hidden>
+              <Icons.SaveOutlined iconSize="xl" />
+            </span>
+            <span className="save-caption">{t('Сохранение дашборда…')}</span>
+          </SaveOverlayCard>
+        </SaveOverlayBackdrop>
       )}
       {showFilterBar && isMobile && (
         <MobileFilterBar>

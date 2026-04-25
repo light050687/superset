@@ -218,10 +218,19 @@ const ChartHolder = ({
     const gridHeight = Math.floor(
       component.meta.height * GRID_BASE_UNIT - CHART_MARGIN,
     );
+    /*
+       Responsive-mode: только когда измеренная ширина МЕНЬШЕ расчётной
+       (viewport не помещает grid — нужно сжать чарт). Расширение через
+       responsive отключено: row flex-grow раздвигал одиночный чарт на
+       весь row в view-mode — юзер видел after save график растянулся
+       на всю ширину хотя meta.width=4. Сжатие сохраняем (mobile, narrow
+       sidebar). Расширение убираем — в view-mode чарт уважает
+       widthMultiple так же как в edit-mode.
+    */
     const isResponsive =
       !editMode &&
       measuredWidth > 0 &&
-      Math.abs(measuredWidth - CHART_MARGIN - gridWidth) > GRID_BASE_UNIT;
+      measuredWidth + GRID_BASE_UNIT < gridWidth + CHART_MARGIN;
 
     if (isFullSize) {
       width = window.innerWidth - CHART_MARGIN;
