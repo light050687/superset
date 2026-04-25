@@ -190,6 +190,10 @@ const AddSliceCard: FC<React.PropsWithChildren<{
 }) => {
   const showThumbnails = isFeatureEnabled(FeatureFlag.Thumbnails);
   const [sliceAddedBadge, setSliceAddedBadge] = useState<HTMLDivElement>();
+  // Бэйдж «Добавлено» рисуется ТОЛЬКО когда isSelected. Иначе stale-ref
+  // на отвалившуюся placeholder-ноду оставляет бейдж видимым после
+  // удаления чарта из дашборда.
+  const effectivePlaceholder = isSelected ? sliceAddedBadge : undefined;
   const { mountedPluginMetadata } = usePluginContext();
   const vizName = useMemo(
     () => mountedPluginMetadata[visType]?.name || t('Unknown type'),
@@ -296,7 +300,7 @@ const AddSliceCard: FC<React.PropsWithChildren<{
           </div>
         </div>
       </div>
-      <SliceAddedBadge placeholder={sliceAddedBadge} />
+      <SliceAddedBadge placeholder={effectivePlaceholder} />
     </div>
   );
 };

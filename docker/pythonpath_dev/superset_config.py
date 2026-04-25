@@ -104,6 +104,10 @@ LOGO_RIGHT_TEXT = "МРТС"
 FEATURE_FLAGS = {
     "ALERT_REPORTS": True,
     "FILTERBAR_CLOSED_BY_DEFAULT": True,
+    # Разрешает повторное использование одного чарта на разных страницах
+    # дашборда (в рамках одной страницы дубль по-прежнему запрещён).
+    # Frontend SliceAdder скоупит «Добавлено»-проверку по активной странице.
+    "ALLOW_DUPLICATE_CHARTS_PER_PAGE": True,
 }
 ALERT_REPORTS_NOTIFICATION_DRY_RUN = True
 WEBDRIVER_BASEURL = f"http://superset_app{os.environ.get('SUPERSET_APP_ROOT', '/')}/"  # When using docker compose baseurl should be http://superset_nginx{ENV{BASEPATH}}/  # noqa: E501
