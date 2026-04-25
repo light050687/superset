@@ -562,9 +562,21 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
   }, [dispatch]);
 
   const handleSave = useCallback(() => {
-    document
-      .querySelector<HTMLButtonElement>('[data-test="header-save-button"]')
-      ?.click();
+    /* В DashboardHeader save-кнопка скрыта (display:none), но остаётся
+       в DOM — overwriteDashboard живёт там и подтягивает все
+       callbacks/colors/cross-filters/legacy state. AntD/emotion
+       фильтрует data-* пропсы у styled-обёрток → `data-test=
+       "dashboard-edit-actions"` не доходит до DOM. Ищем primary-кнопку
+       в `.right-button-panel` (это header-actions area). Discard
+       рядом — secondary, поэтому отличаем по классу ant-btn-primary. */
+    const headerSaveBtn =
+      document.querySelector<HTMLButtonElement>(
+        '.right-button-panel button.ant-btn-primary',
+      ) ||
+      document.querySelector<HTMLButtonElement>(
+        '[data-test="header-save-button"]',
+      );
+    headerSaveBtn?.click();
   }, []);
 
   const handleUndo = useCallback(() => {

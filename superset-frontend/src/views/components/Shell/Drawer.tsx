@@ -398,6 +398,18 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
           el.matches('[role="dialog"][aria-label*="Инструменты"]'),
       );
       if (inDevTools) return false;
+      /* Edit-mode дашборда — все клики по `.dashboard--editing` (resize-
+         handles, hover-menu с кнопкой Delete на чартах, drag-handle, layout
+         элементы) НЕ должны закрывать BuilderDrawer. Юзер удаляет чарт →
+         drawer закрывался, deletion успевал dispatch'нуться, но юзер видел
+         «закрытое окно» и решал что фикс не сработал.
+         Используем closest вместо path.some — composedPath на synthetic
+         events не всегда содержит полный путь до document, а closest идёт
+         по реальному parentNode chain. */
+      const firstEl = path.find((el): el is Element => el instanceof Element);
+      if (firstEl?.closest?.('.dashboard--editing, .dashboard-component')) {
+        return false;
+      }
       return true;
     };
 
