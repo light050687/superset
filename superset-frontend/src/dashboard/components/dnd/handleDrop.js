@@ -93,7 +93,9 @@ export default function handleDrop(props, monitor, Component) {
     };
   }
 
-  onDrop(dropResult);
+  // onDrop не обязательный prop — после миграции react-dnd HOC→hooks
+  // дефолтов у FC больше нет, вызываем только если callback задан.
+  onDrop?.(dropResult);
   clearDropCache();
 
   return dropResult;

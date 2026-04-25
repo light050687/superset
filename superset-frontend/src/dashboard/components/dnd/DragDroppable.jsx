@@ -291,24 +291,36 @@ UnwrappedDragDroppable.propTypes = propTypes;
 
 // Shared useLayoutEffect to keep component proxy props up to date; exported as
 // a small hook so wrappers below can attach hover/drop handlers against it.
+// Returns [proxyRef, nodeRef]. nodeRef must be forwarded to UnwrappedDragDroppable
+// so handleHover/handleDrop → getDropPosition can read Component.ref
+// (legacy class-API contract: ref is the DOM node for getBoundingClientRect).
 function useComponentProxy() {
-  const proxyRef = useRef({
-    mounted: false,
-    props: {},
-    setState: () => {},
-  });
+  const nodeRef = useRef(null);
+  const proxyRef = useRef(null);
+  if (!proxyRef.current) {
+    const slot = {
+      mounted: false,
+      props: {},
+      setState: () => {},
+    };
+    Object.defineProperty(slot, 'ref', {
+      get: () => nodeRef.current,
+      enumerable: true,
+    });
+    proxyRef.current = slot;
+  }
   useLayoutEffect(() => {
     proxyRef.current.mounted = true;
     return () => {
       proxyRef.current.mounted = false;
     };
   }, []);
-  return proxyRef;
+  return [proxyRef, nodeRef];
 }
 
 // Drag-only wrapper (parity with legacy `Draggable` HOC export).
 export function Draggable(props) {
-  const proxyRef = useComponentProxy();
+  const [proxyRef, nodeRef] = useComponentProxy();
   proxyRef.current.props = props;
 
   const [{ isDragging, dragComponentId, dragComponentType }, dragRef, dragPreviewRef] =
@@ -339,6 +351,7 @@ export function Draggable(props) {
   return (
     <UnwrappedDragDroppable
       {...props}
+      ref={nodeRef}
       isDragging={isDragging}
       dragComponentId={dragComponentId}
       dragComponentType={dragComponentType}
@@ -351,7 +364,7 @@ Draggable.propTypes = propTypes;
 
 // Drop-only wrapper (parity with legacy `Droppable` HOC export).
 export function Droppable(props) {
-  const proxyRef = useComponentProxy();
+  const [proxyRef, nodeRef] = useComponentProxy();
   proxyRef.current.props = props;
   const [internalDropIndicator, setInternalDropIndicator] = useState(null);
   proxyRef.current.setState = updater => {
@@ -391,6 +404,7 @@ export function Droppable(props) {
   return (
     <UnwrappedDragDroppable
       {...props}
+      ref={nodeRef}
       isDraggingOver={isDraggingOver}
       isDraggingOverShallow={isDraggingOverShallow}
       droppableRef={dropRef}
@@ -402,7 +416,7 @@ Droppable.propTypes = propTypes;
 
 // Combined drag+drop wrapper (primary dashboard grid export).
 export function DragDroppable(props) {
-  const proxyRef = useComponentProxy();
+  const [proxyRef, nodeRef] = useComponentProxy();
   proxyRef.current.props = props;
   const [internalDropIndicator, setInternalDropIndicator] = useState(null);
   proxyRef.current.setState = updater => {
@@ -467,6 +481,7 @@ export function DragDroppable(props) {
   return (
     <UnwrappedDragDroppable
       {...props}
+      ref={nodeRef}
       isDragging={isDragging}
       dragComponentId={dragComponentId}
       dragComponentType={dragComponentType}
