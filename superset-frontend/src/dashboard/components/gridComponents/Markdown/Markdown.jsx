@@ -166,9 +166,15 @@ class Markdown extends PureComponent {
         hasError: false,
       };
     }
+    // Защита: не затирать локально набранный markdown пустым/неинициализированным
+    // meta.code из Redux. Иначе любой re-render с propsRef-сменой (например смена
+    // темы → новый emotionCache → каскад re-render по дереву) сбрасывает текст,
+    // если Markdown был добавлен но ещё не сохранён в Redux (newComponentFactory
+    // не сидит meta.code, save идёт только на edit→preview).
     if (
       !hasError &&
       editorMode === 'preview' &&
+      typeof nextComponent.meta.code === 'string' &&
       nextComponent.meta.code !== markdownSource
     ) {
       return {
