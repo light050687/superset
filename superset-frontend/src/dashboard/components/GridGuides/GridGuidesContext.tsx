@@ -63,11 +63,11 @@ const DEFAULT_STATE: GridGuidesState = {
   showGrid: false,
   columnGap: 16,
   rowGap: 16,
-  subdivisions: 1,
+  subdivisions: 4,
   freeMode: false,
 };
 
-const LS_KEY = 'superset.gridGuides.v5';
+const LS_KEY = 'superset.gridGuides.v6';
 
 const MIN_GAP = 0;
 const MAX_GAP = 64;

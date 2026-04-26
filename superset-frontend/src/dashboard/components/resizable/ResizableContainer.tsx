@@ -43,6 +43,14 @@ export interface ResizableContainerProps {
    *  Без этого vertical snap'ил по K*subStepY (= top of next row),
    *  а должен по K*cellH + (K-1)*rowGap (= bottom of last cell). */
   heightGutter?: number;
+  /** Опциональный «base columnWidth» для consumer'ов, работающих в
+   *  col-mode (Column, Markdown, DynamicComponent). Когда задан И
+   *  gridGuides.subdivisions > 1, ResizableContainer ОВЕРРАЙДИТ snap
+   *  на sub-cell позиции, derived from columnWidth + subdivisions.
+   *  Save (onResizeStop math) остаётся в col-units (passed widthStep+
+   *  gutterWidth) — schema layout meta не меняется. ChartHolder этот
+   *  prop НЕ передаёт, у него свой effectiveMode pipeline. */
+  gridSnapColumnBase?: number;
   widthStep?: number;
   heightStep?: number;
   widthMultiple: number;
@@ -171,6 +179,7 @@ export default function ResizableContainer({
   heightGutter = 0,
   widthStep = GRID_BASE_UNIT,
   heightStep = GRID_BASE_UNIT,
+  gridSnapColumnBase,
   minWidthMultiple = 1,
   maxWidthMultiple = proxyToInfinity,
   minHeightMultiple = 1,
@@ -208,33 +217,88 @@ export default function ResizableContainer({
     if (gridGuides.freeMode) return undefined;
     const sub = Math.max(1, gridGuides.subdivisions || 1);
     if (sub <= 1) return undefined;
-    const stepX = widthStep + gutterWidth; // = subStepX
-    const stepY = heightStep + heightGutter; // = subStepY
+
+    /* Два режима генерации snap-array:
+
+       (A) gridSnapColumnBase задан (col-mode consumer: Column,
+       Markdown, DynamicComponent). Производим sub-cell snap из
+       columnWidth + sub:
+         subCellW = round((columnWidth - (sub-1)*colGap) / sub)
+         subStepX = subCellW + colGap
+         subStepY = subCellW + rowGap
+       Save (onResizeStop math) ПО-прежнему round'ит к col-units
+       через passed widthStep+gutterWidth.
+
+       (B) gridSnapColumnBase не задан (ChartHolder с уже sub-настроенным
+       widthStep/gutterWidth). Используем passed step напрямую. */
+    let stepX: number;
+    let stepY: number;
+    let gapX: number;
+    let gapY: number;
+    if (gridSnapColumnBase != null && gridSnapColumnBase > 0) {
+      const colGap = gridGuides.columnGap;
+      const rowGap = gridGuides.rowGap;
+      const subCellW = Math.max(
+        1,
+        Math.round((gridSnapColumnBase - (sub - 1) * colGap) / sub),
+      );
+      stepX = subCellW + colGap;
+      stepY = subCellW + rowGap;
+      gapX = colGap;
+      gapY = rowGap;
+    } else {
+      stepX = widthStep + gutterWidth;
+      stepY = heightStep + heightGutter;
+      gapX = gutterWidth;
+      gapY = heightGutter;
+    }
+
     const xs: number[] = [];
     const ys: number[] = [];
     const maxCount = 200;
     for (let k = 1; k <= maxCount; k += 1) {
-      xs.push(k * stepX - gutterWidth); // OLD: K*subStepX - colGap (=cellW для K=1)
-      ys.push(k * stepY - heightGutter); // NEW (heightGutter=0): K*subStepY
+      xs.push(k * stepX - gapX); // OLD: K*subStepX - gap
+      ys.push(k * stepY - gapY); // OLD: K*subStepY - gap
     }
     return { x: xs, y: ys };
   }, [
     gridGuides.freeMode,
     gridGuides.subdivisions,
+    gridGuides.columnGap,
+    gridGuides.rowGap,
+    gridSnapColumnBase,
     widthStep,
     gutterWidth,
     heightStep,
     heightGutter,
   ]);
 
-  /* snapGap = subStep/2: snap срабатывает в радиусе ±subStep/2 от
-     точки. Это даёт плавный drag — чарт edge свободно двигается между
-     snap-позициями, и pulls к ближайшей когда подходит близко. */
+  /* snapGap = subStep/2: smooth drag, pull к snap-точке когда близко.
+     Учитывает gridSnapColumnBase (col-mode consumer): step = subStep
+     derived from columnWidth, не col-step. */
   const snapGap = useMemo<number>(() => {
     if (!snapPositions) return 0;
-    const stepX = widthStep + gutterWidth;
-    return Math.max(8, Math.round(stepX / 2));
-  }, [snapPositions, widthStep, gutterWidth]);
+    const sub = Math.max(1, gridGuides.subdivisions || 1);
+    let stepForGap: number;
+    if (gridSnapColumnBase != null && gridSnapColumnBase > 0) {
+      const colGap = gridGuides.columnGap;
+      const subCellW = Math.max(
+        1,
+        Math.round((gridSnapColumnBase - (sub - 1) * colGap) / sub),
+      );
+      stepForGap = subCellW + colGap;
+    } else {
+      stepForGap = widthStep + gutterWidth;
+    }
+    return Math.max(8, Math.round(stepForGap / 2));
+  }, [
+    snapPositions,
+    gridGuides.subdivisions,
+    gridGuides.columnGap,
+    gridSnapColumnBase,
+    widthStep,
+    gutterWidth,
+  ]);
 
   /* snapGrid: используется ТОЛЬКО когда snapPositions undefined (col/free). */
   const snapGrid = useMemo<[number, number]>(() => {

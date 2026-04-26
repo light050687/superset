@@ -191,6 +191,7 @@ const Column = props => {
         maxWidthMultiple={
           availableColumnCount + (columnComponent.meta.width || 0)
         }
+        gridSnapColumnBase={columnWidth}
         onResizeStart={onResizeStart}
         onResize={onResize}
         onResizeStop={onResizeStop}

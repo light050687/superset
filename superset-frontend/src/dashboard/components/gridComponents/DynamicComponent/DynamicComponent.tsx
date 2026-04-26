@@ -151,6 +151,7 @@ const DynamicComponent: FC<React.PropsWithChildren<DynamicComponentProps>> = ({
               minWidthMultiple={GRID_MIN_COLUMN_COUNT}
               minHeightMultiple={GRID_MIN_COLUMN_COUNT}
               maxWidthMultiple={availableColumnCount + widthMultiple}
+              gridSnapColumnBase={columnWidth}
               onResizeStart={onResizeStart}
               onResize={onResize}
               onResizeStop={onResizeStop}
