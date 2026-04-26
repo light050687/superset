@@ -483,15 +483,14 @@ const StyledDashboardContent = styled.div<{
      * которые меняют доли колонок — это раньше делало view-mode визуально
      * отличным от edit-mode, и юзер видел разные размеры графиков.
      *
-     * Оставляем только узкий мобильный сценарий: при ширине контейнера
-     * ниже 425px (телефон) колонки складываются в одну для читаемости.
-     * Compression на промежуточных viewport'ах handled через
-     * ChartHolder.isResponsive (RO-based, см. ChartHolder.tsx).
+     * Container queries оставлены ТОЛЬКО ради мобильного сценария
+     * (<425px → single column). Margin не переопределяется — остаётся
+     * sizeUnit*4 (16px) такой же как в edit, чтобы отступы со всех
+     * сторон были симметричны и идентичны между edit/view.
      */
     &[data-view-mode="true"] .grid-container {
       container-type: inline-size;
       container-name: grid;
-      margin: clamp(4px, 1vw, 32px) !important;
     }
 
     /* ── Mobile (<425px): single column, для читаемости на телефонах ── */
@@ -580,21 +579,33 @@ const SaveOverlayCard = styled.div`
     color: ${DS2_VARS.cSky};
   }
 
-  /* Spinning progress ring around the icon. Классический CSS-spinner:
-     один окрашенный border-top + transparent остальные, rotate. Чистый
-     и кросс-браузерный, без mask-composite quirks. */
-  .save-icon::before {
-    content: '';
+  /* Spinner: SVG-обёртка вокруг иконки. Статичный полный круг (track)
+     + вращающаяся 1/4-дуга (stripe). Только stripe крутится, track
+     стоит — раньше border на ::before крутился целиком, выглядело
+     как «дрожащий контур». SVG + transform: rotate с will-change даёт
+     плавную GPU-ускоренную анимацию. */
+  .save-spinner {
     position: absolute;
-    inset: -6px;
-    border-radius: 18px;
-    border: 2px solid transparent;
-    border-top-color: ${DS2_VARS.cSky};
-    border-right-color: ${DS2_VARS.cSky};
-    animation: saveRing 1s linear infinite;
+    inset: -10px;
+    pointer-events: none;
+  }
+  .save-spinner-track {
+    fill: none;
+    stroke: color-mix(in oklab, ${DS2_VARS.cSky} 18%, transparent);
+    stroke-width: 4;
+  }
+  .save-spinner-stripe {
+    fill: none;
+    stroke: ${DS2_VARS.cSky};
+    stroke-width: 4;
+    stroke-linecap: round;
+    transform-origin: 50% 50%;
+    transform-box: fill-box;
+    animation: saveRing 0.9s linear infinite;
+    will-change: transform;
   }
 
-  .save-icon svg {
+  .save-icon > svg:not(.save-spinner) {
     width: 30px;
     height: 30px;
   }
@@ -833,9 +844,10 @@ const DashboardBuilder = () => {
     ],
   );
 
-  const dashboardContentMarginLeft = !editMode
-    ? theme.sizeUnit * 4
-    : theme.sizeUnit * 8;
+  /* Симметричный margin-left со всех сторон. Старое значение sizeUnit*8
+     (32px) в edit-mode резервировалось под закрытый BuilderComponentPane;
+     sidebar убран — теперь edit и view используют одинаковые 16px. */
+  const dashboardContentMarginLeft = theme.sizeUnit * 4;
 
   const renderChild = useCallback(
     (adjustedWidth: number) => {
@@ -992,6 +1004,30 @@ const DashboardBuilder = () => {
         <SaveOverlayBackdrop role="status" aria-live="polite">
           <SaveOverlayCard>
             <span className="save-icon" aria-hidden>
+              {/* SVG spinner — track (статичный круг) + stripe
+                  (вращающаяся 1/4 дуга). circle.r=46, c=2π·46≈289;
+                  dasharray "70 220" → 70px дуги видно, 220px пропуск.
+                  CSS animation крутит этот единственный circle. */}
+              <svg
+                className="save-spinner"
+                viewBox="0 0 100 100"
+                aria-hidden="true"
+              >
+                <circle
+                  className="save-spinner-track"
+                  cx="50"
+                  cy="50"
+                  r="46"
+                />
+                <circle
+                  className="save-spinner-stripe"
+                  cx="50"
+                  cy="50"
+                  r="46"
+                  pathLength="100"
+                  strokeDasharray="22 100"
+                />
+              </svg>
               <Icons.SaveOutlined iconSize="xl" />
             </span>
             <span className="save-caption">{t('Сохранение дашборда…')}</span>
