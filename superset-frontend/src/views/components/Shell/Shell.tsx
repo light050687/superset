@@ -57,6 +57,7 @@ import {
   PagesDrawer,
   BuilderDrawer,
 } from 'src/dashboard/components/DashboardSideRail';
+import GridSettingsDrawer from 'src/dashboard/components/GridGuides/GridSettingsDrawer';
 
 /**
  * Shell = «окно приложения». С переходом на Floating Dock (Этап 1):
@@ -405,6 +406,7 @@ export const Shell: FC<React.PropsWithChildren<ShellProps>> = ({
       filters: <FiltersDrawer />,
       pages: <PagesDrawer />,
       builder: <BuilderDrawer />,
+      gridSettings: <GridSettingsDrawer />,
       ...drawerContent,
     }),
     [drawerContent],

@@ -427,6 +427,33 @@ const IconUnpublish = (): JSX.Element => (
   </svg>
 );
 
+/* IconTemplates — иконка «шаблоны»: бенто-разметка (asymmetric grid).
+   TODO: реализовать раскладки (bento, masonry, equal-grid). Сейчас
+   tile только placeholder, чтобы зарезервировать место в DevTools. */
+const IconTemplates = (): JSX.Element => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="9" rx="1" />
+    <rect x="11" y="3" width="6" height="5" rx="1" />
+    <rect x="11" y="9" width="6" height="3" rx="1" />
+    <rect x="3" y="13" width="14" height="4" rx="1" />
+  </svg>
+);
+
+/* IconGrid — иконка «сетка» (3×3 dots) для tile «Сетка». */
+const IconGrid = (): JSX.Element => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="4" height="4" rx="0.5" />
+    <rect x="8.5" y="3" width="4" height="4" rx="0.5" />
+    <rect x="14" y="3" width="3" height="4" rx="0.5" />
+    <rect x="3" y="8.5" width="4" height="4" rx="0.5" />
+    <rect x="8.5" y="8.5" width="4" height="4" rx="0.5" />
+    <rect x="14" y="8.5" width="3" height="4" rx="0.5" />
+    <rect x="3" y="14" width="4" height="3" rx="0.5" />
+    <rect x="8.5" y="14" width="4" height="3" rx="0.5" />
+    <rect x="14" y="14" width="3" height="3" rx="0.5" />
+  </svg>
+);
+
 /* Pin: вертикальная кнопка с шапкой. Active = pinned. */
 const IconPin = (): JSX.Element => (
   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
@@ -894,6 +921,36 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
       onClick: () => toggleDrawer('builder'),
       disabled: !editMode,
     },
+    /* Tile «Сетка» — открывает Shell-drawer kind='gridSettings' (тот же
+       bottom-sheet что и Каталог). Drawer содержит настройки grid-guides
+       (постоянное отображение колонок + визуальная сетка + шаг сетки).
+       Виден только в edit-mode. Toggle: повторный клик закрывает. */
+    {
+      key: 'grid',
+      label:
+        openedDrawer === 'gridSettings'
+          ? t('Закрыть настройки сетки')
+          : t('Сетка'),
+      accent: DS2_VARS.cAmber,
+      icon: <IconGrid />,
+      onClick: () => toggleDrawer('gridSettings'),
+      disabled: !editMode,
+    },
+    /* Tile «Шаблоны» — placeholder. Планируется: bento, masonry, equal
+       grid и др. — алгоритм анализирует размеры существующих чартов и
+       реорганизует layout под выбранный шаблон. См. план реализации в
+       memory project_chart_templates_plan.md (предстоит создать).
+       Сейчас disabled — заглушка для UX-резерва места в DevTools. */
+    {
+      key: 'templates',
+      label: t('Шаблоны (скоро)'),
+      accent: DS2_VARS.cViolet,
+      icon: <IconTemplates />,
+      onClick: () => {
+        /* TODO: открыть TemplatesDrawer с выбором bento/masonry/etc. */
+      },
+      disabled: true,
+    },
     /* Publish toggle — виден всегда, если юзер может редактировать
        дашборд. Иконка/лейбл меняются по isPublished. Dispatch
        savePublished thunk — патчит только `published`, не триггерит
@@ -977,6 +1034,11 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
                   onClick={tile.onClick}
                   aria-label={tile.label}
                   aria-disabled={tile.disabled}
+                  aria-pressed={
+                    tile.key === 'grid'
+                      ? openedDrawer === 'gridSettings'
+                      : undefined
+                  }
                   title={tile.label}
                 >
                   <TileIcon $accent={tile.accent} $disabled={tile.disabled}>

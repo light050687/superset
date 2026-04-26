@@ -296,6 +296,7 @@ const DEFAULT_TITLES: Record<DrawerKind, string> = {
   filters: 'Фильтры дашборда',
   pages: 'Страницы дашборда',
   builder: 'Конструктор',
+  gridSettings: 'Сетка',
 };
 
 export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
