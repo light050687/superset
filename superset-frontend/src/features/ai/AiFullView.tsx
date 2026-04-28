@@ -454,9 +454,15 @@ export const AiFullView: FC<React.PropsWithChildren<AiFullViewProps>> = ({
           model: modelId,
         });
 
+        // adaptAnalyzeResponse в api.ts гарантирует, что answer определён,
+        // но дублируем guard на случай неожиданной формы ответа.
+        const safeAnswer: AiAnswerBlocks = response.answer ?? {
+          text: t('Пустой ответ ИИ'),
+        };
+
         setItems(prev => {
           const next = prev.slice(0, -1); // убираем thinking
-          next.push({ role: 'bot', blocks: response.answer });
+          next.push({ role: 'bot', blocks: safeAnswer });
           return next;
         });
 
@@ -465,7 +471,7 @@ export const AiFullView: FC<React.PropsWithChildren<AiFullViewProps>> = ({
           try {
             await createAiChatMessage(sessionId, {
               role: 'bot',
-              content_json: JSON.stringify(response.answer),
+              content_json: JSON.stringify(safeAnswer),
               meta_json: response.meta ? JSON.stringify(response.meta) : null,
             });
           } catch {

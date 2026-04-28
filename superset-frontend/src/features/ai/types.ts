@@ -131,9 +131,33 @@ export interface AiAnalyzeRequest {
   model?: string;
 }
 
+/**
+ * Сырой ответ от ai-analytics. Backend (Go-сервис) исторически возвращает
+ * вариативные форматы: `{answer}` (canonical), `{text|content}` (legacy),
+ * `{intent, data, ...}` (NL2SQL pipeline). Все варианты нормализуются
+ * клиентским адаптером `adaptAnalyzeResponse` в `api.ts`.
+ */
+export interface AiAnalyzeRawResponse {
+  // canonical
+  answer?: AiAnswerBlocks;
+  session_id?: string;
+  meta?: {
+    tokens?: number;
+    model?: string;
+    latency_ms?: number;
+  };
+  // legacy / alternative shapes
+  text?: string;
+  content?: string;
+  intent?: string;
+  data?: unknown;
+  result?: unknown;
+}
+
+/** Нормализованный ответ для UI — `answer` всегда задан. */
 export interface AiAnalyzeResponse {
   answer: AiAnswerBlocks;
-  session_id: string;
+  session_id?: string;
   /** Метаданные для биллинга и observability. */
   meta?: {
     tokens?: number;

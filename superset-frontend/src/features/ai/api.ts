@@ -19,6 +19,7 @@ import { SupersetClient } from '@superset-ui/core';
 import getBootstrapData from 'src/utils/getBootstrapData';
 import type {
   AiActiveTask,
+  AiAnalyzeRawResponse,
   AiAnalyzeRequest,
   AiAnalyzeResponse,
   AiAnswerBlocks,
@@ -151,8 +152,70 @@ export function isAiBackendConfigured(): boolean {
 }
 
 /**
+ * Нормализует сырой ответ ai-analytics (variability across pipelines)
+ * в каноничный {answer: AiAnswerBlocks}. Гарантирует, что answer
+ * всегда определён — иначе createAiChatMessage упадёт с 400
+ * (Marshmallow требует content_json как обязательное поле).
+ *
+ * Поддерживаемые форматы:
+ *   1. canonical:  {answer: {title, text, kpi, chart, ...}, session_id, meta}
+ *   2. legacy:     {text: '...'} | {content: '...'}
+ *   3. nl2sql:     {intent, data, ...} — собираем из intent + сериализованного data
+ *   4. fallback:   любой другой объект сериализуется в text
+ */
+function adaptAnalyzeResponse(raw: AiAnalyzeRawResponse): AiAnalyzeResponse {
+  // 1) caнoничный: answer уже структурированный AiAnswerBlocks.
+  if (
+    raw &&
+    typeof raw.answer === 'object' &&
+    raw.answer !== null &&
+    !Array.isArray(raw.answer)
+  ) {
+    return {
+      answer: raw.answer,
+      session_id: raw.session_id,
+      meta: raw.meta,
+    };
+  }
+
+  // 2) legacy: плоский text/content.
+  const flatText =
+    typeof raw?.text === 'string'
+      ? raw.text
+      : typeof raw?.content === 'string'
+        ? raw.content
+        : null;
+  if (flatText) {
+    return {
+      answer: { text: flatText },
+      session_id: raw.session_id,
+      meta: raw.meta,
+    };
+  }
+
+  // 3-4) Generic: NL2SQL-pipeline или незнакомый формат — сериализуем
+  // в text с обрезкой, чтобы не раздуть metadata DB.
+  const serialized = JSON.stringify(raw, null, 2);
+  const truncated =
+    serialized.length > 4000 ? `${serialized.slice(0, 4000)}…` : serialized;
+  return {
+    answer: {
+      title: typeof raw?.intent === 'string' ? raw.intent : 'Ответ AI',
+      text: truncated,
+    },
+    session_id: raw?.session_id,
+    meta: raw?.meta,
+  };
+}
+
+/**
  * Отправляет вопрос в ai-analytics. При отсутствии AI_BACKEND_URL
  * возвращает mock-ответ — frontend остаётся работоспособным без бекенда.
+ *
+ * `credentials: 'include'` намеренно не используется: ai-analytics CORS
+ * возвращает Access-Control-Allow-Origin: '*', что несовместимо с cookies
+ * (см. CORS spec). Аутентификация на стороне ai-analytics — через
+ * X-Session-ID header, а не Superset session cookie.
  */
 export async function analyzeQuestion(
   request: AiAnalyzeRequest,
@@ -164,22 +227,20 @@ export async function analyzeQuestion(
   const res = await fetch(`${base.replace(/\/$/, '')}/api/v1/analyze`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
     body: JSON.stringify(request),
   });
   if (!res.ok) {
     throw new Error(`ai-analytics ${res.status}: ${res.statusText}`);
   }
-  return (await res.json()) as AiAnalyzeResponse;
+  const raw = (await res.json()) as AiAnalyzeRawResponse;
+  return adaptAnalyzeResponse(raw);
 }
 
 export async function listAiActiveTasks(): Promise<AiActiveTask[]> {
   const base = resolveAiBackendUrl();
   if (!base) return [];
   try {
-    const res = await fetch(`${base.replace(/\/$/, '')}/api/v1/tasks`, {
-      credentials: 'include',
-    });
+    const res = await fetch(`${base.replace(/\/$/, '')}/api/v1/tasks`);
     if (!res.ok) return [];
     const body = (await res.json()) as { result?: AiActiveTask[] };
     return body.result ?? [];
