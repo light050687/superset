@@ -67,7 +67,7 @@ const Cell = styled.div`
   `};
 `;
 
-const DEFAULT_CELL_HEIGHT_FALLBACK = 80;
+const DEFAULT_CELL_HEIGHT_FALLBACK = 36;
 
 export const DashboardGuides: FC<DashboardGuidesProps> = ({
   isResizing,

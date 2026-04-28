@@ -84,24 +84,150 @@ Click here to learn more about [markdown formatting](https://bit.ly/1dQOfRK)`;
 
 const MARKDOWN_ERROR_MESSAGE = t('This markdown component has an error.');
 
+/* DS v2.0 — Markdown типографика по L-шкале (Desktop ≥1280px / 2K).
+   Источник: docs/audit-ds2 wave12. Scope: только `.dashboard-markdown`,
+   глобально не утекает. Шрифт текста — Manrope (var(--f)),
+   моноширинный для code/pre — JetBrains Mono (var(--m)).
+   Цвета через CSS-переменные DS: --ink (основной), --c-sky (ссылки),
+   --g100 (фон inline-code), --g600 (мета/blockquote). */
 const MarkdownStyles = styled.div`
   ${({ theme }) => css`
     &.dashboard-markdown {
       overflow: hidden;
-      color: ${theme.colorText};
+      color: var(--ink, ${theme.colorText});
+      font-family: var(--f, ${theme.fontFamily});
+
+      /* Body / абзацы / списки — 14/22, weight 400 */
+      p,
+      li,
+      dd,
+      dt {
+        font-family: var(--f, ${theme.fontFamily});
+        font-size: 14px;
+        line-height: 22px;
+        font-weight: 400;
+        color: var(--ink, ${theme.colorText});
+      }
+
+      p {
+        margin: 0 0 12px;
+      }
+
+      ul,
+      ol {
+        margin: 0 0 12px;
+        padding-left: 24px;
+      }
+
+      /* H1 = Page title — 28/34, weight 800, трекинг -0.03em.
+         UPPERCASE НЕ применяется (обычное написание). */
+      h1 {
+        font-family: var(--f, ${theme.fontFamily});
+        font-size: 28px;
+        line-height: 34px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: var(--ink, ${theme.colorText});
+        margin: 0 0 16px;
+      }
+
+      /* H2 = Section title — 20/24, weight 700, трекинг 0.02em.
+         UPPERCASE применяется опционально через .uppercase класс
+         в исходном markdown (по умолчанию обычное написание). */
+      h2 {
+        font-family: var(--f, ${theme.fontFamily});
+        font-size: 20px;
+        line-height: 24px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        color: var(--ink, ${theme.colorText});
+        margin: 0 0 12px;
+      }
+
+      /* H3 = Sub-section — 14/18, weight 700, трекинг 0.05em. */
+      h3 {
+        font-family: var(--f, ${theme.fontFamily});
+        font-size: 14px;
+        line-height: 18px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        color: var(--ink, ${theme.colorText});
+        margin: 0 0 8px;
+      }
 
       h4,
       h5,
       h6 {
+        font-family: var(--f, ${theme.fontFamily});
         font-weight: ${theme.fontWeightNormal};
+        color: var(--ink, ${theme.colorText});
+      }
+
+      h6 {
+        font-size: ${theme.fontSizeSM}px;
       }
 
       strong {
         font-weight: 600;
       }
 
-      h6 {
-        font-size: ${theme.fontSizeSM}px;
+      /* Ссылки — DS sky-акцент */
+      a,
+      a:visited {
+        color: var(--c-sky, ${theme.colorPrimary});
+        text-decoration: none;
+      }
+
+      a:hover,
+      a:focus-visible {
+        color: var(--c-sky, ${theme.colorPrimary});
+        text-decoration: underline;
+      }
+
+      a:focus-visible {
+        outline: 2px solid var(--c-sky, ${theme.colorPrimary});
+        outline-offset: 2px;
+      }
+
+      /* Inline code и блоки — JetBrains Mono 13/20 */
+      code,
+      pre,
+      kbd,
+      samp {
+        font-family: var(--m, ${theme.fontFamilyCode || 'monospace'});
+        font-size: 13px;
+        line-height: 20px;
+        font-weight: 400;
+      }
+
+      code {
+        background: var(--g100, ${theme.colorBgLayout});
+        color: var(--ink, ${theme.colorText});
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      pre {
+        background: var(--g100, ${theme.colorBgLayout});
+        color: var(--ink, ${theme.colorText});
+        padding: 12px 16px;
+        border-radius: 6px;
+        overflow-x: auto;
+        margin: 0 0 12px;
+      }
+
+      pre code {
+        background: transparent;
+        padding: 0;
+        border-radius: 0;
+      }
+
+      blockquote {
+        margin: 0 0 12px;
+        padding: 0 12px;
+        border-left: 3px solid var(--g100, ${theme.colorBorder});
+        color: var(--g600, ${theme.colorTextSecondary});
+        font-style: normal;
       }
 
       .dashboard-component-chart-holder {

@@ -87,6 +87,17 @@ interface ReportProps {
   dashboardName?: string;
   creationMethod: ReportCreationMethod;
   props: any;
+  /**
+   * Optional wrapClassName forwarded to the underlying AntD Modal —
+   * позволяет внешнему коду менять позиционирование/стили модалки
+   * (например, на DashboardSideRail переопределяем как bottom-sheet).
+   */
+  wrapClassName?: string;
+  /**
+   * Если false, AntD Modal не центрирует себя — внешние стили решают
+   * позицию (bottom-sheet drawer и т.п.). По умолчанию true (как было).
+   */
+  centered?: boolean;
 }
 
 const TEXT_BASED_VISUALIZATION_TYPES = [
@@ -122,6 +133,8 @@ function ReportModal({
   creationMethod,
   dashboardName,
   chartName,
+  wrapClassName,
+  centered = true,
 }: ReportProps) {
   const vizType = chart?.sliceFormData?.viz_type;
   const isChart = !!chart;
@@ -315,7 +328,8 @@ function ReportModal({
       title={wrappedTitle}
       footer={renderModalFooter}
       width="432"
-      centered
+      centered={centered}
+      wrapClassName={wrapClassName}
     >
       <StyledTopSection>
         <LabeledErrorBoundInput

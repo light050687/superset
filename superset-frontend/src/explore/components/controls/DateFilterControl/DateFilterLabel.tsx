@@ -68,7 +68,7 @@ const ContentStyleWrapper = styled.div`
 
     .ant-picker {
       padding: 4px 17px 4px;
-      border-radius: 4px;
+      border-radius: ${theme.borderRadius}px;
     }
 
     .ant-divider-horizontal {

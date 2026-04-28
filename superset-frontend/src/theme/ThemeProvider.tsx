@@ -147,7 +147,12 @@ function runThemeOverlayAnimation(
   // Overlay цвета СТАРОЙ темы + mask с iris-дыркой (растёт из точки клика).
   const overlay = document.createElement('div');
   overlay.className = 'ds2-theme-overlay';
-  overlay.style.background = from === 'dark' ? '#0f1114' : '#f3f3f3';
+  // DS v2.0: читаем --bg из CSS-переменных (SSOT). Hex fallback — safety net,
+  // если var ещё не доступна (FOUC до применения темы).
+  const cs = getComputedStyle(document.documentElement);
+  const bgVar = cs.getPropertyValue('--bg').trim();
+  overlay.style.background =
+    bgVar || (from === 'dark' ? '#0f1114' : '#f3f3f3');
   overlay.style.setProperty('--iris-x', `${point.x}px`);
   overlay.style.setProperty('--iris-y', `${point.y}px`);
   overlay.style.setProperty('--iris-max', `${maxRadius}px`);

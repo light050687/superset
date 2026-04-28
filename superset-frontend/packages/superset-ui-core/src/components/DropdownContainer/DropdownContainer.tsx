@@ -324,7 +324,7 @@ export const DropdownContainer = forwardRef(
                     width: 14px;
                   }
                   ::-webkit-scrollbar-thumb {
-                    border-radius: 9px;
+                    border-radius: 6px;
                     background-color: ${theme.colorFillSecondary};
                     border: 3px solid transparent;
                     background-clip: content-box;

@@ -18,7 +18,15 @@
  */
 import { LegendOrientation } from './types';
 
+// DS v2.0: дефолтный grid с симметричными отступами вместо «прижатого к краям»
+// 8% / 4% / 12% / 12% — даёт воздух меткам осей и легенде.
+// Конкретные плагины могут переопределить через spread:
+// `{ ...defaultGrid, ...padding }` или `{ ...defaultGrid, top: ... }`.
 export const defaultGrid = {
+  left: '8%',
+  right: '4%',
+  top: '12%',
+  bottom: '12%',
   containLabel: true,
 };
 

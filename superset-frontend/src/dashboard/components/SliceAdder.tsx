@@ -100,6 +100,10 @@ const KEYS_TO_SORT = {
 
 export const DEFAULT_SORT_KEY = 'changed_on';
 
+// react-window itemSize для виртуализированного списка карточек чартов
+// в side-panel "Charts". Это НЕ rowHeight DashboardGrid (тот = GRID_BASE_UNIT=8
+// в col-режиме, см. ChartHolder.resizeConfig.heightStep). AddSliceCard
+// содержит thumbnail 82px + paddings/margins/title/datasource ≈ 128px.
 const DEFAULT_CELL_HEIGHT = 128;
 
 const Controls = styled.div`

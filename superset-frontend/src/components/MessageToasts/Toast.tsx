@@ -55,7 +55,7 @@ const ToastContainer = styled.div`
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(255, 255, 255, 0.08);
+      background: ${theme.colorFillTertiary};
     }
 
     .anticon {
@@ -87,7 +87,7 @@ const ToastContainer = styled.div`
       transition: background 0.12s ease;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.08);
+        background: ${theme.colorFillTertiary};
       }
 
       .anticon svg {

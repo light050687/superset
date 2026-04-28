@@ -41,7 +41,7 @@ export const OptionControlContainer = styled.div<{
   font-size: ${({ theme }) => theme.fontSizeSM}px;
   height: ${({ theme }) => theme.sizeUnit * 6}px;
   background-color: ${({ theme }) => theme.colorBgLayout};
-  border-radius: 3px;
+  border-radius: ${({ theme }) => theme.borderRadius}px;
   cursor: ${({ withCaret }) => (withCaret ? 'pointer' : 'default')};
   :hover {
     background-color: ${({ theme }) => theme.colorPrimaryBgHover};
@@ -223,7 +223,7 @@ export const AddIconButton = styled.button`
   padding: 0;
   background-color: ${({ theme }) => theme.colorPrimaryText};
   border: none;
-  border-radius: 2px;
+  border-radius: ${({ theme }) => theme.borderRadius}px;
   cursor: pointer;
 
   :disabled {

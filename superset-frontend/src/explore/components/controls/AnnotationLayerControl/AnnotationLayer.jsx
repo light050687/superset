@@ -854,8 +854,10 @@ class AnnotationLayer extends PureComponent {
               if (useAutomatic) {
                 this.setState({ color: AUTOMATIC_COLOR });
               } else {
-                // Set to first theme color or black as fallback
-                this.setState({ color: colorScheme[0] || '#000000' });
+                // Fallback to DS 2.0 sky accent (#3B8BD9) — theme-agnostic and
+                // visible on both light/dark backgrounds. Avoids '#000000'
+                // which becomes invisible on dark theme.
+                this.setState({ color: colorScheme[0] || '#3B8BD9' });
               }
             }}
           />

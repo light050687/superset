@@ -45,9 +45,7 @@ const StyledToastPresenter = styled.div<VisualProps>(
     .toast {
       background: ${theme.colorBgSpotlight};
       border-radius: 16px;
-      box-shadow:
-        0 24px 64px rgba(0, 0, 0, 0.18),
-        0 4px 12px rgba(0, 0, 0, 0.06);
+      border: 1px solid ${theme.colorBorder};
       color: ${theme.colorTextLightSolid};
       opacity: 0;
       transform: scale(0.92);

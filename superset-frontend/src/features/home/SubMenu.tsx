@@ -48,13 +48,18 @@ const StyledHeader = styled.div<{ backgroundColor?: string }>`
   padding: ${({ theme }) => theme.sizeUnit * 2}px
     ${({ theme }) => theme.sizeUnit * 4}px;
   margin-bottom: ${({ theme }) => theme.sizeUnit * 4}px;
+  /* DS v2.0 — page title (Wave 17): 28px / 800 / Manrope / -0.03em.
+     Один заголовок страницы для CRUD list-views (Dashboards/Charts/etc.). */
   .header {
-    font-weight: ${({ theme }) => theme.fontWeightStrong};
+    font-family: var(--f, 'Manrope', 'Inter', Helvetica, Arial, sans-serif);
+    font-weight: 800;
     margin-right: ${({ theme }) => theme.sizeUnit * 3}px;
     text-align: left;
-    font-size: 18px;
+    font-size: 28px;
+    line-height: 34px;
+    letter-spacing: -0.03em;
+    color: var(--ink, ${({ theme }) => theme.colorText});
     display: inline-block;
-    line-height: ${({ theme }) => theme.sizeUnit * 9}px;
   }
   .nav-right {
     display: flex;

@@ -125,7 +125,7 @@ const Panel = styled.div<{ $pinned: boolean; $animateIn: boolean }>`
   -webkit-backdrop-filter: ${DS2_VARS.drawerFilter};
   border: 1px solid ${DS2_VARS.drawerBorder};
   border-radius: ${DS2_VARS.drawerRadius};
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+  box-shadow: ${DS2_VARS.drawerShadow};
   display: flex;
   flex-direction: column;
   z-index: 110;

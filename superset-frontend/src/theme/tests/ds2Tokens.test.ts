@@ -12,9 +12,6 @@
 import {
   DS2_DARK,
   DS2_DOCK,
-  DS2_GLASS_DARK,
-  DS2_GLASS_FILTER,
-  DS2_GLASS_LIGHT,
   DS2_LIGHT,
   DS2_MAGNIFY,
   DS2_PILL,
@@ -107,20 +104,18 @@ describe('DS 2.0 tokens', () => {
       expect(DS2_MAGNIFY.lift).toBeGreaterThan(0);
     });
 
-    it('DS2_GLASS: light и dark имеют одинаковые ключи (для useDs2 переключения)', () => {
-      expect(Object.keys(DS2_GLASS_LIGHT).sort()).toEqual(
-        Object.keys(DS2_GLASS_DARK).sort(),
-      );
-    });
-
-    it('DS2_GLASS_FILTER содержит blur и saturate для Liquid Glass эффекта', () => {
-      expect(DS2_GLASS_FILTER).toContain('blur');
-      expect(DS2_GLASS_FILTER).toContain('saturate');
-    });
-
-    it('DS2_VARS содержит новые glass/dock/pill переменные', () => {
+    it('DS2_VARS.glass* — все glass-токены через CSS-переменные (F-003 audit)', () => {
+      // Статические DS2_GLASS_LIGHT/DARK/FILTER удалены — теперь только var(--*).
       expect(DS2_VARS.glassBg).toBe('var(--glass-bg)');
+      expect(DS2_VARS.glassBgElev).toBe('var(--glass-bg-elev)');
+      expect(DS2_VARS.glassBorder).toBe('var(--glass-border)');
+      expect(DS2_VARS.glassShadow).toBe('var(--glass-shadow)');
+      expect(DS2_VARS.glassShadowElev).toBe('var(--glass-shadow-elev)');
+      expect(DS2_VARS.glassScrim).toBe('var(--glass-scrim)');
       expect(DS2_VARS.glassFilter).toBe('var(--glass-filter)');
+    });
+
+    it('DS2_VARS содержит новые dock/pill переменные', () => {
       expect(DS2_VARS.dockHeight).toBe('var(--dock-height)');
       expect(DS2_VARS.pillCompactW).toBe('var(--pill-compact-w)');
       expect(DS2_VARS.magnifyScale).toBe('var(--magnify-scale)');

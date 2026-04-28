@@ -22,6 +22,8 @@ import { MenuDotsDropdown } from '../../../Dropdown';
 import { IconOrientation } from '../../../Dropdown/types';
 import { Menu, MenuProps } from '../../../Menu';
 
+// DS v2.0 — flat-solid: dropdown-menu без теней, скругление 6px (control).
+
 /**
  * Props interface for Action Cell Renderer
  */
@@ -70,15 +72,14 @@ export interface ActionMenuProps {
   setVisible: (visible: boolean) => void;
 }
 
-const SHADOW =
-  'box-shadow: 0px 3px 6px -4px rgba(0, 0, 0, 0.12), 0px 9px 28px 8px rgba(0, 0, 0, 0.05)';
-const FILTER = 'drop-shadow(0px 6px 16px rgba(0, 0, 0, 0.08))';
-
 const StyledMenu = styled(Menu)`
-  box-shadow: ${SHADOW} !important;
-  filter: ${FILTER} !important;
-  border-radius: 2px !important;
-  -webkit-box-shadow: ${SHADOW} !important;
+  ${({ theme }) => `
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    filter: none !important;
+    border: 1px solid ${theme.colorBorder} !important;
+    border-radius: 6px !important;
+  `}
 `;
 
 export const appendDataToMenu = (

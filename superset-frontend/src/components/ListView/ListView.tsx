@@ -49,7 +49,7 @@ const ListViewStyles = styled.div`
 
     .superset-list-view {
       text-align: left;
-      border-radius: 4px 0;
+      border-radius: ${theme.borderRadius}px ${theme.borderRadius}px 0 0;
       margin: 0 ${theme.sizeUnit * 4}px;
 
       .header {

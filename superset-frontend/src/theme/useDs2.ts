@@ -16,9 +16,6 @@ import {
   DS2_DOCK,
   DS2_EASE,
   DS2_FONTS,
-  DS2_GLASS_DARK,
-  DS2_GLASS_FILTER,
-  DS2_GLASS_LIGHT,
   DS2_LIGHT,
   DS2_MAGNIFY,
   DS2_PILL,
@@ -26,9 +23,32 @@ import {
   DS2_SPACE,
   DS2_TYPE,
   DS2_VARS,
-  type Ds2GlassPalette,
   type Ds2Palette,
 } from './ds2Tokens';
+
+/**
+ * Палитра glass-материала (Liquid Glass) — все значения суть `var(--glass-*)`,
+ * реактивные на смену темы через CSS-переменные в `head_custom_extra.html`.
+ * Раньше существовали константы `DS2_GLASS_LIGHT/DARK` с rgba — удалены
+ * в рамках аудита DS v2.0 (F-003): glass теперь flat solid, см. SSOT.
+ */
+export interface Ds2GlassPalette {
+  bg: string;
+  bgElevated: string;
+  border: string;
+  shadow: string;
+  shadowElevated: string;
+  scrim: string;
+}
+
+const DS2_GLASS: Ds2GlassPalette = {
+  bg: DS2_VARS.glassBg,
+  bgElevated: DS2_VARS.glassBgElev,
+  border: DS2_VARS.glassBorder,
+  shadow: DS2_VARS.glassShadow,
+  shadowElevated: DS2_VARS.glassShadowElev,
+  scrim: DS2_VARS.glassScrim,
+};
 
 export type Ds2Mode = 'light' | 'dark';
 
@@ -79,8 +99,8 @@ export function useDs2(): Ds2Context {
   return {
     mode,
     palette: mode === 'dark' ? DS2_DARK : DS2_LIGHT,
-    glass: mode === 'dark' ? DS2_GLASS_DARK : DS2_GLASS_LIGHT,
-    glassFilter: DS2_GLASS_FILTER,
+    glass: DS2_GLASS,
+    glassFilter: DS2_VARS.glassFilter,
     dock: DS2_DOCK,
     pill: DS2_PILL,
     magnify: DS2_MAGNIFY,

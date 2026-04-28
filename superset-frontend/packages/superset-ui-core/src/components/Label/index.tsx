@@ -52,7 +52,7 @@ export function Label(props: LabelProps) {
     overflow: hidden;
     text-overflow: ellipsis;
     background-color: ${backgroundColor};
-    border-radius: 8px;
+    border-radius: 6px;
     border-color: ${borderColor};
     padding: 0.35em 0.8em;
     line-height: 1;

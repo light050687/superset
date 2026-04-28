@@ -53,6 +53,9 @@ export interface ModalProps {
   zIndex?: number;
   bodyStyle?: CSSProperties;
   openerRef?: React.RefObject<HTMLElement>;
+  /** AntD's wrapClassName — applied to the modal wrap container.
+   *  Используется для CSS-override позиции (например, превратить в bottom-sheet). */
+  wrapClassName?: string;
 }
 
 export interface StyledModalProps {

@@ -194,18 +194,28 @@ function Echart(
 
       const getEchartsTheme = (options: any) => {
         const antdTheme = theme;
+        // DS v2.0: Manrope (fontFamily) для категорий/текста,
+        // JetBrains Mono (fontFamilyCode) для чисел (оси, тултипы)
         const echartsTheme = {
           textStyle: {
             color: antdTheme.colorText,
             fontFamily: antdTheme.fontFamily,
           },
           title: {
-            textStyle: { color: antdTheme.colorText },
+            textStyle: {
+              color: antdTheme.colorText,
+              fontFamily: antdTheme.fontFamily,
+            },
           },
           legend: {
-            textStyle: { color: antdTheme.colorTextSecondary },
+            textStyle: {
+              color: antdTheme.colorText,
+              fontFamily: antdTheme.fontFamily,
+              fontSize: 13,
+            },
             pageTextStyle: {
               color: antdTheme.colorTextSecondary,
+              fontFamily: antdTheme.fontFamily,
             },
             pageIconColor: antdTheme.colorTextSecondary,
             pageIconInactiveColor: antdTheme.colorTextDisabled,
@@ -213,7 +223,11 @@ function Echart(
           },
           tooltip: {
             backgroundColor: antdTheme.colorTextBase,
-            textStyle: { color: antdTheme.colorBgContainer },
+            textStyle: {
+              color: antdTheme.colorBgContainer,
+              fontFamily: antdTheme.fontFamilyCode,
+              fontSize: 12,
+            },
             borderColor: 'transparent',
             borderWidth: 0,
             padding: [8, 12],
@@ -222,7 +236,10 @@ function Echart(
           },
           axisPointer: {
             lineStyle: { color: antdTheme.colorPrimary },
-            label: { color: antdTheme.colorText },
+            label: {
+              color: antdTheme.colorText,
+              fontFamily: antdTheme.fontFamilyCode,
+            },
           },
         } as any;
         if (options?.xAxis) {
@@ -231,6 +248,12 @@ function Echart(
             axisLabel: {
               color: antdTheme.colorTextSecondary,
               fontFamily: antdTheme.fontFamilyCode,
+              fontSize: 11,
+            },
+            nameTextStyle: {
+              color: antdTheme.colorTextSecondary,
+              fontFamily: antdTheme.fontFamilyCode,
+              fontSize: 11,
             },
             splitLine: {
               lineStyle: { color: antdTheme.colorSplit, type: 'dashed' },
@@ -243,6 +266,12 @@ function Echart(
             axisLabel: {
               color: antdTheme.colorTextSecondary,
               fontFamily: antdTheme.fontFamilyCode,
+              fontSize: 11,
+            },
+            nameTextStyle: {
+              color: antdTheme.colorTextSecondary,
+              fontFamily: antdTheme.fontFamilyCode,
+              fontSize: 11,
             },
             splitLine: {
               lineStyle: { color: antdTheme.colorSplit, type: 'dashed' },

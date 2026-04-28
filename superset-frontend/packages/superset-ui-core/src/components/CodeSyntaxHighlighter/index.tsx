@@ -110,7 +110,8 @@ export const CodeSyntaxHighlighter: React.FC<React.PropsWithChildren<CodeSyntaxH
       <pre
         style={{
           ...defaultCustomStyle,
-          fontFamily: 'monospace',
+          // DS v2.0: код через JetBrains Mono (theme.fontFamilyCode), а не голый monospace.
+          fontFamily: theme.fontFamilyCode,
           whiteSpace: 'pre-wrap',
           margin: 0,
         }}

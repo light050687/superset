@@ -31,13 +31,17 @@ import { Icons, Collapse } from '@superset-ui/core/components';
 
 const StyledHeader = styled.div`
   ${({ theme }) => css`
-    font-weight: ${theme.fontWeightStrong};
+    /* DS v2.0 — page title (Wave 17): 28px / 800 / Manrope / -0.03em. */
+    font-family: var(--f, 'Manrope', 'Inter', Helvetica, Arial, sans-serif);
+    font-weight: 800;
     text-align: left;
-    font-size: 18px;
+    font-size: 28px;
+    line-height: 34px;
+    letter-spacing: -0.03em;
+    color: var(--ink, ${theme.colorText});
     padding: ${theme.sizeUnit * 3}px;
     padding-left: ${theme.sizeUnit * 7}px;
     display: inline-block;
-    line-height: ${theme.sizeUnit * 9}px;
     width: 100%;
     background-color: ${theme.colorBgContainer};
     margin-bottom: ${theme.sizeUnit * 6}px;

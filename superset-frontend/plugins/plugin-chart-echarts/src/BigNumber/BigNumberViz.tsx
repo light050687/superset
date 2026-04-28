@@ -495,12 +495,14 @@ function BigNumberVis({
 
 const StyledBigNumberVis = styled(BigNumberVis)`
   ${({ theme }) => `
-    font-family: ${theme.fontFamily};
+    /* DS v2.0 — Manrope для текста, JetBrains Mono для подзаголовков */
+    font-family: var(--f, ${theme.fontFamily});
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
+    color: var(--ink, ${theme.colorText});
 
     &.no-trendline .subheader-line {
       padding-bottom: 0.3em;
@@ -520,35 +522,56 @@ const StyledBigNumberVis = styled(BigNumberVis)`
       }
     }
 
+    /* Kicker (timestamp) — JetBrains Mono для технического подзаголовка */
     .kicker {
       line-height: 1em;
       margin-bottom: ${theme.sizeUnit * 2}px;
+      font-family: var(--m, ${theme.fontFamily});
+      color: var(--g600, ${theme.colorTextSecondary});
+      letter-spacing: 0.02em;
     }
 
+    /* Metric name — Manrope */
     .metric-name {
       line-height: 1em;
       margin-bottom: ${theme.sizeUnit * 2}px;
+      font-family: var(--f, ${theme.fontFamily});
+      color: var(--g600, ${theme.colorTextSecondary});
+      font-weight: 500;
     }
 
+    /* Hero number — Manrope 800, tabular-nums, отрицательный letter-spacing */
     .header-line {
       position: relative;
       line-height: 1em;
       white-space: nowrap;
       margin-bottom:${theme.sizeUnit * 2}px;
+      font-family: var(--f, ${theme.fontFamily});
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink, ${theme.colorText});
       span {
         position: absolute;
         bottom: 0;
       }
     }
 
+    /* Subheader (сравнение/дельта) — JetBrains Mono для чисел */
     .subheader-line {
       line-height: 1em;
       margin-bottom: ${theme.sizeUnit * 2}px;
+      font-family: var(--m, ${theme.fontFamily});
+      font-variant-numeric: tabular-nums;
+      color: var(--g600, ${theme.colorTextSecondary});
     }
 
+    /* Subtitle (произвольный текст) — Manrope */
     .subtitle-line {
       line-height: 1em;
       margin-bottom: ${theme.sizeUnit * 2}px;
+      font-family: var(--f, ${theme.fontFamily});
+      color: var(--g600, ${theme.colorTextSecondary});
     }
 
     &.is-fallback-value {
