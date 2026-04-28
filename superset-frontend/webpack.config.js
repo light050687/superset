@@ -123,6 +123,9 @@ const plugins = [
     'process.env.REDUX_DEFAULT_MIDDLEWARE':
       process.env.REDUX_DEFAULT_MIDDLEWARE,
     'process.env.SCARF_ANALYTICS': JSON.stringify(process.env.SCARF_ANALYTICS),
+    'process.env.AI_BACKEND_URL': JSON.stringify(
+      process.env.AI_BACKEND_URL || '',
+    ),
   }),
 
   new CopyPlugin({
