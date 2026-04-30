@@ -137,6 +137,6 @@ CLAUDE.local.md
 .env.local
 PROJECT.md
 
-# NTFS junction to sibling my-plugins/ (see feedback_my_plugins_junction.md)
-my-plugins/
+# my-plugins/ теперь tracked в репо (физическая папка superset/my-plugins/).
+# Внутренние node_modules/lib build-кэш исключаются через my-plugins/.gitignore.
 .claude/

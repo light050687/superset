@@ -1,0 +1,43 @@
+import React from 'react';
+import { DetailQueryParams, DeltaFormat, AggregationType, ComparisonColorScheme } from './types';
+interface DetailModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    title: string;
+    headerValue: string;
+    queryParams: DetailQueryParams;
+    activeMode: 'a' | 'b';
+    aggregationType: AggregationType;
+    colorScheme1: ComparisonColorScheme;
+    colorScheme2: ComparisonColorScheme;
+    deltaFormat1: DeltaFormat;
+    deltaFormat2: DeltaFormat;
+    formatValue: (n: number) => string;
+    formatDelta: (n: number) => string;
+    hierarchyLabelPrimary: string;
+    hierarchyLabelSecondary: string;
+    enableComp1: boolean;
+    enableComp2: boolean;
+    comp1Label: string;
+    comp2Label: string;
+    colFact?: string;
+    colComp1?: string;
+    colDelta1?: string;
+    colComp2?: string;
+    colDelta2?: string;
+    formatComp1?: (n: number) => string;
+    formatComp2?: (n: number) => string;
+    formatDelta1?: (n: number) => string;
+    formatDelta2?: (n: number) => string;
+    showDelta1?: boolean;
+    showDelta2?: boolean;
+    topN: number;
+    pageSize: number;
+    isDarkMode: boolean;
+    mockModeEnabled?: boolean;
+    mockPreset?: string;
+    mockCustomJson?: string;
+}
+declare const _default: React.ComponentType<DetailModalProps>;
+export default _default;
+//# sourceMappingURL=DetailModal.d.ts.map

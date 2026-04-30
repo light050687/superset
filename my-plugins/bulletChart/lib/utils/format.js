@@ -1,0 +1,91 @@
+"use strict";
+/**
+ * Русский формат чисел (DS 2.0, ru-RU).
+ *
+ *   Тысячи: неразрывный пробел (\u00A0)
+ *   Десятичные: запятая
+ *   Валюта: ПОСЛЕ числа (1 234 ₽)
+ *   Отрицательные: минус U+2212 (−), не дефис
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.formatRussianSmart = formatRussianSmart;
+exports.formatRussianPlain = formatRussianPlain;
+exports.formatStoresCount = formatStoresCount;
+exports.formatDeltaPP = formatDeltaPP;
+exports.makeFormatters = makeFormatters;
+const RU = 'ru-RU';
+function ruNumber(value, fractionDigits) {
+    return new Intl.NumberFormat(RU, {
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
+    }).format(value);
+}
+/** «Умный» формат с авто-сокращением (тыс/млн/млрд). */
+function formatRussianSmart(value, decimals = -1, suffix = '') {
+    const abs = Math.abs(value);
+    const sign = value < 0 ? '\u2212' : '';
+    const sfx = suffix ? ` ${suffix}` : '';
+    if (abs >= 1000000000) {
+        const v = abs / 1000000000;
+        const d = decimals >= 0 ? decimals : abs >= 10000000000 ? 1 : 2;
+        return `${sign}${ruNumber(v, d)} млрд${sfx}`;
+    }
+    if (abs >= 1000000) {
+        const v = abs / 1000000;
+        const d = decimals >= 0 ? decimals : abs >= 100000000 ? 1 : 2;
+        return `${sign}${ruNumber(v, d)} млн${sfx}`;
+    }
+    if (abs >= 10000) {
+        const v = abs / 1000;
+        const d = decimals >= 0 ? decimals : abs >= 100000 ? 0 : 1;
+        return `${sign}${ruNumber(v, d)} тыс${sfx}`;
+    }
+    const d = decimals >= 0 ? decimals : 0;
+    return `${ruNumber(value, d)}${sfx}`;
+}
+/** Форматер значения без умного сокращения — для процентов и коротких чисел. */
+function formatRussianPlain(value, decimals = 2, suffix = '') {
+    const sfx = suffix ? `\u00A0${suffix}` : '';
+    return `${ruNumber(value, decimals)}${sfx}`;
+}
+/**
+ * Целочисленный форматер для количества (магазинов).
+ * Возвращает «101 магазин» / «220 магазинов» по правилам русского склонения.
+ */
+function formatStoresCount(n) {
+    const abs = Math.abs(Math.trunc(n));
+    const mod10 = abs % 10;
+    const mod100 = abs % 100;
+    let word;
+    if (mod100 >= 11 && mod100 <= 14)
+        word = 'магазинов';
+    else if (mod10 === 1)
+        word = 'магазин';
+    else if (mod10 >= 2 && mod10 <= 4)
+        word = 'магазина';
+    else
+        word = 'магазинов';
+    return `${ruNumber(abs, 0)} ${word}`;
+}
+/**
+ * Дельта в п.п. с выраженным знаком и unit-label (по умолчанию «п.п.»).
+ *   +0,27 п.п. / −0,24 п.п.
+ */
+function formatDeltaPP(value, decimals = 2, unitLabel = 'п.п.') {
+    if (value === 0)
+        return `0${unitLabel ? ` ${unitLabel}` : ''}`;
+    const sign = value > 0 ? '+' : '\u2212';
+    const abs = Math.abs(value);
+    const unit = unitLabel ? ` ${unitLabel}` : '';
+    return `${sign}${ruNumber(abs, decimals)}${unit}`;
+}
+function makeFormatters(cfg) {
+    const { decimals, suffix, unitLabel, autoRussian } = cfg;
+    const value = autoRussian
+        ? (n) => formatRussianSmart(n, decimals, suffix)
+        : (n) => formatRussianPlain(n, decimals, suffix);
+    const deltaPP = (n) => formatDeltaPP(n, decimals, unitLabel);
+    const integer = (n) => ruNumber(Math.trunc(n), 0);
+    return { value, deltaPP, integer };
+}
+//# sourceMappingURL=format.js.map
