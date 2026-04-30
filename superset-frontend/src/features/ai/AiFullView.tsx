@@ -539,6 +539,7 @@ export const AiFullView: FC<React.PropsWithChildren<AiFullViewProps>> = ({
         currentSessionId={currentSessionId}
         onSelectSession={handleSelectSession}
         onNewChat={handleNewChat}
+        onChanged={refresh}
       />
       <Panel role="dialog" aria-modal="true" aria-label={t('ИИ-аналитик')}>
       <SidePanelTab
