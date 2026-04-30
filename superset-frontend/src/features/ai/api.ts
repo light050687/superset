@@ -229,6 +229,10 @@ function adaptAnalyzeResponse(raw: AiAnalyzeRawResponse): AiAnalyzeResponse {
  * возвращает Access-Control-Allow-Origin: '*', что несовместимо с cookies
  * (см. CORS spec). Аутентификация на стороне ai-analytics — через
  * X-Session-ID header, а не Superset session cookie.
+ *
+ * TODO(blocked-on-devops): после фикса CORS whitelist в ai-analytics
+ * (см. docs/devops-tasks/ai-analytics-cors.md) вернуть `credentials: 'include'`
+ * в обоих fetch (analyze + tasks).
  */
 export async function analyzeQuestion(
   request: AiAnalyzeRequest,
