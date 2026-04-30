@@ -23,6 +23,7 @@ import type {
   AiAnalyzeRequest,
   AiAnalyzeResponse,
   AiAnswerBlocks,
+  AiAnswerKpi,
   AiChatFolder,
   AiChatMessage,
   AiChatSession,
@@ -152,6 +153,54 @@ export function isAiBackendConfigured(): boolean {
 }
 
 /**
+ * Извлекает до 4 KPI из markdown-текста.
+ *
+ * Ищет паттерны типа «**34 159 528,27 руб.**», «**63,5%**», «**21 354 158,25 ₽**»,
+ * «**12 шт.**» и берёт слово/фразу-предшественник как label. Использует
+ * positive lookbehind для гарантии что число — внутри **bold** разметки.
+ *
+ * Возвращает [] если ничего не найдено — родитель должен fallback на
+ * собственный kpi[] от backend если он есть.
+ */
+function extractKpisFromMarkdown(md: string): AiAnswerKpi[] {
+  if (!md || typeof md !== 'string') return [];
+  const result: AiAnswerKpi[] = [];
+  const seen = new Set<string>();
+
+  // Группа 1 — число (с разделителями), группа 2 — единица.
+  // Локаль: пробел/неразрывный пробел / точка как тысячный, запятая/точка
+  // как десятичный. Поддержка отрицательных чисел для дельт.
+  const numberRe =
+    /\*\*(-?\d[\d\s .,]*?)\s*(руб\.?|₽|%|шт\.?|млн|тыс\.?|тыс|млрд|ед\.?)\*\*/g;
+
+  let match: RegExpExecArray | null;
+  // eslint-disable-next-line no-cond-assign
+  while ((match = numberRe.exec(md)) && result.length < 4) {
+    const [, rawValue, unit] = match;
+    const value = `${rawValue.trim()} ${unit}`.trim();
+    if (seen.has(value)) continue;
+    seen.add(value);
+
+    // Подбираем label из текста перед `**`. Берём 30 предшествующих символов,
+    // ищем последнее слово/фразу — обычно это «составил», «потери:» и т.п.
+    const before = md.slice(Math.max(0, match.index - 60), match.index);
+    const labelMatch = before.match(/[«"'„]([^«"'„]+?)[»"'"]\s*[—:-]?\s*$/);
+    let label: string;
+    if (labelMatch) {
+      label = labelMatch[1].trim();
+    } else {
+      // Fallback — последнее слово/2-3 слова перед числом.
+      const words = before.split(/[\s,;:.\-—]+/).filter(Boolean);
+      label = words.slice(-2).join(' ').trim();
+      if (!label || label.length < 3) label = 'Показатель';
+    }
+
+    result.push({ value, label });
+  }
+  return result;
+}
+
+/**
  * Нормализует сырой ответ ai-analytics (variability across pipelines)
  * в каноничный {answer: AiAnswerBlocks}. Гарантирует, что answer
  * всегда определён — иначе createAiChatMessage упадёт с 400
@@ -162,6 +211,9 @@ export function isAiBackendConfigured(): boolean {
  *   2. legacy:     {text: '...'} | {content: '...'}
  *   3. nl2sql:     {intent, data, ...} — собираем из intent + сериализованного data
  *   4. fallback:   любой другой объект сериализуется в text
+ *
+ * Если у answer нет своих kpi[] — пытаемся извлечь из markdown через
+ * extractKpisFromMarkdown.
  */
 function adaptAnalyzeResponse(raw: AiAnalyzeRawResponse): AiAnalyzeResponse {
   // 1) Каноничный: answer уже структурированный AiAnswerBlocks.
@@ -171,8 +223,17 @@ function adaptAnalyzeResponse(raw: AiAnalyzeRawResponse): AiAnalyzeResponse {
     raw.answer !== null &&
     !Array.isArray(raw.answer)
   ) {
+    const answer = raw.answer;
+    // Если backend не вернул kpi, но есть markdown-text — попробуем извлечь.
+    if (
+      (!answer.kpi || answer.kpi.length === 0) &&
+      typeof answer.text === 'string'
+    ) {
+      const extracted = extractKpisFromMarkdown(answer.text);
+      if (extracted.length > 0) answer.kpi = extracted;
+    }
     return {
-      answer: raw.answer,
+      answer,
       session_id: raw.session_id,
       meta: raw.meta,
     };
@@ -187,6 +248,8 @@ function adaptAnalyzeResponse(raw: AiAnalyzeRawResponse): AiAnalyzeResponse {
     if (Array.isArray(raw.rawData) && raw.rawData.length > 0) {
       blocks.table = { rows: raw.rawData };
     }
+    const extracted = extractKpisFromMarkdown(raw.message);
+    if (extracted.length > 0) blocks.kpi = extracted;
     return {
       answer: blocks,
       session_id: raw.session_id,
