@@ -165,25 +165,16 @@ Frontend ожидает один из форматов от `POST /api/v1/analyz
 ### Cube SQL API
 
 Cube.dev предоставляет PostgreSQL-совместимый SQL API. Подключается
-как обычный Postgres:
+в Superset как обычный Postgres через **внешний endpoint** (DevOps
+настроил выход наружу через k8s-ingress / NodePort):
 
 ```
-postgresql+psycopg2://pguser:****@cube.bi-platform:5432/gold
+postgresql+psycopg2://pguser:****@<cube-host>:<port>/gold
 ```
 
-⚠️ Хост `cube.bi-platform` — внутренний k8s DNS. Локальный Docker его
-не видит. Workaround:
-
-```bash
-# В отдельном окне:
-kubectl -n bi-platform port-forward svc/cube 5432:5432
-
-# В Superset Database Connections:
-postgresql+psycopg2://pguser:****@host.docker.internal:5432/gold
-```
-
-Постоянное решение — `docs/devops-tasks/cube-sql-ingress.md`
-(NodePort/TCP-ingress).
+Конкретные `<cube-host>:<port>` и креды (`CUBEJS_SQL_USER`,
+`CUBEJS_SQL_PASSWORD`) — у DevOps team. Подключение делается через
+Superset → Settings → Database Connections → + Database → PostgreSQL.
 
 ### StarRocks
 
@@ -310,6 +301,5 @@ docker compose down -v
 ## Связанные документы
 
 - `docs/devops-tasks/ai-analytics-cors.md` — CORS whitelist для AI backend
-- `docs/devops-tasks/cube-sql-ingress.md` — SQL API Cube наружу
 - `CLAUDE.md` (корень) — правила разработки + дизайн-система DS 2.0
 - `superset/CLAUDE.md` — Apache Superset upstream contracts

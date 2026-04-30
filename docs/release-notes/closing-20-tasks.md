@@ -38,7 +38,7 @@ DevOps (готовы код-патчи и инструкции).
 | 11 | Pre-commit hooks — авто-install в bootstrap | `2d3c2f6d64` |
 | 12 | CI smoke-build workflow для feature/* веток | `24a9dba906` |
 | 13 | `docs/setup.md` — comprehensive guide | `a4d6a5b8e0` |
-| 14 | Cube SQL ingress task для DevOps (docs) | `1f3a5109d6` 🚧 |
+| 14 | Cube SQL API наружу — ✅ закрыт DevOps'ом, Cube подключен | `1f3a5109d6` ✅ |
 | 15 | `AiSidePanel` UI CRUD — папки и сессии | `10b8cef484` |
 
 ## ✅ P3 — Полирование (5/5)
@@ -51,7 +51,7 @@ DevOps (готовы код-патчи и инструкции).
 | 19 | Storybook stories для AI компонентов | `53cfeec5fd` |
 | 20 | Dark mode AI-chart через CSS-vars + MutationObserver | `e553f67e62` |
 
-## 🚧 BLOCKED on DevOps (3/20)
+## 🚧 BLOCKED on DevOps (2/20)
 
 ### #3 Корп-CA сертификат
 
@@ -70,14 +70,11 @@ Go-кодом и тест-командой curl.
 **Нужно:** AI/Backend команда правит chi/cors конфиг (whitelist + AllowCredentials).
 После этого — отдельный коммит вернёт `credentials: 'include'` в Superset.
 
-### #14 Cube SQL API наружу
+### #14 Cube SQL API наружу — ✅ ЗАКРЫТО
 
-**Готово:** `docs/devops-tasks/cube-sql-ingress.md` с тремя вариантами
-(NodePort / TCP-ingress / Tunnel) + security-замечания.
-
-**Нужно:** k8s admin создаёт Service type=NodePort или конфигурирует
-TCP-ingress для `cube.bi-platform:5432`. После — все разработчики
-подключают Cube напрямую без `kubectl port-forward`.
+DevOps настроил внешний endpoint для Cube SQL API. Cube подключен в
+Superset, AI-чат отвечает с реальными данными. Документ
+`docs/devops-tasks/cube-sql-ingress.md` удалён как устаревший.
 
 ## Что улучшилось
 
