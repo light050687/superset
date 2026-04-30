@@ -1,0 +1,100 @@
+# ─────────────────────────────────────────────────────────────────────
+# Smoke-build для feature/* веток.
+#
+# Стандартные workflow форка (superset-frontend.yml, docker.yml,
+# superset-python-unittest.yml) запускаются только на master и
+# release-ветках. Feature-ветки пушатся без CI — регрессии всплывают
+# поздно. Этот workflow проверяет, что:
+#
+#   1. Frontend билдится (npm run build) — основной regression-сигнал
+#   2. Type-check проходит (tsc --noEmit) — информационный, не блокирует
+#
+# На fix/* и release-* — те же шаги, чтобы маленькие коммиты
+# в release-ветки тоже проверялись.
+# ─────────────────────────────────────────────────────────────────────
+name: Frontend Smoke Build (feature)
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'fix/**'
+  pull_request:
+    branches:
+      - 'feature/**'
+      - 'fix/**'
+      - 'main'
+      - 'master'
+
+# Не запускать дубль для одной ветки если идёт несколько push'ей подряд.
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: npm run build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'superset-frontend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: superset-frontend
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
+        run: npm ci --legacy-peer-deps
+
+      - name: Build production bundle
+        working-directory: superset-frontend
+        env:
+          NODE_OPTIONS: --max_old_space_size=8192
+          # AI_BACKEND_URL пустой — bundle получит fallback на mock-режим.
+          # Реальный URL — runtime через bootstrap или build-arg на проде.
+          AI_BACKEND_URL: ''
+        run: npm run build
+
+      - name: Type-check (informational)
+        working-directory: superset-frontend
+        # `|| true` — TS debt не должен блокировать смоук.
+        # Полная проверка через STRICT_TS_CHECK=1 — отдельной задачей,
+        # после полной чистки долга.
+        run: npx tsc --noEmit -p tsconfig.json || true
+
+  ts-strict:
+    name: tsc --noEmit (strict, advisory)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    # Не блокирует mergeability — даёт сигнал в PR ревью.
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'superset-frontend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: superset-frontend
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+        run: npm ci --legacy-peer-deps
+
+      - name: tsc --noEmit
+        working-directory: superset-frontend
+        run: npx tsc --noEmit -p tsconfig.json
