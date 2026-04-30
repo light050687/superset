@@ -74,7 +74,7 @@ const makeUser = (): BootstrapUser => ({
   roles: {},
 });
 
-const Harness: React.FC<{ open: boolean; onClose?: () => void }> = ({
+const Harness: React.FC<React.PropsWithChildren<{ open: boolean; onClose?: () => void }>> = ({
   open,
   onClose = () => {},
 }) => {

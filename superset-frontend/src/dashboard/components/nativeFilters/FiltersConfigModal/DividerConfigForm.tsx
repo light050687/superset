@@ -33,7 +33,7 @@ const Container = styled.div`
   `}
 `;
 
-const DividerConfigForm: FC<Props> = ({ componentId, divider }) => (
+const DividerConfigForm: FC<React.PropsWithChildren<Props>> = ({ componentId, divider }) => (
   <Container>
     <FormItem
       initialValue={divider ? divider.title : ''}

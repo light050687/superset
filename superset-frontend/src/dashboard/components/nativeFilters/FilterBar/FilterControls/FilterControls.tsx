@@ -47,6 +47,7 @@ import {
   useSelectFiltersInScope,
 } from 'src/dashboard/components/nativeFilters/state';
 import { FilterBarOrientation, RootState } from 'src/dashboard/types';
+import type { CrossFilterIndicator } from 'src/dashboard/components/nativeFilters/selectors';
 import {
   DropdownContainer,
   type DropdownRef as DropdownContainerRef,
@@ -70,7 +71,7 @@ type FilterControlsProps = {
   isMobile?: boolean;
 };
 
-const FilterControls: FC<FilterControlsProps> = ({
+const FilterControls: FC<React.PropsWithChildren<FilterControlsProps>> = ({
   dataMaskSelected,
   onFilterSelectionChange,
   clearAllTriggers,
@@ -189,12 +190,17 @@ const FilterControls: FC<FilterControlsProps> = ({
   }, [overflowedCrossFilters, overflowedFiltersInScope]);
 
   const rendererCrossFilter = useCallback(
-    (crossFilter, orientation, last) => (
+    (
+      crossFilter: CrossFilterIndicator,
+      orientation: FilterBarOrientation,
+      last: CrossFilterIndicator | undefined,
+    ) => (
       <CrossFilter
         filter={crossFilter}
         orientation={orientation}
         last={
           filtersInScope.length > 0 &&
+          !!last &&
           `${last.name}${last.emitterId}` ===
             `${crossFilter.name}${crossFilter.emitterId}`
         }

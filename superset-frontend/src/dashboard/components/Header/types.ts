@@ -17,9 +17,7 @@
  * under the License.
  */
 
-import { Layout } from 'src/dashboard/types';
 import { ChartState } from 'src/explore/types';
-import { AlertObject } from 'src/features/alerts/types';
 
 interface DashboardInfo {
   id: number;
@@ -34,42 +32,32 @@ interface DashboardInfo {
   } | null;
 }
 
+/**
+ * Props для useHeaderActionsMenu (gear-меню в Header'е дашборда).
+ *
+ * Save / Share / Email report / Auto-refresh interval перенесены на
+ * DashboardSideRail (popover'ы над dock'ом), поэтому связанные пропы
+ * (refreshFrequency/setRefreshFrequency, layout/expandedSlices/colorScheme,
+ * userCanShare/userCanSave, showReportModal/setCurrentReportDeleting,
+ * dataMask, refreshLimit/refreshWarning, lastModifiedTime, onSave,
+ * shouldPersistRefreshFrequency, startPeriodicRender) удалены.
+ */
 export interface HeaderDropdownProps {
   addSuccessToast: (msg: string) => void;
   addDangerToast: () => void;
   customCss: string;
-  colorNamespace?: string;
-  colorScheme?: string;
   dashboardId: number;
   dashboardInfo: DashboardInfo;
   dashboardTitle: string;
   editMode: boolean;
-  expandedSlices: Record<number, boolean>;
   forceRefreshAllCharts: () => void;
-  hasUnsavedChanges: boolean;
   isLoading: boolean;
-  layout: Layout;
   onChange: () => void;
-  onSave: () => void;
-  refreshFrequency: number;
-  setRefreshFrequency: (refreshInterval: number, isPersistent: boolean) => void;
-  shouldPersistRefreshFrequency: boolean;
   showPropertiesModal: () => void;
-  startPeriodicRender: (interval: number) => void;
   updateCss: (css: string) => void;
-  userCanEdit: boolean;
-  userCanSave: boolean;
-  userCanShare: boolean;
   userCanCurate: boolean;
   manageEmbedded: () => void;
-  dataMask: any;
-  lastModifiedTime: number;
   logEvent: () => void;
-  refreshLimit: number;
-  refreshWarning: string;
-  directPathToChild: string[];
-  showReportModal: () => void;
-  setCurrentReportDeleting: (alert: AlertObject | null) => void;
 }
 
 export interface HeaderProps {

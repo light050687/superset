@@ -25,7 +25,7 @@ export interface FCBProps {
   children?: ReactNode;
 }
 
-export const FilterConfigurationLink: FC<FCBProps> = ({
+export const FilterConfigurationLink: FC<React.PropsWithChildren<FCBProps>> = ({
   onClick,
   children,
 }) => (

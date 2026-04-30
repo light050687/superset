@@ -50,10 +50,11 @@ const defaultProps = {
 };
 
 interface LoadingProps {
-  error: { toString(): string };
+  error?: unknown;
+  isLoading: boolean;
 }
 
-interface LoadedModules {
+interface LoadedModules extends Record<string, unknown> {
   Chart: ChartType;
   transformProps: TransformProps;
 }
@@ -213,11 +214,13 @@ export default class SuperChartCore extends PureComponent<Props, {}> {
     const { error } = loadingProps;
 
     if (error) {
+      const message =
+        error instanceof Error ? error.message : String(error ?? '');
       return (
         <div className="alert alert-warning" role="alert">
           <strong>{t('ERROR')}</strong>&nbsp;
           <code>chartType=&quot;{chartType}&quot;</code> &mdash;
-          {error.toString()}
+          {message}
         </div>
       );
     }

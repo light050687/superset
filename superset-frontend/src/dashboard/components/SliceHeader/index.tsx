@@ -74,8 +74,14 @@ const CrossFilterIcon = styled(Icons.ApartmentOutlined)`
 
 const ChartHeaderStyles = styled.div`
   ${({ theme }) => css`
-    font-size: ${theme.fontSizeLG}px;
-    font-weight: ${theme.fontWeightStrong};
+    /* DS v2.0 section title: 14/18, 700, UPPERCASE, letter-spacing 0.05em */
+    font-family: var(--f, ${theme.fontFamily});
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink, ${theme.colorText});
     margin-bottom: ${theme.sizeUnit}px;
     display: flex;
     max-width: 100%;
@@ -90,6 +96,20 @@ const ChartHeaderStyles = styled.div`
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
+
+      /* Inherit DS section title typography into EditableTitle (display + input) */
+      & .editable-title,
+      & .editable-title input,
+      & .editable-title [contenteditable],
+      & a {
+        font-family: inherit;
+        font-size: inherit;
+        line-height: inherit;
+        font-weight: inherit;
+        letter-spacing: inherit;
+        text-transform: inherit;
+        color: inherit;
+      }
 
       & > span.ant-tooltip-open {
         display: inline;

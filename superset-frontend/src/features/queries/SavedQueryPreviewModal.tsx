@@ -58,9 +58,7 @@ interface SavedQueryPreviewModalProps extends ToastProps {
   show: boolean;
 }
 
-const SavedQueryPreviewModal: FunctionComponent<
-  SavedQueryPreviewModalProps
-> = ({
+const SavedQueryPreviewModal: FunctionComponent<React.PropsWithChildren<SavedQueryPreviewModalProps>> = ({
   fetchData,
   onHide,
   openInSqlLab,

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { useResizeDetector } from 'react-resize-detector';
 
 export default function useResizeDetectorByObserver() {
@@ -29,6 +29,16 @@ export default function useResizeDetectorByObserver() {
     if (ref.current) {
       const { width, height } = ref.current.getBoundingClientRect?.() || {};
       setChartPanelSize({ width, height });
+    }
+  }, []);
+  // Synchronously seed size from the DOM on first paint so chart gets a
+  // non-zero width/height even if the downstream ResizeObserver never fires
+  // (observed in the AntD v6 + nested Tabs + CSSMotion tree).
+  useLayoutEffect(() => {
+    if (ref.current) {
+      const { width: w, height: h } =
+        ref.current.getBoundingClientRect?.() || {};
+      if (w || h) setChartPanelSize({ width: w, height: h });
     }
   }, []);
   const { ref: observerRef } = useResizeDetector({

@@ -22,7 +22,7 @@ import { Tag } from 'src/components';
 import { FC } from 'react';
 import { LayerTreeItemProps } from './types';
 
-export const LayerTreeItem: FC<LayerTreeItemProps> = ({
+export const LayerTreeItem: FC<React.PropsWithChildren<LayerTreeItemProps>> = ({
   layerConf,
   onEditClick = () => {},
   onRemoveClick = () => {},

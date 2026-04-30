@@ -147,7 +147,7 @@ interface DatasetListProps {
   };
 }
 
-const DatasetList: FunctionComponent<DatasetListProps> = ({
+const DatasetList: FunctionComponent<React.PropsWithChildren<DatasetListProps>> = ({
   addDangerToast,
   addSuccessToast,
   user,
@@ -321,7 +321,7 @@ const DatasetList: FunctionComponent<DatasetListProps> = ({
             titleLink = (
               // exploreUrl can be a link to Explore or an external link
               // in the first case use SPA routing, else use HTML anchor
-              <GenericLink to={exploreURL}>{datasetTitle}</GenericLink>
+              (<GenericLink to={exploreURL}>{datasetTitle}</GenericLink>)
             );
           }
           try {

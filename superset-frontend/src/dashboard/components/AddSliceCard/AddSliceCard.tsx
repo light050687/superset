@@ -77,11 +77,11 @@ const TruncatedTextWithTooltip = ({
   );
 };
 
-const MetadataItem: FC<{
+const MetadataItem: FC<React.PropsWithChildren<{
   label: ReactNode;
   value: ReactNode;
   tooltipText?: string;
-}> = ({ label, value, tooltipText }) => (
+}>> = ({ label, value, tooltipText }) => (
   <div
     css={(theme: Theme) => css`
       font-size: ${theme.fontSizeSM}px;
@@ -113,10 +113,10 @@ const MetadataItem: FC<{
   </div>
 );
 
-const SliceAddedBadgePlaceholder: FC<{
+const SliceAddedBadgePlaceholder: FC<React.PropsWithChildren<{
   showThumbnails?: boolean;
   placeholderRef: (element: HTMLDivElement) => void;
-}> = ({ showThumbnails, placeholderRef }) => (
+}>> = ({ showThumbnails, placeholderRef }) => (
   <div
     ref={placeholderRef}
     css={(theme: Theme) => css`
@@ -141,7 +141,7 @@ const SliceAddedBadgePlaceholder: FC<{
   </div>
 );
 
-const SliceAddedBadge: FC<{ placeholder?: HTMLDivElement }> = ({
+const SliceAddedBadge: FC<React.PropsWithChildren<{ placeholder?: HTMLDivElement }>> = ({
   placeholder,
 }) => (
   <div
@@ -167,7 +167,7 @@ const SliceAddedBadge: FC<{ placeholder?: HTMLDivElement }> = ({
   </div>
 );
 
-const AddSliceCard: FC<{
+const AddSliceCard: FC<React.PropsWithChildren<{
   datasourceUrl?: string;
   datasourceName?: string;
   innerRef?: RefObject<HTMLDivElement>;
@@ -177,7 +177,7 @@ const AddSliceCard: FC<{
   style?: CSSProperties;
   thumbnailUrl?: string | null;
   visType: string;
-}> = ({
+}>> = ({
   datasourceUrl,
   datasourceName = '-',
   innerRef,
@@ -190,6 +190,10 @@ const AddSliceCard: FC<{
 }) => {
   const showThumbnails = isFeatureEnabled(FeatureFlag.Thumbnails);
   const [sliceAddedBadge, setSliceAddedBadge] = useState<HTMLDivElement>();
+  // Бэйдж «Добавлено» рисуется ТОЛЬКО когда isSelected. Иначе stale-ref
+  // на отвалившуюся placeholder-ноду оставляет бейдж видимым после
+  // удаления чарта из дашборда.
+  const effectivePlaceholder = isSelected ? sliceAddedBadge : undefined;
   const { mountedPluginMetadata } = usePluginContext();
   const vizName = useMemo(
     () => mountedPluginMetadata[visType]?.name || t('Unknown type'),
@@ -296,7 +300,7 @@ const AddSliceCard: FC<{
           </div>
         </div>
       </div>
-      <SliceAddedBadge placeholder={sliceAddedBadge} />
+      <SliceAddedBadge placeholder={effectivePlaceholder} />
     </div>
   );
 };

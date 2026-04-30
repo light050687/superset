@@ -134,7 +134,7 @@ const AvatarCircle = styled.span`
   justify-content: center;
 `;
 
-export const MobileNav: FC<MobileNavProps> = ({
+export const MobileNav: FC<React.PropsWithChildren<MobileNavProps>> = ({
   userInitials = '',
   onOpenAi,
   onOpenSettings,

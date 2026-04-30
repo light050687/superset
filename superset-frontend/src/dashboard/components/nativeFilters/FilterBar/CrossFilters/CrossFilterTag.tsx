@@ -47,8 +47,13 @@ const StyledCrossFilterColumn = styled('span')`
 
 const StyledTag = styled(Tag)`
   ${({ theme }) => `
-    border: 1px solid ${theme.colorBorder};
-    border-radius: 2px;
+    /* DS v2.0: cross-filter tag — синий индикатор активной кросс-фильтрации (--c-sky) */
+    border: 2px solid ${theme.colorPrimary};
+    border-radius: ${theme.borderRadius}px;
+    /* DS v2.0: touch target min 36px (sizeUnit * 9) */
+    min-height: ${theme.sizeUnit * 9}px;
+    display: inline-flex;
+    align-items: center;
     .anticon-close {
       vertical-align: middle;
     }

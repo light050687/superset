@@ -32,3 +32,17 @@ class CatalogFolderItemInvalidObjectError(SupersetException):
     message = _(
         "Объект с таким типом и id не существует в каталоге — добавление отклонено."
     )
+
+
+class CatalogFolderCannotDeleteDefaultError(SupersetException):
+    message = _(
+        "Дефолтную папку «Без департамента» удалить нельзя — в неё попадают все "
+        "объекты, не привязанные к другим папкам."
+    )
+
+
+class CatalogFolderDefaultAlreadyExistsError(SupersetException):
+    message = _(
+        "Дефолтная папка уже существует. Одновременно может быть только одна "
+        "папка с флагом is_default."
+    )

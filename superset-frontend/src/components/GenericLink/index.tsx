@@ -17,35 +17,39 @@
  * under the License.
  */
 
-import { PropsWithoutRef, RefAttributes } from 'react';
+import { forwardRef } from 'react';
 import { Link, LinkProps } from 'react-router-dom';
 import { isUrlExternal, parseUrl } from 'src/utils/urlUtils';
 
-export const GenericLink = <S,>({
-  to,
-  component,
-  replace,
-  innerRef,
-  children,
-  ...rest
-}: PropsWithoutRef<LinkProps<S>> & RefAttributes<HTMLAnchorElement>) => {
-  if (typeof to === 'string' && isUrlExternal(to)) {
+// forwardRef so AntD Tooltip triggers can attach a ref to the underlying
+// anchor element (AntD v6 Trigger uses @rc-component/trigger which forwards
+// refs to the child).
+export const GenericLink = forwardRef<HTMLAnchorElement, LinkProps>(
+  ({ to, component, replace, innerRef, children, ...rest }, ref) => {
+    if (typeof to === 'string' && isUrlExternal(to)) {
+      return (
+        <a
+          data-test="external-link"
+          href={parseUrl(to)}
+          ref={ref}
+          {...rest}
+        >
+          {children}
+        </a>
+      );
+    }
     return (
-      <a data-test="external-link" href={parseUrl(to)} {...rest}>
+      <Link
+        data-test="internal-link"
+        to={to}
+        component={component}
+        replace={replace}
+        innerRef={innerRef ?? ref ?? undefined}
+        {...rest}
+      >
         {children}
-      </a>
+      </Link>
     );
-  }
-  return (
-    <Link
-      data-test="internal-link"
-      to={to}
-      component={component}
-      replace={replace}
-      innerRef={innerRef}
-      {...rest}
-    >
-      {children}
-    </Link>
-  );
-};
+  },
+);
+GenericLink.displayName = 'GenericLink';

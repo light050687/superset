@@ -95,11 +95,11 @@ const ColumnStyles = styled.div`
       &.droptarget-edge {
         position: absolute;
         z-index: ${EMPTY_CONTAINER_Z_INDEX};
-        &:first-child {
+        &:first-of-type {
           inset-block-start: 0;
         }
       }
-      &:first-child:not(.droptarget-edge) {
+      &:first-of-type:not(.droptarget-edge) {
         position: absolute;
         z-index: ${EMPTY_CONTAINER_Z_INDEX};
         width: 100%;
@@ -191,6 +191,7 @@ const Column = props => {
         maxWidthMultiple={
           availableColumnCount + (columnComponent.meta.width || 0)
         }
+        gridSnapColumnBase={columnWidth}
         onResizeStart={onResizeStart}
         onResize={onResize}
         onResizeStop={onResizeStop}

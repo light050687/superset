@@ -62,12 +62,13 @@ import { useFilterOutlined } from '../useFilterOutlined';
 const HEIGHT = 32;
 
 // Overrides superset-ui height with min-height
+// Transient props ($-prefixed) keep React from forwarding them to the DOM.
 const StyledDiv = styled.div<{
-  orientation: FilterBarOrientation;
-  overflow: boolean;
+  $orientation: FilterBarOrientation;
+  $overflow: boolean;
 }>`
-  padding-bottom: ${({ theme, orientation, overflow }) =>
-    orientation === FilterBarOrientation.Horizontal && !overflow
+  padding-bottom: ${({ theme, $orientation, $overflow }) =>
+    $orientation === FilterBarOrientation.Horizontal && !$overflow
       ? 0
       : (theme?.sizeUnit ?? 4)}px;
 
@@ -92,7 +93,7 @@ const useShouldFilterRefresh = () => {
   return !isDashboardRefreshing && isFilterRefreshing;
 };
 
-const FilterValue: FC<FilterControlProps> = ({
+const FilterValue: FC<React.PropsWithChildren<FilterControlProps>> = ({
   dataMaskSelected,
   filter,
   onFilterSelectionChange,
@@ -363,8 +364,8 @@ const FilterValue: FC<FilterControlProps> = ({
   return (
     <StyledDiv
       data-test="form-item-value"
-      orientation={orientation}
-      overflow={overflow}
+      $orientation={orientation}
+      $overflow={overflow}
     >
       {isLoading ? (
         <Loading position="inline-centered" />

@@ -1,0 +1,55 @@
+{
+  "name": "superset-plugin-chart-metric-time-series",
+  "version": "0.1.0",
+  "description": "Writeoffs Timeseries — multi-mode time-series chart (line / stack-bar / stack-area) with fact/plan/PY series, category breakdown, brush selection, drill-down, and ₽/% toggle. Design System v2.0.",
+  "sideEffects": false,
+  "main": "lib/index.js",
+  "module": "esm/index.js",
+  "files": [
+    "esm",
+    "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [
+    "superset",
+    "chart",
+    "timeseries",
+    "writeoffs",
+    "losses"
+  ],
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "npm run build-cjs && npm run build-esm",
+    "build-cjs": "tsc --outDir lib --module commonjs --noImplicitAny false --strict false --skipLibCheck --noEmitOnError false --jsx react-jsx --esModuleInterop || true",
+    "build-esm": "tsc --outDir esm --module esnext --noImplicitAny false --strict false --skipLibCheck --noEmitOnError false --jsx react-jsx --esModuleInterop || true",
+    "dev": "tsc --watch --outDir esm --module esnext",
+    "test": "jest"
+  },
+  "dependencies": {
+    "echarts": "^5.5.0",
+    "echarts-for-react": "^3.0.2"
+  },
+  "peerDependencies": {
+    "@emotion/react": "^11.0.0",
+    "@emotion/styled": "^11.0.0",
+    "@superset-ui/chart-controls": "*",
+    "@superset-ui/core": "*",
+    "react": "^17.0.2 || ^18.0.0",
+    "react-dom": "^17.0.2 || ^18.0.0"
+  },
+  "devDependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@superset-ui/chart-controls": "^0.20.3",
+    "@superset-ui/core": "^0.20.4",
+    "@types/jest": "^30.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^19.2.3",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.0.0"
+  },
+  "types": "lib/index.d.ts"
+}

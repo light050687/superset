@@ -153,28 +153,82 @@ export const copyPage = setUnsavedChangesAfterAction((pageId, pagesId) => ({
 
 // Resize ---------------------------------------------------------------------
 export const RESIZE_COMPONENT = 'RESIZE_COMPONENT';
-export function resizeComponent({ id, width, height }) {
+/**
+ * Resize action. Расширен для поддержки трёх режимов layout:
+ *  - col: legacy {id, width, height} — width/height = column-multiple (1..12)
+ *  - sub: {id, layoutMode:'sub', widthSub, heightSub, subdivisionsUsed}
+ *         widthSub = sub-cell count (1..12*sub), subdivisionsUsed = N at save time
+ *  - free: {id, layoutMode:'free', freePxWidth, freePxHeight} — пиксельные размеры
+ *
+ * Любые поля из meta могут быть переданы — будут merged в meta объект.
+ * Это позволяет одной action'ой переключать чарт между режимами.
+ *
+ * @param {{
+ *   id: string,
+ *   width?: number,
+ *   height?: number,
+ *   layoutMode?: 'col' | 'sub' | 'free',
+ *   widthSub?: number,
+ *   heightSub?: number,
+ *   subdivisionsUsed?: number,
+ *   freePxWidth?: number,
+ *   freePxHeight?: number,
+ * }} payload
+ */
+export function resizeComponent({
+  id,
+  width,
+  height,
+  layoutMode,
+  widthSub,
+  heightSub,
+  subdivisionsUsed,
+  freePxWidth,
+  freePxHeight,
+}) {
   return (dispatch, getState) => {
     const { dashboardLayout: undoableLayout } = getState();
     const { present: dashboard } = undoableLayout;
     const component = dashboard[id];
-    const widthChanged = width && component.meta.width !== width;
-    const heightChanged = height && component.meta.height !== height;
-    if (component && (widthChanged || heightChanged)) {
-      // update the size of this component
-      const updatedComponents = {
-        [id]: {
-          ...component,
-          meta: {
-            ...component.meta,
-            width: width || component.meta.width,
-            height: height || component.meta.height,
-          },
-        },
-      };
-
-      dispatch(updateComponents(updatedComponents));
+    if (!component) return;
+    const nextMeta = { ...component.meta };
+    if (width !== undefined) nextMeta.width = width;
+    if (height !== undefined) nextMeta.height = height;
+    if (layoutMode !== undefined) nextMeta.layoutMode = layoutMode;
+    if (widthSub !== undefined) nextMeta.widthSub = widthSub;
+    if (heightSub !== undefined) nextMeta.heightSub = heightSub;
+    if (subdivisionsUsed !== undefined) nextMeta.subdivisionsUsed = subdivisionsUsed;
+    if (freePxWidth !== undefined) nextMeta.freePxWidth = freePxWidth;
+    if (freePxHeight !== undefined) nextMeta.freePxHeight = freePxHeight;
+    /* При переходе в col-mode чистим sub/free поля чтобы старая мета
+       не висела и не сбивала рендеринг (ChartHolder инферит mode по
+       наличию полей). */
+    if (layoutMode === 'col') {
+      delete nextMeta.widthSub;
+      delete nextMeta.heightSub;
+      delete nextMeta.subdivisionsUsed;
+      delete nextMeta.freePxWidth;
+      delete nextMeta.freePxHeight;
+    } else if (layoutMode === 'sub') {
+      delete nextMeta.freePxWidth;
+      delete nextMeta.freePxHeight;
+    } else if (layoutMode === 'free') {
+      delete nextMeta.widthSub;
+      delete nextMeta.heightSub;
+      delete nextMeta.subdivisionsUsed;
     }
+    /* Diff: меняем только если что-то реально изменилось. */
+    const keys = [
+      'width', 'height', 'layoutMode', 'widthSub', 'heightSub',
+      'subdivisionsUsed', 'freePxWidth', 'freePxHeight',
+    ];
+    const changed = keys.some(k => nextMeta[k] !== component.meta[k]);
+    if (!changed) return;
+    dispatch(
+      updateComponents({
+        [id]: { ...component, meta: nextMeta },
+      }),
+    );
   };
 }
 

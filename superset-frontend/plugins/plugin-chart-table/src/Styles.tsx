@@ -20,7 +20,12 @@ import { css, styled } from '@superset-ui/core';
 
 export default styled.div`
   ${({ theme }) => css`
-    /* Base table styles */
+    /* Base table styles — DS v2.0 */
+    /* Корневой контейнер задаёт типографику для всей таблицы (Manrope для текста). */
+    font-family: var(--f, ${theme.fontFamily});
+    font-size: 14px;
+    color: var(--ink, ${theme.colorText});
+
     table {
       width: 100%;
       min-width: auto;
@@ -29,23 +34,28 @@ export default styled.div`
       border-collapse: collapse;
     }
 
-    /* Cell styling */
+    /* Cell styling — DS v2.0: padding 8px 12px (= space-2 × space-3) */
     th,
     td {
       min-width: 4.3em;
-      padding: 0.75rem;
+      padding: 8px 12px;
       vertical-align: top;
     }
 
-    /* Header styling */
+    /* Header styling — DS v2.0: JetBrains Mono UPPERCASE 11px */
     thead > tr > th {
       padding-right: 0;
       position: relative;
-      background-color: ${theme.colorBgBase};
+      background-color: var(--s, ${theme.colorBgBase});
       text-align: left;
-      border-bottom: 2px solid ${theme.colorSplit};
-      color: ${theme.colorText};
+      border-bottom: 1px solid var(--g200, ${theme.colorSplit});
+      color: var(--g700, ${theme.colorText});
       vertical-align: bottom;
+      font-family: var(--m, ${theme.fontFamily});
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
     }
 
     /* Icons in header */
@@ -55,7 +65,7 @@ export default styled.div`
     }
 
     th.is-sorted svg {
-      color: ${theme.colorText};
+      color: var(--ink, ${theme.colorText});
       fill-opacity: 1;
     }
 
@@ -67,7 +77,20 @@ export default styled.div`
 
     .table > tbody tr td {
       font-feature-settings: 'tnum' 1;
-      border-top: 1px solid ${theme.colorSplit};
+      font-variant-numeric: tabular-nums;
+      border-top: 1px solid var(--g100, ${theme.colorSplit});
+      font-size: 14px;
+    }
+
+    /* Hover row — DS v2.0: var(--g50) */
+    .table > tbody tr:hover > td {
+      background-color: var(--g50, ${theme.colorBgLayout});
+    }
+
+    /* Числовые ячейки — JetBrains Mono, выравнивание справа */
+    .table > tbody tr td.dt-metric {
+      font-family: var(--m, ${theme.fontFamily});
+      text-align: right;
     }
 
     /* Bootstrap-like condensed table styles */
@@ -80,22 +103,22 @@ export default styled.div`
     table.table-condensed td,
     table.table-sm th,
     table.table-sm td {
-      padding: 0.3rem;
+      padding: 4px 8px;
     }
 
     /* Bootstrap-like bordered table styles */
     table.table-bordered {
-      border: 1px solid ${theme.colorSplit};
+      border: 1px solid var(--g200, ${theme.colorSplit});
     }
 
     table.table-bordered th,
     table.table-bordered td {
-      border: 1px solid ${theme.colorSplit};
+      border: 1px solid var(--g100, ${theme.colorSplit});
     }
 
     /* Bootstrap-like striped table styles */
     table.table-striped tbody tr:nth-of-type(odd) {
-      background-color: ${theme.colorBgLayout};
+      background-color: var(--g50, ${theme.colorBgLayout});
     }
 
     /* Controls and metrics */

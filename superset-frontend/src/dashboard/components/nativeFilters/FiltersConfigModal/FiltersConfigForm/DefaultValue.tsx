@@ -43,7 +43,7 @@ type DefaultValueProps = {
   enableNoResults: boolean;
 };
 
-const DefaultValue: FC<DefaultValueProps> = ({
+const DefaultValue: FC<React.PropsWithChildren<DefaultValueProps>> = ({
   hasDefaultValue,
   filterId,
   hasDataset,

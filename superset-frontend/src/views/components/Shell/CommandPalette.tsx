@@ -46,7 +46,7 @@ interface PaletteRow {
 
 const KIND_LABELS: Record<PaletteRow['kind'], string> = {
   dashboard: 'Дашборд',
-  chart: 'Диаграмма',
+  chart: 'Чарт',
   dataset: 'Датасет',
   action: 'Действие',
   ai: 'ИИ',
@@ -211,7 +211,7 @@ const Kbd = styled.kbd`
   margin-right: 4px;
 `;
 
-const SearchIcon: FC = () => (
+const SearchIcon: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <circle cx="7" cy="7" r="4" />
     <path d="M10 10l3.5 3.5" />
@@ -310,7 +310,7 @@ function buildDefaultActions(askAi?: () => void): PaletteRow[] {
     },
     {
       key: 'new-chart',
-      label: t('Создать диаграмму'),
+      label: t('Создать чарт'),
       url: '/chart/add',
       kind: 'action',
     },
@@ -338,7 +338,7 @@ interface GroupedRows {
   rows: PaletteRow[];
 }
 
-export const CommandPalette: FC<CommandPaletteProps> = ({
+export const CommandPalette: FC<React.PropsWithChildren<CommandPaletteProps>> = ({
   open,
   onClose,
   onAskAi,
@@ -402,7 +402,7 @@ export const CommandPalette: FC<CommandPaletteProps> = ({
     const datasets = resultRows.filter(r => r.kind === 'dataset');
     if (dashboards.length)
       groups.push({ label: t('Дашборды'), rows: dashboards });
-    if (charts.length) groups.push({ label: t('Диаграммы'), rows: charts });
+    if (charts.length) groups.push({ label: t('Чарты'), rows: charts });
     if (datasets.length)
       groups.push({ label: t('Датасеты'), rows: datasets });
     if (groups.length === 0 && !onAskAi) {

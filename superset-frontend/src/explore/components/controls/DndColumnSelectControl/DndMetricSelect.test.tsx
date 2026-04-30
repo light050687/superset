@@ -508,8 +508,10 @@ test('title changes on custom SQL text change', async () => {
 
   // Changing the ACE editor via pasting, since the component
   // handles the textarea value internally, and changing it doesn't
-  // trigger the onChange
-  await userEvent.paste(textArea, 'New metric');
+  // trigger the onChange. user-event v14 removed the positional-target
+  // overload; focus the textarea and paste into the active element instead.
+  textArea.focus();
+  await userEvent.paste('New metric');
 
   await waitFor(() => {
     expect(

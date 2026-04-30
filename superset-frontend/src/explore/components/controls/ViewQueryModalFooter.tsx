@@ -38,7 +38,7 @@ const CLOSE = t('Close');
 const SAVE_AS_DATASET = t('Save as Dataset');
 const OPEN_IN_SQL_LAB = t('Open in SQL Lab');
 
-const ViewQueryModalFooter: FC<ViewQueryModalFooterProps> = (props: {
+const ViewQueryModalFooter: FC<React.PropsWithChildren<ViewQueryModalFooterProps>> = (props: {
   closeModal: () => void;
   changeDatasource: () => void;
   datasource: SimpleDataSource;

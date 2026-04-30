@@ -41,7 +41,7 @@ const TextStyles = styled.span`
   color: ${({ theme }) => theme.colorText};
 `;
 
-export const LastUpdated: FunctionComponent<LastUpdatedProps> = ({
+export const LastUpdated: FunctionComponent<React.PropsWithChildren<LastUpdatedProps>> = ({
   updatedAt,
   update,
 }) => {

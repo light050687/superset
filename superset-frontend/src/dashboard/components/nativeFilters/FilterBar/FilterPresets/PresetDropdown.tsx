@@ -18,7 +18,8 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { css, styled, t, useTheme } from '@superset-ui/core';
-import { Input, Tooltip, message } from 'antd';
+import { Input, message } from 'antd';
+import { Tooltip } from '@superset-ui/core/components';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { FilterPreset } from './types';
 import {

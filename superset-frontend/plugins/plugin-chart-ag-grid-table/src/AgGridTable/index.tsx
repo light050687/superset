@@ -39,6 +39,7 @@ import {
   CellClickedEvent,
   IMenuActionParams,
 } from '@superset-ui/core/components/ThemedAgGridReact';
+import type { Column, ColumnHeaderClickedEvent } from 'ag-grid-community';
 import { type FunctionComponent } from 'react';
 import { JsonObject, DataRecordValue, DataRecord, t } from '@superset-ui/core';
 import { SearchOutlined } from '@ant-design/icons';
@@ -226,10 +227,15 @@ const AgGridDataTable: FunctionComponent<AgGridTableProps> = memo(
     };
 
     const handleColumnHeaderClick = useCallback(
-      params => {
-        const colId = params?.column?.colId;
-        const sortDir = params?.column?.sort;
-        handleColSort(colId, sortDir);
+      (params: ColumnHeaderClickedEvent) => {
+        // `column` narrows to Column | ProvidedColumnGroup; skip groups.
+        const col = params.column as Column;
+        if (typeof col.getColId !== 'function') {
+          return;
+        }
+        const colId = col.getColId();
+        const sortDir = col.getSort();
+        handleColSort(colId, sortDir ?? '');
       },
       [serverPagination, gridInitialState, percentMetrics, onSortChange],
     );

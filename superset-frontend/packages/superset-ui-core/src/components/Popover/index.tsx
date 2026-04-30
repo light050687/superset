@@ -16,11 +16,60 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+import { forwardRef, type CSSProperties } from 'react';
 import { Popover as AntdPopover } from 'antd';
 import { PopoverProps as AntdPopoverProps } from 'antd/es/popover';
+import type { TooltipRef } from 'antd/es/tooltip';
 
 export interface PopoverProps extends AntdPopoverProps {
   forceRender?: boolean;
 }
 
-export const Popover = (props: PopoverProps) => <AntdPopover {...props} />;
+// AntD v6 Popover moved `overlayStyle` / `overlayInnerStyle` to
+// `styles.root` / `styles.content`, and `destroyTooltipOnHide` to
+// `destroyOnHidden`. We translate at the wrapper so hundreds of call sites
+// don't need touching.
+type PopoverStylesObject = {
+  root?: CSSProperties;
+  content?: CSSProperties;
+  title?: CSSProperties;
+  container?: CSSProperties;
+  arrow?: CSSProperties;
+};
+
+export const Popover = forwardRef<TooltipRef, PopoverProps>(
+  (
+    {
+      overlayStyle,
+      overlayInnerStyle,
+      destroyTooltipOnHide,
+      destroyOnHidden,
+      styles: stylesProp,
+      ...props
+    },
+    ref,
+  ) => {
+    const incomingStyles =
+      typeof stylesProp === 'object' && stylesProp !== null
+        ? (stylesProp as PopoverStylesObject)
+        : ({} as PopoverStylesObject);
+    return (
+      <AntdPopover
+        ref={ref}
+        destroyOnHidden={destroyOnHidden ?? Boolean(destroyTooltipOnHide)}
+        styles={{
+          root: { ...(overlayStyle ?? {}), ...(incomingStyles.root ?? {}) },
+          content: {
+            ...(overlayInnerStyle ?? {}),
+            ...(incomingStyles.content ?? {}),
+          },
+          title: incomingStyles.title ?? {},
+          container: incomingStyles.container ?? {},
+          arrow: incomingStyles.arrow ?? {},
+        }}
+        {...props}
+      />
+    );
+  },
+);
+Popover.displayName = 'Popover';

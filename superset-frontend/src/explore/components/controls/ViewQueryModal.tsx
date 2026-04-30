@@ -47,7 +47,7 @@ const ViewQueryModalContainer = styled.div`
   gap: ${({ theme }) => theme.sizeUnit * 4}px;
 `;
 
-const ViewQueryModal: FC<Props> = ({ latestQueryFormData }) => {
+const ViewQueryModal: FC<React.PropsWithChildren<Props>> = ({ latestQueryFormData }) => {
   const [result, setResult] = useState<Result[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +91,7 @@ const ViewQueryModal: FC<Props> = ({ latestQueryFormData }) => {
     <ViewQueryModalContainer>
       {result.map((item, index) => (
         // Static API response data - index is appropriate for keys
-        <Fragment key={index}>
+        (<Fragment key={index}>
           {item.error && (
             <Alert type="error" message={item.error} closable={false} />
           )}
@@ -102,7 +102,7 @@ const ViewQueryModal: FC<Props> = ({ latestQueryFormData }) => {
               language={item.language}
             />
           )}
-        </Fragment>
+        </Fragment>)
       ))}
     </ViewQueryModalContainer>
   );

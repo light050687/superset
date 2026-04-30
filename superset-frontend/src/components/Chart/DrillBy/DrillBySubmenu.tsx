@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import {
+import React, {
   CSSProperties,
   ReactNode,
   useCallback,
@@ -94,7 +94,7 @@ export const DrillBySubmenu = ({
   const showSearch = columns.length > SHOW_COLUMNS_SEARCH_THRESHOLD;
 
   const handleSelection = useCallback(
-    (event, column) => {
+    (event: MouseEvent | React.MouseEvent, column: Column) => {
       onClick(event as MouseEvent);
       onSelection(column, drillByConfig);
       if (openNewModal && onDrillBy && dataset) {
@@ -328,7 +328,8 @@ export const DrillBySubmenu = ({
         root: {
           paddingLeft: 0,
         },
-        body: {
+        // AntD v6: styles.body → styles.content for Popover.
+        content: {
           padding: theme.sizeUnit * 2,
           boxShadow: theme.boxShadow,
           borderRadius: theme.borderRadius,

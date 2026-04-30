@@ -46,7 +46,7 @@ const CleanFormItem = styled(FormItem)`
   margin-bottom: 0;
 `;
 
-const FilterScope: FC<FilterScopeProps> = ({
+const FilterScope: FC<React.PropsWithChildren<FilterScopeProps>> = ({
   pathToFormValue = [],
   formFilterScope,
   forceUpdate,
@@ -70,7 +70,7 @@ const FilterScope: FC<FilterScopeProps> = ({
   );
 
   const updateScopes = useCallback(
-    updatedFormValues => {
+    (updatedFormValues: any) => {
       if (hasScopeBeenModified) {
         return;
       }

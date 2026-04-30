@@ -63,7 +63,7 @@ const Tile = styled.button<{ $disabled?: boolean }>`
   border: 1px solid transparent;
   border-radius: 10px;
   cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
-  opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
+  opacity: ${({ $disabled }) => ($disabled ? 0.72 : 1)};
   transition:
     background 0.12s ${DS2_VARS.ease},
     border-color 0.12s ${DS2_VARS.ease};
@@ -112,38 +112,40 @@ const TileName = styled.span<{ $disabled?: boolean }>`
   line-height: 1.1;
 `;
 
-/* «Скоро» бейдж — absolutely-positioned внутри TileIcon, смещён в
-   правый-верхний угол (top:-6 right:-10) чтобы перекрывать иконку
-   на ~30-40% как просил пользователь. */
+/* «Скоро» бейдж — absolutely-positioned относительно Tile (не TileIcon!),
+   чтобы остаться цветным: grayscale-фильтр на TileIcon обесцвечивал бы
+   вложенный бейдж. Позиционирование подогнано так, чтобы бейдж смотрелся
+   как «наклейка» на правом-верхнем углу иконки 38×38. Цвет единый для всех
+   бейджей — cAmber (акцент DS 2.0), текст #0A0A0A для устойчивого контраста. */
 const ComingSoonBadge = styled.span`
   position: absolute;
-  top: -6px;
-  right: -10px;
+  top: 8px;
+  right: 14px;
   font-family: ${DS2_VARS.fontMono};
   font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: ${DS2_VARS.ink};
+  color: #0a0a0a;
   background: ${DS2_VARS.cAmber};
   padding: 1px 5px;
   border-radius: 4px;
-  box-shadow: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
   pointer-events: none;
   white-space: nowrap;
-  z-index: 1;
+  z-index: 2;
 `;
 
 /* ─── SVG иконки (мокап) ─── */
 
-const IconDashboard: FC = () => (
+const IconDashboard: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <rect x="1" y="1" width="14" height="14" rx="2" />
     <path d="M1 5h14M5 1v14" />
   </svg>
 );
 
-const IconChart: FC = () => (
+const IconChart: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <rect x="2" y="6" width="3" height="8" rx="1" />
     <rect x="6.5" y="3" width="3" height="11" rx="1" />
@@ -151,14 +153,14 @@ const IconChart: FC = () => (
   </svg>
 );
 
-const IconTable: FC = () => (
+const IconTable: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <rect x="2" y="2" width="12" height="12" rx="1" />
     <path d="M2 6h12M2 10h12M6 2v12" />
   </svg>
 );
 
-const IconDoc: FC = () => (
+const IconDoc: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M4 2h6l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" />
     <path d="M10 2v4h4" />
@@ -182,7 +184,7 @@ interface SectionDef {
   items: CreateItem[];
 }
 
-export const CreateDrawer: FC = () => {
+export const CreateDrawer: FC<React.PropsWithChildren<unknown>> = () => {
   const history = useHistory();
   const { closeDrawer } = useShell();
 
@@ -211,7 +213,7 @@ export const CreateDrawer: FC = () => {
         },
         {
           key: 'chart',
-          label: t('Диаграмма'),
+          label: t('Чарт'),
           url: '/chart/add',
           accent: DS2_VARS.cViolet,
           icon: <IconChart />,
@@ -266,10 +268,10 @@ export const CreateDrawer: FC = () => {
               >
                 <TileIcon $accent={item.accent} $disabled={item.disabled}>
                   {item.icon}
-                  {item.disabled ? (
-                    <ComingSoonBadge>{t('Скоро')}</ComingSoonBadge>
-                  ) : null}
                 </TileIcon>
+                {item.disabled ? (
+                  <ComingSoonBadge>{t('Скоро')}</ComingSoonBadge>
+                ) : null}
                 <TileName $disabled={item.disabled}>{item.label}</TileName>
               </Tile>
             ))}

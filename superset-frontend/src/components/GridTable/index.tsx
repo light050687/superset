@@ -19,8 +19,14 @@
 import { useCallback, useMemo } from 'react';
 import { css, useTheme } from '@superset-ui/core';
 import { ThemedAgGridReact } from '@superset-ui/core/components';
-import type { Column, GridOptions } from 'ag-grid-community';
+import type { CellKeyDownEvent, Column, GridOptions } from 'ag-grid-community';
 import type { AgGridReactProps } from 'ag-grid-react';
+
+type CellKeyDownParams = NonNullable<
+  AgGridReactProps<Record<string, any>>['onCellKeyDown']
+> extends (params: infer P) => any
+  ? P
+  : never;
 
 import copyTextToClipboard from 'src/utils/copy';
 
@@ -54,12 +60,20 @@ export function GridTable<RecordType extends object>({
   );
   const rowIndexLength = `${data.length}}`.length;
   const onKeyDown: AgGridReactProps<Record<string, any>>['onCellKeyDown'] =
-    useCallback(({ event, column, data, value, api }) => {
+    useCallback((params: CellKeyDownParams) => {
+      // ag-grid narrows params to CellKeyDownEvent | FullWidthCellKeyDownEvent;
+      // this handler only needs cell-level fields, so ignore the full-row variant.
+      if (!('column' in params)) {
+        return;
+      }
+      const { event, column, data, value, api } =
+        params as CellKeyDownEvent<Record<string, any>>;
+      const keyboardEvent = event as KeyboardEvent | null;
       if (
         !document.getSelection?.()?.toString?.() &&
-        event &&
-        event.key === 'c' &&
-        (event.ctrlKey || event.metaKey)
+        keyboardEvent &&
+        keyboardEvent.key === 'c' &&
+        (keyboardEvent.ctrlKey || keyboardEvent.metaKey)
       ) {
         const columns =
           column.getColId() === PIVOT_COL_ID

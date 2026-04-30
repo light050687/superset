@@ -18,13 +18,21 @@ import type {
   CatalogFolderMoveInput,
   CatalogFolderNode,
   CatalogFolderPatch,
+  CatalogFolderScope,
   CatalogItemAssignment,
 } from './types';
 
 const BASE = '/api/v1/catalog_folder';
 
-export async function fetchCatalogTree(): Promise<CatalogFolderNode[]> {
-  const { json } = await SupersetClient.get({ endpoint: `${BASE}/tree` });
+/** Получить дерево папок. Если передан scope — отдаётся только срез
+ *  этого scope + shared-папки (NULL-scope). Иначе — все. */
+export async function fetchCatalogTree(
+  scope?: CatalogFolderScope,
+): Promise<CatalogFolderNode[]> {
+  const query = scope ? `?scope=${encodeURIComponent(scope)}` : '';
+  const { json } = await SupersetClient.get({
+    endpoint: `${BASE}/tree${query}`,
+  });
   return (json as { result: CatalogFolderNode[] }).result;
 }
 
@@ -48,8 +56,30 @@ export async function updateCatalogFolder(
   });
 }
 
-export async function deleteCatalogFolder(id: number): Promise<void> {
-  await SupersetClient.delete({ endpoint: `${BASE}/${id}` });
+/**
+ * Удалить папку каталога. Объекты (дашборды/чарты/датасеты) никогда не
+ * удаляются — они переезжают в папку-обёртку на том же уровне иерархии.
+ *
+ * @param cascade если true — «Оставить только объекты»: все подпапки
+ *   рекурсивно удаляются, а их items плоским списком попадают в обёртку.
+ *   false (default) — «Сохранить структуру»: прямые подпапки и items
+ *   переезжают внутрь обёртки.
+ * @param wrapperName имя папки-обёртки (например, «Без департамента»,
+ *   «Без подраздела»). Для root-папок — это имя применяется к
+ *   is_default-папке (она переименуется). Для не-root — sibling с таким
+ *   именем создаётся или переиспользуется. Если не задано (пустая папка
+ *   без содержимого) — обёртка не используется.
+ */
+export async function deleteCatalogFolder(
+  id: number,
+  cascade: boolean = false,
+  wrapperName?: string,
+): Promise<void> {
+  const params = new URLSearchParams();
+  if (cascade) params.set('cascade', 'true');
+  if (wrapperName) params.set('wrapper_name', wrapperName);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  await SupersetClient.delete({ endpoint: `${BASE}/${id}${query}` });
 }
 
 export async function moveCatalogFolder(

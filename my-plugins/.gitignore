@@ -1,0 +1,14 @@
+# Внутренние артефакты сборки и кэши плагинов — не коммитятся.
+# Сами папки src/lib/esm/types и package.json — tracked.
+*/node_modules/
+*.tsbuildinfo
+.cache/
+*.log
+debug-storybook.log
+*/package-lock.json
+
+# Storybook output
+*/storybook-static/
+
+# Coverage
+*/coverage/

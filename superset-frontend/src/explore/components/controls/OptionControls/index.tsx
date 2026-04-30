@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useRef, ReactNode } from 'react';
+import { forwardRef, useCallback, useRef, ReactNode } from 'react';
 
 import { useDrag, useDrop, DropTargetMonitor } from 'react-dnd';
 import { styled, t, useTheme, keyframes, css } from '@superset-ui/core';
@@ -41,7 +41,7 @@ export const OptionControlContainer = styled.div<{
   font-size: ${({ theme }) => theme.fontSizeSM}px;
   height: ${({ theme }) => theme.sizeUnit * 6}px;
   background-color: ${({ theme }) => theme.colorBgLayout};
-  border-radius: 3px;
+  border-radius: ${({ theme }) => theme.borderRadius}px;
   cursor: ${({ withCaret }) => (withCaret ? 'pointer' : 'default')};
   :hover {
     background-color: ${({ theme }) => theme.colorPrimaryBgHover};
@@ -223,7 +223,7 @@ export const AddIconButton = styled.button`
   padding: 0;
   background-color: ${({ theme }) => theme.colorPrimaryText};
   border: none;
-  border-radius: 2px;
+  border-radius: ${({ theme }) => theme.borderRadius}px;
   cursor: pointer;
 
   :disabled {
@@ -237,23 +237,7 @@ interface DragItem {
   type: string;
 }
 
-export const OptionControlLabel = ({
-  label,
-  savedMetric,
-  adhocMetric,
-  onRemove,
-  onMoveLabel,
-  onDropLabel,
-  withCaret,
-  isFunction,
-  type,
-  index,
-  isExtra,
-  datasourceWarningMessage,
-  tooltipTitle,
-  multi = true,
-  ...props
-}: {
+type OptionControlLabelProps = {
   label: string | ReactNode;
   savedMetric?: savedMetricType;
   adhocMetric?: AdhocMetric;
@@ -269,10 +253,49 @@ export const OptionControlLabel = ({
   datasourceWarningMessage?: string;
   tooltipTitle?: string;
   multi?: boolean;
-}) => {
+};
+
+// forwardRef so AntD Tooltip/Popover triggers can attach refs through
+// @rc-component/trigger (AntD v6). The internal drag/drop ref is merged
+// with the forwarded ref via a composed callback.
+export const OptionControlLabel = forwardRef<
+  HTMLDivElement,
+  OptionControlLabelProps
+>((
+  {
+    label,
+    savedMetric,
+    adhocMetric,
+    onRemove,
+    onMoveLabel,
+    onDropLabel,
+    withCaret,
+    isFunction,
+    type,
+    index,
+    isExtra,
+    datasourceWarningMessage,
+    tooltipTitle,
+    multi = true,
+    ...props
+  },
+  forwardedRef,
+) => {
   const theme = useTheme();
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
   const labelRef = useRef<HTMLDivElement>(null);
+
+  const composedRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      ref.current = node;
+      if (typeof forwardedRef === 'function') {
+        forwardedRef(node);
+      } else if (forwardedRef) {
+        (forwardedRef as { current: HTMLDivElement | null }).current = node;
+      }
+    },
+    [forwardedRef],
+  );
   const hasMetricName = savedMetric?.metric_name;
   const [, drop] = useDrop({
     accept: type,
@@ -328,6 +351,7 @@ export const OptionControlLabel = ({
     },
   });
   const [{ isDragging }, drag] = useDrag({
+    type,
     item: {
       type,
       dragIndex: index,
@@ -423,5 +447,8 @@ export const OptionControlLabel = ({
   );
 
   drag(drop(ref));
-  return <DragContainer ref={ref}>{getOptionControlContent()}</DragContainer>;
-};
+  return (
+    <DragContainer ref={composedRef}>{getOptionControlContent()}</DragContainer>
+  );
+});
+OptionControlLabel.displayName = 'OptionControlLabel';

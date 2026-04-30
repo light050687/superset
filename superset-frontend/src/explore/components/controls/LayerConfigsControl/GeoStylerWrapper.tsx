@@ -26,7 +26,7 @@ import { CardStyle } from 'geostyler';
 import { FC } from 'react';
 import { GeoStylerWrapperProps } from './types';
 
-export const GeoStylerWrapper: FC<GeoStylerWrapperProps> = ({
+export const GeoStylerWrapper: FC<React.PropsWithChildren<GeoStylerWrapperProps>> = ({
   className,
   ...passThroughProps
 }) => (

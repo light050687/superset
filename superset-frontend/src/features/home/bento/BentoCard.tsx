@@ -10,23 +10,38 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 import { styled, t } from '@superset-ui/core';
-import { type FC, type KeyboardEvent, useRef } from 'react';
+import { type FC, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { DragSourceMonitor, useDrag } from 'react-dnd';
 import { useHistory } from 'react-router-dom';
 import {
   CATALOG_DRAG_TYPES,
+  type CatalogObjectType,
   type DragItemPayload,
 } from 'src/features/catalog';
+import {
+  markCatalogItemSeen,
+  useIsCatalogItemSeen,
+} from 'src/features/catalog/useCatalogHasUpdates';
 import { DS2_RADIUS, DS2_VARS } from 'src/theme/ds2';
 import { BentoPreview } from './BentoPreview';
 import type { BentoCardKind, BentoCardSize, BentoItem } from './types';
 
 const KIND_LABELS: Record<BentoCardKind, string> = {
   dashboard: 'Дашборд',
-  chart: 'Диаграмма',
+  chart: 'Чарт',
   geo: 'Гео',
   table: 'Таблица',
   doc: 'Документ',
+};
+
+/** Маппинг BentoCardKind → CatalogObjectType для seen-трекера.
+ *  geo фактически Slice с viz_type=deck_*, поэтому идёт как chart. */
+const KIND_TO_CATALOG_TYPE: Record<BentoCardKind, CatalogObjectType> = {
+  dashboard: 'dashboard',
+  chart: 'chart',
+  geo: 'chart',
+  table: 'dataset',
+  doc: 'ai_document',
 };
 
 const KIND_COLORS: Record<BentoCardKind, string> = {
@@ -53,9 +68,17 @@ const sizeSpan = (size: BentoCardSize) => {
   }
 };
 
+/* Card с опциональным left-accent'ом для «непросмотренных» объектов.
+   Плавающая точка возле звезды (предыдущий вариант) создавала визуальную
+   кашу — см. скрин пользователя. Best-practices для unread-индикатора на
+   карточках (GitHub, Slack, Figma): **левая accent-полоска** 3px на всю
+   высоту. Реализовано через ::before pseudo-element — не сдвигает контент,
+   не конфликтует со звездой в правом верхнем углу.
+   Полоска исчезает на hover, чтобы не мешать чтению содержимого. */
 const Card = styled.div<{
   $size: BentoCardSize;
   $dragging: boolean;
+  $unseen: boolean;
 }>`
   ${({ $size }) => sizeSpan($size)};
   background: ${DS2_VARS.s};
@@ -71,6 +94,25 @@ const Card = styled.div<{
     border-color 0.15s ${DS2_VARS.ease},
     transform 0.15s ${DS2_VARS.ease},
     box-shadow 0.15s ${DS2_VARS.ease};
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 3px;
+    background: ${({ $unseen }) =>
+      $unseen ? DS2_VARS.cTangerine : 'transparent'};
+    opacity: ${({ $unseen }) => ($unseen ? 1 : 0)};
+    transition: opacity 0.15s ${DS2_VARS.ease};
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  &:hover::before {
+    opacity: 0;
+  }
 
   &:hover {
     border-color: ${DS2_VARS.g300};
@@ -96,44 +138,79 @@ const TagRow = styled.div`
   pointer-events: none;
 `;
 
+/* Tag — бейдж на верхней строке карточки. $accent — CSS-переменная
+   (var(--c-sky)), поэтому для полупрозрачного фона используем color-mix,
+   а не конкатенацию со строкой '26' (она давала невалидный CSS, фон терялся
+   и бейдж выглядел как обычный текст — то что видел юзер на скрине). */
 const Tag = styled.span<{ $accent?: string }>`
   font-family: ${DS2_VARS.fontMono};
   font-size: 9px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 2px 7px;
   border-radius: 3px;
   background: ${({ $accent }) =>
-    $accent ? `${$accent}26` : 'rgba(128, 128, 128, 0.14)'};
-  color: ${({ $accent }) => $accent ?? DS2_VARS.g700};
+    $accent
+      ? `color-mix(in oklab, ${$accent} 18%, transparent)`
+      : 'rgba(128, 128, 128, 0.18)'};
+  color: ${({ $accent }) => $accent ?? DS2_VARS.g600};
   border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.2;
 `;
 
+/* LiveTag — зелёный бейдж с точкой «● LIVE». */
 const LiveTag = styled(Tag)`
-  background: rgba(22, 163, 74, 0.14);
+  background: color-mix(in oklab, ${DS2_VARS.up} 18%, transparent);
   color: ${DS2_VARS.up};
 `;
 
+const LiveDot = styled.span`
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: ${DS2_VARS.up};
+  box-shadow: 0 0 6px ${DS2_VARS.up};
+  display: inline-block;
+`;
+
+/* StarBtn — кнопка избранного в верхнем-правом углу карточки. Круглый
+   полупрозрачный фон чтобы читалась поверх любого preview (светлого/тёмного).
+   Заполненная ★ жёлтая (cAmber), пустая ☆ — серая, hover → cAmber. */
 const StarBtn = styled.button<{ $on: boolean }>`
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 24px;
-  height: 24px;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
-  border: none;
-  color: ${({ $on }) => ($on ? DS2_VARS.wn : DS2_VARS.g400)};
+  background: color-mix(in oklab, ${DS2_VARS.s} 80%, transparent);
+  border: 1px solid ${DS2_VARS.g100};
+  color: ${({ $on }) => ($on ? DS2_VARS.cAmber : DS2_VARS.g400)};
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 4;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
+  transition:
+    color 0.12s ${DS2_VARS.ease},
+    transform 0.12s ${DS2_VARS.ease},
+    border-color 0.12s ${DS2_VARS.ease};
 
   &:hover {
-    color: ${DS2_VARS.wn};
+    color: ${DS2_VARS.cAmber};
+    border-color: ${DS2_VARS.cAmber};
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.92);
   }
 
   &:focus-visible {
@@ -212,7 +289,7 @@ export interface BentoCardProps {
   onToggleStar?: (item: BentoItem) => void;
 }
 
-export const BentoCard: FC<BentoCardProps> = ({
+export const BentoCard: FC<React.PropsWithChildren<BentoCardProps>> = ({
   item,
   size = 'medium',
   showDepartment = true,
@@ -228,6 +305,7 @@ export const BentoCard: FC<BentoCardProps> = ({
   };
 
   const [{ isDragging }, drag] = useDrag({
+    type: CATALOG_DRAG_TYPES.ITEM,
     item: dragPayload,
     collect: (monitor: DragSourceMonitor) => ({
       isDragging: monitor.isDragging(),
@@ -235,8 +313,29 @@ export const BentoCard: FC<BentoCardProps> = ({
   });
   drag(ref);
 
+  const catalogType = KIND_TO_CATALOG_TYPE[item.kind];
+  const isSeen = useIsCatalogItemSeen(catalogType, item.id);
+
+  // Оптимистичное состояние звезды — чтобы клик отрабатывал мгновенно,
+  // не дожидаясь POST+refresh. Синхронизируется с item.starred при новых
+  // данных (проп меняется → useEffect перезаписывает локал).
+  const [starOptimistic, setStarOptimistic] = useState(!!item.starred);
+  useEffect(() => {
+    setStarOptimistic(!!item.starred);
+  }, [item.starred]);
+
   const navigate = () => {
+    // Клик по карточке засчитывается как «увидел» — точка «новое» уходит.
+    markCatalogItemSeen(catalogType, item.id);
     history.push(item.url);
+  };
+
+  const handleStarClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    // Мгновенно переключаем визуально; API + refresh подоспеют позже
+    // и закрепят состояние (или откатят если произошла ошибка).
+    setStarOptimistic(prev => !prev);
+    onToggleStar?.(item);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -255,28 +354,31 @@ export const BentoCard: FC<BentoCardProps> = ({
       tabIndex={0}
       $size={size}
       $dragging={isDragging}
+      $unseen={!isSeen}
       onClick={navigate}
       onKeyDown={handleKeyDown}
-      aria-label={`${KIND_LABELS[item.kind]}: ${item.title}`}
+      aria-label={`${KIND_LABELS[item.kind]}: ${item.title}${isSeen ? '' : ` (${t('новое')})`}`}
       data-test="bento-card"
     >
       <TagRow>
         <Tag $accent={kindColor}>{KIND_LABELS[item.kind]}</Tag>
-        {item.live ? <LiveTag>● live</LiveTag> : null}
+        {item.live ? (
+          <LiveTag>
+            <LiveDot />
+            LIVE
+          </LiveTag>
+        ) : null}
         {item.tags?.slice(0, 2).map(tag => <Tag key={tag}>{tag}</Tag>)}
       </TagRow>
 
       <StarBtn
         type="button"
-        $on={!!item.starred}
-        aria-pressed={!!item.starred}
-        aria-label={item.starred ? t('Убрать из избранного') : t('В избранное')}
-        onClick={event => {
-          event.stopPropagation();
-          onToggleStar?.(item);
-        }}
+        $on={starOptimistic}
+        aria-pressed={starOptimistic}
+        aria-label={starOptimistic ? t('Убрать из избранного') : t('В избранное')}
+        onClick={handleStarClick}
       >
-        {item.starred ? '★' : '☆'}
+        {starOptimistic ? '★' : '☆'}
       </StarBtn>
 
       <Preview>

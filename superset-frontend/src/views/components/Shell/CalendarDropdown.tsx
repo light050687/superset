@@ -1012,7 +1012,7 @@ const DeleteBtnFloat = styled.button`
 
 /* ─── Icons ─── */
 
-const IconChevron: FC<{ dir: 'left' | 'right' | 'down'; size?: number }> = ({
+const IconChevron: FC<React.PropsWithChildren<{ dir: 'left' | 'right' | 'down'; size?: number }>> = ({
   dir,
   size = 12,
 }) => (
@@ -1031,7 +1031,7 @@ const IconChevron: FC<{ dir: 'left' | 'right' | 'down'; size?: number }> = ({
   </svg>
 );
 
-const IconClose: FC = () => (
+const IconClose: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={14}
     height={14}
@@ -1045,7 +1045,7 @@ const IconClose: FC = () => (
   </svg>
 );
 
-const IconClock: FC = () => (
+const IconClock: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={12}
     height={12}
@@ -1060,7 +1060,7 @@ const IconClock: FC = () => (
   </svg>
 );
 
-const IconTrash: FC = () => (
+const IconTrash: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={12}
     height={12}
@@ -1074,7 +1074,7 @@ const IconTrash: FC = () => (
   </svg>
 );
 
-const IconPlusInput: FC = () => (
+const IconPlusInput: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={14}
     height={14}
@@ -1168,7 +1168,7 @@ function timeToHeight(time?: string, endTime?: string): number {
 
 /* ─── Component ─── */
 
-export const CalendarDropdown: FC<CalendarDropdownProps> = ({
+export const CalendarDropdown: FC<React.PropsWithChildren<CalendarDropdownProps>> = ({
   open,
   onClose,
   events: seedEvents,

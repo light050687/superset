@@ -26,16 +26,27 @@ import {
   styled,
   t,
   useTheme,
-  useElementOnScreen,
 } from '@superset-ui/core';
 import { useDispatch, useSelector } from 'react-redux';
 import { EmptyState, Loading } from '@superset-ui/core/components';
-import { ErrorBoundary, BasicErrorAlert } from 'src/components';
-import BuilderComponentPane from 'src/dashboard/components/BuilderComponentPane';
+import { BasicErrorAlert } from 'src/components';
+import { DS2_VARS } from 'src/theme/ds2';
 import DashboardHeader from 'src/dashboard/components/Header';
 import { Icons } from '@superset-ui/core/components/Icons';
 import IconButton from 'src/dashboard/components/IconButton';
 import { Droppable } from 'src/dashboard/components/dnd/DragDroppable';
+
+/**
+ * Shape of the object produced by DragDroppable's drop() handler
+ * (src/dashboard/components/dnd/handleDrop.js) and consumed by the
+ * untyped `handleComponentDrop` thunk.
+ */
+type DashboardDropResult = {
+  source: { id: string | null; type?: string; index: number };
+  destination?: { id: string; type: string; index: number };
+  dragging: { id: string | number; type: string; meta?: Record<string, any> };
+  position?: string;
+};
 import DashboardComponent from 'src/dashboard/containers/DashboardComponent';
 import WithPopoverMenu from 'src/dashboard/components/menu/WithPopoverMenu';
 import getDirectPathToTabIndex from 'src/dashboard/util/getDirectPathToTabIndex';
@@ -66,14 +77,8 @@ import { PAGES_TYPE } from 'src/dashboard/util/componentTypes';
 import FilterBar from 'src/dashboard/components/nativeFilters/FilterBar';
 import MobileFilterBar from 'src/dashboard/components/nativeFilters/FilterBar/MobileFilterBar';
 import { useUiConfig } from 'src/components/UiConfigContext';
-import ResizableSidebar from 'src/components/ResizableSidebar';
 import {
   BUILDER_SIDEPANEL_WIDTH,
-  CLOSED_FILTER_BAR_WIDTH,
-  FILTER_BAR_HEADER_HEIGHT,
-  MAIN_HEADER_HEIGHT,
-  OPEN_FILTER_BAR_MAX_WIDTH,
-  OPEN_FILTER_BAR_WIDTH,
   EMPTY_CONTAINER_Z_INDEX,
 } from 'src/dashboard/constants';
 import { getRootLevelTabsComponent, shouldFocusTabs } from './utils';
@@ -81,22 +86,8 @@ import DashboardContainer from './DashboardContainer';
 import { useNativeFilters } from './state';
 import DashboardWrapper from './DashboardWrapper';
 
-// @z-index-above-dashboard-charts + 1 = 11
-const FiltersPanel = styled.div<{ width: number; hidden: boolean }>`
-  background-color: ${({ theme }) => theme.colorBgContainer};
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  z-index: 11;
-  width: ${({ width }) => width}px;
-  ${({ hidden }) => hidden && `display: none;`}
-`;
-
-const StickyPanel = styled.div<{ width: number }>`
-  position: sticky;
-  top: -1px;
-  width: ${({ width }) => width}px;
-  flex: 0 0 ${({ width }) => width}px;
-`;
+/* FiltersPanel + StickyPanel удалены вместе с renderChild() —
+   вертикальный FilterBar теперь живёт в Drawer'е через DashboardSideRail. */
 
 // @z-index-above-dashboard-popovers (99) + 1 = 100
 const MOBILE_HEADER_BREAKPOINT = 570;
@@ -268,7 +259,7 @@ const DashboardContentWrapper = styled.div`
         width: 100%;
       }
 
-      & > .empty-droptarget:first-child:not(.empty-droptarget--full) {
+      & > .empty-droptarget:first-of-type:not(.empty-droptarget--full) {
         height: ${theme.sizeUnit * 4}px;
         top: 0;
       }
@@ -306,15 +297,15 @@ const StyledDashboardContent = styled.div<{
       margin: ${theme.sizeUnit * 4}px;
       margin-left: ${marginLeft}px;
 
-      ${editMode &&
-      `
-      max-width: calc(100% - ${
-        BUILDER_SIDEPANEL_WIDTH + theme.sizeUnit * 16
-      }px);
-    `}
+      /* В edit-mode раньше здесь была компенсация
+         max-width calc(100% - BUILDER_SIDEPANEL_WIDTH) —
+         резервировала 374px справа под sticky-sidebar
+         BuilderComponentPane. Sidebar убран (его роль теперь у
+         BuilderDrawer'а), компенсация не нужна — дашборд
+         занимает всю ширину с симметричными margin 32px. */
 
       /* this is the ParentSize wrapper */
-    & > div:first-child {
+    & > div:first-of-type {
         height: 100% !important;
       }
     }
@@ -388,8 +379,14 @@ const StyledDashboardContent = styled.div<{
       flex-direction: column !important;
     }
 
+    /*
+       View-mode: чарт уважает inline width от re-resizable
+       (widthMultiple * columnWidth) — РАВНО как в edit-mode. Никакого
+       width:100%/max-width:100% override — это раньше распирало чарт
+       на всю колонку, и view-mode выглядел иначе чем edit. Сохраняем
+       только вертикальный flex-chain для equal-height stretch.
+    */
     &[data-view-mode="true"] .resizable-container {
-      flex: 1 1 auto !important;
       display: flex !important;
       flex-direction: column !important;
       /* Override inline height — let flex chain control height */
@@ -459,87 +456,22 @@ const StyledDashboardContent = styled.div<{
     }
 
     /*
-     * Responsive layout — view mode only.
-     * Uses @container queries on .grid-container so layout reacts to
-     * actual container width (not viewport), adapting when filter panel opens.
-     * container-type is only set in view mode to protect edit mode.
+     * View-mode layout = edit-mode layout. Чарты уважают widthMultiple
+     * grid (re-resizable inline width). Никаких @container query overrides,
+     * которые меняют доли колонок — это раньше делало view-mode визуально
+     * отличным от edit-mode, и юзер видел разные размеры графиков.
+     *
+     * Container queries оставлены ТОЛЬКО ради мобильного сценария
+     * (<425px → single column). Margin не переопределяется — остаётся
+     * sizeUnit*4 (16px) такой же как в edit, чтобы отступы со всех
+     * сторон были симметричны и идентичны между edit/view.
      */
-
-    /* ── View mode: enable container queries + fill containers ── */
     &[data-view-mode="true"] .grid-container {
       container-type: inline-size;
       container-name: grid;
-      margin: clamp(4px, 1vw, 32px) !important;
-    }
-    &[data-view-mode="true"] .resizable-container {
-      width: 100% !important;
-      max-width: 100% !important;
     }
 
-    /* ── Wide container ≥1440px: 1 row, uniform gap ── */
-    @container grid (min-width: 1440px) {
-      .grid-row {
-        flex-wrap: nowrap !important;
-        gap: clamp(8px, 1cqi, 24px) !important;
-      }
-      .grid-row > :not(:last-child):not(.hover-menu) {
-        margin-right: 0 !important;
-      }
-      /* Vertical gap between row wrappers (override GridContent margin-bottom) */
-      .dragdroppable-row {
-        margin-bottom: clamp(8px, 1cqi, 24px) !important;
-      }
-      .dragdroppable-row:last-child {
-        margin-bottom: 0 !important;
-      }
-      .dragdroppable-column {
-        flex: 1 1 0% !important;
-      }
-    }
-
-    /* ── Medium container 800–1439px: 3 columns per row ── */
-    @container grid (min-width: 800px) and (max-width: 1439px) {
-      .grid-row {
-        flex-wrap: wrap !important;
-        gap: clamp(8px, 1cqi, 24px) !important;
-      }
-      .grid-row > :not(:last-child):not(.hover-menu) {
-        margin-right: 0 !important;
-      }
-      .dragdroppable-row {
-        margin-bottom: clamp(8px, 1cqi, 24px) !important;
-      }
-      .dragdroppable-row:last-child {
-        margin-bottom: 0 !important;
-      }
-      .dragdroppable-column {
-        flex: 1 1 calc(33.333% - clamp(6px, 0.7cqi, 16px)) !important;
-        min-width: calc(33.333% - clamp(6px, 0.7cqi, 16px)) !important;
-      }
-    }
-
-    /* ── Small container 425–799px: 2 columns ── */
-    @container grid (min-width: 425px) and (max-width: 799px) {
-      .grid-row {
-        flex-wrap: wrap !important;
-        gap: clamp(4px, 1cqi, 16px) !important;
-      }
-      .grid-row > :not(:last-child):not(.hover-menu) {
-        margin-right: 0 !important;
-      }
-      .dragdroppable-row {
-        margin-bottom: clamp(4px, 1cqi, 16px) !important;
-      }
-      .dragdroppable-row:last-child {
-        margin-bottom: 0 !important;
-      }
-      .dragdroppable-column {
-        flex: 1 1 calc(50% - clamp(2px, 0.5cqi, 8px)) !important;
-        min-width: calc(50% - clamp(2px, 0.5cqi, 8px)) !important;
-      }
-    }
-
-    /* ── Narrow container <425px: 1 column ── */
+    /* ── Mobile (<425px): single column, для читаемости на телефонах ── */
     @container grid (max-width: 424px) {
       .grid-row {
         flex-wrap: wrap !important;
@@ -568,18 +500,110 @@ const StyledDashboardContent = styled.div<{
   `}
 `;
 
-const ELEMENT_ON_SCREEN_OPTIONS = {
-  threshold: [1],
-};
+/* SaveOverlay — квадратная карточка по центру экрана с иконкой сверху
+   и подписью снизу. Появляется на время saveDashboardRequest (PUT
+   /api/v1/dashboard/:id). Заменяет дефолтный <Loading floating/> —
+   юзер просил квадрат с иконкой и подписью, не plain spinner. */
+const SaveOverlayBackdrop = styled.div`
+  position: fixed;
+  inset: 0;
+  background: ${DS2_VARS.drawerBg};
+  backdrop-filter: ${DS2_VARS.drawerFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.drawerFilter};
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: saveOverlayFadeIn 0.18s ${DS2_VARS.ease};
+
+  @keyframes saveOverlayFadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+`;
+
+const SaveOverlayCard = styled.div`
+  width: 200px;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: ${DS2_VARS.s};
+  border: 1px solid ${DS2_VARS.g200};
+  border-radius: 16px;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.18),
+    0 4px 12px rgba(0, 0, 0, 0.06);
+
+  .save-icon {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: color-mix(in oklab, ${DS2_VARS.cSky} 12%, ${DS2_VARS.bg3});
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${DS2_VARS.cSky};
+  }
+
+  /* Spinner: SVG-обёртка вокруг иконки. Статичный полный круг (track)
+     + вращающаяся 1/4-дуга (stripe). Только stripe крутится, track
+     стоит — раньше border на ::before крутился целиком, выглядело
+     как «дрожащий контур». SVG + transform: rotate с will-change даёт
+     плавную GPU-ускоренную анимацию. */
+  .save-spinner {
+    position: absolute;
+    inset: -10px;
+    pointer-events: none;
+  }
+  .save-spinner-track {
+    fill: none;
+    stroke: color-mix(in oklab, ${DS2_VARS.cSky} 18%, transparent);
+    stroke-width: 4;
+  }
+  .save-spinner-stripe {
+    fill: none;
+    stroke: ${DS2_VARS.cSky};
+    stroke-width: 4;
+    stroke-linecap: round;
+    transform-origin: 50% 50%;
+    transform-box: fill-box;
+    animation: saveRing 0.9s linear infinite;
+    will-change: transform;
+  }
+
+  .save-icon > svg:not(.save-spinner) {
+    width: 30px;
+    height: 30px;
+  }
+
+  .save-caption {
+    font-family: ${DS2_VARS.fontSans};
+    font-size: 13px;
+    font-weight: 600;
+    color: ${DS2_VARS.ink};
+    letter-spacing: 0.01em;
+  }
+
+  @keyframes saveRing {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
 
 const DashboardBuilder = () => {
   const dispatch = useDispatch();
   const uiConfig = useUiConfig();
   const theme = useTheme();
 
-  const dashboardId = useSelector<RootState, string>(
-    ({ dashboardInfo }) => `${dashboardInfo.id}`,
-  );
   const dashboardLayout = useSelector<RootState, DashboardLayout>(
     state => state.dashboardLayout.present,
   );
@@ -618,7 +642,8 @@ const DashboardBuilder = () => {
   }, [dashboardLayout, dispatch]);
 
   const handleDrop = useCallback(
-    dropResult => dispatch(handleComponentDrop(dropResult)),
+    (dropResult: DashboardDropResult) =>
+      dispatch(handleComponentDrop(dropResult)),
     [dispatch],
   );
 
@@ -653,41 +678,18 @@ const DashboardBuilder = () => {
     standaloneMode === DashboardStandaloneMode.HideNavAndTitle ||
     isReport;
 
-  const [barTopOffset, setBarTopOffset] = useState(0);
-  const [currentFilterBarWidth, setCurrentFilterBarWidth] = useState(
-    CLOSED_FILTER_BAR_WIDTH,
-  );
-
-  useEffect(() => {
-    setBarTopOffset(headerRef.current?.getBoundingClientRect()?.height || 0);
-
-    let observer: ResizeObserver;
-    if (global.hasOwnProperty('ResizeObserver') && headerRef.current) {
-      observer = new ResizeObserver(entries => {
-        setBarTopOffset(
-          current => entries?.[0]?.contentRect?.height || current,
-        );
-      });
-
-      observer.observe(headerRef.current);
-    }
-
-    return () => {
-      observer?.disconnect();
-    };
-  }, []);
+  /* barTopOffset / setBarTopOffset / ResizeObserver — удалены вместе
+     с вертикальным FilterBar, который теперь живёт в Drawer'е. */
 
   const {
     showDashboard,
     missingInitialFilters,
-    dashboardFiltersOpen,
     toggleDashboardFiltersOpen,
     nativeFiltersEnabled,
   } = useNativeFilters();
 
-  const [containerRef, isSticky] = useElementOnScreen<HTMLDivElement>(
-    ELEMENT_ON_SCREEN_OPTIONS,
-  );
+  /* useElementOnScreen для filterBar sticky-recalc — удалён вместе с
+     FilterBar.Vertical. */
 
   const showFilterBar = !editMode && nativeFiltersEnabled;
 
@@ -703,32 +705,14 @@ const DashboardBuilder = () => {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  const offset =
-    FILTER_BAR_HEADER_HEIGHT +
-    (isSticky || standaloneMode ? 0 : MAIN_HEADER_HEIGHT);
+  /* offset / filterBarHeight / filterBarOffset вычислялись для renderChild;
+     теперь FilterBar в Drawer'е DashboardSideRail сам рассчитывает размеры. */
 
-  const filterBarHeight = `calc(100vh - ${offset}px)`;
-  const filterBarOffset = dashboardFiltersOpen ? 0 : barTopOffset + 20;
-
-  const draggableStyle = useMemo(
-    () => ({
-      marginLeft:
-        dashboardFiltersOpen ||
-        editMode ||
-        !nativeFiltersEnabled ||
-        filterBarOrientation === FilterBarOrientation.Horizontal ||
-        isMobile
-          ? 0
-          : -32,
-    }),
-    [
-      dashboardFiltersOpen,
-      editMode,
-      filterBarOrientation,
-      nativeFiltersEnabled,
-      isMobile,
-    ],
-  );
+  /* В апстриме сюда ставили marginLeft:-32 как компенсацию под закрытый
+     вертикальный FilterBar (ResizableSidebar был 32px wide в collapsed).
+     В нашем форке FilterBar удалён полностью, поэтому любая такая
+     компенсация тянет шапку влево за пределы viewport'а — убрано. */
+  const draggableStyle = useMemo(() => ({ marginLeft: 0 }), []);
 
   // If a new tab was added, update the directPathToChild to reflect it
   const currentTopLevelTabs = useRef(topLevelTabs);
@@ -804,75 +788,24 @@ const DashboardBuilder = () => {
     ],
   );
 
-  const dashboardContentMarginLeft = !editMode
-    ? theme.sizeUnit * 4
-    : theme.sizeUnit * 8;
+  /* Симметричный margin-left со всех сторон. Старое значение sizeUnit*8
+     (32px) в edit-mode резервировалось под закрытый BuilderComponentPane;
+     sidebar убран — теперь edit и view используют одинаковые 16px. */
+  const dashboardContentMarginLeft = theme.sizeUnit * 4;
 
-  const renderChild = useCallback(
-    adjustedWidth => {
-      const filterBarWidth = dashboardFiltersOpen
-        ? adjustedWidth
-        : CLOSED_FILTER_BAR_WIDTH;
-      if (filterBarWidth !== currentFilterBarWidth) {
-        setCurrentFilterBarWidth(filterBarWidth);
-      }
-      return (
-        <FiltersPanel
-          width={filterBarWidth}
-          hidden={isReport}
-          data-test="dashboard-filters-panel"
-        >
-          <StickyPanel ref={containerRef} width={filterBarWidth}>
-            <ErrorBoundary>
-              <FilterBar
-                orientation={FilterBarOrientation.Vertical}
-                verticalConfig={{
-                  filtersOpen: dashboardFiltersOpen,
-                  toggleFiltersBar: toggleDashboardFiltersOpen,
-                  width: filterBarWidth,
-                  height: filterBarHeight,
-                  offset: filterBarOffset,
-                  topLevelPages,
-                  editMode,
-                }}
-              />
-            </ErrorBoundary>
-          </StickyPanel>
-        </FiltersPanel>
-      );
-    },
-    [
-      dashboardFiltersOpen,
-      toggleDashboardFiltersOpen,
-      filterBarHeight,
-      filterBarOffset,
-      isReport,
-      topLevelPages,
-      editMode,
-    ],
-  );
+  /* Desktop вертикальный FilterBar и ResizableSidebar удалены — фильтры
+     и pages теперь живут в отдельных Shell.Drawer'ах, которые триггерятся
+     узкой icon-колонкой <DashboardSideRail /> слева (монтируется в
+     Shell.tsx). Это освобождает место под грид и унифицирует UX.
 
-  const hasPages = (topLevelPages?.children?.length || 0) > 1;
-  const isVerticalFilterBarVisible =
-    (showFilterBar && filterBarOrientation === FilterBarOrientation.Vertical) ||
-    hasPages ||
-    editMode;
-  const headerFilterBarWidth =
-    isVerticalFilterBarVisible && !isMobile ? currentFilterBarWidth : 0;
+     MobileFilterBar ниже остаётся — на mobile drawer-pattern свой.
+
+     renderChild() callback удалён вместе с ResizableSidebar — он
+     зависел от FiltersPanel/StickyPanel/FilterBar.Vertical. */
+  const headerFilterBarWidth = 0;
 
   return (
     <DashboardWrapper>
-      {isVerticalFilterBarVisible && !isMobile && (
-        <ResizableSidebar
-          id={`dashboard:${dashboardId}`}
-          enable={dashboardFiltersOpen}
-          minWidth={OPEN_FILTER_BAR_WIDTH}
-          maxWidth={OPEN_FILTER_BAR_MAX_WIDTH}
-          initialWidth={OPEN_FILTER_BAR_WIDTH}
-        >
-          {renderChild}
-        </ResizableSidebar>
-      )}
       <StyledHeader
         data-test="dashboard-header-wrapper"
         ref={headerRef}
@@ -963,18 +896,46 @@ const DashboardBuilder = () => {
             ) : (
               <Loading />
             )}
-            {editMode && <BuilderComponentPane topOffset={barTopOffset} />}
+            {/* Старый sticky-sidebar BuilderComponentPane убран — его
+                содержимое (SliceAdder + layout-элементы) теперь живёт
+                в Shell-drawer'е kind='builder' (BuilderDrawer.tsx),
+                открывается кнопкой «Конструктор» в mini-rail'е. */}
           </StyledDashboardContent>
         </DashboardContentWrapper>
       </StyledContent>
       {dashboardIsSaving && (
-        <Loading
-          css={css`
-            && {
-              position: fixed;
-            }
-          `}
-        />
+        <SaveOverlayBackdrop role="status" aria-live="polite">
+          <SaveOverlayCard>
+            <span className="save-icon" aria-hidden>
+              {/* SVG spinner — track (статичный круг) + stripe
+                  (вращающаяся 1/4 дуга). circle.r=46, c=2π·46≈289;
+                  dasharray "70 220" → 70px дуги видно, 220px пропуск.
+                  CSS animation крутит этот единственный circle. */}
+              <svg
+                className="save-spinner"
+                viewBox="0 0 100 100"
+                aria-hidden="true"
+              >
+                <circle
+                  className="save-spinner-track"
+                  cx="50"
+                  cy="50"
+                  r="46"
+                />
+                <circle
+                  className="save-spinner-stripe"
+                  cx="50"
+                  cy="50"
+                  r="46"
+                  pathLength="100"
+                  strokeDasharray="22 100"
+                />
+              </svg>
+              <Icons.SaveOutlined iconSize="xl" />
+            </span>
+            <span className="save-caption">{t('Сохранение дашборда…')}</span>
+          </SaveOverlayCard>
+        </SaveOverlayBackdrop>
       )}
       {showFilterBar && isMobile && (
         <MobileFilterBar>

@@ -66,7 +66,7 @@ const Story = ({ openedKind, withContent }: Args) => (
                   ),
                   create: (
                     <div style={{ padding: 12, fontSize: 12, color: 'var(--ink)' }}>
-                      Дашборд · Диаграмма · Датасет · SQL (этап 6)
+                      Дашборд · Чарт · Датасет · SQL (этап 6)
                     </div>
                   ),
                 }

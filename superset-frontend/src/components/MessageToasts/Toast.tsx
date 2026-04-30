@@ -23,34 +23,85 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { ToastType, ToastMeta } from './types';
 
+/* Vertical card-style toast: квадрат/вертикальный прямоугольник,
+   иконка сверху по центру, текст под ней, close-кнопка в углу.
+   Юзер просил квадрат с большей высотой — заменили старый
+   горизонтальный alert. */
 const ToastContainer = styled.div`
   ${({ theme }) => css`
+    width: 220px;
+    min-height: 200px;
     display: flex;
-    justify-content: space-between; // Changed from center to space-between
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    padding: ${theme.sizeUnit * 6}px ${theme.sizeUnit * 4}px;
+    gap: ${theme.sizeUnit * 3}px;
 
-    // Content container for icon and text
     .toast__content {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      flex: 1; // Take available space
+      gap: ${theme.sizeUnit * 3}px;
+    }
+
+    /* Контейнер 64×64 для крупной иконки — как в SaveOverlay. */
+    .toast__icon-wrap {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: ${theme.colorFillTertiary};
     }
 
     .anticon {
-      padding: 0 ${theme.sizeUnit}px;
+      padding: 0;
     }
 
-    .toast__close,
-    .toast__close span {
-      padding-left: ${theme.sizeUnit * 4}px;
+    .toast__icon-wrap .anticon svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    .toast__text {
+      font-family: ${theme.fontFamily};
+      font-size: ${theme.fontSize}px;
+      font-weight: ${theme.fontWeightStrong};
+      line-height: 1.3;
+      max-width: 100%;
+      word-wrap: break-word;
+    }
+
+    /* Close-кнопка в правом верхнем углу карточки. */
+    .toast__close {
+      position: absolute;
+      top: ${theme.sizeUnit * 2}px;
+      right: ${theme.sizeUnit * 2}px;
+      padding: ${theme.sizeUnit}px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.12s ease;
+
+      &:hover {
+        background: ${theme.colorFillTertiary};
+      }
+
+      .anticon svg {
+        width: 14px;
+        height: 14px;
+      }
     }
   `}
 `;
 
 const notificationStyledIcon = (theme: SupersetTheme) => css`
-  min-width: ${theme.sizeUnit * 5}px;
   color: ${theme.colorTextLightSolid};
   margin-right: 0;
+  font-size: 32px;
 `;
 
 interface ToastPresenterProps {
@@ -133,8 +184,10 @@ export default function Toast({ toast, onCloseToast }: ToastPresenterProps) {
       role="alert"
     >
       <div className="toast__content">
-        {icon}
-        <Interweave content={toast.text} noHtml={!toast.allowHtml} />
+        <div className="toast__icon-wrap">{icon}</div>
+        <div className="toast__text">
+          <Interweave content={toast.text} noHtml={!toast.allowHtml} />
+        </div>
       </div>
       <Icons.CloseOutlined
         iconSize="m"

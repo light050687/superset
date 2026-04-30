@@ -35,7 +35,7 @@ const { common } = getBootstrapData();
 const themeController = new ThemeController();
 const extensionsRegistry = getExtensionsRegistry();
 
-export const RootContextProviders: React.FC = ({ children }) => {
+export const RootContextProviders: React.FC<React.PropsWithChildren<unknown>> = ({ children }) => {
   const RootContextProviderExtension = extensionsRegistry.get(
     'root.context.provider',
   );

@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const jsx_runtime_1 = require("react/jsx-runtime");
+const react_1 = require("react");
+const styles_1 = require("../styles");
+function FooterHintsInner({ shown, total }) {
+    return ((0, jsx_runtime_1.jsxs)(styles_1.CardFooter, { children: [(0, jsx_runtime_1.jsxs)("div", { className: "hint", children: [(0, jsx_runtime_1.jsxs)("span", { className: "hint-item", children: [(0, jsx_runtime_1.jsx)("kbd", { children: "Click" }), " \u2014 \u043A\u0440\u043E\u0441\u0441-\u0444\u0438\u043B\u044C\u0442\u0440"] }), (0, jsx_runtime_1.jsxs)("span", { className: "hint-item", children: [(0, jsx_runtime_1.jsx)("kbd", { children: "Shift" }), "+", (0, jsx_runtime_1.jsx)("kbd", { children: "Click" }), " \u2014 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D"] }), (0, jsx_runtime_1.jsxs)("span", { className: "hint-item", children: [(0, jsx_runtime_1.jsx)("kbd", { children: "Ctrl" }), "+", (0, jsx_runtime_1.jsx)("kbd", { children: "Click" }), " \u2014 \u0434\u0435\u0442\u0430\u043B\u0438\u0437\u0430\u0446\u0438\u044F"] }), (0, jsx_runtime_1.jsxs)("span", { className: "hint-item", children: [(0, jsx_runtime_1.jsx)("kbd", { children: "Esc" }), " \u2014 \u0437\u0430\u043A\u0440\u044B\u0442\u044C"] })] }), (0, jsx_runtime_1.jsxs)("div", { role: "status", "aria-live": "polite", children: ["\u041F\u043E\u043A\u0430\u0437\u0430\u043D\u043E ", (0, jsx_runtime_1.jsx)("span", { className: "total-right", children: shown }), " \u0438\u0437", ' ', (0, jsx_runtime_1.jsx)("span", { className: "total-right", children: total })] })] }));
+}
+exports.default = (0, react_1.memo)(FooterHintsInner);
+//# sourceMappingURL=FooterHints.js.map

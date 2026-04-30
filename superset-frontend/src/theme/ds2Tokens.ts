@@ -91,40 +91,16 @@ export const DS2_MAGNIFY = {
 } as const;
 
 /**
- * Liquid Glass — параметры полупрозрачного материала (iOS 26 / One UI 8.5).
- * Применяются к доку, drawer-у, AI overlay-ю, popover-ам.
- * Значения отличаются для light/dark темы — используйте через useDs2().glass.
+ * Liquid Glass — DEPRECATED статические константы удалены (DS v2.0 audit F-003).
+ *
+ * Раньше здесь были `DS2_GLASS_LIGHT`/`DS2_GLASS_DARK` с rgba+box-shadow и
+ * `DS2_GLASS_FILTER` с `blur(16px) saturate(180%)`. После апгрейда DS v2.0
+ * glass-материал стал flat solid (`--glass-shadow: none`, `--glass-bg: #FFFFFF`,
+ * `--glass-filter: none`), а источником правды стал `head_custom_extra.html`.
+ *
+ * Используйте `DS2_VARS.glassBg / glassBorder / glassShadow / glassScrim /
+ * glassFilter` (var(--*) — реактивные на смену темы) вместо JS-констант.
  */
-export const DS2_GLASS_LIGHT = {
-  /** rgba фон glass-панели (светлая тема). */
-  bg: 'rgba(255, 255, 255, 0.85)',
-  /** rgba фон вложенных контролов внутри glass. */
-  bgElevated: 'rgba(255, 255, 255, 0.95)',
-  /** rgba border для glass-панели. */
-  border: 'rgba(0, 0, 0, 0.06)',
-  /** box-shadow для floating-элементов. */
-  shadow: '0 12px 32px rgba(0, 0, 0, 0.15)',
-  /** box-shadow для AI overlay (сильнее). */
-  shadowElevated: '0 20px 60px rgba(0, 0, 0, 0.25)',
-  /** scrim-фон под модальными overlay-ями. */
-  scrim: 'rgba(0, 0, 0, 0.4)',
-} as const;
-
-export const DS2_GLASS_DARK = {
-  bg: 'rgba(23, 26, 30, 0.85)',
-  bgElevated: 'rgba(39, 43, 48, 0.90)',
-  border: 'rgba(255, 255, 255, 0.08)',
-  shadow: '0 12px 32px rgba(0, 0, 0, 0.4)',
-  shadowElevated: '0 20px 60px rgba(0, 0, 0, 0.55)',
-  scrim: 'rgba(0, 0, 0, 0.55)',
-} as const;
-
-/** backdrop-filter — общий для обеих тем. */
-export const DS2_GLASS_FILTER = 'blur(16px) saturate(180%)' as const;
-
-export type Ds2GlassPalette = {
-  [K in keyof typeof DS2_GLASS_LIGHT]: string;
-};
 
 export const DS2_LIGHT = {
   bg: '#F3F3F3',

@@ -17,11 +17,22 @@
  */
 import { styled } from '@superset-ui/core';
 import { Collapse as AntdCollapse } from 'antd';
+import type { CollapseProps as AntdCollapseProps } from 'antd/es/collapse';
 import type { CollapseProps } from './types';
 
-const StyledCollapse = styled((props: CollapseProps) => (
-  <AntdCollapse {...props} />
-))`
+// AntD v6 renamed `expandIconPosition` → `expandIconPlacement`. We translate
+// at the wrapper so call sites (~10 files) don't need touching.
+type ExpandPlacement = AntdCollapseProps['expandIconPlacement'];
+
+const CollapseTranslator = ({ expandIconPosition, ...rest }: CollapseProps) => {
+  const existing = (rest as { expandIconPlacement?: ExpandPlacement })
+    .expandIconPlacement;
+  const placement: ExpandPlacement =
+    existing ?? (expandIconPosition as ExpandPlacement | undefined);
+  return <AntdCollapse {...rest} expandIconPlacement={placement} />;
+};
+
+const StyledCollapse = styled(CollapseTranslator)`
   ${({ modalMode }) =>
     modalMode &&
     `

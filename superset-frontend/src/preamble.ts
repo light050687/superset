@@ -26,7 +26,6 @@
  * English "flash" on first load — language pack is fetched and configured
  * before any React component renders.
  */
-import { setConfig as setHotLoaderConfig } from 'react-hot-loader';
 import dayjs from 'dayjs';
 // eslint-disable-next-line no-restricted-imports
 import {
@@ -54,11 +53,6 @@ export default function initPreamble(): Promise<void> {
 
   initPromise = (async () => {
     configure();
-
-    // Set hot reloader config
-    if (process.env.WEBPACK_MODE === 'development') {
-      setHotLoaderConfig({ logLevel: 'debug', trackTailUpdates: false });
-    }
 
     // Grab initial bootstrap data
     const bootstrapData = getBootstrapData();

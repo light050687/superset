@@ -9,168 +9,217 @@
  *
  *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Модалка подтверждения удаления папки каталога на DS 2.0.
- * Замена window.confirm — точнее соответствует мокапу, a11y-compliant.
+ * Модалка подтверждения удаления папки каталога.
+ *
+ * Требование заказчика: объекты (дашборды/чарты/датасеты) НИКОГДА не
+ * удаляются вместе с папкой — они переезжают в родительскую папку.
+ *
+ * Два режима удаления:
+ *  1. Сохранить структуру (по умолчанию): подпапки перевешиваются на
+ *     родителя удаляемой папки, items тоже туда переезжают.
+ *  2. Оставить только объекты (checkbox): все вложенные подпапки
+ *     каскадно удаляются; items из них + из самой папки едут плоским
+ *     списком в родителя удаляемой папки.
+ *
+ * Чекбокс показывается только когда у папки есть подпапки —
+ * в противном случае оба режима дают одинаковый результат.
+ *
+ * Мокап: analytics-floating-dock.html → deleteDept/deleteSub/deleteFolderCat.
  */
-import { styled, t } from '@superset-ui/core';
-import { Modal } from '@superset-ui/core/components';
-import { type FC, useState } from 'react';
-import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
+import { t } from '@superset-ui/core';
+import { type FC, useEffect, useState } from 'react';
+import {
+  CatalogModalBox,
+  ModalBtn,
+  ModalBtnDanger,
+  ModalBtnRow,
+  ModalCheck,
+  ModalIcon,
+  ModalMeta,
+  ModalSub,
+} from './CatalogModalBox';
 
 interface CatalogDeleteModalProps {
   open: boolean;
+  /** Имя удаляемой папки. */
   folderName: string;
-  /** Показывает предупреждение «содержимое не будет удалено». */
-  preserveContents?: boolean;
-  /** Есть ли вложенный контент для удаления (скрывает checkbox если нет). */
-  hasContents?: boolean;
+  /** Количество объектов (items) непосредственно в этой папке. */
+  itemCount?: number;
+  /** Количество прямых подпапок. Если > 0 — показывается чекбокс
+   *  каскадного удаления структуры. */
+  subfolderCount?: number;
+  /** Общее количество вложенных подпапок (включая глубокие уровни) —
+   *  используется для текста «Удалено подпапок: N» в режиме cascade. */
+  descendantFolderCount?: number;
+  /** Общее количество items во всех вложенных подпапках (рекурсивно) —
+   *  показывается в meta для полноты картины. */
+  descendantItemCount?: number;
+  /** Имя папки-назначения, куда переедут объекты. Если undefined —
+   *  удаляемая папка корневая и объекты переедут в «Без департамента». */
+  parentFolderName?: string;
   onClose: () => void;
-  /** Вызывается с флагом каскадного удаления. */
-  onConfirm: (deleteContents: boolean) => Promise<void> | void;
+  /** cascade=true → удалить все подпапки, сохранив только объекты.
+   *  cascade=false → сохранить структуру (подпапки перевешиваются). */
+  onConfirm: (cascade: boolean) => Promise<void> | void;
 }
 
-const Body = styled.div`
-  font-family: ${DS2_VARS.fontSans};
-  padding: ${DS2_SPACE.s1}px 0;
-`;
+const DangerIconSvg = (): JSX.Element => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.6}
+  >
+    <circle cx="10" cy="10" r="8.2" />
+    <path d="M10 6v5M10 13.5v.5" />
+  </svg>
+);
 
-const P = styled.p`
-  font-size: 13px;
-  color: ${DS2_VARS.g700};
-  line-height: 1.6;
-  margin: 0 0 ${DS2_SPACE.s2}px;
+const DEFAULT_PARENT_LABEL = 'Без департамента';
 
-  strong {
-    color: ${DS2_VARS.ink};
-    font-weight: 600;
-  }
-`;
-
-const CheckLabel = styled.label`
-  display: flex;
-  align-items: center;
-  gap: ${DS2_SPACE.s2}px;
-  font-size: 12px;
-  color: ${DS2_VARS.g700};
-  cursor: pointer;
-  margin: ${DS2_SPACE.s3}px 0 0;
-
-  input[type='checkbox'] {
-    accent-color: ${DS2_VARS.dn};
-    width: 14px;
-    height: 14px;
-    cursor: pointer;
-  }
-`;
-
-const ButtonRow = styled.div`
-  display: flex;
-  gap: ${DS2_SPACE.s2}px;
-  justify-content: flex-end;
-  margin-top: ${DS2_SPACE.s4}px;
-`;
-
-const BaseBtn = styled.button`
-  font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 6px 14px;
-  border-radius: ${DS2_RADIUS.control}px;
-  cursor: pointer;
-  background: transparent;
-  border: 1px solid ${DS2_VARS.g200};
-  color: ${DS2_VARS.g700};
-
-  &:hover {
-    border-color: ${DS2_VARS.g400};
-    color: ${DS2_VARS.ink};
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${DS2_VARS.cSky};
-    outline-offset: 2px;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-
-const DangerBtn = styled(BaseBtn)`
-  border-color: ${DS2_VARS.dn};
-  color: ${DS2_VARS.dn};
-
-  &:hover {
-    background: ${DS2_VARS.dnBg};
-    border-color: ${DS2_VARS.dn};
-    color: ${DS2_VARS.dn};
-  }
-`;
-
-export const CatalogDeleteModal: FC<CatalogDeleteModalProps> = ({
+export const CatalogDeleteModal: FC<
+  React.PropsWithChildren<CatalogDeleteModalProps>
+> = ({
   open,
   folderName,
-  preserveContents = true,
-  hasContents = true,
+  itemCount = 0,
+  subfolderCount = 0,
+  descendantFolderCount,
+  descendantItemCount,
+  parentFolderName,
   onClose,
   onConfirm,
 }) => {
   const [cascade, setCascade] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const handleConfirm = async () => {
+  /* Чекбокс сбрасывается на каждом открытии модалки — иначе юзер
+     откроет второй раз и увидит свой старый выбор. */
+  useEffect(() => {
+    if (open) setCascade(false);
+  }, [open]);
+
+  const handleConfirm = async (): Promise<void> => {
     setSubmitting(true);
     try {
       await onConfirm(cascade);
-      setCascade(false);
-      onClose();
     } finally {
       setSubmitting(false);
     }
   };
 
+  const targetName = parentFolderName ?? DEFAULT_PARENT_LABEL;
+  const hasSubfolders = subfolderCount > 0;
+  const totalDescendantFolders = descendantFolderCount ?? subfolderCount;
+  const totalDescendantItems = descendantItemCount ?? 0;
+
+  /* Текст-подтверждение собирается из 3 частей:
+     1. Что произойдёт со структурой (сохранится / удалится)
+     2. Куда переедут объекты (<targetName>)
+     3. Инвариант: сами объекты не будут удалены. */
+  const renderText = (): JSX.Element => {
+    if (!hasSubfolders) {
+      if (itemCount === 0) {
+        return (
+          <>
+            {t('Папка')} <strong>«{folderName}»</strong>{' '}
+            {t('будет удалена.')}
+          </>
+        );
+      }
+      return (
+        <>
+          {t('Папка')} <strong>«{folderName}»</strong> {t('будет удалена.')}{' '}
+          {t('Объекты переедут в папку')} <strong>«{targetName}»</strong>.
+        </>
+      );
+    }
+    if (cascade) {
+      return (
+        <>
+          {t('Структура подпапок будет удалена. Объекты переедут в папку')}{' '}
+          <strong>«{targetName}»</strong> {t('плоским списком.')}
+        </>
+      );
+    }
+    return (
+      <>
+        {t('Всё содержимое сохранится в папке')}{' '}
+        <strong>«{targetName}»</strong>{' '}
+        {t('— подпапки и объекты переедут вместе.')}
+      </>
+    );
+  };
+
+  /* Meta-строки: факты о содержимом, показываем только непустые. */
+  const metaLines: string[] = [];
+  if (hasSubfolders) {
+    metaLines.push(`${t('Подпапок (прямых):')} ${subfolderCount}`);
+  }
+  if (
+    totalDescendantFolders > subfolderCount &&
+    totalDescendantFolders > 0
+  ) {
+    metaLines.push(
+      `${t('Всего вложенных папок:')} ${totalDescendantFolders}`,
+    );
+  }
+  if (itemCount > 0) {
+    metaLines.push(`${t('Объектов в папке:')} ${itemCount}`);
+  }
+  if (totalDescendantItems > 0) {
+    metaLines.push(
+      `${t('Объектов в подпапках:')} ${totalDescendantItems}`,
+    );
+  }
+
   return (
-    <Modal
-      show={open}
-      onHide={onClose}
-      title={t('Удаление папки')}
-      hideFooter
-      width="420px"
-      data-test="catalog-delete-modal"
+    <CatalogModalBox
+      open={open}
+      onClose={onClose}
+      width={380}
+      title={t('Удалить папку?')}
+      dataTest="catalog-delete-modal"
     >
-      <Body>
-        <P>
-          {t('Вы удаляете папку')} <strong>«{folderName}»</strong>.
-        </P>
-        {preserveContents ? (
-          <P>
-            {t('Содержимое')} <strong>{t('не будет удалено')}</strong>
-            {' — '}
-            {t('объекты переместятся в «Без категории».')}
-          </P>
-        ) : null}
-        {hasContents ? (
-          <CheckLabel>
-            <input
-              type="checkbox"
-              checked={cascade}
-              onChange={e => setCascade(e.target.checked)}
-              disabled={submitting}
-            />
-            {t('Также удалить всё содержимое')}
-          </CheckLabel>
-        ) : null}
-        <ButtonRow>
-          <BaseBtn type="button" onClick={onClose} disabled={submitting}>
-            {t('Отмена')}
-          </BaseBtn>
-          <DangerBtn type="button" onClick={handleConfirm} disabled={submitting}>
-            {submitting ? t('…') : t('Удалить')}
-          </DangerBtn>
-        </ButtonRow>
-      </Body>
-    </Modal>
+      <ModalIcon>
+        <DangerIconSvg />
+      </ModalIcon>
+      <ModalSub>{renderText()}</ModalSub>
+      {metaLines.length > 0 ? (
+        <ModalMeta>
+          {metaLines.map(line => (
+            <div key={line}>{line}</div>
+          ))}
+        </ModalMeta>
+      ) : null}
+      {hasSubfolders ? (
+        <ModalCheck>
+          <input
+            type="checkbox"
+            checked={cascade}
+            onChange={e => setCascade(e.target.checked)}
+            disabled={submitting}
+            aria-describedby="catalog-delete-cascade-hint"
+          />
+          <span id="catalog-delete-cascade-hint">
+            {t(
+              'Оставить внутри только объекты (удалить структуру подпапок)',
+            )}
+          </span>
+        </ModalCheck>
+      ) : null}
+      <ModalBtnRow>
+        <ModalBtn type="button" onClick={onClose} disabled={submitting}>
+          {t('Отмена')}
+        </ModalBtn>
+        <ModalBtnDanger
+          type="button"
+          onClick={handleConfirm}
+          disabled={submitting}
+        >
+          {submitting ? t('…') : t('Удалить')}
+        </ModalBtnDanger>
+      </ModalBtnRow>
+    </CatalogModalBox>
   );
 };

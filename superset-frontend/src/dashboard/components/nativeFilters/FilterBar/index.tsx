@@ -141,7 +141,7 @@ const publishDataMask = debounce(
   Constants.SLOW_DEBOUNCE,
 );
 
-const FilterBar: FC<FiltersBarProps> = ({
+const FilterBar: FC<React.PropsWithChildren<FiltersBarProps>> = ({
   orientation = FilterBarOrientation.Vertical,
   verticalConfig,
   hidden = false,
@@ -419,6 +419,25 @@ const FilterBar: FC<FiltersBarProps> = ({
     />
   ) : undefined;
 
+  /* Контекст для kanban preset-колонки (inline-panel без popover'а).
+     Все колбэки те же, что у PresetButton — переиспользуем логику
+     apply/clear/refresh без дубликации. */
+  const kanbanPresetCtx = dashboardId
+    ? {
+        dashboardId,
+        dataMaskSelected,
+        filters,
+        activePresetId,
+        onApplyPreset: handleApplyPreset,
+        onClearAll: handleClearAll,
+        onPresetChange: (id: number | null, name: string | null) => {
+          setActivePresetId(id);
+          setActivePresetName(name);
+        },
+        onPresetsRefresh: refreshPresets,
+      }
+    : undefined;
+
   const actions = useMemo(
     () => (
       <ActionButtons
@@ -430,11 +449,13 @@ const FilterBar: FC<FiltersBarProps> = ({
         dataMaskApplied={dataMaskApplied}
         isApplyDisabled={isApplyDisabled}
         isMobile={verticalConfig?.isMobile}
+        useKanbanLayout={verticalConfig?.useKanban}
       />
     ),
     [
       orientation,
       verticalConfig?.width,
+      verticalConfig?.useKanban,
       handleApply,
       handleClearAll,
       dataMaskSelected,
@@ -475,6 +496,10 @@ const FilterBar: FC<FiltersBarProps> = ({
         presetButton={presetButton}
         topLevelPages={verticalConfig.topLevelPages}
         editMode={verticalConfig.editMode}
+        hideInternalHeader={verticalConfig.hideInternalHeader}
+        useKanban={verticalConfig.useKanban}
+        dashboardId={dashboardId}
+        kanbanPresetCtx={kanbanPresetCtx}
       />
     ) : null;
 

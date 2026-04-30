@@ -39,7 +39,6 @@ import { Icons } from '@superset-ui/core/components/Icons';
 import {
   Button,
   Tooltip,
-  DeleteModal,
   UnsavedChangesModal,
 } from '@superset-ui/core/components';
 import { findPermission } from 'src/utils/findPermission';
@@ -57,8 +56,6 @@ import { TagTypeEnum } from 'src/components/Tag/TagType';
 import setPeriodicRunner, {
   stopPeriodicRender,
 } from 'src/dashboard/util/setPeriodicRunner';
-import ReportModal from 'src/features/reports/ReportModal';
-import { deleteActiveReport } from 'src/features/reports/ReportModal/actions';
 import { PageHeaderWithActions } from '@superset-ui/core/components/PageHeaderWithActions';
 import { useUnsavedChangesPrompt } from 'src/hooks/useUnsavedChangesPrompt';
 import DashboardEmbedModal from '../EmbeddedModal';
@@ -101,6 +98,101 @@ const extensionsRegistry = getExtensionsRegistry();
 
 const headerContainerStyle = theme => css`
   border-bottom: 1px solid ${theme.colorBorder};
+
+  /* DS v2.0 — Page title (Dashboard).
+     Цель: 28px / 800 / -0.03em / Manrope (--f) / --ink.
+     Скоупируем через .dashboard-header-container, чтобы не задеть
+     SliceHeader / ExploreChartHeader / AllEntities — там тот же
+     DynamicEditableTitle, но другой контекст. */
+  .header-with-actions .title-panel .dynamic-title-input {
+    font-family: var(--f, 'Manrope', 'Inter', Helvetica, Arial, sans-serif);
+    font-size: 28px;
+    line-height: 34px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--ink, ${theme.colorText});
+  }
+
+  /* DS v2.0 — Meta-bar (только "час назад" — Owner убран в useDashboardMetadataBar).
+     Цель: 11px / 400 / JetBrains Mono (--m) / --g600.
+     ⚠️ DOM (verified в Chrome): <div class="dashboard-metadata-bar-slot">
+                                   <span class="metadata-text">3 часа назад</span>
+                                 </div>
+     data-test='metadata-bar' атрибут отфильтровывается React production build,
+     поэтому селектор по классу .metadata-text + .dashboard-metadata-bar-slot. */
+  .header-with-actions .dashboard-metadata-bar-slot,
+  .header-with-actions .dashboard-metadata-bar-slot .metadata-text,
+  .header-with-actions .metadata-panel .metadata-text,
+  .header-with-actions .title-panel .metadata-text {
+    font-family: var(
+      --m,
+      'JetBrains Mono',
+      'Fira Code',
+      'Courier New',
+      monospace
+    ) !important;
+    font-size: 11px !important;
+    line-height: 16px !important;
+    font-weight: 400 !important;
+    color: var(--g600, ${theme.colorTextSecondary}) !important;
+  }
+
+  /* DS v2.0 — Meta-bar pushed to the right edge of dashboard content.
+     ⚠️ DOM (verified в Chrome DevTools):
+       .header-with-actions  (flex, justify-content: space-between, padding: 0 16px)
+         .title-panel        (flex 0 1 auto, margin-right: 48px от actions)
+           div.editable-title (title text — может обрезаться ellipsis)
+           div[buttonsStyles] (FaveStar + наш slot)
+         .right-button-panel (actions/profile, ~24px)
+     Цели:
+       1. .title-panel растянута на всё свободное место (flex:1)
+       2. margin-right у title-panel убрана (0) — slot долетает до правого края
+       3. Title не shrink'ается (flex-shrink:0 на первом ребёнке) — полное название видно
+       4. intermediate buttonsStyles div растянут (flex:1, display:flex)
+       5. margin-left: auto на slot — пушит вправо в расширенном div */
+  .header-with-actions .title-panel {
+    flex: 1 !important;
+    margin-right: 0 !important;
+    gap: ${theme.sizeUnit * 2}px;
+  }
+  /* Title (первый ребёнок) — не shrink'ается, показывает полное название */
+  .header-with-actions .title-panel > *:first-child {
+    flex: 0 0 auto !important;
+    max-width: 50% !important;
+  }
+  /* Intermediate div (второй ребёнок) — растягивается */
+  .header-with-actions .title-panel > *:last-child {
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    min-width: 0 !important;
+  }
+  .header-with-actions .title-panel .dashboard-metadata-bar-slot {
+    margin-left: auto !important;
+  }
+  /* Также убираем ellipsis у самого title input/span */
+  .header-with-actions .title-panel .editable-title,
+  .header-with-actions .title-panel .editable-title input,
+  .header-with-actions .title-panel .editable-title span {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    max-width: none !important;
+  }
+
+  /* DynamicEditableTitle использует .input-sizer span для auto-resize
+     ширины input. Без выровненного font'а sizer измеряет в default font
+     (14px), а input рендерится в page-title (28px/800) — текст не помещается,
+     срабатывает text-overflow: ellipsis у input ("Тест ..."). Решение —
+     синхронизировать font sizer'а со стилем input.  */
+  .header-with-actions .title-panel .input-sizer,
+  .header-with-actions .title-panel .dynamic-title-input {
+    font-family: var(--f, ${theme.fontFamily}) !important;
+    font-size: 28px !important;
+    line-height: 34px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em !important;
+  }
+
 `;
 
 const editButtonStyle = theme => css`
@@ -180,8 +272,6 @@ const Header = () => {
   const [emphasizeRedo, setEmphasizeRedo] = useState(false);
   const [showingPropertiesModal, setShowingPropertiesModal] = useState(false);
   const [showingEmbedModal, setShowingEmbedModal] = useState(false);
-  const [showingReportModal, setShowingReportModal] = useState(false);
-  const [currentReportDeleting, setCurrentReportDeleting] = useState(null);
   const dashboardInfo = useSelector(state => state.dashboardInfo);
   const layout = useSelector(state => state.dashboardLayout.present);
   const undoLength = useSelector(state => state.dashboardLayout.past.length);
@@ -514,14 +604,6 @@ const Header = () => {
     setShowingEmbedModal(false);
   }, []);
 
-  const showReportModal = useCallback(() => {
-    setShowingReportModal(true);
-  }, []);
-
-  const hideReportModal = useCallback(() => {
-    setShowingReportModal(false);
-  }, []);
-
   const metadataBar = useDashboardMetadataBar(dashboardInfo);
 
   // Responsive: track mobile breakpoint for header layout
@@ -538,16 +620,10 @@ const Header = () => {
 
   const userCanEdit =
     dashboardInfo.dash_edit_perm && !dashboardInfo.is_managed_externally;
-  const userCanShare = dashboardInfo.dash_share_perm;
   const userCanSaveAs = dashboardInfo.dash_save_perm;
   const userCanCurate =
     isFeatureEnabled(FeatureFlag.EmbeddedSuperset) &&
     findPermission('can_set_embedded', 'Dashboard', user.roles);
-  const refreshLimit =
-    dashboardInfo.common?.conf?.SUPERSET_DASHBOARD_PERIODICAL_REFRESH_LIMIT;
-  const refreshWarning =
-    dashboardInfo.common?.conf
-      ?.SUPERSET_DASHBOARD_PERIODICAL_REFRESH_WARNING_MESSAGE;
   const isEmbedded = !dashboardInfo?.userId;
 
   const handleOnPropertiesChange = useCallback(
@@ -617,18 +693,15 @@ const Header = () => {
 
   const titlePanelAdditionalItems = useMemo(
     () => [
-      !editMode && (
-        <PublishedStatus
-          dashboardId={dashboardInfo.id}
-          isPublished={isPublished}
-          savePublished={boundActionCreators.savePublished}
-          userCanEdit={userCanEdit}
-          userCanSave={userCanSaveAs}
-          visible={!editMode}
-        />
-      ),
+      /* PublishedStatus-бейдж («Черновик» / «Опубликовано») убран из
+         header'а — статус и переключатель публикации теперь живут в
+         DevToolsPanel-tile «Опубликовать / Снять с публикации». */
       // On mobile, metadata is shown in separate metadata-panel (not here)
-      !editMode && !isEmbedded && !isMobile && metadataBar,
+      !editMode && !isEmbedded && !isMobile && metadataBar ? (
+        <div key="metadata-bar" className="dashboard-metadata-bar-slot">
+          {metadataBar}
+        </div>
+      ) : null,
     ],
     [
       boundActionCreators.savePublished,
@@ -655,7 +728,14 @@ const Header = () => {
         {userCanSaveAs && (
           <div className="button-container" data-test="dashboard-edit-actions">
             {editMode && (
-              <div css={actionButtonsStyle}>
+              /* Undo/Redo/Discard/Save убраны из header'а — их функции
+                 доступны через DevToolsPanel (mini-rail → иконка
+                 «Инструменты разработчика»). Save-кнопка оставлена
+                 ВИЗУАЛЬНО СКРЫТОЙ (display:none), но остаётся в DOM —
+                 DevToolsPanel.handleSave триггерит её клик по
+                 data-test="header-save-button", чтобы не дублировать
+                 тяжёлую overwriteDashboard-логику. */
+              <div css={[actionButtonsStyle, { display: 'none' }]}>
                 <div className="undoRedo">
                   <Tooltip
                     id="dashboard-undo-tooltip"
@@ -731,20 +811,13 @@ const Header = () => {
         {editMode ? (
           <UndoRedoKeyListeners onUndo={handleCtrlZ} onRedo={handleCtrlY} />
         ) : (
+          /* «Edit dashboard» кнопка перенесена на DashboardSideRail
+             (mini-rail над главным dock'ом) как action-иконка — чтобы
+             юзер управлял редактированием через единую нижнюю панель
+             вместе с Обновить/Полноэкранный. Здесь оставлен только
+             NavExtension (расширения от плагинов). */
           <div css={actionButtonsStyle}>
             {NavExtension && <NavExtension />}
-            {userCanEdit && (
-              <Button
-                buttonStyle="secondary"
-                onClick={handleEnterEditMode}
-                data-test="edit-dashboard-button"
-                className="action-button"
-                css={editButtonStyle}
-                aria-label={t('Edit dashboard')}
-              >
-                {t('Edit dashboard')}
-              </Button>
-            )}
           </div>
         )}
       </div>
@@ -770,45 +843,21 @@ const Header = () => {
     ],
   );
 
-  const handleReportDelete = async report => {
-    await dispatch(deleteActiveReport(report));
-    setCurrentReportDeleting(null);
-  };
-
   const [menu, isDropdownVisible, setIsDropdownVisible] = useHeaderActionsMenu({
     addSuccessToast: boundActionCreators.addSuccessToast,
     addDangerToast: boundActionCreators.addDangerToast,
     dashboardInfo,
     dashboardId: dashboardInfo.id,
     dashboardTitle,
-    dataMask,
-    layout,
-    expandedSlices,
     customCss,
-    colorNamespace,
-    colorScheme,
-    onSave: boundActionCreators.onSave,
     onChange: boundActionCreators.onChange,
     forceRefreshAllCharts: forceRefresh,
-    startPeriodicRender,
-    refreshFrequency,
-    shouldPersistRefreshFrequency,
-    setRefreshFrequency: boundActionCreators.setRefreshFrequency,
     updateCss: boundActionCreators.updateCss,
     editMode,
-    hasUnsavedChanges,
-    userCanEdit,
-    userCanShare,
-    userCanSave: userCanSaveAs,
     userCanCurate,
     isLoading,
-    showReportModal,
     showPropertiesModal,
-    setCurrentReportDeleting,
     manageEmbedded: showEmbedModal,
-    refreshLimit,
-    refreshWarning,
-    lastModifiedTime: actualLastModifiedTime,
     logEvent: boundActionCreators.logEvent,
   });
   return (
@@ -832,6 +881,7 @@ const Header = () => {
         additionalActionsMenu={menu}
         showFaveStar={user?.userId && dashboardInfo?.id}
         showTitlePanelItems
+        showMenuDropdown={false}
       />
       {showingPropertiesModal && (
         <PropertiesModal
@@ -846,31 +896,9 @@ const Header = () => {
         />
       )}
 
-      <ReportModal
-        userId={user.userId}
-        show={showingReportModal}
-        onHide={hideReportModal}
-        userEmail={user.email}
-        dashboardId={dashboardInfo.id}
-        creationMethod="dashboards"
-      />
-
-      {currentReportDeleting && (
-        <DeleteModal
-          description={t(
-            'This action will permanently delete %s.',
-            currentReportDeleting?.name,
-          )}
-          onConfirm={() => {
-            if (currentReportDeleting) {
-              handleReportDelete(currentReportDeleting);
-            }
-          }}
-          onHide={() => setCurrentReportDeleting(null)}
-          open
-          title={t('Delete Report?')}
-        />
-      )}
+      {/* ReportModal + DeleteModal для report'ов перенесены в
+          DashboardSideRail вместе с popover'ом «Управление рассылкой
+          по почте». */}
 
       <OverwriteConfirm />
 

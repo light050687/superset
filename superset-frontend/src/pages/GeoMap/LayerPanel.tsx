@@ -13,7 +13,7 @@ interface LayerPanelProps {
   onToggleGroup: (groupId: string) => void;
 }
 
-const LayerPanel: FC<LayerPanelProps> = ({ groups, onToggleGroup }) => {
+const LayerPanel: FC<React.PropsWithChildren<LayerPanelProps>> = ({ groups, onToggleGroup }) => {
   const [open, setOpen] = useState(true);
 
   return (

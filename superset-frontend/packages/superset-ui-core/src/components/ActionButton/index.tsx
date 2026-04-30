@@ -17,11 +17,10 @@
  * under the License.
  */
 
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import {
   Tooltip,
   type TooltipPlacement,
-  type IconType,
 } from '@superset-ui/core/components';
 import { css, useTheme } from '@superset-ui/core';
 
@@ -29,7 +28,11 @@ export interface ActionProps {
   label: string;
   tooltip?: string | ReactElement;
   placement?: TooltipPlacement;
-  icon: IconType;
+  /**
+   * Rendered directly inside the button `<span>`. Pass a JSX element
+   * (e.g. `<Icons.EyeOutlined />`), not icon props.
+   */
+  icon: ReactNode;
   onClick: () => void;
 }
 

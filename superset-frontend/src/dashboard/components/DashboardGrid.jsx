@@ -20,7 +20,7 @@ import { PureComponent, Fragment } from 'react';
 import { withTheme } from '@emotion/react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import { addAlpha, css, styled, t } from '@superset-ui/core';
+import { css, styled, t } from '@superset-ui/core';
 import { EmptyState } from '@superset-ui/core/components';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { navigateTo } from 'src/utils/navigationUtils';
@@ -29,6 +29,7 @@ import DashboardComponent from '../containers/DashboardComponent';
 import { Droppable } from './dnd/DragDroppable';
 import { GRID_GUTTER_SIZE, GRID_COLUMN_COUNT } from '../util/constants';
 import { TAB_TYPE } from '../util/componentTypes';
+import DashboardGuides from './GridGuides/DashboardGuides';
 
 const propTypes = {
   depth: PropTypes.number.isRequired,
@@ -62,7 +63,15 @@ const GridContent = styled.div`
   ${({ theme, editMode }) => css`
     display: flex;
     flex-direction: column;
-    /* gutters between rows */
+    /* GridGuides (колонки/сетка) absolute-позиционированы внутри
+       grid-content — даём positioning context. */
+    position: relative;
+    /* gutters between rows. Edit-mode: НЕ добавляем margin — между
+       chart rows уже есть empty-droptarget (height 16) который служит
+       drop-зоной И визуальным gap'ом. Если добавить margin сюда,
+       получится 16 (margin) + 16 (droptarget) = 32px gap, что
+       расходится с DashboardGuides cell rowGap=16 → накопительный drift.
+       View-mode: droptargets отсутствуют, margin-bottom:16 даёт rowGap. */
     & > div:not(:last-child):not(.empty-droptarget) {
       ${!editMode && `margin-bottom: ${theme.sizeUnit * 4}px`};
     }
@@ -87,7 +96,7 @@ const GridContent = styled.div`
       }
     }
 
-    & > .empty-droptarget:first-child {
+    & > .empty-droptarget:first-of-type {
       height: ${theme.sizeUnit * 4}px;
       margin-top: ${theme.sizeUnit * -4}px;
     }
@@ -100,20 +109,6 @@ const GridContent = styled.div`
       height: 80vh;
     }
   `}
-`;
-
-const GridColumnGuide = styled.div`
-  ${({ theme }) => css`
-    // /* Editing guides */
-    &.grid-column-guide {
-      position: absolute;
-      top: 0;
-      min-height: 100%;
-      background-color: ${addAlpha(theme.colorPrimary, 0.1)};
-      pointer-events: none;
-      box-shadow: inset 0 0 0 1px ${addAlpha(theme.colorPrimary, 0.6)};
-    }
-  `};
 `;
 
 class DashboardGrid extends PureComponent {
@@ -331,19 +326,12 @@ class DashboardGrid extends PureComponent {
                 )}
               </Fragment>
             ))}
-            {isResizing &&
-              Array(GRID_COLUMN_COUNT)
-                .fill(null)
-                .map((_, i) => (
-                  <GridColumnGuide
-                    key={`grid-column-${i}`}
-                    className="grid-column-guide"
-                    style={{
-                      left: i * GRID_GUTTER_SIZE + i * columnWidth,
-                      width: columnWidth,
-                    }}
-                  />
-                ))}
+            {editMode && (
+              <DashboardGuides
+                isResizing={isResizing}
+                columnWidth={columnWidth}
+              />
+            )}
           </GridContent>
         </div>
       </>

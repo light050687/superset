@@ -51,7 +51,7 @@ const StyledDropdownItemWithIcon = styled.div`
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  > *:first-child {
+  > *:first-of-type {
     margin-right: ${({ theme }) => theme.sizeUnit}px;
   }
 `;

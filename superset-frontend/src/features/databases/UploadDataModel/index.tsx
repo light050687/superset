@@ -212,7 +212,7 @@ const SwitchContainer = ({
   </StyledSwitchContainer>
 );
 
-const UploadDataModal: FunctionComponent<UploadDataModalProps> = ({
+const UploadDataModal: FunctionComponent<React.PropsWithChildren<UploadDataModalProps>> = ({
   addDangerToast,
   addSuccessToast,
   onHide,
@@ -576,7 +576,7 @@ const UploadDataModal: FunctionComponent<UploadDataModalProps> = ({
     columnar: t('Columnar upload'),
   };
 
-  const UploadTitle: FC = () => {
+  const UploadTitle: FC<React.PropsWithChildren<unknown>> = () => {
     const title = uploadTitles[type] || t('Upload');
     return <ModalTitleWithIcon title={title} />;
   };

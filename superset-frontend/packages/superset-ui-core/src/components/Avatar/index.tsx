@@ -17,13 +17,18 @@
  * under the License.
  */
 
+import { forwardRef } from 'react';
 import { Avatar as AntdAvatar } from 'antd';
 import type { AvatarProps, GroupProps as AvatarGroupProps } from './types';
 
-export function Avatar(props: AvatarProps) {
-  return <AntdAvatar {...props} />;
-}
+// forwardRef is required so AntD Tooltip/Dropdown triggers can attach refs
+// through @rc-component/trigger. AntD v6 Avatar itself forwards to HTMLSpanElement.
+export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>((props, ref) => (
+  <AntdAvatar ref={ref} {...props} />
+));
+Avatar.displayName = 'Avatar';
 
+// AntD v6 AvatarGroup is a plain FC (no ref), so our wrapper stays an FC too.
 export function AvatarGroup(props: AvatarGroupProps) {
   return <AntdAvatar.Group {...props} />;
 }

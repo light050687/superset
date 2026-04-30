@@ -53,7 +53,6 @@ module.exports = {
     ['@babel/plugin-transform-runtime', { corejs: 3 }],
     // only used in packages/superset-ui-core/src/chart/components/reactify.tsx
     ['babel-plugin-typescript-to-proptypes', { loose: true }],
-    'react-hot-loader/babel',
     [
       '@emotion/babel-plugin',
       {
@@ -61,7 +60,13 @@ module.exports = {
         labelFormat: '[local]',
       },
     ],
-  ],
+    // `react-refresh/babel` requires the matching `ReactRefreshWebpackPlugin`
+    // (configured in webpack.config.js) to inject `$RefreshSig$` + runtime
+    // globals. Storybook sets `BABEL_ENV=development` too but uses its own
+    // webpack config without that plugin, so we gate on a dedicated flag
+    // that only the main-app dev-server exports.
+    process.env.USE_REACT_REFRESH === 'true' && 'react-refresh/babel',
+  ].filter(Boolean),
   env: {
     // Setup a different config for tests as they run in node instead of a browser
     test: {

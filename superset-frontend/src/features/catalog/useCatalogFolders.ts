@@ -15,7 +15,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fetchCatalogTree } from './api';
-import type { CatalogFolderNode } from './types';
+import type { CatalogFolderNode, CatalogFolderScope } from './types';
 
 export interface CatalogFoldersState {
   folders: CatalogFolderNode[];
@@ -25,9 +25,9 @@ export interface CatalogFoldersState {
 }
 
 export function useCatalogFolders(
-  options: { enabled?: boolean } = {},
+  options: { enabled?: boolean; scope?: CatalogFolderScope } = {},
 ): CatalogFoldersState {
-  const { enabled = true } = options;
+  const { enabled = true, scope } = options;
   const [folders, setFolders] = useState<CatalogFolderNode[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,9 @@ export function useCatalogFolders(
     setLoading(true);
     setError(null);
     try {
-      const tree = await fetchCatalogTree();
+      /* Если scope указан — сервер вернёт только его срез (dashboard|chart)
+         + shared-папки. Иначе — все (админ-режим или legacy). */
+      const tree = await fetchCatalogTree(scope);
       if (!mountedRef.current) return;
       setFolders(tree);
     } catch (err) {
@@ -50,7 +52,7 @@ export function useCatalogFolders(
         setLoading(false);
       }
     }
-  }, [enabled]);
+  }, [enabled, scope]);
 
   useEffect(() => {
     mountedRef.current = true;

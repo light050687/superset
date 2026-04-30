@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useState, useCallback, useMemo } from 'react';
+import { ReactNode, useState, useCallback, useMemo } from 'react';
 import { ResizeCallback, ResizeStartCallback, Resizable } from 're-resizable';
 import cx from 'classnames';
 import { css, styled } from '@superset-ui/core';
@@ -28,15 +28,29 @@ import {
 } from './ResizableHandle';
 import resizableConfig from '../../util/resizableConfig';
 import { GRID_BASE_UNIT, GRID_GUTTER_SIZE } from '../../util/constants';
+import { useGridGuides } from '../GridGuides/GridGuidesContext';
 
 const proxyToInfinity = Number.MAX_VALUE;
 
 export interface ResizableContainerProps {
   id: string;
-  children?: object;
+  children?: ReactNode;
   adjustableWidth?: boolean;
   adjustableHeight?: boolean;
   gutterWidth?: number;
+  /** Vertical analog of gutterWidth — rowGap между cell-rows.
+   *  Outer height = (heightStep + heightGutter)*heightMultiple - heightGutter.
+   *  Без этого vertical snap'ил по K*subStepY (= top of next row),
+   *  а должен по K*cellH + (K-1)*rowGap (= bottom of last cell). */
+  heightGutter?: number;
+  /** Опциональный «base columnWidth» для consumer'ов, работающих в
+   *  col-mode (Column, Markdown, DynamicComponent). Когда задан И
+   *  gridGuides.subdivisions > 1, ResizableContainer ОВЕРРАЙДИТ snap
+   *  на sub-cell позиции, derived from columnWidth + subdivisions.
+   *  Save (onResizeStop math) остаётся в col-units (passed widthStep+
+   *  gutterWidth) — schema layout meta не меняется. ChartHolder этот
+   *  prop НЕ передаёт, у него свой effectiveMode pipeline. */
+  gridSnapColumnBase?: number;
   widthStep?: number;
   heightStep?: number;
   widthMultiple: number;
@@ -55,9 +69,6 @@ export interface ResizableContainerProps {
   editMode: boolean;
 }
 
-// because columns are not multiples of a single variable (width = n*cols + (n-1) * gutters)
-// we snap to the base unit and then snap to _actual_ column multiples on stop
-const SNAP_TO_GRID: [number, number] = [GRID_BASE_UNIT, GRID_BASE_UNIT];
 const HANDLE_CLASSES = {
   right: 'resizable-container-handle--right',
   bottom: 'resizable-container-handle--bottom',
@@ -165,14 +176,135 @@ export default function ResizableContainer({
   adjustableWidth = true,
   adjustableHeight = true,
   gutterWidth = GRID_GUTTER_SIZE,
+  heightGutter = 0,
   widthStep = GRID_BASE_UNIT,
   heightStep = GRID_BASE_UNIT,
+  gridSnapColumnBase,
   minWidthMultiple = 1,
   maxWidthMultiple = proxyToInfinity,
   minHeightMultiple = 1,
   maxHeightMultiple = proxyToInfinity,
 }: ResizableContainerProps) {
   const [isResizing, setIsResizing] = useState<boolean>(false);
+
+  /* GridGuides snap режимы. snapGrid + snapGridGap = точные cell-aligned
+     позиции (см. формулу в snap memo ниже).
+     - free-mode: grid=[1,1], gridGap=[0,0] — пиксельный snap
+     - col-mode: grid=[colW, GRID_BASE_UNIT], gridGap=[GRID_GUTTER_SIZE, 0]
+     - sub-mode: grid=[cellW, cellH], gridGap=[colGap, rowGap]
+     onResizeStop math (widthMultiple+round(delta/(widthStep+gutterWidth)))
+     остаётся ВСЁ ТЕМ ЖЕ: payload в нужных units (col/sub/free pixel). */
+  const { state: gridGuides } = useGridGuides();
+  /* TODO snap-to-neighbors: snap к рёбрам соседних чартов (выравнивание
+     по краю существующего элемента вне основной grid-сетки). Требует
+     отдельного слоя поверх re-resizable: на onResize считать DOM-
+     позиции всех `.dashboard-component-chart-holder` в пределах
+     родительского row, и если delta попадает в tolerance (например ±6px)
+     к ребру соседа — pin'ить к нему. re-resizable controlled-mode не
+     поддерживает custom snap targets, поэтому реализация = listen
+     onResize → cancel default → mutate inline width/height вручную. */
+  /* sub-mode: snap-array prop с явными позициями + snapGap для smooth
+     drag.
+     ChartHolder в sub-mode передаёт асимметричную формулу:
+       horizontal OLD: outer = K*subStepX - colGap → snap.x[K] = K*subStepX - colGap
+       vertical   NEW: outer = K*subStepY → snap.y[K] = K*subStepY
+     `snapGap` (single number в re-resizable) контролирует когда snap
+     срабатывает: free movement когда дальше snapGap от точки, snap к
+     точке когда ближе. Это даёт плавный drag без jitter.
+
+     col/free mode используют простой `grid` prop (snap не передаётся). */
+  const snapPositions = useMemo<{ x: number[]; y: number[] } | undefined>(() => {
+    if (gridGuides.freeMode) return undefined;
+    const sub = Math.max(1, gridGuides.subdivisions || 1);
+    if (sub <= 1) return undefined;
+
+    /* Два режима генерации snap-array:
+
+       (A) gridSnapColumnBase задан (col-mode consumer: Column,
+       Markdown, DynamicComponent). Производим sub-cell snap из
+       columnWidth + sub:
+         subCellW = round((columnWidth - (sub-1)*colGap) / sub)
+         subStepX = subCellW + colGap
+         subStepY = subCellW + rowGap
+       Save (onResizeStop math) ПО-прежнему round'ит к col-units
+       через passed widthStep+gutterWidth.
+
+       (B) gridSnapColumnBase не задан (ChartHolder с уже sub-настроенным
+       widthStep/gutterWidth). Используем passed step напрямую. */
+    let stepX: number;
+    let stepY: number;
+    let gapX: number;
+    let gapY: number;
+    if (gridSnapColumnBase != null && gridSnapColumnBase > 0) {
+      const colGap = gridGuides.columnGap;
+      const rowGap = gridGuides.rowGap;
+      const subCellW = Math.max(
+        1,
+        Math.round((gridSnapColumnBase - (sub - 1) * colGap) / sub),
+      );
+      stepX = subCellW + colGap;
+      stepY = subCellW + rowGap;
+      gapX = colGap;
+      gapY = rowGap;
+    } else {
+      stepX = widthStep + gutterWidth;
+      stepY = heightStep + heightGutter;
+      gapX = gutterWidth;
+      gapY = heightGutter;
+    }
+
+    const xs: number[] = [];
+    const ys: number[] = [];
+    const maxCount = 200;
+    for (let k = 1; k <= maxCount; k += 1) {
+      xs.push(k * stepX - gapX); // OLD: K*subStepX - gap
+      ys.push(k * stepY - gapY); // OLD: K*subStepY - gap
+    }
+    return { x: xs, y: ys };
+  }, [
+    gridGuides.freeMode,
+    gridGuides.subdivisions,
+    gridGuides.columnGap,
+    gridGuides.rowGap,
+    gridSnapColumnBase,
+    widthStep,
+    gutterWidth,
+    heightStep,
+    heightGutter,
+  ]);
+
+  /* snapGap = subStep/2: smooth drag, pull к snap-точке когда близко.
+     Учитывает gridSnapColumnBase (col-mode consumer): step = subStep
+     derived from columnWidth, не col-step. */
+  const snapGap = useMemo<number>(() => {
+    if (!snapPositions) return 0;
+    const sub = Math.max(1, gridGuides.subdivisions || 1);
+    let stepForGap: number;
+    if (gridSnapColumnBase != null && gridSnapColumnBase > 0) {
+      const colGap = gridGuides.columnGap;
+      const subCellW = Math.max(
+        1,
+        Math.round((gridSnapColumnBase - (sub - 1) * colGap) / sub),
+      );
+      stepForGap = subCellW + colGap;
+    } else {
+      stepForGap = widthStep + gutterWidth;
+    }
+    return Math.max(8, Math.round(stepForGap / 2));
+  }, [
+    snapPositions,
+    gridGuides.subdivisions,
+    gridGuides.columnGap,
+    gridSnapColumnBase,
+    widthStep,
+    gutterWidth,
+  ]);
+
+  /* snapGrid: используется ТОЛЬКО когда snapPositions undefined (col/free). */
+  const snapGrid = useMemo<[number, number]>(() => {
+    if (gridGuides.freeMode) return [1, 1];
+    return [GRID_BASE_UNIT, GRID_BASE_UNIT];
+  }, [gridGuides.freeMode]);
 
   const handleResize = useCallback<ResizeCallback>(
     (event, direction, elementRef, delta) => {
@@ -194,8 +326,11 @@ export default function ResizableContainer({
       if (onResizeStop) {
         const nextWidthMultiple =
           widthMultiple + Math.round(delta.width / (widthStep + gutterWidth));
+        /* heightGutter (default 0 = legacy single-step). С heightGutter>0
+           rounding по (heightStep+heightGutter) = subStepY. */
+        const heightDivisor = heightStep + heightGutter;
         const nextHeightMultiple =
-          heightMultiple + Math.round(delta.height / heightStep);
+          heightMultiple + Math.round(delta.height / heightDivisor);
 
         onResizeStop(
           event,
@@ -232,7 +367,7 @@ export default function ResizableContainer({
           staticWidth ||
           undefined,
       height: adjustableHeight
-        ? heightStep * heightMultiple
+        ? (heightStep + heightGutter) * heightMultiple - heightGutter
         : (staticHeightMultiple && staticHeightMultiple * heightStep) ||
           staticHeight ||
           undefined,
@@ -246,6 +381,7 @@ export default function ResizableContainer({
       staticWidth,
       adjustableHeight,
       heightStep,
+      heightGutter,
       heightMultiple,
       staticHeightMultiple,
       staticHeight,
@@ -277,14 +413,19 @@ export default function ResizableContainer({
   return (
     <StyledResizable
       enable={enableConfig}
-      grid={SNAP_TO_GRID}
-      gridGap={undefined}
+      {...(snapPositions
+        ? { snap: snapPositions, snapGap, grid: undefined }
+        : { grid: snapGrid })}
       minWidth={
         adjustableWidth
           ? minWidthMultiple * (widthStep + gutterWidth) - gutterWidth
           : undefined
       }
-      minHeight={adjustableHeight ? minHeightMultiple * heightStep : undefined}
+      minHeight={
+        adjustableHeight
+          ? minHeightMultiple * (heightStep + heightGutter) - heightGutter
+          : undefined
+      }
       maxWidth={
         adjustableWidth && size.width
           ? Math.max(
@@ -300,7 +441,10 @@ export default function ResizableContainer({
         adjustableHeight && size.height
           ? Math.max(
               size.height,
-              Math.min(proxyToInfinity, maxHeightMultiple * heightStep),
+              Math.min(
+                proxyToInfinity,
+                maxHeightMultiple * (heightStep + heightGutter) - heightGutter,
+              ),
             )
           : undefined
       }

@@ -105,13 +105,29 @@ export interface AiAnswerFollowup {
   text: string;
 }
 
+/** Сырая таблица данных от ai-analytics (rawData из NL2SQL pipeline). */
+export interface AiAnswerTable {
+  rows: Array<Record<string, unknown>>;
+  /** Опциональный заголовок над таблицей. */
+  title?: string;
+}
+
 /** Полная структура ответа от ai-analytics. */
 export interface AiAnswerBlocks {
   /** Короткий текстовый ответ (основной абзац). */
   title?: string;
+  /** Markdown-текст. Рендерится через markdown-to-jsx в AiMessage. */
   text?: string;
   kpi?: AiAnswerKpi[];
   chart?: AiAnswerChart;
+  /** Таблица сырых данных (rawData от Cube.dev). */
+  table?: AiAnswerTable;
+  /**
+   * Cube.dev query (dimensions/measures/timeDimensions) — нужен для
+   * AiInlineChart эвристики выбора bar/line/pie. Прокидывается из
+   * raw.cubeQuery в адаптере.
+   */
+  cubeQuery?: unknown;
   insight?: AiAnswerInsight;
   actions?: AiAnswerAction[];
   source?: AiAnswerSource;
@@ -131,9 +147,38 @@ export interface AiAnalyzeRequest {
   model?: string;
 }
 
+/**
+ * Сырой ответ от ai-analytics. Backend (Go-сервис) исторически возвращает
+ * вариативные форматы: `{answer}` (canonical), `{text|content}` (legacy),
+ * `{intent, data, ...}` (NL2SQL pipeline). Все варианты нормализуются
+ * клиентским адаптером `adaptAnalyzeResponse` в `api.ts`.
+ */
+export interface AiAnalyzeRawResponse {
+  // canonical
+  answer?: AiAnswerBlocks;
+  session_id?: string;
+  meta?: {
+    tokens?: number;
+    model?: string;
+    latency_ms?: number;
+  };
+  // ai-analytics LLM-pipeline формат:
+  //   {message: '<markdown>', intent: 'query_data', cubeQuery: {...}, rawData: [...]}
+  message?: string;
+  cubeQuery?: unknown;
+  rawData?: Array<Record<string, unknown>>;
+  // legacy / alternative shapes
+  text?: string;
+  content?: string;
+  intent?: string;
+  data?: unknown;
+  result?: unknown;
+}
+
+/** Нормализованный ответ для UI — `answer` всегда задан. */
 export interface AiAnalyzeResponse {
   answer: AiAnswerBlocks;
-  session_id: string;
+  session_id?: string;
   /** Метаданные для биллинга и observability. */
   meta?: {
     tokens?: number;

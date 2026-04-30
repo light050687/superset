@@ -37,9 +37,7 @@
      font-display: swap — сразу показываем текст fallback'ом, подменяем когда шрифт загрузится. */
 
   /* --- Manrope latin --- */
-  @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 300; font-display: swap;
-    src: url('/static/assets/fonts/manrope-latin-300.woff2') format('woff2');
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  /* DS v2.0: weight 300 удалён — SSOT минимальный вес 400 (см. _next-steps F-005). */
   @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 400; font-display: swap;
     src: url('/static/assets/fonts/manrope-latin-400.woff2') format('woff2');
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
@@ -57,9 +55,7 @@
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 
   /* --- Manrope cyrillic --- */
-  @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 300; font-display: swap;
-    src: url('/static/assets/fonts/manrope-cyrillic-300.woff2') format('woff2');
-    unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+  /* DS v2.0: weight 300 удалён — SSOT минимальный вес 400 (см. _next-steps F-005). */
   @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 400; font-display: swap;
     src: url('/static/assets/fonts/manrope-cyrillic-400.woff2') format('woff2');
     unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
@@ -332,16 +328,63 @@
   .superset-legacy-chart-table td,
   div[data-test="table-container"] td,
   .big_number_total,
-  .big_number_total .subheader-line {
+  .big_number_total .subheader-line,
+  .superset-legacy-chart-big-number .header-line,
+  .superset-legacy-chart-big-number .subheader-line {
     font-variant-numeric: tabular-nums;
   }
 
   /* ═══ DS 2.0 — заголовки Pivot Table → JetBrains Mono UPPERCASE ═══ */
-  .pivot_table_v2 thead th {
+  .pivot_table_v2 thead th,
+  .pivot_table_v2 tbody tr th:not(.pvtRowLabel) {
     font-family: var(--m) !important;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     font-weight: 600;
+    color: var(--g700);
+  }
+
+  /* ═══ DS 2.0 — заголовки Table v2 (plugin-chart-table) → JetBrains Mono UPPERCASE ═══
+     На случай, если AntD/react-table тонко перебивает Emotion-стили — закрепляем тут. */
+  .superset-legacy-chart-table thead th,
+  div[data-test="table-container"] thead th {
+    font-family: var(--m) !important;
+    font-size: 11px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    color: var(--g700);
+  }
+
+  /* ═══ DS 2.0 — числовые ячейки Table v2 → JetBrains Mono ═══ */
+  .superset-legacy-chart-table td.dt-metric,
+  div[data-test="table-container"] td.dt-metric {
+    font-family: var(--m) !important;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  /* ═══ DS 2.0 — Hero number в BigNumber ═══
+     Manrope 800 + tabular-nums + отрицательный letter-spacing.
+     Размер шрифта вычисляется computeMaxFontSize в JS — НЕ override'им. */
+  .superset-legacy-chart-big-number .header-line {
+    font-family: var(--f) !important;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .superset-legacy-chart-big-number .kicker {
+    font-family: var(--m) !important;
+    color: var(--g600);
+  }
+  .superset-legacy-chart-big-number .metric-name,
+  .superset-legacy-chart-big-number .subtitle-line {
+    font-family: var(--f) !important;
+    color: var(--g600);
+  }
+  .superset-legacy-chart-big-number .subheader-line {
+    font-family: var(--m) !important;
+    color: var(--g600);
   }
 
   /* ═══ DS 2.0 — ECharts DOM-тултипы → JetBrains Mono ═══ */

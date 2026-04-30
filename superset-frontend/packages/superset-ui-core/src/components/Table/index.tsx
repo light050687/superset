@@ -161,7 +161,7 @@ const defaultRowSelection: Key[] = [];
 const PAGINATION_HEIGHT = 40;
 const HEADER_HEIGHT = 68;
 
-const StyledTable = styled(AntTable as FC<AntTableProps>)<{ height?: number }>(
+const StyledTable = styled(AntTable as FC<React.PropsWithChildren<AntTableProps>>)<{ height?: number }>(
   ({ theme, height }) => `
     color: ${theme.colorText};
     .ant-table-body {
@@ -222,7 +222,7 @@ const StyledTable = styled(AntTable as FC<AntTableProps>)<{ height?: number }>(
   `,
 );
 const StyledVirtualTable = styled(
-  VirtualTable as React.FC<VirtualTableProps<any>>,
+  VirtualTable as React.FC<React.PropsWithChildren<VirtualTableProps<any>>>,
 )(
   ({ theme }) => `
   .virtual-table .ant-table-container:before,

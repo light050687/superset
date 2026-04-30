@@ -147,7 +147,7 @@ function computeAbovePosition(
   return { top, left };
 }
 
-export const ModelPopover: FC<ModelPopoverProps> = ({
+export const ModelPopover: FC<React.PropsWithChildren<ModelPopoverProps>> = ({
   anchor,
   open,
   onClose,

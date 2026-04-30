@@ -55,7 +55,7 @@ type DynamicComponentProps = {
   id: string;
 };
 
-const DynamicComponent: FC<DynamicComponentProps> = ({
+const DynamicComponent: FC<React.PropsWithChildren<DynamicComponentProps>> = ({
   component,
   parentComponent,
   index,
@@ -125,7 +125,7 @@ const DynamicComponent: FC<DynamicComponentProps> = ({
             <BackgroundStyleDropdown
               id={`${component.id}-background`}
               value={component.meta.background}
-              onChange={value => updateMeta('background', value)}
+              onChange={value => updateMeta('background', String(value))}
             />,
           ]}
           editMode={editMode}
@@ -151,6 +151,7 @@ const DynamicComponent: FC<DynamicComponentProps> = ({
               minWidthMultiple={GRID_MIN_COLUMN_COUNT}
               minHeightMultiple={GRID_MIN_COLUMN_COUNT}
               maxWidthMultiple={availableColumnCount + widthMultiple}
+              gridSnapColumnBase={columnWidth}
               onResizeStart={onResizeStart}
               onResize={onResize}
               onResizeStop={onResizeStop}

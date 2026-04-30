@@ -34,7 +34,7 @@ export const StyledControlNumberFormItem = styled(ControlFormItem)`
   `}
 `;
 
-export const MapViewPopoverContent: FC<MapViewPopoverContentProps> = ({
+export const MapViewPopoverContent: FC<React.PropsWithChildren<MapViewPopoverContentProps>> = ({
   onClose = () => {},
   onSave = () => {},
   mapViewConf,

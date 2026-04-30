@@ -48,7 +48,7 @@ export type PopoverProps = BasePopoverProps & {
   getVisibilityRatio?: typeof getElementVisibilityRatio;
 };
 
-const ControlPopover: FC<PopoverProps> = ({
+const ControlPopover: FC<React.PropsWithChildren<PopoverProps>> = ({
   getPopupContainer,
   getVisibilityRatio = getElementVisibilityRatio,
   open: visibleProp,
@@ -90,7 +90,7 @@ const ControlPopover: FC<PopoverProps> = ({
   }, [getVisibilityRatio]);
 
   const changeContainerScrollStatus = useCallback(
-    visible => {
+    (visible: boolean) => {
       const element = getSectionContainerElement();
       if (element) {
         element.style.setProperty(
@@ -114,7 +114,9 @@ const ControlPopover: FC<PopoverProps> = ({
 
   const handleOnVisibleChange = useCallback(
     (visible: boolean | undefined) => {
-      if (visible === undefined) {
+      // Only toggle scroll-lock when AntD reported a boolean state;
+      // AntD v5 occasionally calls onOpenChange with undefined on unmount.
+      if (visible !== undefined) {
         changeContainerScrollStatus(visible);
       }
 

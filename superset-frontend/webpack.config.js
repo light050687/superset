@@ -31,6 +31,7 @@ const {
   getCompilerHooks,
 } = require('webpack-manifest-plugin');
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
+const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 const parsedArgs = require('yargs').argv;
 const Visualizer = require('webpack-visualizer-plugin2');
 const getProxyConfig = require('./webpack.proxy-config');
@@ -122,6 +123,9 @@ const plugins = [
     'process.env.REDUX_DEFAULT_MIDDLEWARE':
       process.env.REDUX_DEFAULT_MIDDLEWARE,
     'process.env.SCARF_ANALYTICS': JSON.stringify(process.env.SCARF_ANALYTICS),
+    'process.env.AI_BACKEND_URL': JSON.stringify(
+      process.env.AI_BACKEND_URL || '',
+    ),
   }),
 
   new CopyPlugin({
@@ -147,6 +151,10 @@ if (!process.env.CI) {
   plugins.push(new webpack.ProgressPlugin());
 }
 
+if (isDevMode && isDevServer) {
+  plugins.push(new ReactRefreshWebpackPlugin({ overlay: false }));
+}
+
 if (!isDevMode) {
   // text loading (webpack 4+)
   plugins.push(
@@ -156,23 +164,28 @@ if (!isDevMode) {
     }),
   );
 
-  // Runs type checking on a separate process to speed up the build
-  plugins.push(
-    new ForkTsCheckerWebpackPlugin({
-      typescript: {
-        memoryLimit: 4096,
-        build: true,
-        exclude: [
-          '**/node_modules/**',
-          '**/dist/**',
-          '**/coverage/**',
-          '**/storybook/**',
-          '**/*.stories.{ts,tsx,js,jsx}',
-          '**/*.{test,spec}.{ts,tsx,js,jsx}',
-        ],
-      },
-    }),
-  );
+  // Runs type checking on a separate process to speed up the build.
+  // По умолчанию ВКЛЮЧЁН — TS-debt в Dashboard/SideRail/Builder/ReportDrawer
+  // вычищен. Если временно нужно пропустить (например, WIP-эксперимент),
+  // используйте SKIP_TS_CHECK=1.
+  if (!process.env.SKIP_TS_CHECK) {
+    plugins.push(
+      new ForkTsCheckerWebpackPlugin({
+        typescript: {
+          memoryLimit: 4096,
+          build: true,
+          exclude: [
+            '**/node_modules/**',
+            '**/dist/**',
+            '**/coverage/**',
+            '**/storybook/**',
+            '**/*.stories.{ts,tsx,js,jsx}',
+            '**/*.{test,spec}.{ts,tsx,js,jsx}',
+          ],
+        },
+      }),
+    );
+  }
 }
 
 const PREAMBLE = [path.join(APP_DIR, '/src/preamble.ts')];
@@ -252,6 +265,10 @@ const config = {
     },
   ],
   performance: {
+    // Large chart-vendor chunks legitimately exceed 244 KiB (ECharts + D3 +
+    // deck.gl pulled through @superset-ui). Suppress the default webpack
+    // warning — real size budget is tracked in the bundle-analyzer report.
+    hints: false,
     assetFilter(assetFilename) {
       // don't throw size limit warning on geojson and font files
       return !/\.(map|geojson|woff2)$/.test(assetFilename);
@@ -281,11 +298,9 @@ const config = {
               'prop-types-extra',
               'redux',
               'react-redux',
-              'react-hot-loader',
               'react-sortable-hoc',
               'react-table',
               'react-ace',
-              '@hot-loader.*',
               'webpack.*',
               '@?babel.*',
               'lodash.*',
@@ -407,14 +422,6 @@ const config = {
       {
         test: /ace-builds.*\/worker-.*$/,
         type: 'asset/resource',
-      },
-      // react-hot-loader use "ProxyFacade", which is a wrapper for react Component
-      // see https://github.com/gaearon/react-hot-loader/issues/1311
-      // TODO: refactor recurseReactClone
-      {
-        test: /\.js$/,
-        include: /node_modules\/react-dom/,
-        use: ['react-hot-loader/webpack'],
       },
       {
         test: /\.css$/,

@@ -32,7 +32,7 @@ const createProps = (): Partial<PopoverProps> => ({
   content: <span data-test="control-popover-content">Information</span>,
 });
 
-const TestComponent: globalThis.React.FC<PopoverProps> = props => (
+const TestComponent: globalThis.React.FC<React.PropsWithChildren<PopoverProps>> = props => (
   <div id="controlSections">
     <div data-test="outer-container">
       <ControlPopover {...props}>

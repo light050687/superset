@@ -27,7 +27,7 @@ type Props = {
   fieldNames: ReadonlyArray<string>;
 };
 
-const StashFormDataContainer: FC<Props> = ({
+const StashFormDataContainer: FC<React.PropsWithChildren<Props>> = ({
   shouldStash,
   fieldNames,
   children,

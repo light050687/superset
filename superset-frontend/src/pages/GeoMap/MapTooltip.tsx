@@ -6,7 +6,7 @@ interface MapTooltipProps {
   tooltip: TooltipState;
 }
 
-const MapTooltip: FC<MapTooltipProps> = ({ tooltip }) => {
+const MapTooltip: FC<React.PropsWithChildren<MapTooltipProps>> = ({ tooltip }) => {
   if (!tooltip.visible) return null;
 
   return (

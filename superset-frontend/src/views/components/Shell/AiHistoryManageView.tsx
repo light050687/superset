@@ -69,7 +69,7 @@ const Col = styled.div`
   padding: 0 16px;
   border-right: 1px solid ${DS2_VARS.g100};
 
-  &:first-child {
+  &:first-of-type {
     padding-left: 0;
   }
   &:last-child {
@@ -366,7 +366,7 @@ function parseDrag(raw: string): DragPayload | null {
 
 /* ─── Component ─── */
 
-export const AiHistoryManageView: FC<AiHistoryManageViewProps> = ({
+export const AiHistoryManageView: FC<React.PropsWithChildren<AiHistoryManageViewProps>> = ({
   folders,
   sessions,
   onChanged,

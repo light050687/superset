@@ -12,12 +12,25 @@
 import type { MenuData } from 'src/types/bootstrapTypes';
 
 /**
- * Типы drawer-вкладок. Каждый соответствует одной кнопке rail, которая
- * открывает выдвижную панель (Catalog, Tools, Create).
+ * Типы drawer-вкладок. Каждый соответствует одной кнопке, которая
+ * открывает выдвижную bottom-sheet панель:
+ *   - catalog/tools/create — глобальные, триггерятся rail-доком внизу
+ *   - filters/pages/builder — dashboard-only, триггерятся боковой
+ *                            icon-панелью DashboardSideRail (слева).
+ *                            builder доступен только в edit-mode —
+ *                            это конструктор чартов/разметки, раньше
+ *                            жил как sticky-sidebar справа.
  * Остальные кнопки rail (Home, Search, Calendar, Theme, AI, Settings)
  * выполняют действия, не открывая drawer.
  */
-export type DrawerKind = 'catalog' | 'tools' | 'create';
+export type DrawerKind =
+  | 'catalog'
+  | 'tools'
+  | 'create'
+  | 'filters'
+  | 'pages'
+  | 'builder'
+  | 'gridSettings';
 
 export interface ShellProps {
   /** bootstrap menu_data — источник навигационных пунктов и прав. */

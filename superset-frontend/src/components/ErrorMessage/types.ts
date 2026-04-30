@@ -28,7 +28,7 @@ export type ErrorMessageComponentProps<ExtraType = Record<string, any> | null> =
     compact?: boolean;
   };
 
-export type ErrorMessageComponent = ComponentType<ErrorMessageComponentProps>;
+export type ErrorMessageComponent = ComponentType<React.PropsWithChildren<ErrorMessageComponentProps>>;
 
 export interface ErrorAlertProps {
   errorType?: string; // Strong text on the first line

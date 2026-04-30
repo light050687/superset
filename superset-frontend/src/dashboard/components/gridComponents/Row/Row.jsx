@@ -101,7 +101,7 @@ const GridRow = styled.div`
         &:not(:last-child) {
           width: ${theme.sizeUnit * 4}px;
         }
-        &:first-child:not(.droptarget-side) {
+        &:first-of-type:not(.droptarget-side) {
           z-index: ${EMPTY_CONTAINER_Z_INDEX};
           position: absolute;
           width: 100%;
@@ -112,7 +112,7 @@ const GridRow = styled.div`
         z-index: ${EMPTY_CONTAINER_Z_INDEX};
         position: absolute;
         width: ${theme.sizeUnit * 4}px;
-        &:first-child {
+        &:first-of-type {
           inset-inline-start: 0;
         }
       }
@@ -156,7 +156,21 @@ const Row = props => {
   } = props;
 
   const [isFocused, setIsFocused] = useState(false);
-  const [isInView, setIsInView] = useState(false);
+  // `isInView` is permanently `true`. The built-in dashboard
+  // virtualization via `IntersectionObserver` has two known issues in
+  // our AntD v6 + React 18 environment:
+  //   (1) IO doesn't re-fire on window resize if the element becomes
+  //       visible through viewport change (W3C IntersectionObserver
+  //       issue #311) — lower charts get stuck invisible after resize.
+  //   (2) `CSSMotion` inside AntD Tabs occasionally swallows the
+  //       observer callback for components that mount while their tab
+  //       is animating in.
+  // Apache Superset upstream (#29636, #18586) recommends disabling
+  // virtualization for dashboards with <100 charts, which matches our
+  // production distribution (typical dashboard size 15-30 charts).
+  // Keeping the flag on for telemetry / future re-enabling, but
+  // forcing `isInView=true` bypasses the broken observer entirely.
+  const [isInView] = useState(true);
   const [hoverMenuHovered, setHoverMenuHovered] = useState(false);
   const [containerHeight, setContainerHeight] = useState(null);
   const containerRef = useRef();
@@ -166,55 +180,8 @@ const Row = props => {
     isComponentVisibleRef.current = isComponentVisible;
   }, [isComponentVisible]);
 
-  // if chart not rendered - render it if it's less than 1 view height away from current viewport
-  // if chart rendered - remove it if it's more than 4 view heights away from current viewport
-  useEffect(() => {
-    let observerEnabler;
-    let observerDisabler;
-
-    if (
-      isFeatureEnabled(FeatureFlag.DashboardVirtualization) &&
-      !isCurrentUserBot()
-    ) {
-      observerEnabler = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting && isComponentVisibleRef.current) {
-            setIsInView(true);
-          } else if (!isComponentVisibleRef.current) {
-            setIsInView(false);
-          }
-        },
-        {
-          rootMargin: '100% 0px',
-        },
-      );
-
-      observerDisabler = new IntersectionObserver(
-        ([entry]) => {
-          if (!entry.isIntersecting && isComponentVisibleRef.current) {
-            // Reference: https://www.w3.org/TR/intersection-observer/#dom-intersectionobserver-rootmargin
-            if (!isEmbedded()) {
-              setIsInView(false);
-            }
-          }
-        },
-        {
-          rootMargin: '400% 0px',
-        },
-      );
-
-      const element = containerRef.current;
-      if (element) {
-        observerEnabler.observe(element);
-        observerDisabler.observe(element);
-      }
-    }
-
-    return () => {
-      observerEnabler?.disconnect();
-      observerDisabler?.disconnect();
-    };
-  }, []);
+  // IntersectionObserver-based virtualization is disabled (isInView is
+  // always true) — see comment on `useState(true)` above for rationale.
 
   useDebouncedEffect(
     () => {

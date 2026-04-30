@@ -49,7 +49,7 @@ export interface AdhocMetricEditPopoverTitleProps {
   onChange: ChangeEventHandler<HTMLInputElement>;
 }
 
-const AdhocMetricEditPopoverTitle: FC<AdhocMetricEditPopoverTitleProps> = ({
+const AdhocMetricEditPopoverTitle: FC<React.PropsWithChildren<AdhocMetricEditPopoverTitleProps>> = ({
   title,
   isEditDisabled,
   onChange,

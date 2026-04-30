@@ -93,4 +93,29 @@
     // 4) Периодическая синхронизация (страховка на случай, если Observer пропустил)
     setInterval(applyTheme, 2000);
   })();
+
+  /* ═══ Anti-stale cache guard ═══
+     Многократные репорты «у меня не подтягиваются последние правки»
+     даже после Ctrl+Shift+R. Причины: brave/aggressive disk-cache,
+     зомби service workers от ранних установок, кэшированный HTML.
+     Этот скрипт каждый paint:
+       1. Удаляет любые service worker registrations
+       2. Чистит CacheStorage (PWA кэши)
+     Безопасно: SW в Superset не используется, кэшсторадж тоже.
+     Эффект: следующий навигейт всегда тянет свежий HTML/JS. */
+  (function () {
+    'use strict';
+    try {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (rs) {
+          rs.forEach(function (r) { try { r.unregister(); } catch (e) {} });
+        });
+      }
+      if (typeof caches !== 'undefined' && caches.keys) {
+        caches.keys().then(function (keys) {
+          keys.forEach(function (k) { try { caches.delete(k); } catch (e) {} });
+        });
+      }
+    } catch (e) { /* noop */ }
+  })();
 </script>

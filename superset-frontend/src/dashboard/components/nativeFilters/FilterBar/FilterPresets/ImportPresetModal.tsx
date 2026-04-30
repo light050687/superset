@@ -133,6 +133,7 @@ const ImportPresetModal = ({
       confirmLoading={importing}
       okButtonProps={{ disabled: !parsed }}
       destroyOnClose
+      centered
       width={typeof window !== 'undefined' && window.innerWidth <= 570 ? '95vw' : 520}
       styles={{
         body: {

@@ -115,7 +115,11 @@ export default function getControlItemsMap({
             initialValue={initColumn}
             label={
               <StyledLabel>
-                {mainControlItem.config?.label || t('Column')}
+                {/* config.label may be ReactNode | RenderFunction; only the
+                    plain-node form is usable here. */}
+                {(typeof mainControlItem.config?.label === 'function'
+                  ? null
+                  : mainControlItem.config?.label) || t('Column')}
               </StyledLabel>
             }
             rules={[
@@ -212,13 +216,19 @@ export default function getControlItemsMap({
                 }}
               >
                 <>
-                  {controlItem.config.label}&nbsp;
-                  {controlItem.config.description && (
-                    <InfoTooltip
-                      placement="top"
-                      tooltip={controlItem.config.description}
-                    />
-                  )}
+                  {/* config.label may be ReactNode | RenderFunction; only
+                      the plain-node variant is renderable here. */}
+                  {typeof controlItem.config.label === 'function'
+                    ? null
+                    : controlItem.config.label}
+                  &nbsp;
+                  {controlItem.config.description &&
+                    typeof controlItem.config.description !== 'function' && (
+                      <InfoTooltip
+                        placement="top"
+                        tooltip={controlItem.config.description}
+                      />
+                    )}
                 </>
               </Checkbox>
             </StyledRowFormItem>

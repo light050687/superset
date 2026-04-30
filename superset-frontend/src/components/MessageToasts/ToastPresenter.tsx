@@ -24,53 +24,47 @@ export interface VisualProps {
   position: 'bottom' | 'top';
 }
 
+/* Toast notifications — карточки строго по центру экрана. Юзер просил
+   квадратный/вертикальный формат и центрирование (старый правый-нижний
+   угол прятал тосты за shell-dock). Каждый toast — самостоятельная
+   220×200 карточка, появляется fade-in + scale, центрируется flex'ом. */
 const StyledToastPresenter = styled.div<VisualProps>(
-  ({ theme, position }) =>
-    // Single access to theme, using dot notation
+  ({ theme }) =>
     `
-    max-width: 600px;
     position: fixed;
-    ${position === 'bottom' ? 'bottom' : 'top'}: 0px;
-    right: 0px;
-    margin-right: 50px;
-    margin-bottom: 50px;
+    inset: 0;
     z-index: ${theme.zIndexPopupBase + 1};
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: ${theme.sizeUnit * 3}px;
+    pointer-events: none;
     word-break: break-word;
 
     .toast {
-      padding: ${theme.sizeUnit * 4}px;
-      margin: ${theme.sizeUnit * 4}px;
       background: ${theme.colorBgSpotlight};
-      border-radius: ${theme.borderRadius}px;
-      box-shadow: ${theme.boxShadow};
+      border-radius: 16px;
+      border: 1px solid ${theme.colorBorder};
       color: ${theme.colorTextLightSolid};
       opacity: 0;
-      position: relative;
-      transform: translateY(-100%);
-      white-space: pre-line;
+      transform: scale(0.92);
+      pointer-events: auto;
       will-change: transform, opacity;
       transition:
-        transform ${theme.motionDurationMid},
-        opacity ${theme.motionDurationMid};
-      &:after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 6px;
-        height: 100%;
-      }
-    }
-
-    .toast > button {
-      color: ${theme.colorTextLightSolid};
-      opacity: 1;
+        transform ${theme.motionDurationMid} ease,
+        opacity ${theme.motionDurationMid} ease;
     }
 
     .toast--visible {
       opacity: 1;
-      transform: translateY(0);
+      transform: scale(1);
     }
+
+    .toast--success { border: 1px solid ${theme.colorSuccess}; }
+    .toast--warning { border: 1px solid ${theme.colorWarning}; }
+    .toast--danger  { border: 1px solid ${theme.colorError}; }
+    .toast--info    { border: 1px solid ${theme.colorInfo}; }
   `,
 );
 

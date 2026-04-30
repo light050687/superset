@@ -31,7 +31,7 @@ interface IconButtonProps extends CardProps {
   altText?: string;
 }
 
-const IconButton: React.FC<IconButtonProps> = ({
+const IconButton: React.FC<React.PropsWithChildren<IconButtonProps>> = ({
   buttonText,
   icon,
   altText,

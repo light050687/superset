@@ -67,5 +67,7 @@ export const TextCellRenderer = (params: CellRendererProps) => {
     }
   }
 
-  return <div>{valueFormatted ?? value}</div>;
+  const rendered =
+    valueFormatted ?? (value instanceof Date ? value.toISOString() : value);
+  return <div>{rendered}</div>;
 };

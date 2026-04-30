@@ -17,11 +17,14 @@
  * under the License.
  */
 import { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react';
+import type { ConnectDragSource } from 'react-dnd';
 
 import { ResizeCallback, ResizeStartCallback } from 're-resizable';
 import cx from 'classnames';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { css, useTheme } from '@superset-ui/core';
+import { resizeComponent } from 'src/dashboard/actions/dashboardLayout';
+import { useGridGuides } from 'src/dashboard/components/GridGuides/GridGuidesContext';
 import { LayoutItem, RootState } from 'src/dashboard/types';
 import AnchorLink from 'src/dashboard/components/AnchorLink';
 import Chart from 'src/dashboard/components/gridComponents/Chart';
@@ -203,24 +206,203 @@ const ChartHolder = ({
     parentComponent.type,
   ]);
 
+  const dispatch = useDispatch();
+  const { state: gridGuides } = useGridGuides();
+
+  /* metaOuter — outer pixel size исходя из ТЕКУЩЕГО состояния meta.
+     Инвариант для render. Для sub-mode формула:
+       outer = subStep * widthSub  (= cellW + colGap, без -colGap в конце)
+     Это даёт canvas-right = cell-right edge (с учётом padding 16),
+     то есть chart визуально занимает целое количество cell+gap'ов и
+     правый край canvas совпадает с правой стенкой cell. */
+  const metaOuter = useMemo(() => {
+    const meta = component.meta as any;
+    if (meta.freePxWidth != null && meta.freePxHeight != null) {
+      return { w: meta.freePxWidth, h: meta.freePxHeight };
+    }
+    if (meta.widthSub != null && meta.subdivisionsUsed) {
+      const sub = meta.subdivisionsUsed;
+      const colGap = gridGuides.columnGap;
+      const rowGap = gridGuides.rowGap;
+      const subCellW = Math.max(
+        1,
+        Math.round((columnWidth - (sub - 1) * colGap) / sub),
+      );
+      /* Симметричная OLD formula:
+         w: outer = K*subStepX - colGap (outer right = cell K-1 right)
+         h: outer = K*subStepY - rowGap (outer bottom = cell K-1 bottom) */
+      const w = (subCellW + colGap) * meta.widthSub - colGap;
+      const h =
+        meta.heightSub != null
+          ? (subCellW + rowGap) * meta.heightSub - rowGap
+          : component.meta.height * GRID_BASE_UNIT;
+      return { w, h };
+    }
+    const w = (columnWidth + GRID_GUTTER_SIZE) * widthMultiple - GRID_GUTTER_SIZE;
+    const h = component.meta.height * GRID_BASE_UNIT;
+    return { w, h };
+  }, [
+    component.meta,
+    columnWidth,
+    widthMultiple,
+    gridGuides.columnGap,
+    gridGuides.rowGap,
+  ]);
+
+  /* Effective mode. gridGuides ВСЕГДА wins над meta-preserve, чтобы
+     юзер мог "unstick" чарт сменой режима в drawer'е (раньше chart с
+     meta.freePxWidth залипал в free даже когда юзер выключал free
+     mode → 1px snap не работал).
+     1. gridGuides.freeMode → 'free' (override)
+     2. gridGuides.subdivisions > 1 → 'sub' с gridGuides.subdivisions (override)
+     3. meta.widthSub есть → 'sub' с meta.subdivisionsUsed (preserve when no gridGuides override)
+     4. иначе → 'col' (legacy default)
+
+     Note: meta.freePxWidth НЕ инферится в 'free' автоматически. Когда
+     юзер выключил freeMode, free-saved chart переводится в col/sub
+     при render (visual size сохраняется через metaOuter conversion). */
+  const { effectiveMode, effectiveSub } = useMemo(() => {
+    const meta = component.meta as any;
+    if (gridGuides.freeMode) {
+      return { effectiveMode: 'free' as const, effectiveSub: 1 };
+    }
+    if (gridGuides.subdivisions > 1) {
+      return {
+        effectiveMode: 'sub' as const,
+        effectiveSub: gridGuides.subdivisions,
+      };
+    }
+    if (meta.widthSub != null && meta.subdivisionsUsed) {
+      return {
+        effectiveMode: 'sub' as const,
+        effectiveSub: meta.subdivisionsUsed,
+      };
+    }
+    return { effectiveMode: 'col' as const, effectiveSub: 1 };
+  }, [component.meta, gridGuides.freeMode, gridGuides.subdivisions]);
+
+  /* resizeConfig — параметры для ResizableContainer. Используем
+     effectiveMode + metaOuter: chart всегда стартует с saved outer
+     pixel size, конвертированным в текущие units (col/sub/free).
+
+     Это даёт согласованность render и resize: render использует
+     resizeConfig (через chartWidth memo ниже), ResizableContainer
+     рендерит outer container с тем же размером. */
+  const resizeConfig = useMemo(() => {
+    if (effectiveMode === 'free') {
+      return {
+        widthStep: 1,
+        gutterWidth: 0,
+        widthMultiple: Math.max(80, Math.round(metaOuter.w)),
+        heightStep: 1,
+        heightMultipleResolved: Math.max(60, Math.round(metaOuter.h)),
+        minWidthMultiple: 80,
+        maxWidthMultiple: 99999,
+        minHeightMultiple: 60,
+        effectiveMode: 'free' as const,
+      };
+    }
+    if (effectiveMode === 'sub') {
+      const sub = effectiveSub;
+      const colGap = gridGuides.columnGap;
+      const rowGap = gridGuides.rowGap;
+      const subCellWidth = Math.max(
+        1,
+        Math.round((columnWidth - (sub - 1) * colGap) / sub),
+      );
+      /* Симметричная OLD formula обе оси (outer на cell K-1 right/bottom):
+           horizontal: widthStep=cellW, gutterWidth=colGap
+                     → outer = K*subStepX - colGap
+           vertical:   heightStep=cellH, heightGutter=rowGap
+                     → outer = K*subStepY - rowGap
+         Snap через snap-array prop + snapGap в ResizableContainer для
+         плавного drag. Cells в DashboardGuides на тех же позициях. */
+      const subStepX = subCellWidth + colGap;
+      const subStepY = subCellWidth + rowGap;
+      const startSubW = Math.max(1, Math.round((metaOuter.w + colGap) / subStepX));
+      const startSubH = Math.max(1, Math.round((metaOuter.h + rowGap) / subStepY));
+      return {
+        widthStep: subCellWidth,
+        gutterWidth: colGap,
+        widthMultiple: startSubW,
+        heightStep: subCellWidth, // cellH = cellW (squares)
+        heightGutter: rowGap,
+        heightMultipleResolved: startSubH,
+        minWidthMultiple: GRID_MIN_COLUMN_COUNT,
+        maxWidthMultiple: (availableColumnCount + widthMultiple) * sub,
+        minHeightMultiple: 1,
+        effectiveMode: 'sub' as const,
+      };
+    }
+    /* col mode (legacy default). startColW конвертируется из metaOuter,
+       чтобы при transition free→col сохранить визуальный размер
+       (rounded к ближайшей col). Если meta только col-saved
+       (нет freePxWidth/widthSub), metaOuter совпадает с
+       widthMultiple-расчётом → startColW == widthMultiple. */
+    const colStep = columnWidth + GRID_GUTTER_SIZE;
+    const startColW = Math.max(
+      1,
+      Math.round((metaOuter.w + GRID_GUTTER_SIZE) / colStep),
+    );
+    const startColH = Math.max(
+      1,
+      Math.round(metaOuter.h / GRID_BASE_UNIT),
+    );
+    return {
+      widthStep: columnWidth,
+      gutterWidth: GRID_GUTTER_SIZE,
+      widthMultiple: startColW,
+      heightStep: GRID_BASE_UNIT,
+      heightMultipleResolved: startColH,
+      minWidthMultiple: GRID_MIN_COLUMN_COUNT,
+      maxWidthMultiple: availableColumnCount + widthMultiple,
+      effectiveMode: 'col' as const,
+    };
+  }, [
+    effectiveMode,
+    effectiveSub,
+    metaOuter,
+    gridGuides.columnGap,
+    gridGuides.rowGap,
+    columnWidth,
+    widthMultiple,
+    component.meta.height,
+    availableColumnCount,
+  ]);
+
   const { chartWidth, chartHeight } = useMemo(() => {
     let width = 0;
     let height = 0;
 
-    // Standard grid calculation
-    const gridWidth = Math.floor(
-      widthMultiple * columnWidth +
-        (widthMultiple - 1) * GRID_GUTTER_SIZE -
-        CHART_MARGIN,
-    );
-
-    const gridHeight = Math.floor(
-      component.meta.height * GRID_BASE_UNIT - CHART_MARGIN,
-    );
+    /* gridWidth/Height = inner-area size (outer container − CHART_MARGIN).
+       Используем resizeConfig как единый источник истины: outer =
+       (widthStep + gutterWidth) * widthMultiple - gutterWidth.
+       Это гарантирует совпадение outer container size (Resizable) и
+       inner chart size (Chart prop) во всех режимах. */
+    const outerW =
+      (resizeConfig.widthStep + resizeConfig.gutterWidth) *
+        resizeConfig.widthMultiple -
+      resizeConfig.gutterWidth;
+    const heightGutter = resizeConfig.heightGutter ?? 0;
+    const outerH =
+      (resizeConfig.heightStep + heightGutter) *
+        resizeConfig.heightMultipleResolved -
+      heightGutter;
+    const gridWidth = Math.floor(outerW - CHART_MARGIN);
+    const gridHeight = Math.floor(outerH - CHART_MARGIN);
+    /*
+       Responsive-mode: только когда измеренная ширина МЕНЬШЕ расчётной
+       (viewport не помещает grid — нужно сжать чарт). Расширение через
+       responsive отключено: row flex-grow раздвигал одиночный чарт на
+       весь row в view-mode — юзер видел after save график растянулся
+       на всю ширину хотя meta.width=4. Сжатие сохраняем (mobile, narrow
+       sidebar). Расширение убираем — в view-mode чарт уважает
+       widthMultiple так же как в edit-mode.
+    */
     const isResponsive =
       !editMode &&
       measuredWidth > 0 &&
-      Math.abs(measuredWidth - CHART_MARGIN - gridWidth) > GRID_BASE_UNIT;
+      measuredWidth + GRID_BASE_UNIT < gridWidth + CHART_MARGIN;
 
     if (isFullSize) {
       width = window.innerWidth - CHART_MARGIN;
@@ -242,7 +424,89 @@ const ChartHolder = ({
       chartWidth: width,
       chartHeight: height,
     };
-  }, [columnWidth, component, editMode, isFullSize, measuredWidth, measuredHeight, widthMultiple]);
+  }, [
+    resizeConfig,
+    editMode,
+    isFullSize,
+    measuredWidth,
+    measuredHeight,
+  ]);
+
+  /* Wrap onResizeStop. ResizableContainer вернёт {width, height} в
+     widthStep/heightStep единицах — для каждого режима они разные.
+     Free: width в px, height в px → meta.freePxWidth/Height.
+     Sub: width в sub-cells (1..12*sub), height в base-units → meta.widthSub/heightSub.
+     Col: width в columns (1..12), height в base-units → meta.width/height (legacy).
+
+     При смене режима юзером (через drawer toggle) первый resize
+     инициирует переход: ChartHolder отправляет полный пейлоад
+     ВКЛЮЧАЯ layoutMode, action очищает старые поля. */
+  const handleResizeStopWrapped = useCallback<ResizeCallback>(
+    (event, direction, elementRef, payload) => {
+      const adjW = parentComponent.type === ROW_TYPE;
+      const meta = component.meta as any;
+      /* effectiveMode/effectiveSub задают units payload.width/height.
+         Сохраняем строго в тех же units чтобы render после save был
+         идентичен последнему положению curo'а. */
+      if (effectiveMode === 'free') {
+        dispatch(
+          resizeComponent({
+            id: component.id,
+            layoutMode: 'free',
+            freePxWidth: adjW
+              ? Math.max(80, Math.round((payload as any).width))
+              : meta.freePxWidth ?? Math.round(metaOuter.w),
+            freePxHeight: Math.max(
+              60,
+              Math.round(
+                (payload as any).height ||
+                  meta.freePxHeight ||
+                  metaOuter.h,
+              ),
+            ),
+          }),
+        );
+      } else if (effectiveMode === 'sub') {
+        dispatch(
+          resizeComponent({
+            id: component.id,
+            layoutMode: 'sub',
+            widthSub: adjW
+              ? (payload as any).width
+              : meta.widthSub || resizeConfig.widthMultiple,
+            heightSub:
+              (payload as any).height || meta.heightSub || component.meta.height,
+            subdivisionsUsed: effectiveSub,
+          }),
+        );
+      } else {
+        /* col-mode (default). */
+        dispatch(
+          resizeComponent({
+            id: component.id,
+            layoutMode: 'col',
+            width: adjW
+              ? (payload as any).width
+              : meta.width || resizeConfig.widthMultiple,
+            height:
+              (payload as any).height ||
+              meta.height ||
+              resizeConfig.heightMultipleResolved,
+          }),
+        );
+      }
+    },
+    [
+      dispatch,
+      effectiveMode,
+      effectiveSub,
+      resizeConfig,
+      metaOuter,
+      component.id,
+      component.meta,
+      parentComponent.type,
+    ],
+  );
 
   const handleDeleteComponent = useCallback(() => {
     deleteComponent(id, parentId);
@@ -275,21 +539,25 @@ const ChartHolder = ({
   }, []);
 
   const renderChild = useCallback(
-    ({ dragSourceRef }) => (
+    ({ dragSourceRef }: { dragSourceRef?: ConnectDragSource }) => (
       <ResizableContainer
         id={component.id}
         adjustableWidth={parentComponent.type === ROW_TYPE}
         adjustableHeight
-        widthStep={columnWidth}
-        widthMultiple={widthMultiple}
-        heightStep={GRID_BASE_UNIT}
-        heightMultiple={component.meta.height}
-        minWidthMultiple={GRID_MIN_COLUMN_COUNT}
-        minHeightMultiple={GRID_MIN_ROW_UNITS}
-        maxWidthMultiple={availableColumnCount + widthMultiple}
+        widthStep={resizeConfig.widthStep}
+        gutterWidth={resizeConfig.gutterWidth}
+        widthMultiple={resizeConfig.widthMultiple}
+        heightStep={resizeConfig.heightStep}
+        heightGutter={resizeConfig.heightGutter ?? 0}
+        heightMultiple={resizeConfig.heightMultipleResolved}
+        minWidthMultiple={resizeConfig.minWidthMultiple}
+        minHeightMultiple={
+          resizeConfig.minHeightMultiple ?? GRID_MIN_ROW_UNITS
+        }
+        maxWidthMultiple={resizeConfig.maxWidthMultiple}
         onResizeStart={onResizeStart}
         onResize={onResize}
-        onResizeStop={onResizeStop}
+        onResizeStop={handleResizeStopWrapped}
         editMode={editMode}
       >
         <div
@@ -359,12 +627,10 @@ const ChartHolder = ({
       component.meta.sliceNameOverride,
       component.meta.sliceName,
       parentComponent.type,
-      columnWidth,
-      widthMultiple,
-      availableColumnCount,
+      resizeConfig,
       onResizeStart,
       onResize,
-      onResizeStop,
+      handleResizeStopWrapped,
       editMode,
       focusHighlightStyles,
       isFullSize,
