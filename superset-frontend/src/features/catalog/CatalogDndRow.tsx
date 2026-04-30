@@ -32,7 +32,6 @@
  */
 import {
   type FC,
-  type PropsWithChildren,
   type ReactNode,
   useEffect,
   useRef,
@@ -130,8 +129,9 @@ interface DndRowProps {
   /** Возвращает true если payload можно дропать ВНУТРЬ (into) этого row'а
    *  (в мокапе это «слияние» или «поместить в папку»). По умолчанию false. */
   canDropInto?: (payload: DndPayload) => boolean;
-  /** Вызывается при drop'е. Получает payload и зону (above/into/below). */
-  onDrop: (payload: DndPayload, zone: DropZone) => void;
+  /** Вызывается при drop'е. Получает payload и зону (above/into/below).
+   *  Опциональный — если row только draggable (drag-source), без drop-обработки. */
+  onDrop?: (payload: DndPayload, zone: DropZone) => void;
   /** Пробрасываем состояние в рендер через render-prop, чтобы родитель
    *  применял нужные visual-эффекты (background/outline/opacity). */
   children: (state: {
@@ -220,7 +220,7 @@ export const DndRow: FC<DndRowProps> = ({
           dropZoneRef.current ??
           computeDropZone(monitor, ref.current, canDropInto(dragged)) ??
           'into';
-        onDrop(dragged, zone);
+        onDrop?.(dragged, zone);
       },
       collect: (monitor: DropTargetMonitor) => ({
         isOver: monitor.isOver({ shallow: true }) && monitor.canDrop(),

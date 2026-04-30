@@ -37,12 +37,10 @@ import { CatalogConfirmModal } from './CatalogConfirmModal';
 import { CatalogDeleteModal } from './CatalogDeleteModal';
 import { CatalogPromptModal } from './CatalogPromptModal';
 import {
-  CATALOG_DND_TYPES,
   DndBody,
   DndRow,
   type DndPayload,
   type DropZone,
-  type FolderDragPayload,
   type FolderLevel,
   type ItemDragPayload,
   dragKindOf,
@@ -604,17 +602,6 @@ const DelBtn = styled(ActBtn)`
    Название родительского уровня уже видно в col слева — дублирование в
    заголовке переполняло колонку и вынуждало hack через overflow-x: hidden. */
 
-/* Мокап: лейбл «Без папки» / «Без подраздела» — небольшой uppercase
-   mono-заголовок перед списком loose-items. */
-const LooseHeader = styled.div`
-  padding: 8px 4px 4px;
-  font-size: 9px;
-  font-family: ${DS2_VARS.fontMono};
-  color: ${DS2_VARS.g500};
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-`;
-
 /* Мокап .mc-empty: компактное empty-состояние с центр-aligned svg 18×18
    сверху и блочным strong + span под ним. Не использует flex/gap —
    вертикальный ритм создают margin'ы на детях, text-align=center
@@ -1136,52 +1123,13 @@ export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProp
      DnD реализован через useDrag/useDrop (см. CatalogDndRow.tsx) —
      правильный интеграционный путь. */
 
-  /* Быстрый lookup уровня папки по id: 1=dept, 2=sub, 3=folder.
-     Используется при формировании drag-payload. */
-  const folderLevelOf = useCallback(
-    (fid: number): FolderLevel => {
-      const f = folders.find(x => x.id === fid);
-      if (!f) return 1;
-      if (f.parent_id === null) return 1;
-      const p = folders.find(x => x.id === f.parent_id);
-      if (!p || p.parent_id === null) return 2;
-      return 3;
-    },
-    [folders],
-  );
-
   /* ─── Mutation helpers ─── */
 
-  /* Перезагружает items для всех активных уровней. Раньше вызывался
-     сразу после drag-операции; теперь draft не шлёт запросы, поэтому
-     refresh нужен только после Save. Родитель триггерит baseline-refresh
-     через onChanged/onCommitted — items обновятся тогда же. */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const refreshAllLevels = useCallback(async () => {
-    const jobs: Promise<void>[] = [];
-    if (deptId !== null) {
-      jobs.push(
-        listCatalogItems(deptId)
-          .then(setDeptItems)
-          .catch(() => undefined),
-      );
-    }
-    if (subId !== null) {
-      jobs.push(
-        listCatalogItems(subId)
-          .then(setSubItems)
-          .catch(() => undefined),
-      );
-    }
-    if (folderId !== null) {
-      jobs.push(
-        listCatalogItems(folderId)
-          .then(setFolderItems)
-          .catch(() => undefined),
-      );
-    }
-    await Promise.all(jobs);
-  }, [deptId, subId, folderId]);
+  /* folderLevelOf и refreshAllLevels удалены как мёртвый код:
+     - folderLevelOf — был для drag-payload, payload теперь формируется
+       без уровня (резолвится в drop-handler через folders[].parent_id).
+     - refreshAllLevels — устарел после draft-режима; baseline-refresh
+       триггерится родителем через onChanged/onCommitted после Save. */
 
   /* Draft-режим: перенос объекта не шлёт запрос, а ставит в очередь.
      При фактическом Save → unassign(old) + assign(new). Reset — отбрасывает. */
@@ -1867,7 +1815,6 @@ export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProp
                   : scopedSubItems.map(it => {
                       const info =
                         objectNames[objectKey(it.object_type, it.object_id)];
-                      const rowKey = `sub-item:${it.id}`;
                       const { color, Icon } = typeColorFor(it.object_type);
                       return (
                         <DndRow

@@ -111,7 +111,7 @@ const Text = styled.div`
   ul,
   ol {
     margin: 0 0 ${DS2_SPACE.s3}px;
-    padding-left: ${DS2_SPACE.s5}px;
+    padding-left: ${DS2_SPACE.s4}px;
   }
   li {
     margin: 2px 0;
@@ -142,7 +142,7 @@ const Text = styled.div`
   pre {
     background: ${DS2_VARS.g50};
     border: 1px solid ${DS2_VARS.g200};
-    border-radius: ${DS2_RADIUS.r6}px;
+    border-radius: ${DS2_RADIUS.control}px;
     padding: ${DS2_SPACE.s3}px ${DS2_SPACE.s4}px;
     overflow-x: auto;
     margin: ${DS2_SPACE.s2}px 0 ${DS2_SPACE.s3}px;
@@ -171,7 +171,7 @@ const Text = styled.div`
 const TableWrap = styled.div`
   margin: ${DS2_SPACE.s3}px 0;
   border: 1px solid ${DS2_VARS.g200};
-  border-radius: ${DS2_RADIUS.r10}px;
+  border-radius: ${DS2_RADIUS.card}px;
   overflow: hidden;
   background: ${DS2_VARS.s};
 `;

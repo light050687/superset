@@ -162,6 +162,18 @@ export const RESIZE_COMPONENT = 'RESIZE_COMPONENT';
  *
  * Любые поля из meta могут быть переданы — будут merged в meta объект.
  * Это позволяет одной action'ой переключать чарт между режимами.
+ *
+ * @param {{
+ *   id: string,
+ *   width?: number,
+ *   height?: number,
+ *   layoutMode?: 'col' | 'sub' | 'free',
+ *   widthSub?: number,
+ *   heightSub?: number,
+ *   subdivisionsUsed?: number,
+ *   freePxWidth?: number,
+ *   freePxHeight?: number,
+ * }} payload
  */
 export function resizeComponent({
   id,
