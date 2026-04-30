@@ -101,6 +101,16 @@ echo.
 echo ^>^> Перезапускаю superset + nginx...
 docker compose restart superset nginx >nul
 
+REM Pre-commit hooks (опционально — если pre-commit установлен)
+where pre-commit >nul 2>&1
+if not errorlevel 1 (
+    echo ^>^> Устанавливаю pre-commit hooks...
+    pre-commit install --install-hooks >nul 2>&1
+) else (
+    echo [WARN] pre-commit не найден — пропускаю активацию hooks.
+    echo [WARN] Установите: pip install pre-commit ^&^& pre-commit install
+)
+
 echo.
 echo ════════════════════════════════════════════════════
 echo  Готово!

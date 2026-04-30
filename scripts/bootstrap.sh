@@ -100,6 +100,15 @@ log "Frontend собран"
 log "Перезапускаю superset + nginx..."
 docker compose restart superset nginx >/dev/null
 
+# 7. Pre-commit hooks (опционально — если pre-commit установлен на хосте)
+if command -v pre-commit >/dev/null 2>&1; then
+  log "Устанавливаю pre-commit hooks (eslint, mypy, ruff, ts-check)..."
+  pre-commit install --install-hooks >/dev/null 2>&1 || warn "pre-commit install failed — пропускаю"
+else
+  warn "pre-commit не найден на хосте — пропускаю активацию hooks."
+  warn "Установите: pip install pre-commit && pre-commit install"
+fi
+
 # 7. Финальный echo
 echo ""
 echo -e "${GREEN}═══════════════════════════════════════════════════${NC}"
