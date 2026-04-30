@@ -296,6 +296,8 @@ interface ChatItem {
   blocks?: AiAnswerBlocks;
   /** id записи в БД, если сохранено. */
   messageId?: number;
+  /** Метаданные модели/тайминга от ai-analytics (показываются под именем). */
+  meta?: { tokens?: number; model?: string; latency_ms?: number };
 }
 
 function parseBotContent(json: string | null | undefined): AiAnswerBlocks {
@@ -462,7 +464,7 @@ export const AiFullView: FC<React.PropsWithChildren<AiFullViewProps>> = ({
 
         setItems(prev => {
           const next = prev.slice(0, -1); // убираем thinking
-          next.push({ role: 'bot', blocks: safeAnswer });
+          next.push({ role: 'bot', blocks: safeAnswer, meta: response.meta });
           return next;
         });
 
@@ -571,6 +573,7 @@ export const AiFullView: FC<React.PropsWithChildren<AiFullViewProps>> = ({
                 role={msg.role}
                 text={msg.text}
                 blocks={msg.blocks}
+                meta={msg.meta}
                 onFollowup={handleFollowup}
               />
             ))

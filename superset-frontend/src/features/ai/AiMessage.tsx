@@ -68,6 +68,33 @@ const Content = styled.div`
   font-family: ${DS2_VARS.fontSans};
 `;
 
+/**
+ * Шапка bot-сообщения: «ИИ-аналитик» + опциональная метка модели.
+ * Аналогично имени отправителя в Slack/Telegram — даёт пользователю
+ * понять, что отвечает машина, а не Superset-пользователь.
+ */
+const BotHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${DS2_SPACE.s2}px;
+  margin-bottom: ${DS2_SPACE.s2}px;
+`;
+
+const BotName = styled.span`
+  font-size: 12px;
+  font-weight: 600;
+  color: ${DS2_VARS.g700};
+  font-family: ${DS2_VARS.fontSans};
+`;
+
+const BotModel = styled.span`
+  font-size: 11px;
+  color: ${DS2_VARS.g500};
+  font-family: ${DS2_VARS.fontMono};
+  /* tabular-nums чтобы версии модели типа 4.5/4.6 ровно стояли */
+  font-variant-numeric: tabular-nums;
+`;
+
 const Title = styled.div`
   font-size: 15px;
   font-weight: 700;
@@ -539,6 +566,8 @@ interface AiMessageProps {
   role: 'user' | 'bot' | 'thinking';
   text?: string;
   blocks?: AiAnswerBlocks;
+  /** Опциональная метаинфа (model id) для отображения под именем бота. */
+  meta?: { model?: string };
   onFollowup?: (text: string) => void;
   onAction?: (label: string, url?: string) => void;
 }
@@ -547,6 +576,7 @@ export const AiMessage: FC<React.PropsWithChildren<AiMessageProps>> = ({
   role,
   text,
   blocks,
+  meta,
   onFollowup,
   onAction,
 }) => {
@@ -601,6 +631,10 @@ export const AiMessage: FC<React.PropsWithChildren<AiMessageProps>> = ({
         <BotIcon />
       </Avatar>
       <Content>
+        <BotHeader>
+          <BotName>{t('ИИ-аналитик')}</BotName>
+          {meta?.model ? <BotModel>{meta.model}</BotModel> : null}
+        </BotHeader>
         {b.title ? <Title>{b.title}</Title> : null}
         {b.text ? (
           <Text>
