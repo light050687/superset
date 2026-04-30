@@ -614,7 +614,9 @@ export const ReportDrawer: FC<ReportDrawerProps> = ({
       owners: [userId],
       recipients: [
         {
-          recipient_config_json: { target },
+          // ccTarget/bccTarget required в типе recipient_config_json,
+          // на этом этапе UI не поддерживает CC/BCC — пустые строки.
+          recipient_config_json: { target, ccTarget: '', bccTarget: '' },
           type: 'Email',
         },
       ],

@@ -26,13 +26,11 @@ import {
   styled,
   t,
   useTheme,
-  useElementOnScreen,
 } from '@superset-ui/core';
 import { useDispatch, useSelector } from 'react-redux';
 import { EmptyState, Loading } from '@superset-ui/core/components';
-import { ErrorBoundary, BasicErrorAlert } from 'src/components';
+import { BasicErrorAlert } from 'src/components';
 import { DS2_VARS } from 'src/theme/ds2';
-import BuilderComponentPane from 'src/dashboard/components/BuilderComponentPane';
 import DashboardHeader from 'src/dashboard/components/Header';
 import { Icons } from '@superset-ui/core/components/Icons';
 import IconButton from 'src/dashboard/components/IconButton';
@@ -79,14 +77,8 @@ import { PAGES_TYPE } from 'src/dashboard/util/componentTypes';
 import FilterBar from 'src/dashboard/components/nativeFilters/FilterBar';
 import MobileFilterBar from 'src/dashboard/components/nativeFilters/FilterBar/MobileFilterBar';
 import { useUiConfig } from 'src/components/UiConfigContext';
-import ResizableSidebar from 'src/components/ResizableSidebar';
 import {
   BUILDER_SIDEPANEL_WIDTH,
-  CLOSED_FILTER_BAR_WIDTH,
-  FILTER_BAR_HEADER_HEIGHT,
-  MAIN_HEADER_HEIGHT,
-  OPEN_FILTER_BAR_MAX_WIDTH,
-  OPEN_FILTER_BAR_WIDTH,
   EMPTY_CONTAINER_Z_INDEX,
 } from 'src/dashboard/constants';
 import { getRootLevelTabsComponent, shouldFocusTabs } from './utils';
@@ -94,22 +86,8 @@ import DashboardContainer from './DashboardContainer';
 import { useNativeFilters } from './state';
 import DashboardWrapper from './DashboardWrapper';
 
-// @z-index-above-dashboard-charts + 1 = 11
-const FiltersPanel = styled.div<{ width: number; hidden: boolean }>`
-  background-color: ${({ theme }) => theme.colorBgContainer};
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  z-index: 11;
-  width: ${({ width }) => width}px;
-  ${({ hidden }) => hidden && `display: none;`}
-`;
-
-const StickyPanel = styled.div<{ width: number }>`
-  position: sticky;
-  top: -1px;
-  width: ${({ width }) => width}px;
-  flex: 0 0 ${({ width }) => width}px;
-`;
+/* FiltersPanel + StickyPanel удалены вместе с renderChild() —
+   вертикальный FilterBar теперь живёт в Drawer'е через DashboardSideRail. */
 
 // @z-index-above-dashboard-popovers (99) + 1 = 100
 const MOBILE_HEADER_BREAKPOINT = 570;
@@ -522,10 +500,6 @@ const StyledDashboardContent = styled.div<{
   `}
 `;
 
-const ELEMENT_ON_SCREEN_OPTIONS = {
-  threshold: [1],
-};
-
 /* SaveOverlay — квадратная карточка по центру экрана с иконкой сверху
    и подписью снизу. Появляется на время saveDashboardRequest (PUT
    /api/v1/dashboard/:id). Заменяет дефолтный <Loading floating/> —
@@ -630,9 +604,6 @@ const DashboardBuilder = () => {
   const uiConfig = useUiConfig();
   const theme = useTheme();
 
-  const dashboardId = useSelector<RootState, string>(
-    ({ dashboardInfo }) => `${dashboardInfo.id}`,
-  );
   const dashboardLayout = useSelector<RootState, DashboardLayout>(
     state => state.dashboardLayout.present,
   );
@@ -707,41 +678,18 @@ const DashboardBuilder = () => {
     standaloneMode === DashboardStandaloneMode.HideNavAndTitle ||
     isReport;
 
-  const [barTopOffset, setBarTopOffset] = useState(0);
-  const [currentFilterBarWidth, setCurrentFilterBarWidth] = useState(
-    CLOSED_FILTER_BAR_WIDTH,
-  );
-
-  useEffect(() => {
-    setBarTopOffset(headerRef.current?.getBoundingClientRect()?.height || 0);
-
-    let observer: ResizeObserver;
-    if (global.hasOwnProperty('ResizeObserver') && headerRef.current) {
-      observer = new ResizeObserver(entries => {
-        setBarTopOffset(
-          current => entries?.[0]?.contentRect?.height || current,
-        );
-      });
-
-      observer.observe(headerRef.current);
-    }
-
-    return () => {
-      observer?.disconnect();
-    };
-  }, []);
+  /* barTopOffset / setBarTopOffset / ResizeObserver — удалены вместе
+     с вертикальным FilterBar, который теперь живёт в Drawer'е. */
 
   const {
     showDashboard,
     missingInitialFilters,
-    dashboardFiltersOpen,
     toggleDashboardFiltersOpen,
     nativeFiltersEnabled,
   } = useNativeFilters();
 
-  const [containerRef, isSticky] = useElementOnScreen<HTMLDivElement>(
-    ELEMENT_ON_SCREEN_OPTIONS,
-  );
+  /* useElementOnScreen для filterBar sticky-recalc — удалён вместе с
+     FilterBar.Vertical. */
 
   const showFilterBar = !editMode && nativeFiltersEnabled;
 
@@ -757,12 +705,8 @@ const DashboardBuilder = () => {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  const offset =
-    FILTER_BAR_HEADER_HEIGHT +
-    (isSticky || standaloneMode ? 0 : MAIN_HEADER_HEIGHT);
-
-  const filterBarHeight = `calc(100vh - ${offset}px)`;
-  const filterBarOffset = dashboardFiltersOpen ? 0 : barTopOffset + 20;
+  /* offset / filterBarHeight / filterBarOffset вычислялись для renderChild;
+     теперь FilterBar в Drawer'е DashboardSideRail сам рассчитывает размеры. */
 
   /* В апстриме сюда ставили marginLeft:-32 как компенсацию под закрытый
      вертикальный FilterBar (ResizableSidebar был 32px wide в collapsed).
@@ -849,56 +793,15 @@ const DashboardBuilder = () => {
      sidebar убран — теперь edit и view используют одинаковые 16px. */
   const dashboardContentMarginLeft = theme.sizeUnit * 4;
 
-  const renderChild = useCallback(
-    (adjustedWidth: number) => {
-      const filterBarWidth = dashboardFiltersOpen
-        ? adjustedWidth
-        : CLOSED_FILTER_BAR_WIDTH;
-      if (filterBarWidth !== currentFilterBarWidth) {
-        setCurrentFilterBarWidth(filterBarWidth);
-      }
-      return (
-        <FiltersPanel
-          width={filterBarWidth}
-          hidden={isReport}
-          data-test="dashboard-filters-panel"
-        >
-          <StickyPanel ref={containerRef} width={filterBarWidth}>
-            <ErrorBoundary>
-              <FilterBar
-                orientation={FilterBarOrientation.Vertical}
-                verticalConfig={{
-                  filtersOpen: dashboardFiltersOpen,
-                  toggleFiltersBar: toggleDashboardFiltersOpen,
-                  width: filterBarWidth,
-                  height: filterBarHeight,
-                  offset: filterBarOffset,
-                  topLevelPages,
-                  editMode,
-                }}
-              />
-            </ErrorBoundary>
-          </StickyPanel>
-        </FiltersPanel>
-      );
-    },
-    [
-      dashboardFiltersOpen,
-      toggleDashboardFiltersOpen,
-      filterBarHeight,
-      filterBarOffset,
-      isReport,
-      topLevelPages,
-      editMode,
-    ],
-  );
-
   /* Desktop вертикальный FilterBar и ResizableSidebar удалены — фильтры
      и pages теперь живут в отдельных Shell.Drawer'ах, которые триггерятся
      узкой icon-колонкой <DashboardSideRail /> слева (монтируется в
      Shell.tsx). Это освобождает место под грид и унифицирует UX.
 
-     MobileFilterBar ниже остаётся — на mobile drawer-pattern свой. */
+     MobileFilterBar ниже остаётся — на mobile drawer-pattern свой.
+
+     renderChild() callback удалён вместе с ResizableSidebar — он
+     зависел от FiltersPanel/StickyPanel/FilterBar.Vertical. */
   const headerFilterBarWidth = 0;
 
   return (

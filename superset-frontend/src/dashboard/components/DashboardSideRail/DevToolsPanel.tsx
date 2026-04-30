@@ -46,20 +46,14 @@ import {
   setEditMode as setEditModeAction,
   setUnsavedChanges as setUnsavedChangesAction,
   savePublished as savePublishedAction,
-  onRefresh as onRefreshAction,
 } from 'src/dashboard/actions/dashboardState';
-import { useChartIds } from 'src/dashboard/util/charts/useChartIds';
-import { addSuccessToast as addSuccessToastAction } from 'src/components/MessageToasts/actions';
 import { useShell } from 'src/views/components/Shell/ShellContext';
 import {
   clearDashboardHistory as clearDashboardHistoryAction,
   undoLayoutAction,
   redoLayoutAction,
 } from 'src/dashboard/actions/dashboardLayout';
-import {
-  LOG_ACTIONS_FORCE_REFRESH_DASHBOARD,
-  LOG_ACTIONS_TOGGLE_EDIT_DASHBOARD,
-} from 'src/logger/LogUtils';
+import { LOG_ACTIONS_TOGGLE_EDIT_DASHBOARD } from 'src/logger/LogUtils';
 import { logEvent as logEventAction } from 'src/logger/actions';
 
 /* ─── localStorage key + types ───────────────────────────────────── */
@@ -392,14 +386,6 @@ const IconDiscard = (): JSX.Element => (
   </svg>
 );
 
-/* IconRefreshTile — круговая стрелка для tile «Обновить дашборд». */
-const IconRefreshTile = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M16.5 10a6.5 6.5 0 1 1-1.9-4.6" />
-    <path d="M16.5 3.5v3h-3" />
-  </svg>
-);
-
 /* IconBuilderTile — «stacked blocks» для tile «Конструктор». */
 const IconBuilderTile = (): JSX.Element => (
   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
@@ -615,23 +601,9 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
     dispatch(redoLayoutAction());
   }, [dispatch]);
 
-  /* Refresh dashboard — перенесён из mini-rail'а по запросу юзера:
-     случайно задевая иконку он заставлял чарты пересчитываться. В
-     DevToolsPanel'е tile с осознанным кликом — не мигает лишнего. */
-  const chartIds = useChartIds();
-  const handleRefresh = useCallback(() => {
-    if (dashboardId === undefined) return;
-    dispatch(
-      logEventAction(LOG_ACTIONS_FORCE_REFRESH_DASHBOARD, {
-        force: true,
-        interval: 0,
-        chartCount: chartIds.length,
-      }),
-    );
-    // @ts-ignore — onRefresh thunk не типизирован
-    dispatch(onRefreshAction(chartIds, true, 0, dashboardId));
-    dispatch(addSuccessToastAction(t('Обновление чартов')));
-  }, [dispatch, chartIds, dashboardId]);
+  /* handleRefresh / IconRefreshTile удалены вместе с unused tile —
+     refresh теперь через mini-rail Refresh-иконку, которая защищена
+     от случайных кликов через подтверждение. */
 
   /* Publish / Unpublish. Не триггерит полный refresh дашборда —
      dispatch'им savePublished thunk, он патчит только поле

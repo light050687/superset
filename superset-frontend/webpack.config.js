@@ -165,14 +165,10 @@ if (!isDevMode) {
   );
 
   // Runs type checking on a separate process to speed up the build.
-  // По умолчанию ВЫКЛЮЧЕН: в кодовой базе остаётся TS debt в Dashboard/SideRail/
-  // Builder/ReportDrawer и др. (см. docs/setup.md → Troubleshooting).
-  // Включить полную проверку:
-  //   STRICT_TS_CHECK=1 npm run build
-  // Или явно отдельной командой:
-  //   npm run type
-  // Также SKIP_TS_CHECK=1 раньше использовался для совместимости — оставлен.
-  if (process.env.STRICT_TS_CHECK && !process.env.SKIP_TS_CHECK) {
+  // По умолчанию ВКЛЮЧЁН — TS-debt в Dashboard/SideRail/Builder/ReportDrawer
+  // вычищен. Если временно нужно пропустить (например, WIP-эксперимент),
+  // используйте SKIP_TS_CHECK=1.
+  if (!process.env.SKIP_TS_CHECK) {
     plugins.push(
       new ForkTsCheckerWebpackPlugin({
         typescript: {

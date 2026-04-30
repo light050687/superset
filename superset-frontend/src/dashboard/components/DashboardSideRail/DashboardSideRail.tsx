@@ -483,12 +483,15 @@ export const DashboardSideRail: FC = () => {
       layout: state.dashboardLayout?.present,
       dataMask: state.dataMask,
       activeTabs: state.dashboardState?.activeTabs,
-      expandedSlices: state.dashboardState?.expandedSlices,
-      refreshFrequency: state.dashboardState?.refreshFrequency,
-      shouldPersistRefreshFrequency:
-        !!state.dashboardState?.shouldPersistRefreshFrequency,
+      // expandedSlices/refreshFrequency/shouldPersistRefreshFrequency/colorNamespace
+      // удалены из DashboardState type, но реально лежат в стейте через legacy
+      // reducer'ы. Каст (any) — чтобы TS не падал, до полного refactor типов.
+      expandedSlices: (state.dashboardState as any)?.expandedSlices,
+      refreshFrequency: (state.dashboardState as any)?.refreshFrequency,
+      shouldPersistRefreshFrequency: !!(state.dashboardState as any)
+        ?.shouldPersistRefreshFrequency,
       customCss: state.dashboardState?.css,
-      colorNamespace: state.dashboardState?.colorNamespace,
+      colorNamespace: (state.dashboardState as any)?.colorNamespace,
       colorScheme: state.dashboardState?.colorScheme,
       hasUnsavedChanges: !!state.dashboardState?.hasUnsavedChanges,
       lastModifiedTime: Math.max(
