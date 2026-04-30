@@ -1,8 +1,25 @@
-# DevOps task: SQL API Cube наружу
+# DevOps task: SQL API Cube наружу (future-proof)
 
 **Owner:** DevOps team / Data platform
-**Status:** 🚧 BLOCKED — требует k8s правки
+**Status:** 💡 FUTURE-PROOF — не блокирует текущую разработку
+**Priority:** низкий — на случай расширения команды/удалёнки/CI
 **Related:** Superset Database Connections, AI-чат
+
+## Текущее состояние (важно)
+
+⚠️ Подключение Cube к локальному Superset **уже работает** в текущей
+сетевой конфигурации — внутренний k8s DNS `cube.bi-platform:5432`
+доступен из Docker-контейнеров **через корп-сеть** (предположительно
+VPN с DNS-forwarding или сетевой мост Docker↔k8s).
+
+Этот документ описывает, как сделать Cube SQL API **более robust**:
+не зависеть от корп-сетевой магии, доступным любому разработчику
+(включая удалёнку без VPN), CI и preview-окружениям.
+
+**Не критично сейчас.** Можно отложить до момента когда:
+- Появится разработчик без kubectl/VPN
+- Настроится CI который читает Cube напрямую
+- Кто-то удалит сетевой мост и текущий путь сломается
 
 ## Контекст
 
@@ -11,7 +28,7 @@ Cube.dev развёрнут в Kubernetes namespace `bi-platform`:
 | Компонент | Service | Ingress |
 |---|---|---|
 | HTTP API (REST) | `cube.bi-platform:4000` | `https://cube-api.rn-bi-k8s-kubeapi.samberi.com:31999` |
-| **PostgreSQL SQL API** | `cube.bi-platform:5432` | **❌ нет внешнего endpoint** |
+| **PostgreSQL SQL API** | `cube.bi-platform:5432` | через корп-DNS-forwarder (хрупко) |
 | Cubestore router | `cubestore-router.bi-platform:3030` | — |
 
 В env переменных Cube задано:
@@ -21,17 +38,14 @@ CUBEJS_SQL_USER=pguser
 CUBEJS_SQL_PASSWORD=<...>
 ```
 
-Сервис на порту 5432 живёт **только внутри k8s сети**.
+## Проблема которую решает
 
-## Проблема
+В **новых** сценариях (ниже) сегодняшний путь не сработает:
 
-Локальные dev-машины (Docker Desktop разработчиков, namespace другого
-кластера) не могут подключить Cube как database в Superset:
-
-```
-postgresql+psycopg2://pguser:****@cube.bi-platform:5432/gold
-                                  ↑ DNS внутренний k8s, локальный Docker не видит
-```
+- Разработчик из дома без корп-VPN → нет резолва `cube.bi-platform`
+- CI runner в облаке (GitHub Actions) → нет k8s-DNS
+- Кто-то меняет сетевую инфру → mosq Docker↔k8s ломается
+- Preview-environment в другом namespace
 
 Workaround сейчас: `kubectl port-forward -n bi-platform svc/cube 5432:5432`
 + Host=`host.docker.internal`. Это требует kubeconfig + ручной запуск окна.
@@ -127,8 +141,12 @@ psql -h cube-sql.rn-bi-k8s-kubeapi.samberi.com -p 31998 \
 
 ## Статус
 
-🚧 BLOCKED — требует решения DevOps команды (выбор Варианта A/B и
-применение к kube-config).
+💡 **FUTURE-PROOF, не блокер.** Текущее подключение работает через
+корп-сетевую конфигурацию (VPN/DNS-forwarding). Этот документ актуален
+если/когда:
+- Расширится команда (удалённые dev'ы без корп-VPN)
+- Появится CI который читает Cube напрямую
+- Текущий сетевой мост сломается
 
-После применения Superset подключится без kubectl-port-forward, любой
-разработчик из корп-сети сможет работать с Cube напрямую.
+После применения любого из 3 вариантов выше — Superset подключится
+к Cube **из любой сети** через стабильный публичный endpoint.
