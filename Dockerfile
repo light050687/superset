@@ -35,6 +35,22 @@ ENV BUILD_TRANSLATIONS=${BUILD_TRANSLATIONS}
 ARG DEV_MODE="false"           # Skip frontend build in dev mode
 ENV DEV_MODE=${DEV_MODE}
 
+# Корп-CA: подкладываем в trust store если передан --build-arg CORP_CA_CERT_B64.
+# Без него — npm с strict-ssl=false (TLS не проверяется, dev-only fallback).
+ARG CORP_CA_CERT_B64=""
+RUN if [ -n "$CORP_CA_CERT_B64" ]; then \
+      apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && \
+      echo "$CORP_CA_CERT_B64" | base64 -d > /usr/local/share/ca-certificates/corp.crt && \
+      update-ca-certificates && \
+      npm config set cafile /etc/ssl/certs/ca-certificates.crt && \
+      rm -rf /var/lib/apt/lists/*; \
+    else \
+      npm config set strict-ssl false; \
+    fi
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt \
+    REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+
 COPY docker/ /app/docker/
 # Arguments for build configuration
 ARG NPM_BUILD_CMD="build"
@@ -111,6 +127,20 @@ FROM python:${PY_VER} AS python-base
 
 ARG SUPERSET_HOME="/app/superset_home"
 ENV SUPERSET_HOME=${SUPERSET_HOME}
+
+# Корп-CA: тот же механизм, что для node-стадий выше. Python urllib/requests/uv
+# используют системный trust store (ca-certificates). REQUESTS_CA_BUNDLE и
+# SSL_CERT_FILE нужны для библиотек которые не следуют системе.
+ARG CORP_CA_CERT_B64=""
+RUN if [ -n "$CORP_CA_CERT_B64" ]; then \
+      apt-get update && apt-get install -y --no-install-recommends ca-certificates && \
+      echo "$CORP_CA_CERT_B64" | base64 -d > /usr/local/share/ca-certificates/corp.crt && \
+      update-ca-certificates && \
+      rm -rf /var/lib/apt/lists/*; \
+    fi
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
+    CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 
 RUN mkdir -p $SUPERSET_HOME
 RUN useradd --user-group -d ${SUPERSET_HOME} -m --no-log-init --shell /bin/bash superset \
