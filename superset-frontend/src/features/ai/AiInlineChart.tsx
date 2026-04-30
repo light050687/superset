@@ -22,8 +22,45 @@
  */
 import { styled } from '@superset-ui/core';
 import ReactECharts from 'echarts-for-react';
-import { type FC, useMemo } from 'react';
+import { type FC, useEffect, useMemo, useState } from 'react';
 import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
+
+/**
+ * Читает CSS-переменные DS 2.0 для использования в ECharts options
+ * (которые не CSS, а runtime JS). Реактивно ре-чейн после смены темы
+ * через MutationObserver на data-theme attribute.
+ */
+function useDs2EChartsColors(): {
+  ink: string;
+  g500: string;
+  g600: string;
+  cSky: string;
+  cSkyAlpha8: string;
+} {
+  const read = () => {
+    if (typeof document === 'undefined') {
+      return { ink: '#0A0A0A', g500: '#737373', g600: '#555555', cSky: '#3B8BD9', cSkyAlpha8: 'rgba(59, 139, 217, 0.08)' };
+    }
+    const cs = getComputedStyle(document.documentElement);
+    const get = (name: string, fallback: string) =>
+      (cs.getPropertyValue(name).trim() || fallback) as string;
+    return {
+      ink: get('--ink', '#0A0A0A'),
+      g500: get('--g500', '#737373'),
+      g600: get('--g600', '#555555'),
+      cSky: get('--c-sky', '#3B8BD9'),
+      cSkyAlpha8: 'rgba(59, 139, 217, 0.08)',
+    };
+  };
+  const [colors, setColors] = useState(read);
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const obs = new MutationObserver(() => setColors(read()));
+    obs.observe(document.documentElement, { attributes: true });
+    return () => obs.disconnect();
+  }, []);
+  return colors;
+}
 
 interface AiInlineChartProps {
   /** Cube.dev query (или подобный) — нужен для определения timeDim/dim/measure. */
@@ -94,6 +131,8 @@ function toNum(v: unknown): number {
 }
 
 export const AiInlineChart: FC<AiInlineChartProps> = ({ cubeQuery, rawData }) => {
+  const colors = useDs2EChartsColors();
+
   const option = useMemo(() => {
     if (!Array.isArray(rawData) || rawData.length === 0) return null;
     const { dimensions, measures, timeDimension } = classifyColumns(cubeQuery, rawData);
@@ -105,7 +144,7 @@ export const AiInlineChart: FC<AiInlineChartProps> = ({ cubeQuery, rawData }) =>
     const baseTextStyle = {
       fontFamily: "'Manrope', 'Inter', sans-serif",
       fontSize: 11,
-      color: '#555555', // g600 light fallback (CSS-vars не всегда доступны в ECharts)
+      color: colors.g600,
     };
 
     // 1) Time-series → line.
@@ -126,10 +165,10 @@ export const AiInlineChart: FC<AiInlineChartProps> = ({ cubeQuery, rawData }) =>
             smooth: true,
             symbol: 'circle',
             symbolSize: 6,
-            lineStyle: { width: 2, color: '#3B8BD9' },
-            itemStyle: { color: '#3B8BD9' },
+            lineStyle: { width: 2, color: colors.cSky },
+            itemStyle: { color: colors.cSky },
             areaStyle: {
-              color: 'rgba(59, 139, 217, 0.08)',
+              color: colors.cSkyAlpha8,
             },
           },
         ],
@@ -151,7 +190,7 @@ export const AiInlineChart: FC<AiInlineChartProps> = ({ cubeQuery, rawData }) =>
             type: 'pie',
             radius: ['38%', '68%'],
             avoidLabelOverlap: true,
-            label: { fontSize: 11, color: '#0A0A0A' },
+            label: { fontSize: 11, color: colors.ink },
             data: rawData.map(r => ({
               name: String(r[dim] ?? ''),
               value: toNum(r[measure]),
@@ -178,7 +217,7 @@ export const AiInlineChart: FC<AiInlineChartProps> = ({ cubeQuery, rawData }) =>
             type: 'bar',
             name: measureLabel,
             data: ys,
-            itemStyle: { color: '#3B8BD9', borderRadius: [4, 4, 0, 0] },
+            itemStyle: { color: colors.cSky, borderRadius: [4, 4, 0, 0] },
           },
         ],
       };
@@ -206,11 +245,11 @@ export const AiInlineChart: FC<AiInlineChartProps> = ({ cubeQuery, rawData }) =>
           type: 'bar',
           name: measureLabel,
           data: topYs,
-          itemStyle: { color: '#3B8BD9', borderRadius: [0, 4, 4, 0] },
+          itemStyle: { color: colors.cSky, borderRadius: [0, 4, 4, 0] },
         },
       ],
     };
-  }, [cubeQuery, rawData]);
+  }, [cubeQuery, rawData, colors]);
 
   if (!option) return null;
 
