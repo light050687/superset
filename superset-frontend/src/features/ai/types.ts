@@ -105,13 +105,23 @@ export interface AiAnswerFollowup {
   text: string;
 }
 
+/** Сырая таблица данных от ai-analytics (rawData из NL2SQL pipeline). */
+export interface AiAnswerTable {
+  rows: Array<Record<string, unknown>>;
+  /** Опциональный заголовок над таблицей. */
+  title?: string;
+}
+
 /** Полная структура ответа от ai-analytics. */
 export interface AiAnswerBlocks {
   /** Короткий текстовый ответ (основной абзац). */
   title?: string;
+  /** Markdown-текст. Рендерится через markdown-to-jsx в AiMessage. */
   text?: string;
   kpi?: AiAnswerKpi[];
   chart?: AiAnswerChart;
+  /** Таблица сырых данных (rawData от Cube.dev). */
+  table?: AiAnswerTable;
   insight?: AiAnswerInsight;
   actions?: AiAnswerAction[];
   source?: AiAnswerSource;
@@ -146,6 +156,11 @@ export interface AiAnalyzeRawResponse {
     model?: string;
     latency_ms?: number;
   };
+  // ai-analytics LLM-pipeline формат:
+  //   {message: '<markdown>', intent: 'query_data', cubeQuery: {...}, rawData: [...]}
+  message?: string;
+  cubeQuery?: unknown;
+  rawData?: Array<Record<string, unknown>>;
   // legacy / alternative shapes
   text?: string;
   content?: string;

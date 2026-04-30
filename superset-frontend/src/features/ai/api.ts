@@ -164,7 +164,7 @@ export function isAiBackendConfigured(): boolean {
  *   4. fallback:   любой другой объект сериализуется в text
  */
 function adaptAnalyzeResponse(raw: AiAnalyzeRawResponse): AiAnalyzeResponse {
-  // 1) caнoничный: answer уже структурированный AiAnswerBlocks.
+  // 1) Каноничный: answer уже структурированный AiAnswerBlocks.
   if (
     raw &&
     typeof raw.answer === 'object' &&
@@ -178,7 +178,23 @@ function adaptAnalyzeResponse(raw: AiAnalyzeRawResponse): AiAnalyzeResponse {
     };
   }
 
-  // 2) legacy: плоский text/content.
+  // 2) ai-analytics LLM-pipeline: {message: '<markdown>', intent, cubeQuery,
+  // rawData: [...]}. message — основной markdown-ответ, rawData — таблица
+  // от Cube.dev. intent НЕ выводим как title (это технический классификатор
+  // запроса, типа 'query_data', не для UI).
+  if (typeof raw?.message === 'string' && raw.message.length > 0) {
+    const blocks: AiAnswerBlocks = { text: raw.message };
+    if (Array.isArray(raw.rawData) && raw.rawData.length > 0) {
+      blocks.table = { rows: raw.rawData };
+    }
+    return {
+      answer: blocks,
+      session_id: raw.session_id,
+      meta: raw.meta,
+    };
+  }
+
+  // 3) Legacy: плоский text/content.
   const flatText =
     typeof raw?.text === 'string'
       ? raw.text
@@ -193,16 +209,13 @@ function adaptAnalyzeResponse(raw: AiAnalyzeRawResponse): AiAnalyzeResponse {
     };
   }
 
-  // 3-4) Generic: NL2SQL-pipeline или незнакомый формат — сериализуем
-  // в text с обрезкой, чтобы не раздуть metadata DB.
+  // 4) Fallback: незнакомый формат — сериализуем в text с обрезкой,
+  // чтобы хоть что-то показать пользователю и не раздуть metadata DB.
   const serialized = JSON.stringify(raw, null, 2);
   const truncated =
     serialized.length > 4000 ? `${serialized.slice(0, 4000)}…` : serialized;
   return {
-    answer: {
-      title: typeof raw?.intent === 'string' ? raw.intent : 'Ответ AI',
-      text: truncated,
-    },
+    answer: { text: truncated },
     session_id: raw?.session_id,
     meta: raw?.meta,
   };

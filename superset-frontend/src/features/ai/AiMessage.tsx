@@ -16,6 +16,7 @@
  * - bot: структурированный ответ (title/text/kpi/chart/insight/actions/source/followup)
  */
 import { styled, t } from '@superset-ui/core';
+import Markdown from 'markdown-to-jsx';
 import { type FC } from 'react';
 import { useHistory } from 'react-router-dom';
 import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
@@ -80,9 +81,146 @@ const Text = styled.div`
   color: ${DS2_VARS.g700};
   margin-bottom: ${DS2_SPACE.s3}px;
 
+  /* markdown-rendered headings */
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: ${DS2_VARS.ink};
+    font-weight: 700;
+    line-height: 1.3;
+    margin: ${DS2_SPACE.s4}px 0 ${DS2_SPACE.s2}px;
+  }
+  h1 {
+    font-size: 18px;
+  }
+  h2 {
+    font-size: 16px;
+  }
+  h3 {
+    font-size: 15px;
+  }
+  h4 {
+    font-size: 14px;
+  }
+
+  p {
+    margin: 0 0 ${DS2_SPACE.s2}px;
+  }
+
+  ul,
+  ol {
+    margin: 0 0 ${DS2_SPACE.s3}px;
+    padding-left: ${DS2_SPACE.s5}px;
+  }
+  li {
+    margin: 2px 0;
+  }
+  ul li::marker {
+    color: ${DS2_VARS.g500};
+  }
+  ol li::marker {
+    color: ${DS2_VARS.g500};
+    font-variant-numeric: tabular-nums;
+  }
+
   strong {
     color: ${DS2_VARS.ink};
     font-weight: 600;
+  }
+
+  code {
+    font-family: var(--m, 'JetBrains Mono', monospace);
+    font-size: 12.5px;
+    background: ${DS2_VARS.g50};
+    border: 1px solid ${DS2_VARS.g200};
+    border-radius: 4px;
+    padding: 1px 6px;
+    color: ${DS2_VARS.ink};
+  }
+
+  pre {
+    background: ${DS2_VARS.g50};
+    border: 1px solid ${DS2_VARS.g200};
+    border-radius: ${DS2_RADIUS.r6}px;
+    padding: ${DS2_SPACE.s3}px ${DS2_SPACE.s4}px;
+    overflow-x: auto;
+    margin: ${DS2_SPACE.s2}px 0 ${DS2_SPACE.s3}px;
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+  pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+
+  blockquote {
+    border-left: 3px solid ${DS2_VARS.g300};
+    padding-left: ${DS2_SPACE.s3}px;
+    margin: ${DS2_SPACE.s2}px 0;
+    color: ${DS2_VARS.g600};
+  }
+
+  a {
+    color: ${DS2_VARS.cSky};
+    text-decoration: underline;
+  }
+`;
+
+const TableWrap = styled.div`
+  margin: ${DS2_SPACE.s3}px 0;
+  border: 1px solid ${DS2_VARS.g200};
+  border-radius: ${DS2_RADIUS.r10}px;
+  overflow: hidden;
+  background: ${DS2_VARS.s};
+`;
+
+const TableTitle = styled.div`
+  padding: ${DS2_SPACE.s2}px ${DS2_SPACE.s4}px;
+  font-size: 12px;
+  font-weight: 600;
+  color: ${DS2_VARS.g600};
+  background: ${DS2_VARS.g50};
+  border-bottom: 1px solid ${DS2_VARS.g200};
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+`;
+
+const TableScroll = styled.div`
+  max-height: 360px;
+  overflow: auto;
+`;
+
+const StyledTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th,
+  td {
+    padding: ${DS2_SPACE.s2}px ${DS2_SPACE.s3}px;
+    text-align: left;
+    border-bottom: 1px solid ${DS2_VARS.g100};
+    vertical-align: top;
+  }
+  th {
+    position: sticky;
+    top: 0;
+    background: ${DS2_VARS.g50};
+    color: ${DS2_VARS.ink};
+    font-weight: 600;
+    z-index: 1;
+  }
+  td {
+    color: ${DS2_VARS.g700};
+    font-variant-numeric: tabular-nums;
+  }
+  tr:last-child td {
+    border-bottom: none;
+  }
+  tr:hover td {
+    background: ${DS2_VARS.g50};
   }
 `;
 
@@ -327,6 +465,68 @@ const Dots = styled.span`
   }
 `;
 
+/**
+ * Простая таблица для rawData из ai-analytics. Колонки определяются
+ * по ключам первой строки. Числовые значения форматируются с разрядкой
+ * (RU-формат: пробел-тысячи, запятая-десятичные).
+ */
+const DataTable: FC<{
+  rows: Array<Record<string, unknown>>;
+  title?: string;
+}> = ({ rows, title }) => {
+  const columns = Object.keys(rows[0] ?? {});
+  if (columns.length === 0) return null;
+
+  const formatCell = (v: unknown): string => {
+    if (v == null) return '—';
+    if (typeof v === 'number') {
+      return new Intl.NumberFormat('ru-RU', {
+        maximumFractionDigits: 2,
+      }).format(v);
+    }
+    if (typeof v === 'string') {
+      const asNum = Number(v);
+      if (!Number.isNaN(asNum) && v.trim() !== '' && /^-?\d/.test(v)) {
+        return new Intl.NumberFormat('ru-RU', {
+          maximumFractionDigits: 2,
+        }).format(asNum);
+      }
+      return v;
+    }
+    return String(v);
+  };
+
+  // удаляем prefix `cubeName.` для читабельности заголовков
+  const prettyHeader = (col: string): string =>
+    col.includes('.') ? col.split('.').slice(1).join('.') : col;
+
+  return (
+    <TableWrap>
+      {title ? <TableTitle>{title}</TableTitle> : null}
+      <TableScroll>
+        <StyledTable>
+          <thead>
+            <tr>
+              {columns.map(c => (
+                <th key={c}>{prettyHeader(c)}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={i}>
+                {columns.map(c => (
+                  <td key={c}>{formatCell(row[c])}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </StyledTable>
+      </TableScroll>
+    </TableWrap>
+  );
+};
+
 const BotIcon: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <circle cx="8" cy="8" r="6" />
@@ -402,7 +602,29 @@ export const AiMessage: FC<React.PropsWithChildren<AiMessageProps>> = ({
       </Avatar>
       <Content>
         {b.title ? <Title>{b.title}</Title> : null}
-        {b.text ? <Text>{b.text}</Text> : null}
+        {b.text ? (
+          <Text>
+            <Markdown
+              options={{
+                overrides: {
+                  // запрещаем встраивание сырого HTML — только markdown
+                  // элементы (защита от prompt-injection)
+                  iframe: () => null,
+                  script: () => null,
+                  style: () => null,
+                },
+              }}
+            >
+              {b.text}
+            </Markdown>
+          </Text>
+        ) : null}
+        {b.table && b.table.rows.length > 0 ? (
+          <DataTable
+            rows={b.table.rows}
+            title={b.table.title ?? t('Данные')}
+          />
+        ) : null}
 
         {b.kpi && b.kpi.length > 0 ? (
           <KpiGrid>
