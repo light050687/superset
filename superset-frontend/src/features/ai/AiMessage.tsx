@@ -17,10 +17,11 @@
  */
 import { styled, t } from '@superset-ui/core';
 import Markdown from 'markdown-to-jsx';
-import { type FC } from 'react';
+import { type FC, useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 import { AiInlineChart } from './AiInlineChart';
+import { parseSsActions, stripSsActionsFromMarkdown, type SsAction } from './parseSsActions';
 import type { AiAnswerBlocks } from './types';
 
 const MsgUser = styled.div`
@@ -555,6 +556,122 @@ const DataTable: FC<{
   );
 };
 
+/**
+ * Стили + компонент кнопки для actionable Python-блоков. Заменяют
+ * сырой code-block на интерактивный CTA («Создать дашборд» / «Создать
+ * график»).
+ *
+ * На текущем этапе — превью JSON и copy-to-clipboard. Полная интеграция
+ * с Superset API (создание ChartHolder/Dashboard) — следующая итерация.
+ */
+const SsActionsWrap = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${DS2_SPACE.s2}px;
+  margin: ${DS2_SPACE.s3}px 0 ${DS2_SPACE.s2}px;
+`;
+
+const SsActionBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: ${DS2_SPACE.s2}px;
+  padding: ${DS2_SPACE.s2}px ${DS2_SPACE.s4}px;
+  border: 1px solid ${DS2_VARS.cSky};
+  background: rgba(59, 139, 217, 0.08);
+  color: ${DS2_VARS.cSky};
+  border-radius: ${DS2_RADIUS.control}px;
+  font-family: ${DS2_VARS.fontSans};
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ${DS2_VARS.ease};
+
+  &:hover {
+    background: rgba(59, 139, 217, 0.16);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${DS2_VARS.cSky};
+    outline-offset: 1px;
+  }
+`;
+
+const SsActionPreview = styled.pre`
+  margin: ${DS2_SPACE.s2}px 0 0;
+  padding: ${DS2_SPACE.s3}px;
+  background: ${DS2_VARS.g50};
+  border: 1px solid ${DS2_VARS.g200};
+  border-radius: ${DS2_RADIUS.control}px;
+  font-family: ${DS2_VARS.fontMono};
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: ${DS2_VARS.g700};
+  overflow-x: auto;
+  max-height: 260px;
+  overflow-y: auto;
+`;
+
+const SsActionsRow: FC<{ actions: SsAction[] }> = ({ actions }) => {
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
+  const onCopy = async (raw: string) => {
+    try {
+      await navigator.clipboard.writeText(raw);
+    } catch {
+      // silent — clipboard может быть недоступен в небезопасном контексте
+    }
+  };
+
+  if (actions.length === 0) return null;
+
+  return (
+    <SsActionsWrap>
+      {actions.map((a, i) => {
+        const label =
+          a.kind === 'dashboard' ? t('Создать дашборд') : t('Создать график');
+        const isOpen = openIdx === i;
+        return (
+          <div key={`ss-${i}`} style={{ width: '100%' }}>
+            <SsActionBtn
+              type="button"
+              onClick={() => setOpenIdx(isOpen ? null : i)}
+              aria-expanded={isOpen}
+            >
+              <span aria-hidden>+</span>
+              {label}
+              <span style={{ opacity: 0.6, marginLeft: 8 }}>
+                {isOpen ? t('скрыть') : t('показать payload')}
+              </span>
+            </SsActionBtn>
+            {isOpen ? (
+              <SsActionPreview>
+                {a.payload
+                  ? JSON.stringify(a.payload, null, 2)
+                  : a.raw}
+                {'\n\n'}
+                <button
+                  type="button"
+                  onClick={() => onCopy(a.raw)}
+                  style={{
+                    fontSize: 11,
+                    padding: '4px 10px',
+                    border: `1px solid ${DS2_VARS.g300}`,
+                    borderRadius: 4,
+                    background: DS2_VARS.s,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t('Скопировать')}
+                </button>
+              </SsActionPreview>
+            ) : null}
+          </div>
+        );
+      })}
+    </SsActionsWrap>
+  );
+};
+
 const BotIcon: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <circle cx="8" cy="8" r="6" />
@@ -626,6 +743,20 @@ export const AiMessage: FC<React.PropsWithChildren<AiMessageProps>> = ({
     }
   };
 
+  // Извлекаем actionable Python-блоки и удаляем их из markdown,
+  // чтобы они не дублировались между code-block и кнопкой ниже.
+  const ssActions = useMemo(
+    () => (typeof b.text === 'string' ? parseSsActions(b.text) : []),
+    [b.text],
+  );
+  const cleanText = useMemo(
+    () =>
+      typeof b.text === 'string' && ssActions.length > 0
+        ? stripSsActionsFromMarkdown(b.text)
+        : b.text,
+    [b.text, ssActions.length],
+  );
+
   return (
     <MsgBot>
       <Avatar aria-hidden>
@@ -637,7 +768,7 @@ export const AiMessage: FC<React.PropsWithChildren<AiMessageProps>> = ({
           {meta?.model ? <BotModel>{meta.model}</BotModel> : null}
         </BotHeader>
         {b.title ? <Title>{b.title}</Title> : null}
-        {b.text ? (
+        {cleanText ? (
           <Text>
             <Markdown
               options={{
@@ -650,10 +781,11 @@ export const AiMessage: FC<React.PropsWithChildren<AiMessageProps>> = ({
                 },
               }}
             >
-              {b.text}
+              {cleanText}
             </Markdown>
           </Text>
         ) : null}
+        {ssActions.length > 0 ? <SsActionsRow actions={ssActions} /> : null}
         {b.table && b.table.rows.length > 0 ? (
           <AiInlineChart
             cubeQuery={b.cubeQuery}
