@@ -86,7 +86,10 @@ if [ -f "docker/.env-local" ]; then
   set +a
 fi
 
-AI_URL="${AI_BACKEND_URL:-http://dataru-saod-llm02-vm.samberi.com:8080}"
+# AI_BACKEND_URL без дефолта — пусть пользователь явно укажет в .env-local.
+# Без него фронт запустится в mock-режиме (см. api.ts:isAiBackendConfigured).
+# Корп-URL не зашиваем — это утечка инфраструктурного DNS в публичный репо.
+AI_URL="${AI_BACKEND_URL:-}"
 
 docker compose run --rm \
   -e AI_BACKEND_URL="$AI_URL" \

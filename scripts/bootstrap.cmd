@@ -78,8 +78,10 @@ goto wait_loop
 echo.
 echo ^>^> Билжу frontend (~3-5 минут)...
 
-REM Загружаем AI_BACKEND_URL из .env-local если есть
-set "AI_URL=http://dataru-saod-llm02-vm.samberi.com:8080"
+REM AI_BACKEND_URL читается из docker\.env-local — пользователь сам указывает.
+REM Без него фронт запустится в mock-режиме (см. api.ts isAiBackendConfigured).
+REM Корп-URL не хардкодим — это утечка инфраструктурного DNS.
+set "AI_URL="
 if exist "docker\.env-local" (
     for /f "usebackq tokens=2 delims==" %%a in (`findstr /b "AI_BACKEND_URL=" "docker\.env-local"`) do set "AI_URL=%%a"
 )
