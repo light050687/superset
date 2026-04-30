@@ -248,6 +248,9 @@ function adaptAnalyzeResponse(raw: AiAnalyzeRawResponse): AiAnalyzeResponse {
     if (Array.isArray(raw.rawData) && raw.rawData.length > 0) {
       blocks.table = { rows: raw.rawData };
     }
+    if (raw.cubeQuery) {
+      blocks.cubeQuery = raw.cubeQuery;
+    }
     const extracted = extractKpisFromMarkdown(raw.message);
     if (extracted.length > 0) blocks.kpi = extracted;
     return {

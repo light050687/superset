@@ -20,6 +20,7 @@ import Markdown from 'markdown-to-jsx';
 import { type FC } from 'react';
 import { useHistory } from 'react-router-dom';
 import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
+import { AiInlineChart } from './AiInlineChart';
 import type { AiAnswerBlocks } from './types';
 
 const MsgUser = styled.div`
@@ -652,6 +653,12 @@ export const AiMessage: FC<React.PropsWithChildren<AiMessageProps>> = ({
               {b.text}
             </Markdown>
           </Text>
+        ) : null}
+        {b.table && b.table.rows.length > 0 ? (
+          <AiInlineChart
+            cubeQuery={b.cubeQuery}
+            rawData={b.table.rows}
+          />
         ) : null}
         {b.table && b.table.rows.length > 0 ? (
           <DataTable

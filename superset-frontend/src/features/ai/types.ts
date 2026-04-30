@@ -122,6 +122,12 @@ export interface AiAnswerBlocks {
   chart?: AiAnswerChart;
   /** Таблица сырых данных (rawData от Cube.dev). */
   table?: AiAnswerTable;
+  /**
+   * Cube.dev query (dimensions/measures/timeDimensions) — нужен для
+   * AiInlineChart эвристики выбора bar/line/pie. Прокидывается из
+   * raw.cubeQuery в адаптере.
+   */
+  cubeQuery?: unknown;
   insight?: AiAnswerInsight;
   actions?: AiAnswerAction[];
   source?: AiAnswerSource;
