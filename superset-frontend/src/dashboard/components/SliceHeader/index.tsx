@@ -74,12 +74,12 @@ const CrossFilterIcon = styled(Icons.ApartmentOutlined)`
 
 const ChartHeaderStyles = styled.div`
   ${({ theme }) => css`
-    /* DS v2.0 section title: 14/18, 700, UPPERCASE, letter-spacing 0.05em */
-    font-family: var(--f, ${theme.fontFamily});
-    font-size: 14px;
-    line-height: 18px;
+    /* DS v2.0 fluid section title: --fs-micro (11-13) UPPER моно, weight 700 */
+    font-family: var(--m);
+    font-size: var(--fs-micro);
+    line-height: 1.4;
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--ink, ${theme.colorText});
     margin-bottom: ${theme.sizeUnit}px;

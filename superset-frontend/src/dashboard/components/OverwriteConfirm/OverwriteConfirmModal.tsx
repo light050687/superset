@@ -45,7 +45,7 @@ const StyledEditor = styled.div`
        border: 1px ${theme.colorBorder} solid;
      }
      pre {
-       font-size: 11px;
+       font-size: var(--fs-micro);
        padding: 0px;
        background-color: transparent;
        border: 0px;

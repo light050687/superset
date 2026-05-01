@@ -87,8 +87,12 @@ const Rail = styled.nav<{
   $collapsed: boolean;
 }>`
   position: fixed;
-  transform: none;
-  bottom: calc(${DS2_VARS.dockBottom} + ${DS2_VARS.dockHeight} - 18px);
+  /* Anchored bottom: мини-рейл «приклеен» к main dock TOP edge. Bottom
+     edge всегда отстоит от main dock TOP ровно на 18px overlap. */
+  bottom: ${({ $collapsed }) =>
+    $collapsed
+      ? '-2px'
+      : `calc(${DS2_VARS.dockBottom} + ${DS2_VARS.dockHeight} - 18px)`};
   ${({ $metrics }) =>
     $metrics !== null
       ? `left: ${$metrics.left}px; width: ${$metrics.width}px;`
@@ -110,13 +114,22 @@ const Rail = styled.nav<{
   box-shadow: inset 0 1px 0 ${DS2_VARS.aiSideHairline};
   z-index: 99;
 
+  /* Симметричная анимация: collapse = expand в реверсе. Та же
+     длительность (240ms), та же easing (decelerated cubic-bezier),
+     тот же delay (200ms) — независимо от направления.
+     Юзер хочет точный реверс развёртывания при свёртывании. */
+  --mini-ease: cubic-bezier(0, 0, 0.2, 1);
+  --mini-delay: 200ms;
+
+  transform-origin: bottom center;
   transform: ${({ $collapsed }) =>
-    $collapsed ? 'translateY(100%)' : 'translateY(0)'};
+    $collapsed ? 'scaleY(0)' : 'scaleY(1)'};
   opacity: ${({ $collapsed }) => ($collapsed ? 0 : 1)};
   pointer-events: ${({ $collapsed }) => ($collapsed ? 'none' : 'auto')};
   transition:
-    transform 280ms cubic-bezier(0.32, 0.72, 0, 1),
-    opacity 180ms ease;
+    transform 240ms var(--mini-ease) var(--mini-delay),
+    opacity 240ms var(--mini-ease) var(--mini-delay),
+    bottom 240ms var(--mini-ease) var(--mini-delay);
 
   @media print {
     display: none;
@@ -128,7 +141,7 @@ const Rail = styled.nav<{
   @media (prefers-reduced-motion: reduce) {
     transition: opacity 120ms ease;
     transform: ${({ $collapsed }) =>
-      $collapsed ? 'translateY(100%)' : 'none'};
+      $collapsed ? 'scaleY(0)' : 'scaleY(1)'};
   }
 `;
 
@@ -200,7 +213,7 @@ const PopoverItem = styled.button<{ $danger?: boolean }>`
   background: transparent;
   border-radius: 6px;
   color: ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.ink)};
-  font-size: 13px;
+  font-size: var(--fs-interactive);
   font-weight: 500;
   text-align: left;
   cursor: pointer;
@@ -415,8 +428,14 @@ function useMainDockMetrics(): DockMetrics | null {
 /* ─── Component ──────────────────────────────────────────────────── */
 
 export const DashboardSideRail: FC = () => {
-  const { openedDrawer, toggleDrawer, isDockCollapsed, setHasMiniRail } =
-    useShell();
+  const {
+    openedDrawer,
+    toggleDrawer,
+    isDockCollapsed,
+    setHasMiniRail,
+    pagesRailOpen,
+    togglePagesRail,
+  } = useShell();
   const onDashboard = useOnDashboardRoute();
   const dockMetrics = useMainDockMetrics();
   const dispatch = useDispatch();
@@ -445,14 +464,6 @@ export const DashboardSideRail: FC = () => {
 
   /* ─── Redux state ──────────────────────────────────────────────── */
 
-  const topLevelPagesCount = useSelector<RootState, number>(state => {
-    const layout = state.dashboardLayout?.present;
-    if (!layout) return 0;
-    const pagesNode = Object.values(layout).find(
-      (c: any) => c?.type === 'PAGES',
-    ) as { children?: string[] } | undefined;
-    return pagesNode?.children?.length ?? 0;
-  });
   const editMode = useSelector<RootState, boolean>(
     state => state.dashboardState?.editMode ?? false,
   );
@@ -851,11 +862,14 @@ export const DashboardSideRail: FC = () => {
         icon: <IconFilter />,
       },
       {
-        kind: 'drawer',
-        drawer: 'pages',
+        kind: 'action',
+        id: 'pages',
         label: t('Страницы'),
         icon: <IconPages />,
-        visible: topLevelPagesCount > 1 || editMode,
+        onClick: togglePagesRail,
+        active: pagesRailOpen,
+        // Always visible — единообразный rail на всех дашбордах
+        // независимо от async hydrate'а и количества страниц.
       },
       {
         kind: 'popover',
@@ -870,7 +884,6 @@ export const DashboardSideRail: FC = () => {
         label: t('Сохранить дашборд'),
         icon: <IconSave />,
         items: saveItems,
-        visible: userCanSave,
       },
       {
         kind: 'popover',
@@ -878,7 +891,6 @@ export const DashboardSideRail: FC = () => {
         label: t('Поделиться'),
         icon: <IconShare />,
         items: shareItems,
-        visible: userCanShare,
       },
       {
         kind: 'action',
@@ -887,7 +899,9 @@ export const DashboardSideRail: FC = () => {
         icon: <IconEnvelope />,
         onClick: handleOpenReportDrawer,
         active: showingReportDrawer,
-        visible: canAddReports,
+        // Sync feature-flag check (без async user role) — иконка появляется
+        // на t=0, role гейтит реальное открытие drawer'а на клике.
+        visible: isFeatureEnabled(FeatureFlag.AlertReports),
       },
       {
         kind: 'action',
@@ -900,7 +914,6 @@ export const DashboardSideRail: FC = () => {
     ];
     return arr;
   }, [
-    topLevelPagesCount,
     editMode,
     devToolsOpen,
     handleToggleDevTools,
@@ -909,9 +922,8 @@ export const DashboardSideRail: FC = () => {
     shareItems,
     handleOpenReportDrawer,
     showingReportDrawer,
-    userCanSave,
-    userCanShare,
-    canAddReports,
+    pagesRailOpen,
+    togglePagesRail,
   ]);
 
   if (!onDashboard) return null;
@@ -921,6 +933,7 @@ export const DashboardSideRail: FC = () => {
       <Rail
         aria-label={t('Панель управления дашбордом')}
         aria-hidden={isDockCollapsed}
+        data-collapsed={isDockCollapsed ? 'true' : 'false'}
         $metrics={dockMetrics}
         $collapsed={isDockCollapsed}
       >

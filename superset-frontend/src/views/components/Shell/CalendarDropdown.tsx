@@ -171,10 +171,10 @@ const HeaderLeft = styled.div`
   min-width: 0;
 `;
 
-/* cal-head-mo (мокап): inline title с chevron-down открывает cal-mo-pop. */
+/* DS v2.0 fluid: --fs-subtitle (16-20) для заголовка месяца. */
 const HeaderTitle = styled.button`
   font-family: ${DS2_VARS.fontSans};
-  font-size: 15px;
+  font-size: var(--fs-subtitle);
   font-weight: 700;
   color: ${DS2_VARS.ink};
   display: inline-flex;
@@ -235,7 +235,7 @@ const MoPopYearBtn = styled.button`
   padding: 2px 6px;
   border-radius: 5px;
   font-family: ${DS2_VARS.fontMono};
-  font-size: 12px;
+  font-size: var(--fs-meta);
   font-weight: 600;
   color: ${DS2_VARS.ink};
   cursor: pointer;
@@ -288,7 +288,7 @@ const MoPopCell = styled.button<{ $active?: boolean; $current?: boolean }>`
   color: ${({ $active, $current }) =>
     $active || $current ? DS2_VARS.cSky : DS2_VARS.ink};
   font-family: ${DS2_VARS.fontSans};
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: ${({ $active, $current }) => ($active || $current ? 600 : 500)};
   cursor: pointer;
   transition: all 0.12s ${DS2_VARS.ease};
@@ -300,7 +300,7 @@ const MoPopCell = styled.button<{ $active?: boolean; $current?: boolean }>`
 
 const HeaderSub = styled.div`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
 `;
 
@@ -328,7 +328,7 @@ const Tab = styled.button<{ $active?: boolean }>`
   border-radius: 5px;
   cursor: pointer;
   font-family: ${DS2_VARS.fontSans};
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 500;
   color: ${({ $active }) => ($active ? DS2_VARS.ink : DS2_VARS.g500)};
   border: 1px solid
@@ -451,7 +451,7 @@ const WeekHeader = styled.div`
 
 const WeekDay = styled.div`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -521,7 +521,7 @@ const Cell = styled.button<{
 `;
 
 const DayNumber = styled.span<{ $isToday?: boolean; $isCurrentMonth?: boolean }>`
-  font-size: 12px;
+  font-size: var(--fs-meta);
   font-weight: ${({ $isToday }) => ($isToday ? 700 : 500)};
   color: ${({ $isToday, $isCurrentMonth }) =>
     $isToday && $isCurrentMonth ? DS2_VARS.cSky : 'inherit'};
@@ -537,7 +537,7 @@ const EventChips = styled.div`
 `;
 
 const EventChip = styled.div<{ $color: string }>`
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.ink};
   background: ${({ $color }) =>
@@ -559,13 +559,13 @@ const DayHead = styled.div`
 `;
 
 const DayHeadTitle = styled.div`
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 700;
   color: ${DS2_VARS.ink};
 `;
 
 const DayHeadSub = styled.div`
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
   margin-top: 2px;
 `;
@@ -617,7 +617,7 @@ const EventRow = styled.div`
 
 const EventTime = styled.div`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
   display: flex;
   flex-direction: column;
@@ -635,7 +635,7 @@ const EventTitle = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: ${DS2_VARS.ink};
 `;
@@ -649,7 +649,7 @@ const EventDot = styled.span<{ $color: string }>`
 `;
 
 const EventMeta = styled.div`
-  font-size: 10.5px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
   display: inline-flex;
   align-items: center;
@@ -658,20 +658,21 @@ const EventMeta = styled.div`
 
 const OnlineBadge = styled.span`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 9px;
+  font-size: var(--fs-nano);
+  font-weight: 700;
   color: ${DS2_VARS.g500};
   background: ${DS2_VARS.bg3};
   padding: 1px 5px;
   border-radius: 3px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
 `;
 
 const Empty = styled.div`
   padding: 32px 12px;
   text-align: center;
   color: ${DS2_VARS.g500};
-  font-size: 12px;
+  font-size: var(--fs-meta);
   font-family: ${DS2_VARS.fontSans};
 `;
 
@@ -708,7 +709,7 @@ const FocusSlotBody = styled.div`
 `;
 
 const FocusSlotTitle = styled.div`
-  font-size: 12.5px;
+  font-size: var(--fs-meta);
   font-weight: 600;
   color: ${DS2_VARS.up};
   white-space: nowrap;
@@ -717,7 +718,7 @@ const FocusSlotTitle = styled.div`
 `;
 
 const FocusSlotMeta = styled.div`
-  font-size: 10.5px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
   font-family: ${DS2_VARS.fontMono};
 `;
@@ -750,7 +751,7 @@ const QuickAddInput = styled.input`
   border-radius: 8px;
   color: ${DS2_VARS.ink};
   font-family: ${DS2_VARS.fontSans};
-  font-size: 12px;
+  font-size: var(--fs-meta);
   outline: none;
 
   &::placeholder {
@@ -784,7 +785,7 @@ const QuickAddReturnHint = styled.button`
   border-radius: 5px;
   color: ${DS2_VARS.g500};
   font-family: ${DS2_VARS.fontMono};
-  font-size: 11px;
+  font-size: var(--fs-micro);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -800,7 +801,7 @@ const QuickAddReturnHint = styled.button`
 const Legend = styled.div`
   display: flex;
   gap: 16px;
-  font-size: 10px;
+  font-size: var(--fs-meta);
   color: ${DS2_VARS.g500};
   font-family: ${DS2_VARS.fontMono};
 `;
@@ -869,14 +870,14 @@ const WeekDayHeadCell = styled.button<{ $isToday?: boolean; $isSelected?: boolea
 
 const WeekDayHeadDow = styled.span`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: ${DS2_VARS.g500};
 `;
 
 const WeekDayHeadNum = styled.span<{ $isToday?: boolean }>`
-  font-size: 13px;
+  font-size: var(--fs-interactive);
   font-weight: ${({ $isToday }) => ($isToday ? 700 : 500)};
 `;
 
@@ -907,7 +908,7 @@ const HourLabelsCol = styled.div`
 const HourLabel = styled.div`
   height: ${HOUR_HEIGHT}px;
   font-family: ${DS2_VARS.fontMono};
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
   padding: 2px 6px 0;
   text-align: right;
@@ -942,7 +943,7 @@ const TimeEventBlock = styled.div<{ $color: string; $top: number; $height: numbe
   border-left: 3px solid ${({ $color }) => $color};
   border-radius: 4px;
   padding: 3px 6px;
-  font-size: 10.5px;
+  font-size: var(--fs-micro);
   font-family: ${DS2_VARS.fontSans};
   color: ${DS2_VARS.ink};
   cursor: grab;
@@ -967,7 +968,7 @@ const TimeEventTitle = styled.div`
 
 const TimeEventMeta = styled.div`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
 `;
 

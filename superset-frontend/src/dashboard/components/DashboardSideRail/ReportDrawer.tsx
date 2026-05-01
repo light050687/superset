@@ -247,8 +247,8 @@ const HeadRight = styled.div`
 `;
 
 const Title = styled.span`
-  font-family: ${DS2_VARS.fontSans};
-  font-size: 12px;
+  font-family: ${DS2_VARS.fontMono};
+  font-size: var(--fs-meta);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -332,7 +332,7 @@ const ToggleRow = styled.label`
   cursor: pointer;
   color: ${DS2_VARS.g600};
   font-family: ${DS2_VARS.fontSans};
-  font-size: 13px;
+  font-size: var(--fs-interactive);
 `;
 
 /* ─── Recipients section ─────────────────────────────────────────── */

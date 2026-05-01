@@ -156,7 +156,7 @@ const ImportPresetModal = ({
             border: none;
             background: none;
             cursor: pointer;
-            font-size: 13px;
+            font-size: var(--fs-interactive);
             color: var(--ant-color-primary);
             padding: 0;
           `}

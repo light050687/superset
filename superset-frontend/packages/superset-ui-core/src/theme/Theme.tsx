@@ -84,10 +84,23 @@ export class Theme {
     // Extra tokens
     transitionTiming: 0.3,
     brandIconMaxWidth: 37,
-    fontSizeXS: '8',
-    fontSizeXXL: '28',
-    fontWeightNormal: '400',
-    fontWeightLight: '300',
+
+    // DS 2.0 — typography base (fluid override через head_custom_extra.html
+    // CSS-vars `--antd-superset-fontSize*` поверх этих значений).
+    // Минимум 11px, hero 28px (соответствует `var(--fs-hero)` нижней границе).
+    fontSize: 14,
+    fontSizeXS: 11,
+    fontSizeSM: 13,
+    fontSizeLG: 17,
+    fontSizeXL: 22,
+    fontSizeXXL: 28,
+    fontSizeHeading1: 36,
+    fontSizeHeading2: 28,
+    fontSizeHeading3: 22,
+    fontSizeHeading4: 18,
+    fontSizeHeading5: 16,
+    lineHeight: 1.5,
+    fontWeightNormal: 400,
     fontWeightStrong: 500,
   };
 

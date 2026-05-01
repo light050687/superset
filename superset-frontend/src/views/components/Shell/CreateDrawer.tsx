@@ -37,7 +37,8 @@ const Section = styled.div`
 `;
 
 const SecLabel = styled.div`
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
+  font-weight: 600;
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   text-transform: uppercase;
@@ -105,7 +106,7 @@ const TileIcon = styled.div<{ $accent: string; $disabled?: boolean }>`
 `;
 
 const TileName = styled.span<{ $disabled?: boolean }>`
-  font-size: 12px;
+  font-size: var(--fs-meta);
   font-weight: 600;
   color: ${({ $disabled }) => ($disabled ? DS2_VARS.g500 : DS2_VARS.ink)};
   text-align: center;
@@ -122,9 +123,9 @@ const ComingSoonBadge = styled.span`
   top: 8px;
   right: 14px;
   font-family: ${DS2_VARS.fontMono};
-  font-size: 8.5px;
+  font-size: var(--fs-nano);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #0a0a0a;
   background: ${DS2_VARS.cAmber};

@@ -99,27 +99,21 @@ const extensionsRegistry = getExtensionsRegistry();
 const headerContainerStyle = theme => css`
   border-bottom: 1px solid ${theme.colorBorder};
 
-  /* DS v2.0 — Page title (Dashboard).
-     Цель: 28px / 800 / -0.03em / Manrope (--f) / --ink.
+  /* DS v2.0 fluid — Page title (Dashboard).
+     --fs-hero (28-56) растёт с viewport; минимум 28 на mobile, до 56 на 4K.
      Скоупируем через .dashboard-header-container, чтобы не задеть
      SliceHeader / ExploreChartHeader / AllEntities — там тот же
      DynamicEditableTitle, но другой контекст. */
   .header-with-actions .title-panel .dynamic-title-input {
     font-family: var(--f, 'Manrope', 'Inter', Helvetica, Arial, sans-serif);
-    font-size: 28px;
-    line-height: 34px;
+    font-size: var(--fs-hero);
+    line-height: 1.1;
     font-weight: 800;
     letter-spacing: -0.03em;
     color: var(--ink, ${theme.colorText});
   }
 
-  /* DS v2.0 — Meta-bar (только "час назад" — Owner убран в useDashboardMetadataBar).
-     Цель: 11px / 400 / JetBrains Mono (--m) / --g600.
-     ⚠️ DOM (verified в Chrome): <div class="dashboard-metadata-bar-slot">
-                                   <span class="metadata-text">3 часа назад</span>
-                                 </div>
-     data-test='metadata-bar' атрибут отфильтровывается React production build,
-     поэтому селектор по классу .metadata-text + .dashboard-metadata-bar-slot. */
+  /* DS v2.0 fluid — Meta-bar: --fs-micro (11-13) моно --g600 */
   .header-with-actions .dashboard-metadata-bar-slot,
   .header-with-actions .dashboard-metadata-bar-slot .metadata-text,
   .header-with-actions .metadata-panel .metadata-text,
@@ -131,9 +125,9 @@ const headerContainerStyle = theme => css`
       'Courier New',
       monospace
     ) !important;
-    font-size: 11px !important;
-    line-height: 16px !important;
-    font-weight: 400 !important;
+    font-size: var(--fs-micro) !important;
+    line-height: 1.4 !important;
+    font-weight: 500 !important;
     color: var(--g600, ${theme.colorTextSecondary}) !important;
   }
 
@@ -187,8 +181,8 @@ const headerContainerStyle = theme => css`
   .header-with-actions .title-panel .input-sizer,
   .header-with-actions .title-panel .dynamic-title-input {
     font-family: var(--f, ${theme.fontFamily}) !important;
-    font-size: 28px !important;
-    line-height: 34px !important;
+    font-size: var(--fs-hero) !important;
+    line-height: 1.1 !important;
     font-weight: 800 !important;
     letter-spacing: -0.03em !important;
   }

@@ -111,7 +111,7 @@ const InputRow = styled.div`
     border: none;
     outline: none;
     font-family: ${DS2_VARS.fontSans};
-    font-size: 15px;
+    font-size: var(--fs-subtitle);
     color: ${DS2_VARS.ink};
   }
 
@@ -129,7 +129,10 @@ const InputRow = styled.div`
 
 const EscChip = styled.span`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: ${DS2_VARS.g500};
   background: ${DS2_VARS.g100};
   border: 1px solid ${DS2_VARS.g200};
@@ -153,7 +156,8 @@ const ResultsBox = styled.div`
 
 const GroupLabel = styled.div`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
+  font-size: var(--fs-micro);
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: ${DS2_VARS.g500};
@@ -166,7 +170,7 @@ const Row = styled.div<{ $selected: boolean; $accent?: string }>`
   gap: ${DS2_SPACE.s2}px;
   padding: ${DS2_SPACE.s1}px ${DS2_SPACE.s2}px;
   border-radius: ${DS2_RADIUS.control}px;
-  font-size: 13px;
+  font-size: var(--fs-interactive);
   color: ${({ $accent }) => $accent ?? DS2_VARS.g700};
   cursor: pointer;
   background: ${({ $selected }) =>
@@ -182,13 +186,14 @@ const Row = styled.div<{ $selected: boolean; $accent?: string }>`
 const KindTag = styled.span<{ $accent: string }>`
   margin-left: auto;
   font-family: ${DS2_VARS.fontMono};
-  font-size: 9px;
+  font-size: var(--fs-nano);
+  font-weight: 700;
   padding: 2px 6px;
   border-radius: 3px;
   background: ${({ $accent }) => `${$accent}22`};
   color: ${({ $accent }) => $accent};
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
 `;
 
 const Footer = styled.div`
@@ -197,13 +202,16 @@ const Footer = styled.div`
   padding: ${DS2_SPACE.s2}px ${DS2_SPACE.s4}px;
   border-top: 1px solid ${DS2_VARS.g100};
   font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
+  font-size: var(--fs-meta);
   color: ${DS2_VARS.g500};
 `;
 
 const Kbd = styled.kbd`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   background: ${DS2_VARS.g100};
   border: 1px solid ${DS2_VARS.g200};
   padding: 1px 5px;

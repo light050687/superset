@@ -82,7 +82,8 @@ const Popover = styled.div`
 `;
 
 const Head = styled.div`
-  font-size: 9px;
+  font-size: var(--fs-micro);
+  font-weight: 600;
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   text-transform: uppercase;
@@ -95,7 +96,7 @@ const Row = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 8px 10px;
-  font-size: 12.5px;
+  font-size: var(--fs-meta);
   color: ${DS2_VARS.g600};
 `;
 
@@ -109,7 +110,7 @@ const RowLabel = styled.span`
 const RowValue = styled.span`
   color: ${DS2_VARS.ink};
   font-family: ${DS2_VARS.fontMono};
-  font-size: 11px;
+  font-size: var(--fs-micro);
 `;
 
 const Switch = styled.button<{ $on: boolean }>`

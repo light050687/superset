@@ -154,8 +154,8 @@ const Avatar = styled.div`
   flex-shrink: 0;
   border-radius: 50%;
   background: linear-gradient(135deg, #8B5CF6, #D946A8);
-  color: #ffffff;
-  font-size: 13px;
+  color: ${DS2_VARS.s};
+  font-size: var(--fs-interactive);
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -168,7 +168,7 @@ const Identity = styled.div`
 `;
 
 const IdName = styled.div`
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 700;
   color: ${DS2_VARS.ink};
   white-space: nowrap;
@@ -178,7 +178,7 @@ const IdName = styled.div`
 
 const IdEmail = styled.div`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
   white-space: nowrap;
   overflow: hidden;
@@ -225,7 +225,7 @@ const Section = styled.div`
    Упрощённый лейбл не спорит за внимание с плитками секции. */
 const SectionLabel = styled.div`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: ${DS2_VARS.g500};
@@ -253,7 +253,7 @@ const Tile = styled.a<{ $accent: string }>`
   border: 1px solid transparent;
   color: ${DS2_VARS.ink};
   font-family: ${DS2_VARS.fontSans};
-  font-size: 11.5px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   text-align: center;
   text-decoration: none;
@@ -319,7 +319,7 @@ const BottomBtnBase = `
   padding: 0 12px;
   border-radius: 8px;
   font-family: ${DS2_VARS.fontSans};
-  font-size: 12px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   cursor: pointer;
   text-decoration: none;
@@ -363,7 +363,9 @@ const BottomButton = styled.button<{ $variant?: 'danger' }>`
 
 const LangBadge = styled.span`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 9px;
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 1px 5px;
   border-radius: 3px;
@@ -381,7 +383,7 @@ const BrandFooter = styled.div`
   padding-top: 8px;
   border-top: 1px solid ${DS2_VARS.g100};
   font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
+  font-size: var(--fs-meta);
   color: ${DS2_VARS.g500};
 `;
 

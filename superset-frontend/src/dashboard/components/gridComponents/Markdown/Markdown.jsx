@@ -97,14 +97,14 @@ const MarkdownStyles = styled.div`
       color: var(--ink, ${theme.colorText});
       font-family: var(--f, ${theme.fontFamily});
 
-      /* Body / абзацы / списки — 14/22, weight 400 */
+      /* DS v2.0 fluid: --fs-body для абзацев, списков (14-17 fluid) */
       p,
       li,
       dd,
       dt {
         font-family: var(--f, ${theme.fontFamily});
-        font-size: 14px;
-        line-height: 22px;
+        font-size: var(--fs-body);
+        line-height: 1.5;
         font-weight: 400;
         color: var(--ink, ${theme.colorText});
       }
@@ -119,38 +119,35 @@ const MarkdownStyles = styled.div`
         padding-left: 24px;
       }
 
-      /* H1 = Page title — 28/34, weight 800, трекинг -0.03em.
-         UPPERCASE НЕ применяется (обычное написание). */
+      /* DS v2.0 fluid: H1 = --fs-hero (28-56), растёт с viewport */
       h1 {
         font-family: var(--f, ${theme.fontFamily});
-        font-size: 28px;
-        line-height: 34px;
+        font-size: var(--fs-hero);
+        line-height: 1.1;
         font-weight: 800;
         letter-spacing: -0.03em;
         color: var(--ink, ${theme.colorText});
         margin: 0 0 16px;
       }
 
-      /* H2 = Section title — 20/24, weight 700, трекинг 0.02em.
-         UPPERCASE применяется опционально через .uppercase класс
-         в исходном markdown (по умолчанию обычное написание). */
+      /* DS v2.0 fluid: H2 = --fs-title (20-28) */
       h2 {
         font-family: var(--f, ${theme.fontFamily});
-        font-size: 20px;
-        line-height: 24px;
+        font-size: var(--fs-title);
+        line-height: 1.2;
         font-weight: 700;
         letter-spacing: 0.02em;
         color: var(--ink, ${theme.colorText});
         margin: 0 0 12px;
       }
 
-      /* H3 = Sub-section — 14/18, weight 700, трекинг 0.05em. */
+      /* DS v2.0 fluid: H3 = --fs-subtitle (16-20) — повышение читаемости */
       h3 {
         font-family: var(--f, ${theme.fontFamily});
-        font-size: 14px;
-        line-height: 18px;
+        font-size: var(--fs-subtitle);
+        line-height: 1.3;
         font-weight: 700;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.02em;
         color: var(--ink, ${theme.colorText});
         margin: 0 0 8px;
       }
@@ -164,7 +161,7 @@ const MarkdownStyles = styled.div`
       }
 
       h6 {
-        font-size: ${theme.fontSizeSM}px;
+        font-size: var(--fs-meta);
       }
 
       strong {
@@ -189,14 +186,14 @@ const MarkdownStyles = styled.div`
         outline-offset: 2px;
       }
 
-      /* Inline code и блоки — JetBrains Mono 13/20 */
+      /* DS v2.0 fluid: --fs-meta моно для inline-code и блоков */
       code,
       pre,
       kbd,
       samp {
         font-family: var(--m, ${theme.fontFamilyCode || 'monospace'});
-        font-size: 13px;
-        line-height: 20px;
+        font-size: var(--fs-meta);
+        line-height: 1.5;
         font-weight: 400;
       }
 

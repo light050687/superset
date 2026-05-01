@@ -87,23 +87,27 @@ const Pill = styled.div<{ $expanded: boolean }>`
   /* Мокап использует глобальный box-sizing: border-box → height 44 ВКЛЮЧАЕТ
      border. Без этого pill получался 46 (44 + 2×1px border). */
   box-sizing: border-box;
-  height: ${({ $expanded }) => ($expanded ? '84px' : '44px')};
-  min-width: ${({ $expanded }) => ($expanded ? '560px' : '280px')};
+  height: ${({ $expanded }) => ($expanded ? '64px' : '32px')};
+  min-width: ${({ $expanded }) => ($expanded ? '582px' : '291px')};
   padding: 0;
-  margin: ${({ $expanded }) => ($expanded ? '-40px 4px 0' : '0 4px')};
+  margin: ${({ $expanded }) => ($expanded ? '-32px 4px 0' : '0 4px')};
   background: ${({ $expanded }) =>
     $expanded ? DS2_VARS.pillBgFocused : DS2_VARS.pillBg};
   border: 1px solid
     ${({ $expanded }) => ($expanded ? DS2_VARS.pillFocusBorder : DS2_VARS.g200)};
-  /* Радиус как у dock'а (--dock-radius: 18px) — единый стиль панели. */
-  border-radius: 18px;
+  /* DS 2.0: card radius 10px (было 14, юзер просил убрать сильные
+     закругления, сверившись с дизайн-документом). */
+  border-radius: 10px;
   box-shadow: ${({ $expanded }) =>
     $expanded ? DS2_VARS.pillFocusShadow : 'none'};
   overflow: hidden;
-  align-self: flex-end;
+  /* Vertical center в dock'е (родитель RailNav имеет align-items:
+     center). Expanded pill grow вверх через margin-top: -32 — pill
+     остаётся «прижат низом», просто его top уходит выше dock TOP. */
+  align-self: ${({ $expanded }) => ($expanded ? 'flex-end' : 'center')};
   color: ${DS2_VARS.g500};
   font-family: ${DS2_VARS.fontSans};
-  font-size: 13px;
+  font-size: var(--fs-interactive);
   cursor: ${({ $expanded }) => ($expanded ? 'default' : 'text')};
   transition:
     height 0.22s ${DS2_VARS.ease},
@@ -127,8 +131,8 @@ const RowTop = styled.form`
   display: flex;
   align-items: center;
   gap: ${DS2_SPACE.s2}px;
-  height: 44px;
-  padding: 0 6px 0 14px;
+  height: 32px;
+  padding: 0 5px 0 11px;
   flex-shrink: 0;
 `;
 
@@ -143,8 +147,8 @@ const RowBot = styled.div<{ $visible: boolean }>`
   display: ${({ $visible }) => ($visible ? 'flex' : 'none')};
   align-items: center;
   gap: ${DS2_SPACE.s2}px;
-  height: 40px;
-  padding: 0 8px;
+  height: 32px;
+  padding: 0 6px;
   border-top: 1px solid ${DS2_VARS.g100};
 `;
 
@@ -171,7 +175,7 @@ const Input = styled.input`
   border: none;
   outline: none;
   font-family: ${DS2_VARS.fontSans};
-  font-size: 13px;
+  font-size: var(--fs-interactive);
   color: ${DS2_VARS.ink};
 
   &::placeholder {
@@ -184,14 +188,14 @@ const CtxChip = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 30px;
-  padding: 0 8px;
+  height: 24px;
+  padding: 0 6px;
   background: ${DS2_VARS.bg};
   border: 1px solid ${DS2_VARS.g200};
   border-radius: 999px;
   color: ${DS2_VARS.g600};
   font-family: ${DS2_VARS.fontSans};
-  font-size: 11.5px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   cursor: pointer;
   flex-shrink: 0;
@@ -208,16 +212,16 @@ const CtxChip = styled.button`
   }
 
   svg {
-    width: 9px;
-    height: 9px;
+    width: 7px;
+    height: 7px;
     color: ${DS2_VARS.g500};
     flex-shrink: 0;
   }
 `;
 
 const CtxDot = styled.span<{ $color: string }>`
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: ${({ $color }) => $color};
   flex-shrink: 0;
@@ -232,12 +236,12 @@ const CtxLabel = styled.span`
 
 /** Общая toolbar-кнопка (28×28, прозрачная) — attach, gear. */
 const TbBtn = styled.button`
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   padding: 0;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   color: ${DS2_VARS.g500};
   cursor: pointer;
   flex-shrink: 0;
@@ -259,14 +263,14 @@ const TbBtn = styled.button`
   }
 
   svg {
-    width: 14px;
-    height: 14px;
+    width: 11px;
+    height: 11px;
   }
 `;
 
 const TbDivider = styled.span`
   width: 1px;
-  height: 18px;
+  height: 14px;
   background: ${DS2_VARS.g200};
   margin: 0 2px;
   opacity: 0.7;
@@ -278,13 +282,13 @@ const TbDivider = styled.span`
  * (Мокап: `.rail-ask.has-text .rb-mic` становится sky circle 30×30.)
  */
 const MicBtn = styled.button<{ $hasText: boolean }>`
-  width: ${({ $hasText }) => ($hasText ? '30px' : '28px')};
-  height: ${({ $hasText }) => ($hasText ? '30px' : '28px')};
+  width: ${({ $hasText }) => ($hasText ? '24px' : '22px')};
+  height: ${({ $hasText }) => ($hasText ? '24px' : '22px')};
   padding: 0;
   background: ${({ $hasText }) =>
     $hasText ? DS2_VARS.cSky : 'transparent'};
   border: none;
-  border-radius: ${({ $hasText }) => ($hasText ? '50%' : '8px')};
+  border-radius: ${({ $hasText }) => ($hasText ? '50%' : '6px')};
   color: ${({ $hasText }) => ($hasText ? '#0C0D10' : DS2_VARS.g500)};
   cursor: pointer;
   flex-shrink: 0;
@@ -308,8 +312,8 @@ const MicBtn = styled.button<{ $hasText: boolean }>`
   }
 
   svg {
-    width: ${({ $hasText }) => ($hasText ? '15px' : '14px')};
-    height: ${({ $hasText }) => ($hasText ? '15px' : '14px')};
+    width: ${({ $hasText }) => ($hasText ? '12px' : '11px')};
+    height: ${({ $hasText }) => ($hasText ? '12px' : '11px')};
   }
 `;
 
@@ -318,15 +322,15 @@ const ModelBtn = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 26px;
-  padding: 0 10px;
+  height: 21px;
+  padding: 0 8px;
   background: transparent;
   border: none;
   border-radius: 999px;
   color: ${DS2_VARS.g600};
   cursor: pointer;
   font-family: ${DS2_VARS.fontSans};
-  font-size: 11.5px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   flex-shrink: 0;
   transition:
@@ -344,8 +348,8 @@ const ModelBtn = styled.button`
   }
 
   svg {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     color: ${DS2_VARS.g500};
   }
 `;

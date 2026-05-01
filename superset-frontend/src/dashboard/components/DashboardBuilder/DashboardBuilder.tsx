@@ -85,6 +85,14 @@ import { getRootLevelTabsComponent, shouldFocusTabs } from './utils';
 import DashboardContainer from './DashboardContainer';
 import { useNativeFilters } from './state';
 import DashboardWrapper from './DashboardWrapper';
+import { ViewportPriorityProvider } from 'src/dashboard/hooks/useChartViewportPriority';
+import { useFetchStrategy } from 'src/dashboard/utils/fetchStrategy';
+import { setQueueConcurrency } from 'src/dashboard/utils/chartFetchQueue';
+import { isCurrentUserBot } from 'src/utils/isBot';
+import {
+  FeatureFlag,
+  isFeatureEnabled,
+} from '@superset-ui/core';
 
 /* FiltersPanel + StickyPanel удалены вместе с renderChild() —
    вертикальный FilterBar теперь живёт в Drawer'е через DashboardSideRail. */
@@ -586,7 +594,7 @@ const SaveOverlayCard = styled.div`
 
   .save-caption {
     font-family: ${DS2_VARS.fontSans};
-    font-size: 13px;
+    font-size: var(--fs-interactive);
     font-weight: 600;
     color: ${DS2_VARS.ink};
     letter-spacing: 0.01em;
@@ -622,6 +630,21 @@ const DashboardBuilder = () => {
   const filterBarOrientation = useSelector<RootState, FilterBarOrientation>(
     ({ dashboardInfo }) => dashboardInfo.filterBarOrientation,
   );
+
+  // Apply concurrency limit to global chart fetch queue. Edit mode + bot
+  // user → bypass через Infinity (немедленная отрисовка для drag/drop /
+  // screenshot). Feature flag off → bypass (legacy behavior).
+  const fetchStrategy = useFetchStrategy();
+  useEffect(() => {
+    const flagEnabled = isFeatureEnabled(
+      FeatureFlag.EnableDashboardFetchStrategy as any,
+    );
+    if (!flagEnabled || editMode || isCurrentUserBot()) {
+      setQueueConcurrency(Infinity);
+    } else {
+      setQueueConcurrency(fetchStrategy.concurrency);
+    }
+  }, [editMode, fetchStrategy.concurrency]);
 
   const handleChangeTab = useCallback(
     ({ pathToTabIndex }: { pathToTabIndex: string[] }) => {
@@ -805,12 +828,13 @@ const DashboardBuilder = () => {
   const headerFilterBarWidth = 0;
 
   return (
-    <DashboardWrapper>
-      <StyledHeader
-        data-test="dashboard-header-wrapper"
-        ref={headerRef}
-        filterBarWidth={headerFilterBarWidth}
-      >
+    <ViewportPriorityProvider enabled={fetchStrategy.lazy_offscreen}>
+      <DashboardWrapper>
+        <StyledHeader
+          data-test="dashboard-header-wrapper"
+          ref={headerRef}
+          filterBarWidth={headerFilterBarWidth}
+        >
         {/* @ts-ignore */}
         <Droppable
           data-test="top-level-tabs"
@@ -952,7 +976,8 @@ const DashboardBuilder = () => {
           />
         </MobileFilterBar>
       )}
-    </DashboardWrapper>
+      </DashboardWrapper>
+    </ViewportPriorityProvider>
   );
 };
 

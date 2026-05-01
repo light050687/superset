@@ -62,7 +62,7 @@ const HeadTabBtn = styled.button<{ $active: boolean }>`
   background: ${({ $active }) => ($active ? DS2_VARS.s : 'transparent')};
   color: ${({ $active }) => ($active ? DS2_VARS.ink : DS2_VARS.g500)};
   font-family: ${DS2_VARS.fontSans};
-  font-size: 12px;
+  font-size: var(--fs-meta);
   font-weight: 600;
   cursor: pointer;
   box-shadow: ${({ $active }) =>
@@ -154,7 +154,8 @@ const LayoutSections = styled.div`
 `;
 
 const SecLabel = styled.div`
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
+  font-weight: 600;
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   text-transform: uppercase;
@@ -197,7 +198,7 @@ const TileHost = styled.div<{ $accent: string }>`
       border: 1px solid transparent;
       border-radius: 10px;
       cursor: grab;
-      font-size: 12px;
+      font-size: var(--fs-meta);
       font-weight: 600;
       color: ${DS2_VARS.ink};
       text-align: center;

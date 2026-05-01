@@ -82,11 +82,12 @@ const TabBtn = styled.button<{ $active?: boolean }>`
   }
 `;
 
+/* DS v2.0: --fs-nano (10) UPPER — спец-исключение для bottom-tab-bar */
 const TabLabel = styled.span`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 `;
 
@@ -127,7 +128,7 @@ const AvatarCircle = styled.span`
   background: ${DS2_VARS.cViolet};
   color: ${DS2_VARS.s};
   font-family: ${DS2_VARS.fontSans};
-  font-size: 9px;
+  font-size: var(--fs-micro);
   font-weight: 700;
   display: flex;
   align-items: center;

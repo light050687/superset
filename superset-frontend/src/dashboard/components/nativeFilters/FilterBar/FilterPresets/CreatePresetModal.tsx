@@ -273,7 +273,7 @@ const CreatePresetModal = ({
                 border: none;
                 background: none;
                 cursor: pointer;
-                font-size: 12px;
+                font-size: var(--fs-meta);
                 color: var(--ant-color-primary);
                 padding: 0;
               `}
@@ -287,7 +287,7 @@ const CreatePresetModal = ({
                 border: none;
                 background: none;
                 cursor: pointer;
-                font-size: 12px;
+                font-size: var(--fs-meta);
                 color: var(--ant-color-primary);
                 padding: 0;
               `}

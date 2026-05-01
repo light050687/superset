@@ -401,6 +401,9 @@ module.exports = {
   // eslint-disable-next-line no-dupe-keys
   rules: {
     'theme-colors/no-literal-colors': 'error',
+    // DS 2.0: запрет literal `font-size: Npx` в styled/css template literals.
+    // Использовать var(--fs-*) или typography helper t.* (см. theme/typography.ts).
+    'theme-colors/no-literal-font-size': 'warn',
     'icons/no-fa-icons-usage': 'error',
     'i18n-strings/no-template-vars': ['error', true],
     'i18n-strings/sentence-case-buttons': 'error',

@@ -162,7 +162,7 @@ export default function PagesPanel({ topLevelPages, editMode, onClose }) {
         <span
           css={css`
             font-weight: 600;
-            font-size: 14px;
+            font-size: var(--fs-body);
           `}
         >
           {t('Страницы')}
@@ -245,7 +245,7 @@ export default function PagesPanel({ topLevelPages, editMode, onClose }) {
                     border: 1px solid ${theme.colorPrimary};
                     border-radius: 4px;
                     padding: 2px 6px;
-                    font-size: 13px;
+                    font-size: var(--fs-interactive);
                     flex: 1;
                     outline: none;
                     background: ${theme.colorBgContainer};
@@ -255,7 +255,7 @@ export default function PagesPanel({ topLevelPages, editMode, onClose }) {
               ) : (
                 <span
                   css={css`
-                    font-size: 13px;
+                    font-size: var(--fs-interactive);
                     font-weight: ${isActive ? 600 : 400};
                     color: ${isActive
                       ? theme.colorPrimary
@@ -373,7 +373,7 @@ export default function PagesPanel({ topLevelPages, editMode, onClose }) {
               background: transparent;
               color: ${theme.colorTextSecondary};
               cursor: pointer;
-              font-size: 13px;
+              font-size: var(--fs-interactive);
               display: flex;
               align-items: center;
               justify-content: center;

@@ -194,8 +194,8 @@ const Header = styled.div`
 `;
 
 const Title = styled.span`
-  font-family: ${DS2_VARS.fontSans};
-  font-size: 12px;
+  font-family: ${DS2_VARS.fontMono};
+  font-size: var(--fs-meta);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -269,7 +269,8 @@ const Section = styled.div`
 `;
 
 const SecLabel = styled.div`
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
+  font-weight: 600;
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   text-transform: uppercase;
@@ -339,7 +340,7 @@ const TileIcon = styled.div<{ $accent: string; $disabled?: boolean }>`
 `;
 
 const TileName = styled.span<{ $disabled?: boolean }>`
-  font-size: 12px;
+  font-size: var(--fs-meta);
   font-weight: 600;
   color: ${({ $disabled }) => ($disabled ? DS2_VARS.g500 : DS2_VARS.ink)};
   text-align: center;
@@ -453,6 +454,14 @@ const IconReset = (): JSX.Element => (
   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
     <path d="M3 10l7-6 7 6" />
     <path d="M5 9.5V16h10V9.5" />
+  </svg>
+);
+
+/* Gear icon — открывает DashboardSettingsDrawer (через Shell drawer). */
+const IconGear = (): JSX.Element => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="10" cy="10" r="2.2" />
+    <path d="M10 3v2M10 15v2M3 10h2M15 10h2M5.6 5.6l1.4 1.4M13 13l1.4 1.4M5.6 14.4L7 13M13 7l1.4-1.4" />
   </svg>
 );
 
@@ -941,6 +950,18 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
          опубликование здесь рисковано (заказчики увидят draft). */
       disabled: editMode || !userCanEdit || dashboardId === undefined,
     },
+    /* Tile «Настройки дашборда» — открывает Shell drawer с настройками
+       (стратегия загрузки и др.). Доступен всегда: viewer'ы видят
+       read-only. Использует тот же визуальный shell что Каталог /
+       Фильтры — bottom-anchored panel min(96vw, 1200px) × min(640px, 80vh). */
+    {
+      key: 'settings',
+      label: t('Настройки дашборда'),
+      accent: DS2_VARS.cFuchsia,
+      icon: <IconGear />,
+      onClick: () => toggleDrawer('dashboardSettings'),
+      disabled: false,
+    },
   ];
 
   return (
@@ -1009,7 +1030,9 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
                   aria-pressed={
                     tile.key === 'grid'
                       ? openedDrawer === 'gridSettings'
-                      : undefined
+                      : tile.key === 'settings'
+                        ? openedDrawer === 'dashboardSettings'
+                        : undefined
                   }
                   title={tile.label}
                 >

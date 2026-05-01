@@ -59,6 +59,20 @@ function hasLiteralColor(quasi, strict = false) {
 const WARNING_MESSAGE =
   'Theme color variables are preferred over rgb(a)/hex/literal colors';
 
+const FONT_SIZE_WARNING =
+  'DS 2.0: use fluid CSS variables var(--fs-nano|micro|meta|interactive|body|subtitle|title|hero|display) or typography helper t.* — literal `font-size: Npx` is forbidden';
+
+/**
+ * Detect literal `font-size: <number>px` in CSS template strings.
+ * Allowed: var(--fs-*), clamp(), 0, currentColor.
+ */
+function hasLiteralFontSize(quasi) {
+  if (typeof quasi !== 'string') return false;
+  // matches: font-size: 12px, font-size:12px, font-size: 9.5px (allow optional space, decimals)
+  const regex = /font-size:\s*\d+(\.\d+)?px/i;
+  return regex.test(quasi);
+}
+
 //------------------------------------------------------------------------------
 // Rule Definition
 //------------------------------------------------------------------------------
@@ -66,6 +80,35 @@ const WARNING_MESSAGE =
 /** @type {import('eslint').Rule.RuleModule} */
 module.exports = {
   rules: {
+    'no-literal-font-size': {
+      create(context) {
+        const warned = [];
+        return {
+          TemplateElement(node) {
+            const rawValue = node?.value?.raw;
+            const isChildParentTagged =
+              node?.parent?.parent?.type === 'TaggedTemplateExpression';
+            const isChildParentArrow =
+              node?.parent?.parent?.type === 'ArrowFunctionExpression';
+            const isParentTemplateLiteral =
+              node?.parent?.type === 'TemplateLiteral';
+            const loc = node?.parent?.parent?.loc;
+            const locId = loc && JSON.stringify(loc);
+            const hasWarned = warned.includes(locId);
+            if (
+              !hasWarned &&
+              (isChildParentTagged ||
+                (isChildParentArrow && isParentTemplateLiteral)) &&
+              rawValue &&
+              hasLiteralFontSize(rawValue)
+            ) {
+              context.report(node, loc, FONT_SIZE_WARNING);
+              warned.push(locId);
+            }
+          },
+        };
+      },
+    },
     'no-literal-colors': {
       create(context) {
         const warned = [];

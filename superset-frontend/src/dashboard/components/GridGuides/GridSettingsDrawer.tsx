@@ -59,7 +59,7 @@ const Row = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  font-size: 13px;
+  font-size: var(--fs-interactive);
   color: ${DS2_VARS.ink};
 `;
 
@@ -71,7 +71,7 @@ const Label = styled.span`
 `;
 
 const Hint = styled.span`
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
   line-height: 1.35;
 `;
@@ -119,9 +119,10 @@ const NumberInput = styled.input`
   border-radius: 8px;
   background: ${DS2_VARS.s};
   font-family: ${DS2_VARS.fontMono};
-  font-size: 13px;
+  font-size: var(--fs-interactive);
   color: ${DS2_VARS.ink};
   text-align: right;
+  font-variant-numeric: tabular-nums;
   transition: border-color 0.12s ${DS2_VARS.ease};
   &:focus {
     outline: 2px solid ${DS2_VARS.cSky};
@@ -131,7 +132,7 @@ const NumberInput = styled.input`
 `;
 
 const Note = styled.div`
-  font-size: 11.5px;
+  font-size: var(--fs-meta);
   color: ${DS2_VARS.g500};
   line-height: 1.5;
   padding: 0 2px;
@@ -144,7 +145,7 @@ const ResetBtn = styled.button`
   border-radius: 8px;
   padding: 6px 12px;
   font-family: ${DS2_VARS.fontSans};
-  font-size: 12px;
+  font-size: var(--fs-meta);
   color: ${DS2_VARS.g600};
   cursor: pointer;
   transition:

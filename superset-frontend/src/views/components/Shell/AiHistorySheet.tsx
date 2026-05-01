@@ -119,7 +119,7 @@ const Head = styled.div`
 
 const HeadTitle = styled.div`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -146,7 +146,7 @@ const HeadPrimaryBtn = styled.button`
   color: ${DS2_VARS.s};
   cursor: pointer;
   font-family: ${DS2_VARS.fontSans};
-  font-size: 12px;
+  font-size: var(--fs-meta);
   font-weight: 600;
   transition: opacity 0.12s ${DS2_VARS.ease};
 
@@ -243,7 +243,8 @@ const ColHead = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
+  font-weight: 600;
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   text-transform: uppercase;
@@ -260,7 +261,7 @@ const ColHeadCount = styled.span`
 const Empty = styled.div`
   padding: 20px 12px;
   color: ${DS2_VARS.g500};
-  font-size: 11px;
+  font-size: var(--fs-micro);
   text-align: center;
   font-family: ${DS2_VARS.fontSans};
 `;
@@ -305,7 +306,7 @@ const Spinner = styled.div`
 
 const ActiveText = styled.div`
   flex: 1;
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.ink};
   overflow: hidden;
   text-overflow: ellipsis;
@@ -313,7 +314,7 @@ const ActiveText = styled.div`
 `;
 
 const ActiveTime = styled.div`
-  font-size: 9px;
+  font-size: var(--fs-micro);
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
 `;
@@ -329,7 +330,7 @@ const FolderRow = styled.button`
   background: transparent;
   border: none;
   color: ${DS2_VARS.ink};
-  font-size: 13px;
+  font-size: var(--fs-interactive);
   font-weight: 500;
   cursor: pointer;
   text-align: left;
@@ -371,7 +372,7 @@ const FolderName = styled.span<{ $italic?: boolean }>`
 `;
 
 const FolderCount = styled.span`
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   flex-shrink: 0;
@@ -458,7 +459,8 @@ const InsIcon = styled.span<{ $kind: 'daily' | 'weekly' | 'anomaly' }>`
 
 const InsBadge = styled.span`
   flex: 1;
-  font-size: 9px;
+  font-size: var(--fs-nano);
+  font-weight: 700;
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   text-transform: uppercase;
@@ -466,13 +468,15 @@ const InsBadge = styled.span`
 `;
 
 const InsTime = styled.span`
-  font-size: 9px;
+  font-size: var(--fs-nano);
+  font-weight: 600;
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g400};
+  letter-spacing: 0.06em;
 `;
 
 const InsTitle = styled.div`
-  font-size: 12px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: ${DS2_VARS.ink};
   line-height: 1.3;
@@ -480,7 +484,7 @@ const InsTitle = styled.div`
 `;
 
 const InsPreview = styled.div`
-  font-size: 10.5px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
   line-height: 1.35;
   overflow: hidden;
@@ -501,7 +505,7 @@ const ChatRow = styled.button`
   border: none;
   border-radius: 7px;
   color: ${DS2_VARS.ink};
-  font-size: 12.5px;
+  font-size: var(--fs-meta);
   cursor: pointer;
   text-align: left;
   width: 100%;
@@ -528,7 +532,7 @@ const ChatTitle = styled.span`
 `;
 
 const ChatTime = styled.span`
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   flex-shrink: 0;
@@ -552,7 +556,7 @@ const FootBtn = styled.button`
   border-radius: 6px;
   cursor: pointer;
   color: ${DS2_VARS.g500};
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-family: ${DS2_VARS.fontSans};
   display: inline-flex;
   align-items: center;
@@ -575,7 +579,7 @@ const FootBtn = styled.button`
 
 const FootHint = styled.span`
   flex: 1;
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   text-align: center;
@@ -586,7 +590,10 @@ const FootHint = styled.span`
     border-radius: 3px;
     padding: 1px 5px;
     font-family: ${DS2_VARS.fontMono};
-    font-size: 9px;
+    font-size: var(--fs-nano);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: ${DS2_VARS.g600};
     margin: 0 2px;
   }

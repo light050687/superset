@@ -142,10 +142,10 @@ export const DRAWER_HEAD_RIGHT_ID = 'shell-drawer-header-right';
  *  действия — кнопки не ездят со скроллом и не перекрывают его. */
 export const DRAWER_FOOTER_SLOT_ID = 'shell-drawer-footer-slot';
 
-/* Мокап `.drawer-title`: font 12 / weight 700 / uppercase / ls 0.06em sans. */
+/* DS v2.0 fluid: --fs-meta UPPER моно для drawer-title. */
 const DrawerTitle = styled.span`
-  font-family: ${DS2_VARS.fontSans};
-  font-size: 12px;
+  font-family: ${DS2_VARS.fontMono};
+  font-size: var(--fs-meta);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -275,7 +275,7 @@ const DrawerFooter = styled.div<{ $hasOverflow?: boolean }>`
 const DrawerPlaceholder = styled.div`
   padding: ${DS2_SPACE.s4}px ${DS2_SPACE.s3}px;
   font-family: ${DS2_VARS.fontSans};
-  font-size: 12px;
+  font-size: var(--fs-meta);
   color: ${DS2_VARS.g500};
   line-height: 1.5;
 `;
@@ -297,6 +297,7 @@ const DEFAULT_TITLES: Record<DrawerKind, string> = {
   pages: 'Страницы дашборда',
   builder: 'Конструктор',
   gridSettings: 'Сетка',
+  dashboardSettings: 'Настройки дашборда',
 };
 
 export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({

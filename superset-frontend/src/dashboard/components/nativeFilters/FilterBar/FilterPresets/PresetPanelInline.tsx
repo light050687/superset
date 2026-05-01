@@ -164,7 +164,7 @@ const IconButton = styled.button`
     padding: 2px;
     border-radius: ${theme.borderRadiusSM}px;
     color: ${theme.colorTextTertiary};
-    font-size: 12px;
+    font-size: var(--fs-meta);
     &:hover {
       background: ${theme.colorBgTextHover};
       color: ${theme.colorText};

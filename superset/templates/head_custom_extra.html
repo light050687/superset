@@ -166,7 +166,7 @@
     --dock-filter:       none;
     --dock-border:       var(--g200);
     --dock-shadow:       none;
-    --dock-radius:       18px;
+    --dock-radius:       14px;
 
     /* Rail-button hover/active. */
     --dock-btn-hover-bg: var(--g100);
@@ -219,27 +219,118 @@
     --dropdown-shadow:      none;
 
     /* Геометрия дока и его overlay-ей */
-    --dock-height:          58px;
+    --dock-height:          46px;
     --dock-bottom:          18px;
-    --dock-drawer-bottom:   76px;
-    --dock-ai-bottom:       92px;
-    --dock-dropdown-bottom: 84px;
+    --dock-drawer-bottom:   64px;
+    --dock-ai-bottom:       80px;
+    --dock-dropdown-bottom: 72px;
     --dock-ai-width:        820px;
     --dock-ai-height:       640px;
-    --dock-content-pad:     88px;
-    --dock-mobile-height:   64px;
+    --dock-content-pad:     76px;
+    --dock-mobile-height:   52px;
 
     /* CentralPill */
-    --pill-compact-w:  280px;
-    --pill-compact-h:  44px;
-    --pill-expanded-w: 420px;
-    --pill-expanded-h: 100px;
+    --pill-compact-w:  224px;
+    --pill-compact-h:  36px;
+    --pill-expanded-w: 336px;
+    --pill-expanded-h: 80px;
 
     /* Magnification (macOS-style hover) */
     --magnify-scale:         1.1;
     --magnify-neighbor:      1.05;
     --magnify-lift:          4px;
     --magnify-duration:      0.15s;
+
+    /* ═══ DS 2.0 — Fluid Type Scale (Perfect Fourth, container/viewport-driven) ═══
+       Каждый токен — clamp(min, baseline + slope·cqi/vi, max).
+       cqi — для виджетов внутри карточек (зависит от inline-size контейнера),
+       vi  — для глобальной навигации (зависит от viewport).
+       Минимум для текста: 11px (10px ТОЛЬКО для UPPERCASE-меток t-nano).
+       Hero KPI ≥ 28px на любом устройстве, до 56px на 4K. */
+    --fs-nano:        clamp(10px, 0.6rem,                11px);
+    --fs-micro:       clamp(11px, 0.7rem  + 0.06cqi,     13px);
+    --fs-meta:        clamp(12px, 0.75rem + 0.1cqi,      14px);
+    --fs-interactive: clamp(13px, 0.8rem  + 0.1vi,       15px);
+    --fs-body:        clamp(14px, 0.85rem + 0.15vi,      17px);
+    --fs-subtitle:    clamp(16px, 1rem    + 0.2vi,       20px);
+    --fs-title:       clamp(20px, 1.2rem  + 0.4vi,       28px);
+    --fs-hero:        clamp(28px, 1.5rem  + 2.4cqi,      56px);
+    --fs-display:     clamp(32px, 1.6rem  + 3.2cqi,      64px);
+
+    /* Line-heights и letter-spacing (используются utility-классами .t-*) */
+    --lh-tight:  1.1;
+    --lh-snug:   1.3;
+    --lh-normal: 1.5;
+    --ls-tight:  -0.02em;
+    --ls-loose:   0.06em;
+
+    /* ═══ AntD CSS-var override (Theme.tsx → cssVar: 'antd-superset') ═══
+       Делает все AntD-нативные компоненты fluid через те же fs-токены.
+       Таким образом Table/Form/Modal/Button получают плавную типографику
+       без необходимости править их Emotion-стили по одному. */
+    --antd-superset-fontSize:    var(--fs-body);
+    --antd-superset-fontSizeSM:  var(--fs-meta);
+    --antd-superset-fontSizeXS:  var(--fs-micro);
+    --antd-superset-fontSizeLG:  var(--fs-subtitle);
+    --antd-superset-fontSizeXL:  var(--fs-title);
+    --antd-superset-fontSizeXXL: var(--fs-hero);
+  }
+
+  /* ═══ DS 2.0 — Typography Utility Classes ═══
+     Семантические классы поверх fluid-токенов. Применяются через className.
+     Цвет наследуется (color: inherit) — задаётся отдельно через var(--ink) и т.п. */
+  .t-display    { font: 800 var(--fs-display)/var(--lh-tight)  var(--f); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .t-hero       { font: 800 var(--fs-hero)/var(--lh-tight)     var(--f); letter-spacing: var(--ls-tight); font-variant-numeric: tabular-nums; }
+  .t-title      { font: 700 var(--fs-title)/1.2                var(--f); letter-spacing: -0.01em; }
+  .t-subtitle   { font: 600 var(--fs-subtitle)/var(--lh-snug)  var(--f); }
+  .t-body       { font: 400 var(--fs-body)/var(--lh-normal)    var(--f); }
+  .t-body-strong{ font: 600 var(--fs-body)/var(--lh-normal)    var(--f); }
+  .t-interactive{ font: 500 var(--fs-interactive)/1.4          var(--f); }
+  .t-meta       { font: 500 var(--fs-meta)/1.4                 var(--f); }
+  .t-meta-mono  { font: 500 var(--fs-meta)/1.4                 var(--m); font-variant-numeric: tabular-nums; }
+  .t-micro      { font: 600 var(--fs-micro)/1.4                var(--m); letter-spacing: var(--ls-loose); text-transform: uppercase; }
+  .t-nano       { font: 700 var(--fs-nano)/1.3                 var(--m); letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* ═══ DS 2.0 — Theme switch via View Transitions API ═══
+     Анимация управляется JS через WAAPI Element.animate с pseudoElement
+     (см. ThemeProvider.tsx → runThemeViewTransition).
+     OLD статичен (виден снаружи clip-path круга), NEW анимируется
+     clip-path circle (растёт из точки клика до furthest corner).
+     Параллельно JS добавляет glow-overlay (radial-gradient + blur),
+     который даёт soft-edge ощущение вокруг hard clip-path.
+     Поддержка: VT API — Chrome 111+, Safari 18+, Firefox 129+;
+     WAAPI .animate({pseudoElement}) — Chrome 116+. */
+  ::view-transition-old(root) {
+    animation: none;
+    mix-blend-mode: normal;
+    z-index: 1;
+  }
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+    z-index: 2;
+  }
+  /* prefers-reduced-motion: instant swap без VT API. JS-сторона тоже
+     skip'ает .animate() в этом режиме — этот CSS правило страхует
+     на случай если VT всё-таки запустилась. */
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+      animation: none;
+    }
+  }
+
+  /* DS 2.0 — Skeleton shimmer placeholder для загружающихся чартов.
+     Используется в ChartHolder когда chartStatus === 'loading' и
+     fetch_strategy.show_skeletons === true. */
+  @keyframes ds2-skeleton-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [style*="ds2-skeleton-shimmer"] {
+      animation: none !important;
+    }
   }
 
   /* ═══ DS 2.0 — тёмная тема ═══ */
