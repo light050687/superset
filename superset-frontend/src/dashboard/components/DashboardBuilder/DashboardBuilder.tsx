@@ -326,14 +326,22 @@ const StyledDashboardContent = styled.div<{
     .dashboard-component-chart-holder {
       width: 100%;
       height: 100%;
-      /* Padding 32px и background-color убраны: визуал плагина (Card)
-         должен заполнять ResizableContainer (синюю рамку в edit-mode)
-         без visual gap. Padding теперь живёт ВНУТРИ плагина (KpiCardRoot,
-         BulletChart Card и т.д.) — каждый плагин уже имеет свой inset. */
-      background-color: transparent;
+      /* Standard charts (table, bar, big_number и т.п.) имеют белый
+         внутренний фон — нужен colorBgContainer на обёртке + 32px
+         padding для дыхания. */
+      background-color: ${theme.colorBgContainer};
       position: relative;
-      padding: 0;
+      padding: ${theme.sizeUnit * 4}px;
       overflow-y: visible;
+
+      /* DS v2.0 KPI override: визуал scorecard (Card) должен ЗАПОЛНЯТЬ
+         ResizableContainer (синюю рамку в edit-mode) без 32px gap.
+         KPI Card сам имеет background:var(--s) + padding 16px 20px,
+         поэтому wrapper-padding и wrapper-bg избыточны. */
+      &:has(.kpi-card) {
+        padding: 0;
+        background-color: transparent;
+      }
 
       // transitionable traits to show filter relevance
       transition:
@@ -437,6 +445,19 @@ const StyledDashboardContent = styled.div<{
       flex: 1;
       display: flex;
       flex-direction: column;
+      /* Chart.tsx Styles div задаёт min-height: chartHeight px из props
+         (Emotion class). В view-mode мы хотим row-equal-height: chart
+         должен растягиваться на row max, а не оставаться фикс. высоты. */
+      min-height: 0 !important;
+      height: 100% !important;
+    }
+
+    /* Chart.tsx .slice_container задаёт height: chartHeight px фикс
+         (Emotion). В view-mode override на 100% — flex chain контролирует. */
+    &[data-view-mode="true"] .slice_container {
+      flex: 1;
+      height: 100% !important;
+      min-height: 0 !important;
     }
 
     /* DS2 row equalization для markdown — тот же flex-chain что для
