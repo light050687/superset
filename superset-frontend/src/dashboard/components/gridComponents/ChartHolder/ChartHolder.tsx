@@ -146,16 +146,16 @@ const ChartHolder = ({
   const showSkeleton = fetchStrategy.show_skeletons && isLoadingChart;
 
   /* DS v2.0: per-viz_type minHeightMultiple override.
-     KPI карточки (ext-kpi-card): минимум 4 cubic для desktop = 32 grid
-     units (~256px), чтобы hero-число + label + сравнения + drill-trigger
-     помещались без обрезки на больших экранах.
-     Визуал заполняет ResizableContainer (синюю рамку) → синяя рамка
-     не сжимается ниже 32 units → визуал тоже. */
+     KPI карточки (ext-kpi-card): минимум ~256px (= 4 cubic для desktop)
+     для любого режима ResizableContainer (col/sub/free).
+     Math: outer = (heightStep + heightGutter) × N - heightGutter
+     Решая для outer = desiredMinPx: N = (desiredMinPx + gutter) / (step + gutter).
+     В col-mode (step=8, gutter=0): 256/8 = 32 → outer 256px ✓
+     В sub-mode (step=27, gutter=16): 272/43 ≈ 7 → outer ~285px ✓
+     В free-mode (step=1, gutter=0): 256/1 = 256 → outer 256px ✓ */
   const vizType = useSelector<RootState, string | undefined>(
     state => (state.charts as any)?.[chartId]?.formData?.viz_type,
   );
-  const vizMinHeightMultiple =
-    vizType === 'ext-kpi-card' ? 32 : undefined;
 
   const focusHighlightStyles = useFilterFocusHighlightStyles(chartId);
   const directPathToChild = useSelector(
@@ -398,6 +398,18 @@ const ChartHolder = ({
     component.meta.height,
     availableColumnCount,
   ]);
+
+  /* Dynamic minHeightMultiple для viz_type='ext-kpi-card'. Зависит от
+     текущего режима resizeConfig (col/sub/free) — формула пересчитывает
+     N units чтобы получить outer ≈ 256px на любом режиме. */
+  const vizMinHeightMultiple = useMemo(() => {
+    if (vizType !== 'ext-kpi-card') return undefined;
+    const desiredMinPx = 256;
+    const gutter = resizeConfig.heightGutter ?? 0;
+    const step = resizeConfig.heightStep;
+    if (step <= 0) return undefined;
+    return Math.max(1, Math.ceil((desiredMinPx + gutter) / (step + gutter)));
+  }, [vizType, resizeConfig.heightStep, resizeConfig.heightGutter]);
 
   const { chartWidth, chartHeight } = useMemo(() => {
     let width = 0;

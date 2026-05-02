@@ -326,9 +326,13 @@ const StyledDashboardContent = styled.div<{
     .dashboard-component-chart-holder {
       width: 100%;
       height: 100%;
-      background-color: ${theme.colorBgContainer};
+      /* Padding 32px и background-color убраны: визуал плагина (Card)
+         должен заполнять ResizableContainer (синюю рамку в edit-mode)
+         без visual gap. Padding теперь живёт ВНУТРИ плагина (KpiCardRoot,
+         BulletChart Card и т.д.) — каждый плагин уже имеет свой inset. */
+      background-color: transparent;
       position: relative;
-      padding: ${theme.sizeUnit * 4}px;
+      padding: 0;
       overflow-y: visible;
 
       // transitionable traits to show filter relevance
@@ -399,7 +403,10 @@ const StyledDashboardContent = styled.div<{
       flex-direction: column !important;
       /* Override inline height — let flex chain control height */
       height: unset !important;
-      min-height: 0 !important;
+      /* min-height: 0 убрано — блокировал flex-grow для markdown
+         (markdown ResizableContainer 280px не растягивался к row max).
+         Без min-height: 0 flex-grow работает: align-items: stretch
+         от .grid-row + flex:1 от child wrapper'ов даёт equal-height. */
     }
 
     &[data-view-mode="true"] .dashboard-component-chart-holder {
