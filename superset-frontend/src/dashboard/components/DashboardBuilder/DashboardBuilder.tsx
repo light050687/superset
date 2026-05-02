@@ -438,6 +438,19 @@ const StyledDashboardContent = styled.div<{
       align-self: stretch !important;
     }
 
+    /* Skeleton placeholders во время loading должны соответствовать
+       размеру финального компонента. Skeleton overlay в ChartHolder
+       рендерится с position:absolute;inset:0 — его size = size
+       chart-holder'а. До того как chart передал data-test-viz-type,
+       :has() селектор выше не активен → resizable-container = content-fit
+       = ~50px → skeleton тоже ~50px (узкая полоска вместо карточки).
+       Решение: до chart-load resizable-container должен иметь min-height
+       равной выcоте предполагаемой по resize-config (через flex-grow
+       внутри stretched dragdroppable-column). */
+    &[data-view-mode="true"] .dragdroppable-column > .resizable-container {
+      min-height: 100% !important;
+    }
+
     &[data-view-mode="true"] .dashboard-component-chart-holder {
       flex: 1;
       display: flex;

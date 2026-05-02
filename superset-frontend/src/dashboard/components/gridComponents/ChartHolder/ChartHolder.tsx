@@ -616,6 +616,14 @@ const ChartHolder = ({
           style={{
             ...focusHighlightStyles,
             position: 'relative',
+            /* DS 2.0: chart-holder сразу имеет ожидаемую высоту из
+               position_json.meta.height (через resizeConfig). Без этого
+               во время loading skeleton overlay (position:absolute;
+               inset:0) collapseится с chart-holder'ом до контента (0px),
+               и юзер видит узкую полоску вместо placeholder'а размером
+               с финальный визуал. Особенно заметно когда вся row в
+               loading state — нет высокого сиблинга чтобы натянуть row. */
+            minHeight: chartHeight,
           }}
           css={isFullSize ? fullSizeStyle : undefined}
           className={cx(
