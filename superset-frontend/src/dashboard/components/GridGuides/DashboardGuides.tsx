@@ -95,7 +95,12 @@ export const DashboardGuides: FC<DashboardGuidesProps> = ({
     return () => ro.disconnect();
   }, [showGrid]);
 
-  const columnsActive = isResizing || showColumns;
+  /* Колонки показываются ТОЛЬКО по toggle showColumns. Раньше также
+     включались при isResizing, но это давало bug: handleResizeStop
+     иногда не вызывался (drag-cancel, ESC, drop вне drop-zone) →
+     isResizing застревал в true → колонки не скрывались даже после
+     toggle off. Теперь источник один: GridSettingsDrawer toggle. */
+  const columnsActive = showColumns;
 
   if (!columnsActive && !showGrid) return null;
 

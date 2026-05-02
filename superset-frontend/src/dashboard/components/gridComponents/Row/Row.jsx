@@ -85,13 +85,27 @@ const GridRow = styled.div`
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    align-items: flex-start;
+    /* DS2 row equalization: все виджеты в строке тянутся до высоты самого
+       высокого. Без этого markdown короткий, чарт длинный — «ступенька»
+       при resize окна. align-items: stretch заставляет flex-children
+       заполнять cross-axis (высоту row) полностью. */
+    align-items: stretch;
     width: 100%;
     height: fit-content;
+
+    /* DS2 row equalization — align-items: stretch выше + flex-chain в
+       DashboardBuilder.tsx ([data-view-mode="true"]) растягивает ВСЕ
+       визуалы (markdown/charts/любые плагины) до высоты row. Этот файл
+       только задаёт base align-items: stretch — детальный flex-chain
+       живёт в одном месте (DashboardBuilder) и применяется глобально.
+       Memory: feedback_row_stretch_visuals.md */
 
     & > :not(:last-child):not(.hover-menu) {
       ${!editMode && `margin-right: ${theme.sizeUnit * 4}px;`}
     }
+    /* Row equalization (view-mode) реализована в DashboardBuilder.tsx
+       через flex-chain: .resizable-container height:unset + flex:1 на
+       каждом wrapper'е до плагина. Тут CSS не дублируем. */
 
     & .empty-droptarget {
       position: relative;

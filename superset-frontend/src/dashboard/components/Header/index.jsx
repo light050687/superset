@@ -148,6 +148,9 @@ const headerContainerStyle = theme => css`
     flex: 1 !important;
     margin-right: 0 !important;
     gap: ${theme.sizeUnit * 2}px;
+    /* DS v2.0: все дети title-panel (title + FaveStar + meta-slot)
+       выровнены по центру вертикали относительно title. */
+    align-items: center !important;
   }
   /* Title (первый ребёнок) — не shrink'ается, показывает полное название */
   .header-with-actions .title-panel > *:first-child {
@@ -181,7 +184,7 @@ const headerContainerStyle = theme => css`
   .header-with-actions .title-panel .input-sizer,
   .header-with-actions .title-panel .dynamic-title-input {
     font-family: var(--f, ${theme.fontFamily}) !important;
-    font-size: var(--fs-hero) !important;
+    font-size: 48px !important;
     line-height: 1.1 !important;
     font-weight: 800 !important;
     letter-spacing: -0.03em !important;

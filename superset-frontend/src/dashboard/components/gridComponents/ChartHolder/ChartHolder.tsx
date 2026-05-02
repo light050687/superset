@@ -34,6 +34,8 @@ import HoverMenu from 'src/dashboard/components/menu/HoverMenu';
 import ResizableContainer from 'src/dashboard/components/resizable/ResizableContainer';
 import getChartAndLabelComponentIdFromPath from 'src/dashboard/util/getChartAndLabelComponentIdFromPath';
 import useFilterFocusHighlightStyles from 'src/dashboard/util/useFilterFocusHighlightStyles';
+import { useChartViewportPriority } from 'src/dashboard/hooks/useChartViewportPriority';
+import { useFetchStrategy } from 'src/dashboard/utils/fetchStrategy';
 import { COLUMN_TYPE, ROW_TYPE } from 'src/dashboard/util/componentTypes';
 import {
   GRID_BASE_UNIT,
@@ -127,6 +129,33 @@ const ChartHolder = ({
     observer.observe(el);
     return () => observer.disconnect();
   }, [editMode]);
+
+  // Viewport priority: chart регистрируется в shared IntersectionObserver
+  // (один на дашборд). Возвращает isInView (для Chart skip runQuery если
+  // lazy_offscreen=true) и priority (для chartFetchQueue ordering).
+  const { isInView: isInViewport, priority: viewportPriority } =
+    useChartViewportPriority(chartId, chartHolderRef);
+
+  // Fetch strategy + chartStatus для skeleton overlay управления.
+  const fetchStrategy = useFetchStrategy();
+  const chartStatus = useSelector<RootState, string | undefined>(
+    state => (state.charts as any)?.[chartId]?.chartStatus,
+  );
+  const isLoadingChart =
+    chartStatus === 'loading' || chartStatus === undefined;
+  const showSkeleton = fetchStrategy.show_skeletons && isLoadingChart;
+
+  /* DS v2.0: per-viz_type minHeightMultiple override.
+     KPI карточки (ext-kpi-card): минимум 4 cubic для desktop = 32 grid
+     units (~256px), чтобы hero-число + label + сравнения + drill-trigger
+     помещались без обрезки на больших экранах.
+     Визуал заполняет ResizableContainer (синюю рамку) → синяя рамка
+     не сжимается ниже 32 units → визуал тоже. */
+  const vizType = useSelector<RootState, string | undefined>(
+    state => (state.charts as any)?.[chartId]?.formData?.viz_type,
+  );
+  const vizMinHeightMultiple =
+    vizType === 'ext-kpi-card' ? 32 : undefined;
 
   const focusHighlightStyles = useFilterFocusHighlightStyles(chartId);
   const directPathToChild = useSelector(
@@ -552,7 +581,9 @@ const ChartHolder = ({
         heightMultiple={resizeConfig.heightMultipleResolved}
         minWidthMultiple={resizeConfig.minWidthMultiple}
         minHeightMultiple={
-          resizeConfig.minHeightMultiple ?? GRID_MIN_ROW_UNITS
+          vizMinHeightMultiple ??
+          resizeConfig.minHeightMultiple ??
+          GRID_MIN_ROW_UNITS
         }
         maxWidthMultiple={resizeConfig.maxWidthMultiple}
         onResizeStart={onResizeStart}
@@ -570,7 +601,10 @@ const ChartHolder = ({
             chartHolderRef.current = node;
           }}
           data-test="dashboard-component-chart-holder"
-          style={focusHighlightStyles}
+          style={{
+            ...focusHighlightStyles,
+            position: 'relative',
+          }}
           css={isFullSize ? fullSizeStyle : undefined}
           className={cx(
             'dashboard-component',
@@ -593,6 +627,27 @@ const ChartHolder = ({
                   }`}
             </style>
           )}
+          {/* DS 2.0 skeleton overlay — shimmer pulse поверх chart'а пока
+              он в loading state. fade-out когда chart settled через CSS
+              transition. Chart остаётся mounted под ним. */}
+          {showSkeleton && (
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 2,
+                borderRadius: 10,
+                background:
+                  'linear-gradient(110deg, var(--g100) 8%, var(--g200) 18%, var(--g100) 33%)',
+                backgroundSize: '200% 100%',
+                animation:
+                  'ds2-skeleton-shimmer 1.6s ease-in-out infinite',
+                pointerEvents: 'none',
+                transition: 'opacity 280ms cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            />
+          )}
           <Chart
             componentId={component.id}
             id={component.meta.chartId}
@@ -608,7 +663,10 @@ const ChartHolder = ({
             isFullSize={isFullSize}
             setControlValue={handleExtraControl}
             extraControls={extraControls}
-            isInView={isInView}
+            isInView={isInView && isInViewport}
+            lazyOffscreen={fetchStrategy.lazy_offscreen}
+            fetchPriority={viewportPriority}
+            dashboardEditMode={editMode}
           />
           {editMode && (
             <HoverMenu position="top">

@@ -432,6 +432,15 @@ const StyledDashboardContent = styled.div<{
       flex-direction: column;
     }
 
+    /* DS2 row equalization для markdown — тот же flex-chain что для
+       charts. Без этого markdown короткий, чарт длинный → разные
+       высоты в одном row. */
+    &[data-view-mode="true"] .dashboard-markdown {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
     /* KPI card: propagate flex through anonymous wrapper divs */
     &[data-view-mode="true"]
       div[data-test-viz-type='ext-kpi-card']
