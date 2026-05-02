@@ -411,10 +411,31 @@ const StyledDashboardContent = styled.div<{
       flex-direction: column !important;
       /* Override inline height — let flex chain control height */
       height: unset !important;
-      /* min-height: 0 убрано — блокировал flex-grow для markdown
-         (markdown ResizableContainer 280px не растягивался к row max).
-         Без min-height: 0 flex-grow работает: align-items: stretch
-         от .grid-row + flex:1 от child wrapper'ов даёт equal-height. */
+      /* НЕ добавлять flex: 1 1 auto / align-self здесь — это ломает
+         charts: re-resizable inline width/height конфликтует с flex
+         distribution → chart canvas получает 0×0. Stretch row
+         достигается через .dragdroppable-column { align-self: stretch }
+         и .dashboard-component-chart-holder { flex: 1 } (ниже). */
+    }
+
+    /* Таргетный flex-grow для resizable-container'ов которые содержат
+       НЕ-canvas компоненты (KPI cards, markdown, header, divider, ext-*
+       плагины с CSS-flow контентом). Без этого resizable-container с
+       height: unset (=auto) рендерится по content-fit — KPI карточка
+       с меньшим контентом (например Конверсия) короче сиблингов в той
+       же row. С :has() селектор не применяется к native ECharts
+       (echarts_*, mixed_chart и т.д.) — их inline height нужен для
+       canvas measurement, иначе chart canvas = 0×0. */
+    &[data-view-mode="true"]
+      .resizable-container:has(.dashboard-markdown),
+    &[data-view-mode="true"]
+      .resizable-container:has(.dashboard-component-header),
+    &[data-view-mode="true"]
+      .resizable-container:has(.dashboard-component-divider),
+    &[data-view-mode="true"]
+      .resizable-container:has(div[data-test-viz-type^="ext-"]) {
+      flex: 1 1 auto !important;
+      align-self: stretch !important;
     }
 
     &[data-view-mode="true"] .dashboard-component-chart-holder {
@@ -467,6 +488,88 @@ const StyledDashboardContent = styled.div<{
       flex: 1;
       display: flex;
       flex-direction: column;
+    }
+
+    /* WithPopoverMenu wrapper — важный промежуточный слой между
+       .dragdroppable и .dashboard-markdown/.dashboard-component-header
+       и т.д. Без flex здесь chain рвётся: markdown wrapper висит auto-height. */
+    &[data-view-mode="true"] .with-popover-menu {
+      flex: 1 1 auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-self: stretch !important;
+      min-height: 0;
+    }
+
+    /* dragdroppable wrapper в row (orient=column): растяжение по высоте
+       сиблинга. Без этого markdown/header не получают max(row) даже если
+       внутренние wrapper'ы flex. */
+    &[data-view-mode="true"] .grid-row > .dragdroppable {
+      align-self: stretch !important;
+      display: flex !important;
+      flex-direction: column !important;
+      min-height: 0;
+    }
+
+    /* Markdown contents: пробросить flex через ResizableContainer и
+       внутренний chart-holder, чтобы сам контент SafeMarkdown тоже
+       занимал всю высоту row (а не прижимался к верху карточки).
+       descendant (без >) — устойчиво к любым промежуточным wrapper'ам
+       в кастомных форках. */
+    &[data-view-mode="true"] .dashboard-markdown .resizable-container {
+      flex: 1 1 auto !important;
+      align-self: stretch !important;
+      min-height: 0;
+    }
+
+    &[data-view-mode="true"]
+      .dashboard-markdown
+      .dashboard-component-chart-holder {
+      flex: 1 1 auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      min-height: 0;
+    }
+
+    /* Header в row рядом с chart/markdown подтягивается до высоты
+       сиблинга. Текст центрируется по вертикали через justify-content.
+       !important на всём — на случай если в кастомном форке Header.jsx
+       inline-стилей или Emotion-styled override'ит. */
+    &[data-view-mode="true"] .dashboard-component-header {
+      flex: 1 1 auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      align-self: stretch !important;
+      min-height: 100% !important;
+      height: 100% !important;
+    }
+
+    /* Divider — wrapper тянется на полную высоту row, hr остаётся
+       центром. Future-proof для будущих divider-стилей с фоном. */
+    &[data-view-mode="true"] .dashboard-component-divider {
+      flex: 1 1 auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      align-self: stretch !important;
+      min-height: 100% !important;
+      height: 100% !important;
+    }
+
+    /* Универсальный fallback для будущих ext-* плагинов: любой
+       .dashboard-component внутри .resizable-container получает
+       flex:1 — высота тянется до dashboard-component-chart-holder,
+       дальше плагин сам пробрасывает по своей DOM-цепочке.
+       descendant (без >) — устойчиво к промежуточным wrapper'ам. */
+    &[data-view-mode="true"]
+      .dragdroppable-column
+      .resizable-container
+      .dashboard-component {
+      flex: 1 1 auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      min-height: 0;
     }
 
     /* KPI card: propagate flex through anonymous wrapper divs */
@@ -590,8 +693,6 @@ const SaveOverlayCard = styled.div`
     position: relative;
     width: 64px;
     height: 64px;
-    border-radius: 16px;
-    background: color-mix(in oklab, ${DS2_VARS.cSky} 12%, ${DS2_VARS.bg3});
     display: flex;
     align-items: center;
     justify-content: center;
