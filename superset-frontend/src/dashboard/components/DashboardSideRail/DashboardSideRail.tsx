@@ -1016,7 +1016,6 @@ export const DashboardSideRail: FC = () => {
       label: t('Сохранить как…'),
       onClick: openSaveAsModal,
     });
-    arr.push({ key: 'divider-1', label: '', divider: true });
     arr.push({
       key: 'export-pdf',
       label: t('Экспорт в PDF'),
