@@ -264,9 +264,13 @@ const PopoverItem = styled.button<{ $danger?: boolean }>`
   justify-content: center;
   gap: 6px;
   height: 28px;
-  flex: 0 0 calc((100% - 18px) / 4);
-  min-width: 0;
+  /* !important чтобы перебить любые AntD button reset'ы */
+  flex: 0 0 calc((100% - 18px) / 4) !important;
+  width: calc((100% - 18px) / 4) !important;
+  min-width: 0 !important;
+  max-width: calc((100% - 18px) / 4) !important;
   padding: 0 12px;
+  box-sizing: border-box;
   border: 1px solid
     ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.g200)};
   border-radius: 10px;
@@ -320,6 +324,47 @@ const PopoverDivider = styled.div`
   height: 1px;
   background: ${DS2_VARS.drawerBorder};
   margin: 4px 0;
+`;
+
+/* PopoverGrabber — копия DockGrabber из Rail.tsx (181-240): тонкая
+   горизонтальная «рукоятка» 28×4 сверху popup'а, клик сворачивает
+   popup. iOS bottom-sheet pattern. Позиционируется absolutely
+   относительно PopoverMenu, выходит на 8px выше top edge. */
+const PopoverGrabber = styled.button`
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 4px;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: ${DS2_VARS.g300};
+  opacity: 0.5;
+  cursor: pointer;
+  z-index: 100;
+  transition:
+    opacity 160ms ease,
+    background 160ms ease;
+
+  /* Touch-friendly hit area 44×24, не меняя визуала. */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -10px -8px;
+  }
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+    background: ${DS2_VARS.g400};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${DS2_VARS.cSky};
+    outline-offset: 4px;
+  }
 `;
 
 /* ─── Иконки ─────────────────────────────────────────────────────── */
@@ -1172,6 +1217,14 @@ export const DashboardSideRail: FC = () => {
               $metrics={dockMetrics}
               $hidden={!isOpen}
             >
+              {/* Сворачивающая «ручка» (как DockGrabber у pages-rail). */}
+              <PopoverGrabber
+                type="button"
+                aria-label={t('Свернуть')}
+                title={t('Свернуть')}
+                tabIndex={isOpen ? 0 : -1}
+                onClick={closePopover}
+              />
               {popItem.items.map(menuItem => {
                 if (menuItem.divider) {
                   return <PopoverDivider key={menuItem.key} />;
