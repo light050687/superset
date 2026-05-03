@@ -334,11 +334,14 @@ const StyledDashboardContent = styled.div<{
       padding: ${theme.sizeUnit * 4}px;
       overflow-y: visible;
 
-      /* DS v2.0 KPI override: визуал scorecard (Card) должен ЗАПОЛНЯТЬ
-         ResizableContainer (синюю рамку в edit-mode) без 32px gap.
-         KPI Card сам имеет background:var(--s) + padding 16px 20px,
-         поэтому wrapper-padding и wrapper-bg избыточны. */
-      &:has(.kpi-card) {
+      /* DS v2.0 chrome-removal для ВСЕХ ext-* плагинов: их визуал
+         (внутренний Card с background:var(--s) + padding 16/20 + DS 2.0
+         border) должен заполнять ResizableContainer без wrapper-chrome.
+         Универсальный селектор покрывает все 10 плагинов сразу
+         (scorecard, paretoAnalysis, drilldownDonut, divergingBars,
+         pivotHeatmap, leaderboard, metricTimeSeries, riskMatrix,
+         rankedBars, bulletChart) и любые будущие. */
+      &:has(div[data-test-viz-type^='ext-']) {
         padding: 0;
         background-color: transparent;
       }
@@ -604,9 +607,13 @@ const StyledDashboardContent = styled.div<{
       min-height: 0;
     }
 
-    /* KPI card: propagate flex through anonymous wrapper divs */
+    /* DS v2.0: propagate flex through anonymous wrapper divs для всех
+       ext-* плагинов (раньше был только ext-kpi-card). Это нужно чтобы
+       внутренний Card плагина (с height: 100%) растягивался на полную
+       высоту resizable-container'а. Универсальный селектор покрывает
+       все 10 плагинов и любые будущие ext-*. */
     &[data-view-mode="true"]
-      div[data-test-viz-type='ext-kpi-card']
+      div[data-test-viz-type^='ext-']
       .slice_container
       > div {
       flex: 1;
@@ -615,7 +622,7 @@ const StyledDashboardContent = styled.div<{
     }
 
     &[data-view-mode="true"]
-      div[data-test-viz-type='ext-kpi-card']
+      div[data-test-viz-type^='ext-']
       .slice_container
       > div
       > div {
@@ -625,7 +632,7 @@ const StyledDashboardContent = styled.div<{
     }
 
     &[data-view-mode="true"]
-      div[data-test-viz-type='ext-kpi-card']
+      div[data-test-viz-type^='ext-']
       .slice_container
       > div
       > div
