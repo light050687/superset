@@ -199,6 +199,8 @@ const RailBtn = styled.button<{
 /** Стилизованный overlay для popover-меню над rail-кнопкой.
  *  Использует тот же drawer-look (glassmorphism + DS2 border), что и
  *  DevToolsPanel, чтобы визуально вписываться в общий нижний UI-уровень. */
+/* PopoverMenu — контейнер для pill-style PopoverItem'ов, такой же
+   gap (6px) и flex-row-wrap layout как PageSwitcherBar. */
 const PopoverMenu = styled.div`
   background: ${DS2_VARS.drawerBg};
   backdrop-filter: ${DS2_VARS.drawerFilter};
@@ -206,33 +208,42 @@ const PopoverMenu = styled.div`
   border: 1px solid ${DS2_VARS.drawerBorder};
   border-radius: 10px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
-  padding: 6px;
+  padding: 8px;
   min-width: 240px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
   font-family: ${DS2_VARS.fontSans};
 `;
 
+/* Pill-style PopoverItem — соответствует стилистике PageSwitcherBar
+   (страницы дашборда): inline pill с явной 1px рамкой, --s фон, hover
+   меняет background на g100. Если $danger — рамка/текст в --dn. */
 const PopoverItem = styled.button<{ $danger?: boolean }>`
-  display: flex;
+  display: inline-flex;
   align-items: center;
   width: 100%;
-  padding: 8px 10px;
-  border: none;
-  background: transparent;
+  padding: 6px 14px;
+  border: 1px solid
+    ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.g200)};
+  background: ${DS2_VARS.s};
   border-radius: 6px;
   color: ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.ink)};
   font-size: var(--fs-interactive);
   font-weight: 500;
   text-align: left;
+  white-space: nowrap;
   cursor: pointer;
   transition:
     background 0.12s ${DS2_VARS.ease},
+    border-color 0.12s ${DS2_VARS.ease},
     color 0.12s ${DS2_VARS.ease};
 
   &:hover:not(:disabled) {
-    background: ${DS2_VARS.dockBtnHoverBg};
+    background: ${({ $danger }) =>
+      $danger ? DS2_VARS.dnBg : DS2_VARS.g100};
+    border-color: ${({ $danger }) =>
+      $danger ? DS2_VARS.dn : DS2_VARS.g300};
   }
 
   &:focus-visible {
@@ -242,6 +253,7 @@ const PopoverItem = styled.button<{ $danger?: boolean }>`
 
   &:disabled {
     color: ${DS2_VARS.g400};
+    border-color: ${DS2_VARS.g100};
     cursor: not-allowed;
   }
 `;
