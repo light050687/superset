@@ -451,6 +451,25 @@ const StyledDashboardContent = styled.div<{
       min-height: 100% !important;
     }
 
+    /* Если плагин сам рендерит свой loading-skeleton (aria-busy="true"
+       на ВНУТРЕННЕМ компоненте — KPI scorecard, divergingBars и т.д.),
+       прячем оба overlay'а chart-holder'а: и generic ds2-shimmer, и
+       shape-skeleton. Плагин-internal skeleton имеет ТОЧНО ту же
+       DOM-структуру что loaded content → visual size 1:1.
+       Селектор :has([aria-busy="true"]:not([data-shape-skeleton="true"]))
+       срабатывает только когда aria-busy ставит сам плагин (data-shape-
+       skeleton имеет атрибут только наш shape-overlay), не reagueт на
+       свой собственный shape-overlay. Без этого generic overlay /
+       shape-overlay перекрывал плагин-internal skeleton (z-index выше). */
+    &[data-view-mode="true"]
+      .dashboard-component-chart-holder:has([aria-busy="true"]:not([data-shape-skeleton="true"]))
+      > [data-generic-shimmer="true"],
+    &[data-view-mode="true"]
+      .dashboard-component-chart-holder:has([aria-busy="true"]:not([data-shape-skeleton="true"]))
+      > [data-shape-skeleton="true"] {
+      display: none !important;
+    }
+
     &[data-view-mode="true"] .dashboard-component-chart-holder {
       flex: 1;
       display: flex;

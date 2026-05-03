@@ -37,6 +37,7 @@ import useFilterFocusHighlightStyles from 'src/dashboard/util/useFilterFocusHigh
 import { useChartViewportPriority } from 'src/dashboard/hooks/useChartViewportPriority';
 import { useFetchStrategy } from 'src/dashboard/utils/fetchStrategy';
 import { COLUMN_TYPE, ROW_TYPE } from 'src/dashboard/util/componentTypes';
+import { VIZ_SHAPE_SKELETONS } from './skeletonRegistry';
 import {
   GRID_BASE_UNIT,
   GRID_GUTTER_SIZE,
@@ -411,7 +412,7 @@ const ChartHolder = ({
     return Math.max(1, Math.ceil((desiredMinPx + gutter) / (step + gutter)));
   }, [vizType, resizeConfig.heightStep, resizeConfig.heightGutter]);
 
-  const { chartWidth, chartHeight } = useMemo(() => {
+  const { chartWidth, chartHeight, outerH } = useMemo(() => {
     let width = 0;
     let height = 0;
 
@@ -464,6 +465,16 @@ const ChartHolder = ({
     return {
       chartWidth: width,
       chartHeight: height,
+      /* outerH = full grid cell height = (heightStep + heightGutter) ×
+         heightMultipleResolved - heightGutter. Computed value (НЕ
+         хардкод). Та же formula что re-resizable использует для inline
+         height. Используется как minHeight на chart-holder в loading
+         state — гарантирует место для plugin-internal skeleton до mount
+         плагина (race window). После mount плагин рендерит свой
+         SkeletonBlock внутри chart-holder с правильным padding =
+         exact 1:1 match с loaded card (best-practice react-loading-
+         skeleton: same DOM tree → same size). */
+      outerH,
     };
   }, [
     resizeConfig,
@@ -616,14 +627,16 @@ const ChartHolder = ({
           style={{
             ...focusHighlightStyles,
             position: 'relative',
-            /* DS 2.0: chart-holder сразу имеет ожидаемую высоту из
-               position_json.meta.height (через resizeConfig). Без этого
-               во время loading skeleton overlay (position:absolute;
-               inset:0) collapseится с chart-holder'ом до контента (0px),
-               и юзер видит узкую полоску вместо placeholder'а размером
-               с финальный визуал. Особенно заметно когда вся row в
-               loading state — нет высокого сиблинга чтобы натянуть row. */
-            minHeight: chartHeight,
+            /* minHeight = outerH (computed из meta.height, НЕ хардкод —
+               та же formula что re-resizable inline height). Гарантирует
+               что chart-holder имеет место в loading state до mount
+               плагина. После mount плагин рендерит свой SkeletonBlock
+               (KPI scorecard через aria-busy) внутри chart-holder с
+               правильным padding/margin → 1:1 match с loaded card.
+               Generic ChartHolder overlay скрывается через CSS
+               `:has(aria-busy)` (DashboardBuilder.tsx) когда плагин
+               self-renders skeleton. */
+            minHeight: outerH,
           }}
           css={isFullSize ? fullSizeStyle : undefined}
           className={cx(
@@ -647,27 +660,47 @@ const ChartHolder = ({
                   }`}
             </style>
           )}
-          {/* DS 2.0 skeleton overlay — shimmer pulse поверх chart'а пока
-              он в loading state. fade-out когда chart settled через CSS
-              transition. Chart остаётся mounted под ним. */}
-          {showSkeleton && (
-            <div
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                inset: 0,
-                zIndex: 2,
-                borderRadius: 10,
-                background:
-                  'linear-gradient(110deg, var(--g100) 8%, var(--g200) 18%, var(--g100) 33%)',
-                backgroundSize: '200% 100%',
-                animation:
-                  'ds2-skeleton-shimmer 1.6s ease-in-out infinite',
-                pointerEvents: 'none',
-                transition: 'opacity 280ms cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
-            />
-          )}
+          {/* DS 2.0 skeleton overlay. Если viz_type зарегистрирован в
+              VIZ_SHAPE_SKELETONS — рендерим shape-skeleton (упрощённая
+              копия plugin-DOM с правильной геометрией) для устранения
+              CLS на ~40px между chunk-loading state и plugin-mounted
+              state. Иначе fallback на generic ds2-shimmer (zero
+              regression для native viz_type'ов).
+              После того как плагин mount'ится со своим внутренним
+              skeleton (aria-busy без data-shape-skeleton), CSS-rule
+              в DashboardBuilder.tsx скрывает оба overlay через display:none. */}
+          {showSkeleton && (() => {
+            const ShapeSkeleton = vizType
+              ? VIZ_SHAPE_SKELETONS[vizType]
+              : undefined;
+            if (ShapeSkeleton) {
+              return (
+                <ShapeSkeleton
+                  width={chartWidth}
+                  height={chartHeight}
+                />
+              );
+            }
+            return (
+              <div
+                aria-hidden="true"
+                data-generic-shimmer="true"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 2,
+                  borderRadius: 10,
+                  background:
+                    'linear-gradient(110deg, var(--g100) 8%, var(--g200) 18%, var(--g100) 33%)',
+                  backgroundSize: '200% 100%',
+                  animation:
+                    'ds2-skeleton-shimmer 1.6s ease-in-out infinite',
+                  pointerEvents: 'none',
+                  transition: 'opacity 280ms cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              />
+            );
+          })()}
           <Chart
             componentId={component.id}
             id={component.meta.chartId}

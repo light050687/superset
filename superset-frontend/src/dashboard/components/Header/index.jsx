@@ -99,17 +99,20 @@ const extensionsRegistry = getExtensionsRegistry();
 const headerContainerStyle = theme => css`
   border-bottom: 1px solid ${theme.colorBorder};
 
-  /* DS v2.0 fluid — Page title (Dashboard).
-     --fs-hero (28-56) растёт с viewport; минимум 28 на mobile, до 56 на 4K.
+  /* DS v2.0 §02 «Заголовок страницы»: 28px / 34px / 800 (desktop), fluid
+     до 22px на mobile ≤428. Используем --fs-title (clamp(20px, 1.2rem +
+     0.4vi, 28px)) — точно соответствует таблице размеров из DS 2.0.
      Скоупируем через .dashboard-header-container, чтобы не задеть
      SliceHeader / ExploreChartHeader / AllEntities — там тот же
-     DynamicEditableTitle, но другой контекст. */
+     DynamicEditableTitle, но другой контекст.
+     Раньше использовался --fs-hero (28-56) или хардкод 48px → шапка
+     визуально тяжёлая, длинные названия не помещались. */
   .header-with-actions .title-panel .dynamic-title-input {
     font-family: var(--f, 'Manrope', 'Inter', Helvetica, Arial, sans-serif);
-    font-size: var(--fs-hero);
-    line-height: 1.1;
+    font-size: var(--fs-title);
+    line-height: 1.21;
     font-weight: 800;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.02em;
     color: var(--ink, ${theme.colorText});
   }
 
@@ -178,16 +181,17 @@ const headerContainerStyle = theme => css`
 
   /* DynamicEditableTitle использует .input-sizer span для auto-resize
      ширины input. Без выровненного font'а sizer измеряет в default font
-     (14px), а input рендерится в page-title (28px/800) — текст не помещается,
+     (14px), а input рендерится в page-title — текст не помещается,
      срабатывает text-overflow: ellipsis у input ("Тест ..."). Решение —
-     синхронизировать font sizer'а со стилем input.  */
+     синхронизировать font sizer'а со стилем input. Значения должны быть
+     1:1 с .dynamic-title-input выше. */
   .header-with-actions .title-panel .input-sizer,
   .header-with-actions .title-panel .dynamic-title-input {
     font-family: var(--f, ${theme.fontFamily}) !important;
-    font-size: 48px !important;
-    line-height: 1.1 !important;
+    font-size: var(--fs-title) !important;
+    line-height: 1.21 !important;
     font-weight: 800 !important;
-    letter-spacing: -0.03em !important;
+    letter-spacing: -0.02em !important;
   }
 
 `;
