@@ -38,7 +38,6 @@ import {
 } from 'react';
 import { useLocation } from 'react-router-dom';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
-import { Dropdown } from '@superset-ui/core/components/Dropdown';
 import { DS2_VARS } from 'src/theme/ds2';
 import { useShell } from 'src/views/components/Shell/ShellContext';
 import type { DrawerKind } from 'src/views/components/Shell/types';
@@ -199,21 +198,22 @@ const RailBtn = styled.button<{
 /** Стилизованный overlay для popover-меню над rail-кнопкой.
  *  Использует тот же drawer-look (glassmorphism + DS2 border), что и
  *  DevToolsPanel, чтобы визуально вписываться в общий нижний UI-уровень. */
-/* PopoverMenu — горизонтальный ряд pill'ов 1:1 с DashboardPagesRail
-   (PagesContainer). НИКАКОЙ подложки, рамки и тени — каждая pill сама
-   стоит на любом фоне (у неё свой backdrop-filter blur). justify-content:
-   flex-start + фиксированная width (как у pages dock) → pill'ы
-   прижимаются к левой стороне в 4-колоночной сетке, лишние слоты
-   остаются пустыми. */
-const PopoverMenu = styled.div`
+/* PopoverMenu — fixed-positioned контейнер ровно по тем же координатам
+   что DashboardPagesRail PagesContainer (left/width = dock metrics,
+   bottom = dock + height + 36px). Прозрачный фон, pill'ы внутри по
+   4-колоночной сетке. */
+const PopoverMenu = styled.div<{ $metrics: DockMetrics | null }>`
+  position: fixed;
+  bottom: calc(${DS2_VARS.dockBottom} + ${DS2_VARS.dockHeight} + 36px);
+  ${({ $metrics }) =>
+    $metrics !== null
+      ? `left: ${$metrics.left}px; width: ${$metrics.width}px;`
+      : 'left: 50%; visibility: hidden;'}
+  box-sizing: border-box;
   background: transparent;
   border: none;
   box-shadow: none;
   padding: 0;
-  /* Та же ширина что pages dock — даёт ту же 4-колоночную сетку для
-     pill'ов внутри (calc((100% - 18px) / 4) ≈ 145px на колонку). */
-  width: 600px;
-  max-width: calc(100vw - 32px);
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -221,7 +221,15 @@ const PopoverMenu = styled.div`
   align-content: flex-end;
   justify-content: flex-start;
   gap: 6px;
+  z-index: 99;
   font-family: ${DS2_VARS.fontSans};
+
+  @media print {
+    display: none;
+  }
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 /* PopoverItem — копия PagePill из DashboardPagesRail.tsx (строки
@@ -624,10 +632,36 @@ export const DashboardSideRail: FC = () => {
     saveTriggerRef.current?.click();
   }, []);
 
-  /* ─── Controlled Dropdown state (по id popover'а) ──────────────── */
+  /* ─── Controlled popup state (по id popover'а) ─────────────────── */
 
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
   const closePopover = useCallback(() => setOpenPopoverId(null), []);
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+  const popoverTriggerRefs = useRef<Record<string, HTMLButtonElement | null>>(
+    {},
+  );
+
+  /* Click outside — закрываем popup'ы если клик вне самого popup'а
+     И вне его trigger-кнопки (иначе trigger-click сразу же реоткроет). */
+  useEffect(() => {
+    if (!openPopoverId) return undefined;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (popoverRef.current?.contains(target)) return;
+      const trigger = popoverTriggerRefs.current[openPopoverId];
+      if (trigger?.contains(target)) return;
+      setOpenPopoverId(null);
+    };
+    document.addEventListener('mousedown', handler);
+    const escHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenPopoverId(null);
+    };
+    document.addEventListener('keydown', escHandler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('keydown', escHandler);
+    };
+  }, [openPopoverId]);
 
   /* ─── Favourite handlers ───────────────────────────────────────── */
 
@@ -1050,60 +1084,23 @@ export const DashboardSideRail: FC = () => {
           if (item.kind === 'popover') {
             const isOpen = openPopoverId === item.id;
             return (
-              <Dropdown
+              <RailBtn
                 key={key}
-                trigger={['click']}
-                placement="topCenter"
-                open={isOpen}
-                onOpenChange={next =>
-                  setOpenPopoverId(next ? item.id : null)
-                }
-                /* Сбрасываем дефолтный AntD popup chrome (background,
-                   padding, box-shadow, border) — pill'ы рендерятся прямо
-                   на surface дашборда, как страницы. */
-                overlayInnerStyle={{
-                  background: 'transparent',
-                  padding: 0,
-                  boxShadow: 'none',
-                  border: 'none',
+                ref={el => {
+                  popoverTriggerRefs.current[item.id] = el;
                 }}
-                popupRender={() => (
-                  <PopoverMenu role="menu" aria-label={item.label}>
-                    {item.items.map(menuItem => {
-                      if (menuItem.divider) {
-                        return <PopoverDivider key={menuItem.key} />;
-                      }
-                      return (
-                        <PopoverItem
-                          key={menuItem.key}
-                          type="button"
-                          role="menuitem"
-                          $danger={menuItem.danger}
-                          disabled={menuItem.disabled}
-                          onClick={() => {
-                            if (menuItem.disabled) return;
-                            closePopover();
-                            menuItem.onClick?.();
-                          }}
-                        >
-                          <PopoverItemLabel>{menuItem.label}</PopoverItemLabel>
-                        </PopoverItem>
-                      );
-                    })}
-                  </PopoverMenu>
-                )}
+                type="button"
+                $active={isOpen}
+                aria-label={item.label}
+                aria-haspopup="menu"
+                aria-expanded={isOpen}
+                title={item.label}
+                onClick={() =>
+                  setOpenPopoverId(isOpen ? null : item.id)
+                }
               >
-                <RailBtn
-                  type="button"
-                  $active={isOpen}
-                  aria-label={item.label}
-                  aria-haspopup="menu"
-                  aria-expanded={isOpen}
-                  title={item.label}
-                >
-                  {item.icon}
-                </RailBtn>
-              </Dropdown>
+                {item.icon}
+              </RailBtn>
             );
           }
 
@@ -1133,6 +1130,48 @@ export const DashboardSideRail: FC = () => {
           );
         })}
       </Rail>
+
+      {/* Popup для активного 'popover'-item'а. Fixed-positioned 1:1 с
+          DashboardPagesRail PagesContainer (left/width = dock metrics,
+          bottom = dock + height + 36px) — pill'ы располагаются в той
+          же 4-колоночной сетке что страницы. */}
+      {openPopoverId !== null &&
+        (() => {
+          const activeItem = items.find(
+            it => it.kind === 'popover' && it.id === openPopoverId,
+          );
+          if (!activeItem || activeItem.kind !== 'popover') return null;
+          return (
+            <PopoverMenu
+              ref={popoverRef}
+              role="menu"
+              aria-label={activeItem.label}
+              $metrics={dockMetrics}
+            >
+              {activeItem.items.map(menuItem => {
+                if (menuItem.divider) {
+                  return <PopoverDivider key={menuItem.key} />;
+                }
+                return (
+                  <PopoverItem
+                    key={menuItem.key}
+                    type="button"
+                    role="menuitem"
+                    $danger={menuItem.danger}
+                    disabled={menuItem.disabled}
+                    onClick={() => {
+                      if (menuItem.disabled) return;
+                      closePopover();
+                      menuItem.onClick?.();
+                    }}
+                  >
+                    <PopoverItemLabel>{menuItem.label}</PopoverItemLabel>
+                  </PopoverItem>
+                );
+              })}
+            </PopoverMenu>
+          );
+        })()}
 
       {/* Скрытый SaveModal — open триггерится click()'ом по
           ref'у на triggerNode-span'е (bubble в ModalTrigger wrapper). */}
