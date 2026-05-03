@@ -145,17 +145,24 @@ const Rail = styled.nav<{
   }
 `;
 
-const RailBtn = styled.button<{ $active?: boolean }>`
+const RailBtn = styled.button<{
+  $active?: boolean;
+  $noActiveBg?: boolean;
+  $activeColor?: string;
+}>`
   width: 26px;
   height: 26px;
   padding: 0;
   border: none;
   border-radius: 8px;
-  background: ${({ $active }) =>
-    $active ? DS2_VARS.dockBtnActiveBg : 'transparent'};
-  color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.g600)};
-  box-shadow: ${({ $active }) =>
-    $active ? DS2_VARS.dockBtnActiveRing : 'none'};
+  /* $noActiveBg — отключает active фон и ring (используется для звезды
+     избранного: при нажатии меняется только color иконки, без рамки). */
+  background: ${({ $active, $noActiveBg }) =>
+    $active && !$noActiveBg ? DS2_VARS.dockBtnActiveBg : 'transparent'};
+  color: ${({ $active, $activeColor }) =>
+    $active ? ($activeColor ?? DS2_VARS.cSky) : DS2_VARS.g600};
+  box-shadow: ${({ $active, $noActiveBg }) =>
+    $active && !$noActiveBg ? DS2_VARS.dockBtnActiveRing : 'none'};
   cursor: pointer;
   flex-shrink: 0;
   display: flex;
@@ -167,9 +174,12 @@ const RailBtn = styled.button<{ $active?: boolean }>`
     box-shadow 0.12s ${DS2_VARS.ease};
 
   &:hover:not(:disabled) {
-    background: ${({ $active }) =>
-      $active ? DS2_VARS.dockBtnActiveBg : DS2_VARS.dockBtnHoverBg};
-    color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.ink)};
+    background: ${({ $active, $noActiveBg }) =>
+      $active && !$noActiveBg
+        ? DS2_VARS.dockBtnActiveBg
+        : DS2_VARS.dockBtnHoverBg};
+    color: ${({ $active, $activeColor }) =>
+      $active ? ($activeColor ?? DS2_VARS.cSky) : DS2_VARS.ink};
   }
 
   &:focus-visible {
@@ -869,6 +879,17 @@ export const DashboardSideRail: FC = () => {
   const items: SideRailItem[] = useMemo(() => {
     const arr: SideRailItem[] = [
       {
+        kind: 'action',
+        id: 'favorite',
+        label: isStarred ? t('Убрать из избранного') : t('В избранное'),
+        icon: isStarred ? <IconStarFilled /> : <IconStar />,
+        onClick: handleToggleFavorite,
+        active: isStarred,
+        // Скрываем кнопку для анонимных юзеров — у них нет userId,
+        // saveFaveStar упадёт на бэке. Логика 1:1 с PageHeaderWithActions.
+        visible: !!userId,
+      },
+      {
         kind: 'drawer',
         drawer: 'filters',
         label: t('Фильтры'),
@@ -883,17 +904,6 @@ export const DashboardSideRail: FC = () => {
         active: pagesRailOpen,
         // Always visible — единообразный rail на всех дашбордах
         // независимо от async hydrate'а и количества страниц.
-      },
-      {
-        kind: 'action',
-        id: 'favorite',
-        label: isStarred ? t('Убрать из избранного') : t('В избранное'),
-        icon: isStarred ? <IconStarFilled /> : <IconStar />,
-        onClick: handleToggleFavorite,
-        active: isStarred,
-        // Скрываем кнопку для анонимных юзеров — у них нет userId,
-        // saveFaveStar упадёт на бэке. Логика 1:1 с PageHeaderWithActions.
-        visible: !!userId,
       },
       {
         kind: 'action',
@@ -1030,11 +1040,18 @@ export const DashboardSideRail: FC = () => {
             );
           }
 
+          /* Звезда избранного — единственная кнопка с цветным
+             active-state'ом (амбер) и БЕЗ фона/ring'а: цвет
+             заполняет саму иконку, не «коробку» вокруг. */
+          const isFavorite =
+            item.kind === 'action' && item.id === 'favorite';
           return (
             <RailBtn
               key={key}
               type="button"
               $active={isActive}
+              $noActiveBg={isFavorite}
+              $activeColor={isFavorite ? 'var(--c-amber)' : undefined}
               aria-pressed={isActive}
               aria-label={item.label}
               title={item.label}
