@@ -220,15 +220,13 @@ const PopoverMenu = styled.div<{
   border: none;
   box-shadow: none;
   padding: 0;
-  /* Flex row с auto-width pill'ами: каждая по ширине своего текста,
-     плотно прижата к левой стороне без больших пустых разрывов.
-     Тот же порядок (justify-content: flex-start) что у PagesContainer,
-     но без forced 4-колоночной сетки. */
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-start;
+  /* CSS Grid 4-колоночная сетка, как у PagesContainer: каждая pill
+     ровно 1/4 ширины dock'а, gap 6px. Ровные капсулы, длинные тексты
+     обрезаются ellipsis'ом — полное название видно через native title
+     (браузерный tooltip, появляется при hover ~700ms). */
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-content: end;
   gap: 6px;
   z-index: 99;
   font-family: ${DS2_VARS.fontSans};
@@ -267,10 +265,11 @@ const PopoverItem = styled.button<{ $danger?: boolean }>`
   justify-content: center;
   gap: 6px;
   height: 28px;
-  /* Auto-width: pill размером с свой текст. min-width 0 — на всякий
-     случай для ellipsis. box-sizing border-box чтобы padding не
-     прибавлялся к flex-basis. */
-  width: auto;
+  /* width 100% — заполняет grid-cell (1fr колонки). min-width 0 —
+     обязательно для grid-item чтобы overflow ellipsis срабатывал
+     (default min-content на текст ломает ellipsis). box-sizing
+     border-box чтобы padding не выходил за границы cell'а. */
+  width: 100%;
   min-width: 0;
   padding: 0 12px;
   box-sizing: border-box;
@@ -1249,6 +1248,7 @@ export const DashboardSideRail: FC = () => {
                     key={menuItem.key}
                     type="button"
                     role="menuitem"
+                    title={menuItem.label}
                     $danger={menuItem.danger}
                     disabled={menuItem.disabled || !isOpen}
                     onClick={() => {
