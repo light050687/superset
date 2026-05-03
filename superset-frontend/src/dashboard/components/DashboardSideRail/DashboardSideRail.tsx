@@ -589,16 +589,32 @@ export const DashboardSideRail: FC = () => {
 
   /* ─── Favourite handlers ───────────────────────────────────────── */
 
-  /* Подтягиваем isStarred с бэка при первом mount'е страницы дашборда —
+  /* Подтягиваем isStarred с бэка при mount'е страницы дашборда —
      раньше это делал PageHeaderWithActions через onMount внутри
      CommonHeader; после переноса звезды на side-rail backend-fetch тоже
-     переехал сюда, чтобы иконка сразу показывала актуальное состояние. */
+     переехал сюда. Дополнительно re-fetch'имся при:
+     1. Изменении location.pathname — юзер вернулся на dashboard route
+        с Главной (где мог изменить избранное через карточку) или с
+        другого dashboard'а.
+     2. document.visibilitychange visible — юзер вернулся с другой
+        вкладки/окна, где состояние тоже могло измениться. */
   const userId = (user as any)?.userId;
+  const location = useLocation();
   useEffect(() => {
-    if (dashboardId === undefined || !userId) return;
-    // @ts-ignore — fetchFaveStar thunk не типизирован
-    dispatch(fetchFaveStar(dashboardId));
-  }, [dispatch, dashboardId, userId]);
+    if (dashboardId === undefined || !userId) return undefined;
+    const refetch = () => {
+      // @ts-ignore — fetchFaveStar thunk не типизирован
+      dispatch(fetchFaveStar(dashboardId));
+    };
+    refetch();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') refetch();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [dispatch, dashboardId, userId, location.pathname]);
 
   const handleToggleFavorite = useCallback(() => {
     if (dashboardId === undefined) return;
