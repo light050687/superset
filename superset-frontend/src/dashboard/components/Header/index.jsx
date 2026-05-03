@@ -880,7 +880,7 @@ const Header = () => {
           onOpenChange: setIsDropdownVisible,
         }}
         additionalActionsMenu={menu}
-        showFaveStar={user?.userId && dashboardInfo?.id}
+        showFaveStar={false}
         showTitlePanelItems
         showMenuDropdown={false}
       />

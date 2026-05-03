@@ -46,8 +46,9 @@ import type { RootState } from 'src/dashboard/types';
 import { useChartIds } from 'src/dashboard/util/charts/useChartIds';
 import {
   onRefresh as onRefreshAction,
-  setRefreshFrequency as setRefreshFrequencyAction,
   saveDashboardRequest,
+  fetchFaveStar,
+  saveFaveStar,
 } from 'src/dashboard/actions/dashboardState';
 import {
   addSuccessToast as addSuccessToastAction,
@@ -70,7 +71,6 @@ import {
 } from 'src/logger/LogUtils';
 import { DownloadScreenshotFormat } from 'src/dashboard/components/menu/DownloadMenuItems/types';
 import SaveModal from 'src/dashboard/components/SaveModal';
-import RefreshIntervalModal from 'src/dashboard/components/RefreshIntervalModal';
 import {
   deleteActiveReport,
   fetchUISpecificReport,
@@ -261,6 +261,33 @@ const IconPages = (): JSX.Element => (
     <path d="M8 3.5h7a1 1 0 011 1v10" />
     <rect x="4" y="5.5" width="11" height="11" rx="1" />
     <path d="M6.5 9.5h6M6.5 12.5h4" />
+  </svg>
+);
+
+/* Star (favourite) — outline + filled. Стиль соответствует остальным
+   rail-иконкам (1.6 stroke-width, 14×14 размер, currentColor). Filled
+   вариант показывает что dashboard в избранном. */
+const IconStar = (): JSX.Element => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M10 2.5l2.36 4.78 5.27.77-3.81 3.71.9 5.24L10 14.55l-4.72 2.45.9-5.24L2.37 8.05l5.27-.77z" />
+  </svg>
+);
+
+const IconStarFilled = (): JSX.Element => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="currentColor"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M10 2.5l2.36 4.78 5.27.77-3.81 3.71.9 5.24L10 14.55l-4.72 2.45.9-5.24L2.37 8.05l5.27-.77z" />
   </svg>
 );
 
@@ -470,6 +497,13 @@ export const DashboardSideRail: FC = () => {
   const dashboardId = useSelector<RootState, number | undefined>(
     state => state.dashboardInfo?.id,
   );
+  /* Favourite (звезда) — раньше жил в шапке (showFaveStar PageHeaderWithActions),
+     теперь перенесён сюда чтобы освободить горизонталь рядом с заголовком
+     страницы. Selector берёт isStarred из dashboardState reducer (тот же
+     источник что Header использовал). */
+  const isStarred = useSelector<RootState, boolean>(
+    state => !!(state.dashboardState as any)?.isStarred,
+  );
 
   /* Селекторы для Save/Share/Refresh/Email-report. shallowEqual — не
      создавать новые ссылки на каждом рендере. */
@@ -519,14 +553,6 @@ export const DashboardSideRail: FC = () => {
   const userCanEdit = !!dashboardInfo?.dash_edit_perm;
   const userCanSave = !!dashboardInfo?.dash_save_perm;
   const userCanShare = !!dashboardInfo?.dash_share_perm;
-  const refreshLimit =
-    dashboardInfo?.common?.conf?.SUPERSET_DASHBOARD_PERIODICAL_REFRESH_LIMIT ??
-    0;
-  const refreshWarning =
-    dashboardInfo?.common?.conf
-      ?.SUPERSET_DASHBOARD_PERIODICAL_REFRESH_WARNING_MESSAGE ?? null;
-  const refreshIntervalOptions =
-    dashboardInfo?.common?.conf?.DASHBOARD_AUTO_REFRESH_INTERVALS ?? [];
 
   const dashboardComponentId = useMemo(
     () => [...(directPathToChild || [])].pop(),
@@ -535,26 +561,40 @@ export const DashboardSideRail: FC = () => {
 
   /* ─── Modal triggers (ref на скрытый span внутри ModalTrigger) ─── */
 
-  /* SaveModal/RefreshIntervalModal не forwardRef'ят ModalTrigger
-     наружу, поэтому открываем их через .click() на скрытом
-     triggerNode'е. ModalTrigger оборачивает triggerNode в `<div
-     onClick={open} role="button">`, и нативный element.click() на
-     внутреннем span'е bubble'ится на этот wrapper, вызывая open. */
+  /* SaveModal не forwardRef'ит ModalTrigger наружу, поэтому открываем
+     его через .click() на скрытом triggerNode'е. ModalTrigger
+     оборачивает triggerNode в `<div onClick={open} role="button">`, и
+     нативный element.click() на внутреннем span'е bubble'ится на этот
+     wrapper, вызывая open. */
   const saveTriggerRef = useRef<HTMLSpanElement | null>(null);
-  const refreshTriggerRef = useRef<HTMLSpanElement | null>(null);
 
   const openSaveAsModal = useCallback(() => {
     saveTriggerRef.current?.click();
-  }, []);
-
-  const openRefreshIntervalModal = useCallback(() => {
-    refreshTriggerRef.current?.click();
   }, []);
 
   /* ─── Controlled Dropdown state (по id popover'а) ──────────────── */
 
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
   const closePopover = useCallback(() => setOpenPopoverId(null), []);
+
+  /* ─── Favourite handlers ───────────────────────────────────────── */
+
+  /* Подтягиваем isStarred с бэка при первом mount'е страницы дашборда —
+     раньше это делал PageHeaderWithActions через onMount внутри
+     CommonHeader; после переноса звезды на side-rail backend-fetch тоже
+     переехал сюда, чтобы иконка сразу показывала актуальное состояние. */
+  const userId = (user as any)?.userId;
+  useEffect(() => {
+    if (dashboardId === undefined || !userId) return;
+    // @ts-ignore — fetchFaveStar thunk не типизирован
+    dispatch(fetchFaveStar(dashboardId));
+  }, [dispatch, dashboardId, userId]);
+
+  const handleToggleFavorite = useCallback(() => {
+    if (dashboardId === undefined) return;
+    // @ts-ignore — saveFaveStar thunk не типизирован
+    dispatch(saveFaveStar(dashboardId, isStarred));
+  }, [dispatch, dashboardId, isStarred]);
 
   /* ─── Refresh handlers ─────────────────────────────────────────── */
 
@@ -573,17 +613,6 @@ export const DashboardSideRail: FC = () => {
     );
     dispatch(addSuccessToastAction(t('Обновление чартов')));
   }, [dispatch, chartIds, dashboardId]);
-
-  /* setRefreshFrequency action кладёт значение в Redux. Header.jsx
-     подписан на dashboardState.refreshFrequency через useEffect и
-     перезапускает периодический рендер при изменении — нам тут НЕ
-     нужно дублировать setPeriodicRunner. */
-  const handleRefreshIntervalChange = useCallback(
-    (interval: number, isPersistent: boolean) => {
-      dispatch(setRefreshFrequencyAction(interval, isPersistent));
-    },
-    [dispatch],
-  );
 
   /* ─── Save handlers ────────────────────────────────────────────── */
 
@@ -835,22 +864,6 @@ export const DashboardSideRail: FC = () => {
     [handleCopyLink, handleShareByEmail],
   );
 
-  const refreshItems: PopoverMenuItemDef[] = useMemo(
-    () => [
-      {
-        key: 'refresh-now',
-        label: t('Обновить сейчас'),
-        onClick: handleRefresh,
-      },
-      {
-        key: 'auto-refresh-interval',
-        label: t('Настроить интервал авто-обновления…'),
-        onClick: openRefreshIntervalModal,
-      },
-    ],
-    [handleRefresh, openRefreshIntervalModal],
-  );
-
   /* ─── Items list ───────────────────────────────────────────────── */
 
   const items: SideRailItem[] = useMemo(() => {
@@ -872,11 +885,22 @@ export const DashboardSideRail: FC = () => {
         // независимо от async hydrate'а и количества страниц.
       },
       {
-        kind: 'popover',
+        kind: 'action',
+        id: 'favorite',
+        label: isStarred ? t('Убрать из избранного') : t('В избранное'),
+        icon: isStarred ? <IconStarFilled /> : <IconStar />,
+        onClick: handleToggleFavorite,
+        active: isStarred,
+        // Скрываем кнопку для анонимных юзеров — у них нет userId,
+        // saveFaveStar упадёт на бэке. Логика 1:1 с PageHeaderWithActions.
+        visible: !!userId,
+      },
+      {
+        kind: 'action',
         id: 'refresh',
-        label: t('Обновить дашборд'),
+        label: t('Обновить сейчас'),
         icon: <IconRefresh />,
-        items: refreshItems,
+        onClick: handleRefresh,
       },
       {
         kind: 'popover',
@@ -917,13 +941,16 @@ export const DashboardSideRail: FC = () => {
     editMode,
     devToolsOpen,
     handleToggleDevTools,
-    refreshItems,
+    handleRefresh,
     saveItems,
     shareItems,
     handleOpenReportDrawer,
     showingReportDrawer,
     pagesRailOpen,
     togglePagesRail,
+    isStarred,
+    handleToggleFavorite,
+    userId,
   ]);
 
   if (!onDashboard) return null;
@@ -1057,26 +1084,6 @@ export const DashboardSideRail: FC = () => {
           canOverwrite={userCanEdit}
         />
       )}
-
-      {/* Скрытый RefreshIntervalModal — открывается из popover. */}
-      <RefreshIntervalModal
-        addSuccessToast={(msg: string) =>
-          dispatch(addSuccessToastAction(msg))
-        }
-        refreshFrequency={refreshFrequency}
-        refreshLimit={refreshLimit}
-        refreshWarning={refreshWarning}
-        onChange={handleRefreshIntervalChange}
-        editMode={editMode}
-        refreshIntervalOptions={refreshIntervalOptions}
-        triggerNode={
-          <span
-            ref={refreshTriggerRef}
-            aria-hidden="true"
-            style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}
-          />
-        }
-      />
 
       {/* ReportDrawer — bottom-sheet drawer в стиле каталога. */}
       {canAddReports && user?.userId && dashboardInfo?.id !== undefined && (
