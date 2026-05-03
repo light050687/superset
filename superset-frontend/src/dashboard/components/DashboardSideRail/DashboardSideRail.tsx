@@ -199,17 +199,14 @@ const RailBtn = styled.button<{
 /** Стилизованный overlay для popover-меню над rail-кнопкой.
  *  Использует тот же drawer-look (glassmorphism + DS2 border), что и
  *  DevToolsPanel, чтобы визуально вписываться в общий нижний UI-уровень. */
-/* PopoverMenu — горизонтальный ряд pill'ов как DashboardPagesRail
-   (страницы дашборда). flex-direction: row + flex-wrap: wrap для случая
-   когда пунктов >3-4 и они не помещаются в одну строку. */
+/* PopoverMenu — горизонтальный ряд pill'ов 1:1 с DashboardPagesRail
+   (PagesContainer). НИКАКОЙ подложки, рамки и тени — каждая pill сама
+   стоит на любом фоне (у неё свой backdrop-filter blur). */
 const PopoverMenu = styled.div`
-  background: ${DS2_VARS.drawerBg};
-  backdrop-filter: ${DS2_VARS.drawerFilter};
-  -webkit-backdrop-filter: ${DS2_VARS.drawerFilter};
-  border: 1px solid ${DS2_VARS.drawerBorder};
-  border-radius: 10px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
-  padding: 8px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
