@@ -220,13 +220,15 @@ const PopoverMenu = styled.div<{
   border: none;
   box-shadow: none;
   padding: 0;
-  /* CSS Grid гарантирует одинаковые колонки независимо от padding /
-     border-box арифметики. 4 равные колонки + gap 6px (то же что
-     раньше пытались через flex 0 0 calc((100% - 18px) / 4), но Grid
-     надёжнее — не зависит от cascade'а и AntD button reset'ов). */
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  align-content: end;
+  /* Flex row с auto-width pill'ами: каждая по ширине своего текста,
+     плотно прижата к левой стороне без больших пустых разрывов.
+     Тот же порядок (justify-content: flex-start) что у PagesContainer,
+     но без forced 4-колоночной сетки. */
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
   gap: 6px;
   z-index: 99;
   font-family: ${DS2_VARS.fontSans};
@@ -265,10 +267,10 @@ const PopoverItem = styled.button<{ $danger?: boolean }>`
   justify-content: center;
   gap: 6px;
   height: 28px;
-  /* В Grid контексте width управляется grid-template-columns родителя
-     (1fr каждая колонка). min-width: 0 даёт ellipsis. box-sizing
-     border-box чтобы padding не выходил за пределы grid-cell. */
-  width: 100%;
+  /* Auto-width: pill размером с свой текст. min-width 0 — на всякий
+     случай для ellipsis. box-sizing border-box чтобы padding не
+     прибавлялся к flex-basis. */
+  width: auto;
   min-width: 0;
   padding: 0 12px;
   box-sizing: border-box;
@@ -715,7 +717,13 @@ export const DashboardSideRail: FC = () => {
   useSideRailPopupHeightVar(popoverRef, openPopoverId !== null);
 
   /* Click outside — закрываем popup'ы если клик вне самого popup'а
-     И вне его trigger-кнопки (иначе trigger-click сразу же реоткроет). */
+     И вне его trigger-кнопки (иначе trigger-click сразу же реоткроет).
+     Также игнорируем DockGrabber (та полоска сверху popup'а): юзер
+     ожидает что click на неё свернёт ВЕСЬ floating dock, а не только
+     popup. DockGrabber вызовет collapse → весь shell схлопнется →
+     mini-rail тоже скроется, popup останется open в Redux но не
+     виден визуально. При следующем expand юзер вернётся в то же
+     состояние popup'а. */
   useEffect(() => {
     if (!openPopoverId) return undefined;
     const handler = (e: MouseEvent) => {
@@ -723,6 +731,13 @@ export const DashboardSideRail: FC = () => {
       if (popoverRef.current?.contains(target)) return;
       const trigger = popoverTriggerRefs.current[openPopoverId];
       if (trigger?.contains(target)) return;
+      // DockGrabber имеет aria-controls="shell-floating-dock"
+      if (
+        target instanceof Element &&
+        target.closest('[aria-controls="shell-floating-dock"]')
+      ) {
+        return;
+      }
       setOpenPopoverId(null);
     };
     document.addEventListener('mousedown', handler);
