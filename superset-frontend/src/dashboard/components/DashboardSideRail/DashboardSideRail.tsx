@@ -216,24 +216,30 @@ const PopoverMenu = styled.div`
   font-family: ${DS2_VARS.fontSans};
 `;
 
-/* Pill-style PopoverItem — соответствует стилистике PageSwitcherBar
-   (страницы дашборда): inline pill с явной 1px рамкой, --s фон, hover
-   меняет background на g100. Если $danger — рамка/текст в --dn. */
+/* Pill-style PopoverItem — 1:1 с DashboardPagesRail PagePill (28px,
+   border-radius 10px, --fs-meta, g600/g200 inactive, cSky/cSky+sky-bg
+   active-on-hover). При hover — светло-голубой dockBtnActiveBg фон +
+   cSky текст + cSky рамка, как активная страница в pages tab bar. */
 const PopoverItem = styled.button<{ $danger?: boolean }>`
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   width: 100%;
-  padding: 6px 14px;
+  height: 28px;
+  padding: 0 12px;
   border: 1px solid
     ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.g200)};
   background: ${DS2_VARS.s};
-  border-radius: 6px;
-  color: ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.ink)};
-  font-size: var(--fs-interactive);
+  border-radius: 10px;
+  color: ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.g600)};
+  font-family: ${DS2_VARS.fontSans};
+  font-size: var(--fs-meta);
   font-weight: 500;
-  text-align: left;
+  text-align: center;
   white-space: nowrap;
   cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   transition:
     background 0.12s ${DS2_VARS.ease},
     border-color 0.12s ${DS2_VARS.ease},
@@ -241,9 +247,9 @@ const PopoverItem = styled.button<{ $danger?: boolean }>`
 
   &:hover:not(:disabled) {
     background: ${({ $danger }) =>
-      $danger ? DS2_VARS.dnBg : DS2_VARS.g100};
-    border-color: ${({ $danger }) =>
-      $danger ? DS2_VARS.dn : DS2_VARS.g300};
+      $danger ? DS2_VARS.dnBg : DS2_VARS.dockBtnActiveBg};
+    border-color: ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.cSky)};
+    color: ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.cSky)};
   }
 
   &:focus-visible {
