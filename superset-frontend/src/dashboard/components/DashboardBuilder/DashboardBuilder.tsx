@@ -387,12 +387,15 @@ const StyledDashboardContent = styled.div<{
           margin: 0 !important;
         }
 
-        /* Dot-menu (⋮) внутри Card top-right, как у KPI карточки.
+        /* Dot-menu (⋮) внутри Card top-right.
+           Применяется ко ВСЕМ ext-* плагинам, КРОМЕ ext-kpi-card —
+           у KPI карточки своя per-instance логика (top:6px right:-6px,
+           dot снаружи Card), которая инжектится через KpiCard.tsx
+           useEffect и имеет приоритет. Для остальных плагинов dot ВНУТРИ
+           card top-right, opacity 0→1 на hover.
            SliceHeader collapsed выше до height:0, но header-controls
-           (контейнер ⋮) поднимаем absolutely в правый верхний угол
-           Card. Hover на chart-slice показывает (opacity 0→1) — не
-           отвлекает от данных, но доступна. */
-        & div[data-test-viz-type^='ext-'].chart-slice
+           (контейнер ⋮) поднимаем absolutely в правый верхний угол. */
+        & div[data-test-viz-type^='ext-']:not([data-test-viz-type='ext-kpi-card']).chart-slice
           > div:first-child
           .header-controls {
           position: absolute !important;
@@ -406,10 +409,10 @@ const StyledDashboardContent = styled.div<{
           opacity: 0;
           transition: opacity 0.15s ease;
         }
-        & div[data-test-viz-type^='ext-'].chart-slice:hover
+        & div[data-test-viz-type^='ext-']:not([data-test-viz-type='ext-kpi-card']).chart-slice:hover
           > div:first-child
           .header-controls,
-        & div[data-test-viz-type^='ext-'].chart-slice
+        & div[data-test-viz-type^='ext-']:not([data-test-viz-type='ext-kpi-card']).chart-slice
           > div:first-child
           .header-controls:focus-within {
           opacity: 1;
