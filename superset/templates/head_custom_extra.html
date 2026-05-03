@@ -254,6 +254,11 @@
     --fs-body:        clamp(14px, 0.85rem + 0.15vi,      17px);
     --fs-subtitle:    clamp(16px, 1rem    + 0.2vi,       20px);
     --fs-title:       clamp(20px, 1.2rem  + 0.4vi,       28px);
+    /* DS v2.0 §02 «Заголовок страницы»: 28px (size) / 34px (line-height) /
+       800. Mobile ≤428: 22-24px. Этот токен предназначен для page title
+       (Dashboard / Explore / список ресурсов) — крупнее --fs-title (28px)
+       чтобы соответствовать верхней границе шкалы из дизайн-документа. */
+    --fs-page-title:  clamp(22px, 1.4rem  + 0.6vi,       34px);
     --fs-hero:        clamp(28px, 1.5rem  + 2.4cqi,      56px);
     --fs-display:     clamp(32px, 1.6rem  + 3.2cqi,      64px);
 

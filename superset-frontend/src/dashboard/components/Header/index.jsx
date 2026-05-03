@@ -109,7 +109,7 @@ const headerContainerStyle = theme => css`
      визуально тяжёлая, длинные названия не помещались. */
   .header-with-actions .title-panel .dynamic-title-input {
     font-family: var(--f, 'Manrope', 'Inter', Helvetica, Arial, sans-serif);
-    font-size: var(--fs-title);
+    font-size: var(--fs-page-title);
     line-height: 1.21;
     font-weight: 800;
     letter-spacing: -0.02em;
@@ -188,7 +188,7 @@ const headerContainerStyle = theme => css`
   .header-with-actions .title-panel .input-sizer,
   .header-with-actions .title-panel .dynamic-title-input {
     font-family: var(--f, ${theme.fontFamily}) !important;
-    font-size: var(--fs-title) !important;
+    font-size: var(--fs-page-title) !important;
     line-height: 1.21 !important;
     font-weight: 800 !important;
     letter-spacing: -0.02em !important;
