@@ -224,48 +224,44 @@ const PopoverMenu = styled.div`
   font-family: ${DS2_VARS.fontSans};
 `;
 
-/* Pill-style PopoverItem — 1:1 с DashboardPagesRail PagePill (28px,
-   border-radius 10px, --fs-meta, g600/g200 inactive, cSky/cSky+sky-bg
-   active-on-hover). При hover — светло-голубой dockBtnActiveBg фон +
-   cSky текст + cSky рамка, как активная страница в pages tab bar. */
+/* PopoverItem — копия PagePill из DashboardPagesRail.tsx (строки
+   137-201), 1:1 по структуре, размерам и поведению. Только
+   $active заменён на $danger (popover items не имеют active-state,
+   но имеют danger-вариант). DOM-структура тоже копирует pages:
+   <PopoverItem><PopoverItemLabel>{text}</PopoverItemLabel></PopoverItem> */
 const PopoverItem = styled.button<{ $danger?: boolean }>`
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  /* 1:1 с DashboardPagesRail PagePill: фиксированная 4-колоночная
-     сетка. flex: 0 0 calc((100% - 18px) / 4) — 4 пилла + 3 × 6px gap
-     = 100% width контейнера. Длинные тексты обрезаются ellipsis'ом. */
+  height: 28px;
   flex: 0 0 calc((100% - 18px) / 4);
   min-width: 0;
-  height: 28px;
   padding: 0 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   border: 1px solid
     ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.g200)};
-  background: ${DS2_VARS.s};
   border-radius: 10px;
+  background: ${DS2_VARS.s};
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.g600)};
   font-family: ${DS2_VARS.fontSans};
   font-size: var(--fs-meta);
   font-weight: 500;
-  text-align: center;
-  white-space: nowrap;
   cursor: pointer;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  white-space: nowrap;
+  overflow: hidden;
   transition:
     background 0.12s ${DS2_VARS.ease},
-    border-color 0.12s ${DS2_VARS.ease},
-    color 0.12s ${DS2_VARS.ease};
+    color 0.12s ${DS2_VARS.ease},
+    border-color 0.12s ${DS2_VARS.ease};
 
   &:hover:not(:disabled) {
     background: ${({ $danger }) =>
-      $danger ? DS2_VARS.dnBg : DS2_VARS.dockBtnActiveBg};
-    border-color: ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.cSky)};
-    color: ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.cSky)};
+      $danger ? DS2_VARS.dnBg : DS2_VARS.dockBtnHoverBg};
+    color: ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.ink)};
+    border-color: ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.g300)};
   }
 
   &:focus-visible {
@@ -278,6 +274,18 @@ const PopoverItem = styled.button<{ $danger?: boolean }>`
     border-color: ${DS2_VARS.g100};
     cursor: not-allowed;
   }
+`;
+
+/* PopoverItemLabel — копия PageName из DashboardPagesRail.tsx (203-210):
+   flex: 1, min-width: 0, overflow ellipsis, центр. Без неё ellipsis
+   на самом <button> (inline-flex) не срабатывает корректно. */
+const PopoverItemLabel = styled.span`
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
 `;
 
 const PopoverDivider = styled.div`
@@ -1050,6 +1058,15 @@ export const DashboardSideRail: FC = () => {
                 onOpenChange={next =>
                   setOpenPopoverId(next ? item.id : null)
                 }
+                /* Сбрасываем дефолтный AntD popup chrome (background,
+                   padding, box-shadow, border) — pill'ы рендерятся прямо
+                   на surface дашборда, как страницы. */
+                overlayInnerStyle={{
+                  background: 'transparent',
+                  padding: 0,
+                  boxShadow: 'none',
+                  border: 'none',
+                }}
                 popupRender={() => (
                   <PopoverMenu role="menu" aria-label={item.label}>
                     {item.items.map(menuItem => {
@@ -1069,7 +1086,7 @@ export const DashboardSideRail: FC = () => {
                             menuItem.onClick?.();
                           }}
                         >
-                          {menuItem.label}
+                          <PopoverItemLabel>{menuItem.label}</PopoverItemLabel>
                         </PopoverItem>
                       );
                     })}
