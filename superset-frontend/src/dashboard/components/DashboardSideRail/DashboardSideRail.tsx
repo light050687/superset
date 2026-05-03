@@ -220,12 +220,13 @@ const PopoverMenu = styled.div<{
   border: none;
   box-shadow: none;
   padding: 0;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  align-content: flex-end;
-  justify-content: flex-start;
+  /* CSS Grid гарантирует одинаковые колонки независимо от padding /
+     border-box арифметики. 4 равные колонки + gap 6px (то же что
+     раньше пытались через flex 0 0 calc((100% - 18px) / 4), но Grid
+     надёжнее — не зависит от cascade'а и AntD button reset'ов). */
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-content: end;
   gap: 6px;
   z-index: 99;
   font-family: ${DS2_VARS.fontSans};
@@ -264,11 +265,11 @@ const PopoverItem = styled.button<{ $danger?: boolean }>`
   justify-content: center;
   gap: 6px;
   height: 28px;
-  /* !important чтобы перебить любые AntD button reset'ы */
-  flex: 0 0 calc((100% - 18px) / 4) !important;
-  width: calc((100% - 18px) / 4) !important;
-  min-width: 0 !important;
-  max-width: calc((100% - 18px) / 4) !important;
+  /* В Grid контексте width управляется grid-template-columns родителя
+     (1fr каждая колонка). min-width: 0 даёт ellipsis. box-sizing
+     border-box чтобы padding не выходил за пределы grid-cell. */
+  width: 100%;
+  min-width: 0;
   padding: 0 12px;
   box-sizing: border-box;
   border: 1px solid
@@ -326,46 +327,10 @@ const PopoverDivider = styled.div`
   margin: 4px 0;
 `;
 
-/* PopoverGrabber — копия DockGrabber из Rail.tsx (181-240): тонкая
-   горизонтальная «рукоятка» 28×4 сверху popup'а, клик сворачивает
-   popup. iOS bottom-sheet pattern. Позиционируется absolutely
-   относительно PopoverMenu, выходит на 8px выше top edge. */
-const PopoverGrabber = styled.button`
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 28px;
-  height: 4px;
-  padding: 0;
-  border: none;
-  border-radius: 2px;
-  background: ${DS2_VARS.g300};
-  opacity: 0.5;
-  cursor: pointer;
-  z-index: 100;
-  transition:
-    opacity 160ms ease,
-    background 160ms ease;
-
-  /* Touch-friendly hit area 44×24, не меняя визуала. */
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -10px -8px;
-  }
-
-  &:hover,
-  &:focus-visible {
-    opacity: 1;
-    background: ${DS2_VARS.g400};
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${DS2_VARS.cSky};
-    outline-offset: 4px;
-  }
-`;
+/* PopoverGrabber удалён — используем существующий DockGrabber из
+   Rail.tsx, который позиционируется на 4 tier'а (4-й = popup открыт,
+   читает var(--side-rail-popup-h) и sideRailPopupOpen из ShellContext).
+   Один грабер на весь shell, единая логика collapse. */
 
 /* ─── Иконки ─────────────────────────────────────────────────────── */
 
@@ -522,6 +487,37 @@ type SideRailItem =
       visible?: boolean;
     };
 
+/* useSideRailPopupHeightVar — пишет реальную высоту открытого popup'а в
+   CSS-переменную --side-rail-popup-h на :root. Используется DockGrabber
+   в Rail.tsx (4-tier: над popup'ом). 1:1 с usePagesRailHeightVar в
+   DashboardPagesRail.tsx. */
+function useSideRailPopupHeightVar(
+  ref: React.RefObject<HTMLElement | null>,
+  open: boolean,
+): void {
+  useEffect(() => {
+    const el = ref.current;
+    if (!open || !el) {
+      document.documentElement.style.removeProperty('--side-rail-popup-h');
+      return undefined;
+    }
+    const update = () => {
+      const h = Math.ceil(el.getBoundingClientRect().height);
+      document.documentElement.style.setProperty(
+        '--side-rail-popup-h',
+        `${h}px`,
+      );
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.removeProperty('--side-rail-popup-h');
+    };
+  }, [ref, open]);
+}
+
 function useOnDashboardRoute(): boolean {
   const loc = useLocation();
   return useMemo(() => {
@@ -587,6 +583,7 @@ export const DashboardSideRail: FC = () => {
     setHasMiniRail,
     pagesRailOpen,
     togglePagesRail,
+    setSideRailPopupOpen,
   } = useShell();
   const onDashboard = useOnDashboardRoute();
   const dockMetrics = useMainDockMetrics();
@@ -705,6 +702,17 @@ export const DashboardSideRail: FC = () => {
   const popoverTriggerRefs = useRef<Record<string, HTMLButtonElement | null>>(
     {},
   );
+
+  /* Sync openPopoverId → ShellContext.sideRailPopupOpen — Rail.tsx
+     читает его, чтобы DockGrabber переехал на 4-й tier (выше popup'а). */
+  useEffect(() => {
+    setSideRailPopupOpen(openPopoverId);
+    return () => setSideRailPopupOpen(null);
+  }, [openPopoverId, setSideRailPopupOpen]);
+
+  /* Пишет реальную высоту открытого popup'а в --side-rail-popup-h, чтобы
+     DockGrabber мог точно над ним отступить (без хардкодных pixel'ов). */
+  useSideRailPopupHeightVar(popoverRef, openPopoverId !== null);
 
   /* Click outside — закрываем popup'ы если клик вне самого popup'а
      И вне его trigger-кнопки (иначе trigger-click сразу же реоткроет). */
@@ -1217,14 +1225,6 @@ export const DashboardSideRail: FC = () => {
               $metrics={dockMetrics}
               $hidden={!isOpen}
             >
-              {/* Сворачивающая «ручка» (как DockGrabber у pages-rail). */}
-              <PopoverGrabber
-                type="button"
-                aria-label={t('Свернуть')}
-                title={t('Свернуть')}
-                tabIndex={isOpen ? 0 : -1}
-                onClick={closePopover}
-              />
               {popItem.items.map(menuItem => {
                 if (menuItem.divider) {
                   return <PopoverDivider key={menuItem.key} />;

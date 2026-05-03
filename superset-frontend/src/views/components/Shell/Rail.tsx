@@ -192,9 +192,15 @@ const DockGrabber = styled.button<{
   $hidden: boolean;
   $hasMiniRail: boolean;
   $pagesRailVisible: boolean;
+  $sideRailPopupOpen: boolean;
 }>`
   position: fixed;
-  /* 3-tier позиция grabber'а — всегда сидит над САМОЙ ВЕРХНЕЙ rail-планкой:
+  /* 4-tier позиция grabber'а — всегда сидит над САМОЙ ВЕРХНЕЙ rail-планкой:
+     • Side-rail popup открыт (Save/Share): grabber над popup'ом. Высота
+       popup'а пишется в --side-rail-popup-h через ResizeObserver
+       (useSideRailPopupHeightVar в DashboardSideRail). Popup bottom =
+       dockBottom + dockHeight + 36 (тот же anchor что и pages-rail).
+       Popup TOP = bottom + var(--side-rail-popup-h). Grabber 4px выше top.
      • Pages-rail видим: grabber над pages-rail. Высота pages-rail
        динамическая (multi-row wrap), пишется в --pages-rail-h через
        ResizeObserver (см. usePagesRailHeightVar в DashboardPagesRail).
@@ -203,12 +209,14 @@ const DockGrabber = styled.button<{
      • Иначе mini-rail есть: grabber над mini-rail (mini top = dockBottom +
        dockHeight + 30, grabber 4px выше = +34).
      • Иначе: grabber над main dock-ом (+2). */
-  bottom: ${({ $hasMiniRail, $pagesRailVisible }) =>
-    $pagesRailVisible
-      ? `calc(${DS2_VARS.dockBottom} + ${DS2_VARS.dockHeight} + 36px + var(--pages-rail-h, 28px) + 4px)`
-      : $hasMiniRail
-        ? `calc(${DS2_VARS.dockBottom} + ${DS2_VARS.dockHeight} + 34px)`
-        : `calc(${DS2_VARS.dockBottom} + ${DS2_VARS.dockHeight} + 2px)`};
+  bottom: ${({ $hasMiniRail, $pagesRailVisible, $sideRailPopupOpen }) =>
+    $sideRailPopupOpen
+      ? `calc(${DS2_VARS.dockBottom} + ${DS2_VARS.dockHeight} + 36px + var(--side-rail-popup-h, 28px) + 4px)`
+      : $pagesRailVisible
+        ? `calc(${DS2_VARS.dockBottom} + ${DS2_VARS.dockHeight} + 36px + var(--pages-rail-h, 28px) + 4px)`
+        : $hasMiniRail
+          ? `calc(${DS2_VARS.dockBottom} + ${DS2_VARS.dockHeight} + 34px)`
+          : `calc(${DS2_VARS.dockBottom} + ${DS2_VARS.dockHeight} + 2px)`};
   transition:
     opacity 160ms ease,
     transform 200ms cubic-bezier(0.32, 0.72, 0, 1),
@@ -540,6 +548,7 @@ export const Rail: FC<React.PropsWithChildren<RailProps>> = ({
     setDockCollapsed,
     hasMiniRail,
     pagesRailOpen,
+    sideRailPopupOpen,
   } = useShell();
   // Pages-rail видим только на dashboard (где есть mini-rail) И когда юзер
   // открыл его кнопкой «Страницы». Используется в DockGrabber для 3-tier
@@ -771,6 +780,7 @@ export const Rail: FC<React.PropsWithChildren<RailProps>> = ({
         $hidden={isCollapsed || dockPinned}
         $hasMiniRail={hasMiniRail}
         $pagesRailVisible={pagesRailVisible}
+        $sideRailPopupOpen={!!sideRailPopupOpen}
         onClick={collapse}
         aria-label={t('Свернуть панель')}
         aria-controls="shell-floating-dock"

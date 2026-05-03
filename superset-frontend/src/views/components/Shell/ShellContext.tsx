@@ -43,6 +43,22 @@ interface ShellContextValue {
    */
   hasMiniRail: boolean;
   setHasMiniRail: (present: boolean) => void;
+  /**
+   * Открыт ли DashboardPagesRail (pill-rail страниц над mini-rail).
+   * Toggle через кнопку «Страницы» в DashboardSideRail mini-rail.
+   * Заменяет старый PagesDrawer.
+   */
+  pagesRailOpen: boolean;
+  togglePagesRail: () => void;
+  setPagesRailOpen: (open: boolean) => void;
+  /**
+   * Открытый popup в DashboardSideRail (Save / Share). null когда
+   * закрыто, иначе строка-id popup'а. Используется DockGrabber'ом
+   * (Rail.tsx) для 4-го tier'а позиционирования: над открытым popup'ом
+   * вместо main dock / mini-rail / pages-rail.
+   */
+  sideRailPopupOpen: string | null;
+  setSideRailPopupOpen: (id: string | null) => void;
 }
 
 const ShellContext = createContext<ShellContextValue | null>(null);
@@ -52,6 +68,10 @@ export const ShellProvider: FC<React.PropsWithChildren<{ children: ReactNode }>>
   const [activeRailId, setActiveRailId] = useState<string | null>(null);
   const [isDockCollapsed, setDockCollapsed] = useState(false);
   const [hasMiniRail, setHasMiniRail] = useState(false);
+  const [pagesRailOpen, setPagesRailOpen] = useState(false);
+  const [sideRailPopupOpen, setSideRailPopupOpen] = useState<string | null>(
+    null,
+  );
 
   const toggleDrawer = useCallback((kind: DrawerKind) => {
     setOpenedDrawer(prev => (prev === kind ? null : kind));
@@ -59,6 +79,10 @@ export const ShellProvider: FC<React.PropsWithChildren<{ children: ReactNode }>>
 
   const closeDrawer = useCallback(() => {
     setOpenedDrawer(null);
+  }, []);
+
+  const togglePagesRail = useCallback(() => {
+    setPagesRailOpen(prev => !prev);
   }, []);
 
   const value = useMemo<ShellContextValue>(
@@ -72,6 +96,11 @@ export const ShellProvider: FC<React.PropsWithChildren<{ children: ReactNode }>>
       setDockCollapsed,
       hasMiniRail,
       setHasMiniRail,
+      pagesRailOpen,
+      togglePagesRail,
+      setPagesRailOpen,
+      sideRailPopupOpen,
+      setSideRailPopupOpen,
     }),
     [
       openedDrawer,
@@ -80,6 +109,9 @@ export const ShellProvider: FC<React.PropsWithChildren<{ children: ReactNode }>>
       activeRailId,
       isDockCollapsed,
       hasMiniRail,
+      pagesRailOpen,
+      togglePagesRail,
+      sideRailPopupOpen,
     ],
   );
 
