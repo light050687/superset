@@ -346,6 +346,59 @@ const StyledDashboardContent = styled.div<{
         background-color: transparent;
       }
 
+      /* DS v2.0 — Полный wrapper-reset для ext-* плагинов (1:1 с
+         KpiCard.tsx injected style, но globally — для всех плагинов
+         сразу, без необходимости каждому инжектить свой <style>):
+         1. SliceHeader (chart-slice > div:first-child) — height 0,
+            кнопка ⋮ всё ещё доступна через position:absolute + overflow:visible
+         2. filter-counts (badge с цифрой 1) скрыт
+         3. chart-container/dashboard-chart/chart-slice — без bg, border, shadow
+         4. ВСЁ должно edge-to-edge заполнять resizable-container */
+      &:has(div[data-test-viz-type^='ext-']) {
+        & .chart-container,
+        & .dashboard-chart,
+        & .chart-slice {
+          background: transparent !important;
+          box-shadow: none !important;
+          border: none !important;
+          overflow: visible !important;
+        }
+
+        & .filter-counts {
+          display: none !important;
+        }
+
+        /* SliceHeader collapse: height: 0 keeps the dot-menu accessible */
+        & div[data-test-viz-type^='ext-'].chart-slice > div:first-child {
+          height: 0 !important;
+          min-height: 0 !important;
+          max-height: 0 !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          border: none !important;
+          overflow: visible !important;
+          pointer-events: none !important;
+        }
+
+        & div[data-test-viz-type^='ext-'].chart-slice {
+          position: relative !important;
+          overflow: visible !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+
+        & div[data-test-viz-type^='ext-'] .slice-container {
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+
+        & div[data-test-viz-type^='ext-'] .superset-legacy-chart,
+        & div[data-test-viz-type^='ext-'] .chart-container > div {
+          width: 100% !important;
+          height: 100% !important;
+        }
+      }
+
       // transitionable traits to show filter relevance
       transition:
         opacity ${theme.motionDurationMid} ease-in-out,
