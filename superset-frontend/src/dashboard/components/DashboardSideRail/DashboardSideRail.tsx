@@ -201,16 +201,25 @@ const RailBtn = styled.button<{
  *  DevToolsPanel, чтобы визуально вписываться в общий нижний UI-уровень. */
 /* PopoverMenu — горизонтальный ряд pill'ов 1:1 с DashboardPagesRail
    (PagesContainer). НИКАКОЙ подложки, рамки и тени — каждая pill сама
-   стоит на любом фоне (у неё свой backdrop-filter blur). */
+   стоит на любом фоне (у неё свой backdrop-filter blur). justify-content:
+   flex-start + фиксированная width (как у pages dock) → pill'ы
+   прижимаются к левой стороне в 4-колоночной сетке, лишние слоты
+   остаются пустыми. */
 const PopoverMenu = styled.div`
   background: transparent;
   border: none;
   box-shadow: none;
   padding: 0;
+  /* Та же ширина что pages dock — даёт ту же 4-колоночную сетку для
+     pill'ов внутри (calc((100% - 18px) / 4) ≈ 145px на колонку). */
+  width: 600px;
+  max-width: calc(100vw - 32px);
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
+  align-content: flex-end;
+  justify-content: flex-start;
   gap: 6px;
   font-family: ${DS2_VARS.fontSans};
 `;
@@ -220,14 +229,20 @@ const PopoverMenu = styled.div`
    active-on-hover). При hover — светло-голубой dockBtnActiveBg фон +
    cSky текст + cSky рамка, как активная страница в pages tab bar. */
 const PopoverItem = styled.button<{ $danger?: boolean }>`
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* width: auto чтобы pill'ы становились в ряд по ширине текста (как
-     страницы), а не растягивались на всю ширину контейнера. */
-  width: auto;
+  gap: 6px;
+  /* 1:1 с DashboardPagesRail PagePill: фиксированная 4-колоночная
+     сетка. flex: 0 0 calc((100% - 18px) / 4) — 4 пилла + 3 × 6px gap
+     = 100% width контейнера. Длинные тексты обрезаются ellipsis'ом. */
+  flex: 0 0 calc((100% - 18px) / 4);
+  min-width: 0;
   height: 28px;
   padding: 0 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   border: 1px solid
     ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.g200)};
   background: ${DS2_VARS.s};
