@@ -201,8 +201,14 @@ const RailBtn = styled.button<{
 /* PopoverMenu — fixed-positioned контейнер ровно по тем же координатам
    что DashboardPagesRail PagesContainer (left/width = dock metrics,
    bottom = dock + height + 36px). Прозрачный фон, pill'ы внутри по
-   4-колоночной сетке. */
-const PopoverMenu = styled.div<{ $metrics: DockMetrics | null }>`
+   4-колоночной сетке. ScaleY animation 1:1 с PagesContainer:
+   transform-origin bottom center, opening = scaleY(0)→(1) снизу вверх,
+   collapsing = (1)→(0) сверху вниз — тот же самый «реверс
+   развёртывания при свёртывании». */
+const PopoverMenu = styled.div<{
+  $metrics: DockMetrics | null;
+  $hidden?: boolean;
+}>`
   position: fixed;
   bottom: calc(${DS2_VARS.dockBottom} + ${DS2_VARS.dockHeight} + 36px);
   ${({ $metrics }) =>
@@ -224,11 +230,25 @@ const PopoverMenu = styled.div<{ $metrics: DockMetrics | null }>`
   z-index: 99;
   font-family: ${DS2_VARS.fontSans};
 
+  --popover-ease: cubic-bezier(0, 0, 0.2, 1);
+  --popover-delay: 0ms;
+  transform-origin: bottom center;
+  transform: ${({ $hidden }) => ($hidden ? 'scaleY(0)' : 'scaleY(1)')};
+  opacity: ${({ $hidden }) => ($hidden ? 0 : 1)};
+  pointer-events: ${({ $hidden }) => ($hidden ? 'none' : 'auto')};
+  transition:
+    transform 240ms var(--popover-ease) var(--popover-delay),
+    opacity 240ms var(--popover-ease) var(--popover-delay);
+
   @media print {
     display: none;
   }
   @media (max-width: 768px) {
     display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: opacity 120ms ease;
   }
 `;
 
@@ -1131,24 +1151,28 @@ export const DashboardSideRail: FC = () => {
         })}
       </Rail>
 
-      {/* Popup для активного 'popover'-item'а. Fixed-positioned 1:1 с
-          DashboardPagesRail PagesContainer (left/width = dock metrics,
-          bottom = dock + height + 36px) — pill'ы располагаются в той
-          же 4-колоночной сетке что страницы. */}
-      {openPopoverId !== null &&
-        (() => {
-          const activeItem = items.find(
-            it => it.kind === 'popover' && it.id === openPopoverId,
-          );
-          if (!activeItem || activeItem.kind !== 'popover') return null;
+      {/* Pre-render всех popover-меню: каждое сидит в своей fixed
+          позиции над dock'ом и переключается через $hidden — даёт
+          плавную scaleY animation как у DashboardPagesRail. ref на
+          активный popup для click-outside detection. */}
+      {items
+        .filter(
+          (it): it is Extract<SideRailItem, { kind: 'popover' }> =>
+            it.kind === 'popover' && it.visible !== false,
+        )
+        .map(popItem => {
+          const isOpen = openPopoverId === popItem.id;
           return (
             <PopoverMenu
-              ref={popoverRef}
+              key={`popup-${popItem.id}`}
+              ref={isOpen ? popoverRef : undefined}
               role="menu"
-              aria-label={activeItem.label}
+              aria-label={popItem.label}
+              aria-hidden={!isOpen}
               $metrics={dockMetrics}
+              $hidden={!isOpen}
             >
-              {activeItem.items.map(menuItem => {
+              {popItem.items.map(menuItem => {
                 if (menuItem.divider) {
                   return <PopoverDivider key={menuItem.key} />;
                 }
@@ -1158,7 +1182,7 @@ export const DashboardSideRail: FC = () => {
                     type="button"
                     role="menuitem"
                     $danger={menuItem.danger}
-                    disabled={menuItem.disabled}
+                    disabled={menuItem.disabled || !isOpen}
                     onClick={() => {
                       if (menuItem.disabled) return;
                       closePopover();
@@ -1171,7 +1195,7 @@ export const DashboardSideRail: FC = () => {
               })}
             </PopoverMenu>
           );
-        })()}
+        })}
 
       {/* Скрытый SaveModal — open триггерится click()'ом по
           ref'у на triggerNode-span'е (bubble в ModalTrigger wrapper). */}
