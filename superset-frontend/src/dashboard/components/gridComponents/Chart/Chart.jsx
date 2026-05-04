@@ -542,6 +542,9 @@ const Chart = props => {
           datasetsStatus={datasetsStatus}
           isInView={props.isInView}
           emitCrossFilters={emitCrossFilters}
+          lazyOffscreen={props.lazyOffscreen}
+          fetchPriority={props.fetchPriority}
+          dashboardEditMode={props.dashboardEditMode}
         />
       </ChartWrapper>
     </SliceContainer>

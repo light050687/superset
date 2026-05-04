@@ -30,7 +30,8 @@ export type DrawerKind =
   | 'filters'
   | 'pages'
   | 'builder'
-  | 'gridSettings';
+  | 'gridSettings'
+  | 'dashboardSettings';
 
 export interface ShellProps {
   /** bootstrap menu_data — источник навигационных пунктов и прав. */

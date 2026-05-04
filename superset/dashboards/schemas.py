@@ -162,6 +162,10 @@ class DashboardJSONMetadataSchema(Schema):
     map_label_colors = fields.Dict()
     color_scheme_domain = fields.List(fields.Str())
     cross_filters_enabled = fields.Boolean(dump_default=True)
+    # Стратегия загрузки чартов — concurrency-limited fetch (priority queue) +
+    # viewport priority + skeleton placeholder. См.
+    # superset-frontend/src/dashboard/utils/fetchStrategy.ts
+    fetch_strategy = fields.Dict(allow_none=True)
     # used for v0 import/export
     import_time = fields.Integer()
     remote_id = fields.Integer()

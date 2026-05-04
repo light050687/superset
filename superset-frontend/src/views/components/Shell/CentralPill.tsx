@@ -175,7 +175,7 @@ const Input = styled.input`
   border: none;
   outline: none;
   font-family: ${DS2_VARS.fontSans};
-  font-size: var(--fs-interactive);
+  font-size: var(--fs-meta);
   color: ${DS2_VARS.ink};
 
   &::placeholder {

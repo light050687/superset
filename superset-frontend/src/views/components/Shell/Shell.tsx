@@ -54,9 +54,10 @@ import type { DrawerKind } from './types';
 import {
   DashboardSideRail,
   FiltersDrawer,
-  PagesDrawer,
   BuilderDrawer,
+  DashboardSettingsDrawer,
 } from 'src/dashboard/components/DashboardSideRail';
+import { DashboardPagesRail } from 'src/dashboard/components/DashboardPagesRail';
 import GridSettingsDrawer from 'src/dashboard/components/GridGuides/GridSettingsDrawer';
 
 /**
@@ -401,12 +402,14 @@ export const Shell: FC<React.PropsWithChildren<ShellProps>> = ({
       tools: <ToolsDrawer />,
       create: <CreateDrawer />,
       /* Dashboard-only drawer'ы. Триггерятся DashboardSideRail (узкая
-         icon-колонка слева, видна только на /dashboard/:id). FilterBar и
-         PagesPanel переиспользуются через тонкие обёртки. */
+         icon-колонка слева, видна только на /dashboard/:id). FilterBar
+         переиспользуется через тонкую обёртку. PagesDrawer полностью
+         удалён — заменён на DashboardPagesRail (toggle через кнопку
+         «Страницы» в mini-rail). */
       filters: <FiltersDrawer />,
-      pages: <PagesDrawer />,
       builder: <BuilderDrawer />,
       gridSettings: <GridSettingsDrawer />,
+      dashboardSettings: <DashboardSettingsDrawer />,
       ...drawerContent,
     }),
     [drawerContent],
@@ -477,6 +480,9 @@ export const Shell: FC<React.PropsWithChildren<ShellProps>> = ({
             проверяет URL и возвращает null на не-dashboard страницах,
             поэтому безопасно рендерить его глобально здесь. */}
         <DashboardSideRail />
+        {/* Pages-rail — pill-кнопки страниц дашборда над mini-rail.
+            Сам проверяет URL и наличие PAGES компонента в layout. */}
+        <DashboardPagesRail />
         <ShellMain>{children}</ShellMain>
         {menu ? (
           <SettingsDropdown

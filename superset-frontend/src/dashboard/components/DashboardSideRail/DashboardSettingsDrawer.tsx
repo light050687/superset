@@ -13,10 +13,13 @@
  * (как Каталог / Фильтры / Конструктор). Открывается из gear-tile в
  * DevToolsPanel через toggleDrawer('dashboardSettings').
  *
- * Текущая секция: «Загрузка чартов» (concurrency limit + lazy + skeleton).
- * Готов к расширению — добавляются как новые <Section> блоки.
+ * Секции:
+ *   1. «Загрузка чартов» (concurrency limit + lazy + skeleton) — fetch_strategy
+ *   2. «Авто-обновление» (interval) — refresh_frequency
  *
- * Сохраняет в json_metadata.fetch_strategy через saveFetchStrategy thunk.
+ * Save объединяет обе группы: одно нажатие «Сохранить» отправляет
+ * параллельно все изменённые группы через Promise.all.
+ *
  * Read-only для viewer'ов без dash_edit_perm.
  */
 import {
@@ -28,7 +31,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Button, Switch, Slider } from 'antd';
+import { Button, Switch, Slider, Select } from 'antd';
 import { styled, t } from '@superset-ui/core';
 import { DS2_VARS } from 'src/theme/ds2';
 import {
@@ -42,7 +45,10 @@ import {
   type FetchStrategyMetadata,
   selectFetchStrategy,
 } from 'src/dashboard/utils/fetchStrategy';
-import { saveFetchStrategy } from 'src/dashboard/actions/fetchStrategy';
+import {
+  saveFetchStrategy,
+  saveRefreshFrequency,
+} from 'src/dashboard/actions/fetchStrategy';
 import type { RootState } from 'src/dashboard/types';
 
 /* ─── Styled ─────────────────────────────────────────────────────── */
@@ -109,6 +115,10 @@ const Helper = styled.div`
   line-height: 1.4;
 `;
 
+const WarningHelper = styled(Helper)`
+  color: ${DS2_VARS.dn};
+`;
+
 const SliderRow = styled.div`
   display: flex;
   align-items: center;
@@ -167,6 +177,8 @@ const ResetLink = styled.button`
 
 /* ─── Component ──────────────────────────────────────────────────── */
 
+const DEFAULT_REFRESH_FREQUENCY = 0;
+
 export const DashboardSettingsDrawer: FC = () => {
   const dispatch = useDispatch();
   const { closeDrawer } = useShell();
@@ -177,23 +189,50 @@ export const DashboardSettingsDrawer: FC = () => {
   const dashboardId = useSelector<RootState, number | undefined>(
     s => s.dashboardInfo?.id,
   );
+  const currentRefreshFreq = useSelector<RootState, number>(
+    s => (s.dashboardState as any)?.refreshFrequency ?? 0,
+  );
+  const refreshLimit = useSelector<RootState, number>(
+    s =>
+      (s.dashboardInfo as any)?.common?.conf
+        ?.SUPERSET_DASHBOARD_PERIODICAL_REFRESH_LIMIT ?? 0,
+  );
+  const refreshWarning = useSelector<RootState, string | null>(
+    s =>
+      (s.dashboardInfo as any)?.common?.conf
+        ?.SUPERSET_DASHBOARD_PERIODICAL_REFRESH_WARNING_MESSAGE ?? null,
+  );
+  const refreshIntervalOptions = useSelector<
+    RootState,
+    [number, string][]
+  >(
+    s =>
+      (s.dashboardInfo as any)?.common?.conf
+        ?.DASHBOARD_AUTO_REFRESH_INTERVALS ?? [],
+  );
 
   const [concurrency, setConcurrency] = useState(currentStrategy.concurrency);
   const [lazy, setLazy] = useState(currentStrategy.lazy_offscreen);
   const [skeleton, setSkeleton] = useState(currentStrategy.show_skeletons);
+  const [refreshFreq, setRefreshFreq] = useState(currentRefreshFreq);
   const [saving, setSaving] = useState(false);
 
-  // Sync local state когда currentStrategy меняется (другая вкладка / БД).
-  // Срабатывает на mount тоже — это норма (drawer mount = открытие).
+  // Sync local fetch_strategy state когда currentStrategy меняется
+  // (другая вкладка / БД). Срабатывает на mount тоже — норма.
   useEffect(() => {
     setConcurrency(currentStrategy.concurrency);
     setLazy(currentStrategy.lazy_offscreen);
     setSkeleton(currentStrategy.show_skeletons);
   }, [currentStrategy]);
 
-  // Footer-slot DOM-узел берём через useState + ref на случай, если
-  // <Drawer> ещё не успел смонтировать DrawerFooter slot к моменту
-  // mount'а нашего компонента (race condition при быстром toggleDrawer).
+  // Sync refreshFreq отдельно — другой селектор.
+  useEffect(() => {
+    setRefreshFreq(currentRefreshFreq);
+  }, [currentRefreshFreq]);
+
+  // Footer-slot DOM-узел берём через useState на случай, если <Drawer>
+  // ещё не успел смонтировать DrawerFooter slot к моменту mount'а нашего
+  // компонента (race condition при быстром toggleDrawer).
   // requestAnimationFrame гарантирует что slot уже в DOM.
   const [footerSlot, setFooterSlot] = useState<HTMLElement | null>(null);
   useEffect(() => {
@@ -203,7 +242,7 @@ export const DashboardSettingsDrawer: FC = () => {
     return () => cancelAnimationFrame(id);
   }, []);
 
-  const dirty = useMemo(
+  const fetchStrategyDirty = useMemo(
     () =>
       concurrency !== currentStrategy.concurrency ||
       lazy !== currentStrategy.lazy_offscreen ||
@@ -211,17 +250,35 @@ export const DashboardSettingsDrawer: FC = () => {
     [concurrency, lazy, skeleton, currentStrategy],
   );
 
+  const refreshFreqDirty = refreshFreq !== currentRefreshFreq;
+
+  const dirty = fetchStrategyDirty || refreshFreqDirty;
+
+  const showRefreshWarning =
+    refreshLimit > 0 &&
+    refreshFreq > 0 &&
+    refreshFreq < refreshLimit &&
+    !!refreshWarning;
+
   const handleSave = useCallback(async () => {
     if (!canEdit || !dirty || saving || dashboardId === undefined) return;
     setSaving(true);
     try {
-      const payload: FetchStrategyMetadata = {
-        concurrency,
-        lazy_offscreen: lazy,
-        show_skeletons: skeleton,
-      };
-      // @ts-ignore — thunk типизация
-      await dispatch(saveFetchStrategy(payload));
+      const promises: Promise<unknown>[] = [];
+      if (fetchStrategyDirty) {
+        const payload: FetchStrategyMetadata = {
+          concurrency,
+          lazy_offscreen: lazy,
+          show_skeletons: skeleton,
+        };
+        // @ts-ignore — thunk типизация
+        promises.push(dispatch(saveFetchStrategy(payload)));
+      }
+      if (refreshFreqDirty) {
+        // @ts-ignore — thunk типизация
+        promises.push(dispatch(saveRefreshFrequency(refreshFreq)));
+      }
+      await Promise.all(promises);
       closeDrawer();
     } finally {
       setSaving(false);
@@ -231,9 +288,12 @@ export const DashboardSettingsDrawer: FC = () => {
     dirty,
     saving,
     dashboardId,
+    fetchStrategyDirty,
+    refreshFreqDirty,
     concurrency,
     lazy,
     skeleton,
+    refreshFreq,
     dispatch,
     closeDrawer,
   ]);
@@ -242,6 +302,7 @@ export const DashboardSettingsDrawer: FC = () => {
     setConcurrency(DEFAULT_FETCH_STRATEGY.concurrency);
     setLazy(DEFAULT_FETCH_STRATEGY.lazy_offscreen);
     setSkeleton(DEFAULT_FETCH_STRATEGY.show_skeletons);
+    setRefreshFreq(DEFAULT_REFRESH_FREQUENCY);
   }, []);
 
   return (
@@ -323,7 +384,40 @@ export const DashboardSettingsDrawer: FC = () => {
           </Field>
         </Section>
 
-        {/* Будущие секции добавлять как новые <Section>...</Section> */}
+        <Section>
+          <SectionTitle>{t('Авто-обновление')}</SectionTitle>
+          <SectionDesc>
+            {t(
+              'Автоматически перезапрашивать данные с заданным интервалом. Снижение интервала повышает нагрузку на StarRocks.',
+            )}
+          </SectionDesc>
+
+          <Field>
+            <FieldHeader>
+              <Label htmlFor="rf-interval">{t('Интервал обновления')}</Label>
+            </FieldHeader>
+            <Select
+              id="rf-interval"
+              value={refreshFreq}
+              onChange={(v: number) => setRefreshFreq(v)}
+              disabled={!canEdit || refreshIntervalOptions.length === 0}
+              options={refreshIntervalOptions.map(([value, label]) => ({
+                value,
+                label: t(label),
+              }))}
+              style={{ width: '100%' }}
+              aria-describedby="rf-interval-help"
+            />
+            {showRefreshWarning && (
+              <WarningHelper>{t(refreshWarning as string)}</WarningHelper>
+            )}
+            <Helper id="rf-interval-help">
+              {t(
+                '«Не обновлять» — авто-обновление выключено. По умолчанию.',
+              )}
+            </Helper>
+          </Field>
+        </Section>
 
         {!canEdit && (
           <ReadOnlyNote>

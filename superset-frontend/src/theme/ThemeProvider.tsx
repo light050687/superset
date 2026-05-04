@@ -24,6 +24,7 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { flushSync } from 'react-dom';
 import {
   type AnyThemeConfig,
   type ThemeContextType,
@@ -48,69 +49,32 @@ function resolveMode(mode: ThemeMode): 'dark' | 'light' {
 }
 
 /**
- * Iris-reveal анимация (Telegram/iOS-style).
+ * Theme switch через CSS View Transitions API + soft-edge mask + glow.
  *
- * Overlay цвета СТАРОЙ темы с animated radial-gradient mask раскрывается
- * из точки клика — «дырка» в overlay растёт, через неё видна уже-новая
- * тема. Opacity 0.7 — обе темы просвечивают друг через друга (crossfade).
- */
-const THEME_TRANSITION_STYLE_ID = 'ds2-theme-transition-style';
-const THEME_TRANSITION_CSS = `
-@property --iris-radius {
-  syntax: '<length>';
-  inherits: false;
-  initial-value: 0px;
-}
-
-@keyframes ds2-iris-expand {
-  from { --iris-radius: 0px; }
-  to   { --iris-radius: var(--iris-max, 1500px); }
-}
-
-.ds2-theme-overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 2147483647;
-  opacity: 0.7;
-  mask-image: radial-gradient(
-    circle at var(--iris-x, 50%) var(--iris-y, 50%),
-    transparent 0,
-    transparent calc(var(--iris-radius) - 120px),
-    black var(--iris-radius)
-  );
-  -webkit-mask-image: radial-gradient(
-    circle at var(--iris-x, 50%) var(--iris-y, 50%),
-    transparent 0,
-    transparent calc(var(--iris-radius) - 120px),
-    black var(--iris-radius)
-  );
-  animation: ds2-iris-expand 780ms cubic-bezier(0.32, 0.72, 0.35, 1) forwards;
-  will-change: --iris-radius;
-}
-`;
-
-function ensureThemeTransitionStyle(): void {
-  if (typeof document === 'undefined') return;
-  if (document.getElementById(THEME_TRANSITION_STYLE_ID)) return;
-  const style = document.createElement('style');
-  style.id = THEME_TRANSITION_STYLE_ID;
-  style.textContent = THEME_TRANSITION_CSS;
-  document.head.appendChild(style);
-}
-
-/**
- * Iris-reveal анимация (Telegram-style).
+ * Браузер делает screenshot DOM в OLD-состоянии, применяет swap
+ * (data-theme=NEW), делает screenshot NEW-состояния и анимирует переход
+ * через pseudo-elements ::view-transition-old(root) / -new(root).
+ * NEW-слой раскрывается через mask-image: radial-gradient (мягкий
+ * радиальный градиент, не clip-path) — это даёт soft edge вместо
+ * жёсткого контура.
  *
- * 1) Запоминает координаты последнего pointerdown (привязка к клику).
- * 2) Тема меняется мгновенно.
- * 3) Overlay цвета СТАРОЙ темы накрывает весь viewport (clip-path: full).
- * 4) Overlay сжимается clip-path'ом в точку клика — старая тема уходит
- *    в точку, новая распускается наружу.
- * 5) Полупрозрачность overlay (0.75) даёт настоящий crossfade двух тем.
+ * Параллельно `spawnThemeGlow()` добавляет JS-overlay с radial-gradient
+ * + filter: blur, который остаётся видимым ~200ms после VT-анимации
+ * и плавно затухает за 200ms. Эффект — мягкое свечение из точки клика,
+ * усиливающее ощущение «новой» темы.
+ *
+ * Реализация CSS правил живёт в head_custom_extra.html:
+ *   @property --ds-tt-r { syntax: '<percentage>'; ... }
+ *   ::view-transition-new(root) { mask-image: radial-gradient(...); animation: ds-theme-mask-reveal ... }
+ *   @keyframes ds-theme-mask-reveal { from { --ds-tt-r: 0% } to { --ds-tt-r: 180% } }
+ *
+ * Поддержка: VT API — Chrome 111+, Safari 18+, Firefox 129+;
+ * @property — Chrome 85+, Safari 16.4+, Firefox 128+. Fallback
+ * (instant swap без анимации и без glow) для старых браузеров и
+ * prefers-reduced-motion.
  */
 
-// Координаты последнего pointerdown — для привязки iris-reveal к точке клика.
+// Координаты последнего pointerdown — для центра clip-path круга.
 let lastPointerPoint: { x: number; y: number } | null = null;
 function initPointerCapture(): void {
   if (typeof document === 'undefined') return;
@@ -127,45 +91,163 @@ function initPointerCapture(): void {
   );
 }
 
-function runThemeOverlayAnimation(
-  from: 'dark' | 'light',
-  applyTheme: () => void,
+interface ViewTransition {
+  finished: Promise<void>;
+  ready: Promise<void>;
+  updateCallbackDone: Promise<void>;
+  skipTransition(): void;
+}
+
+interface DocumentWithVT extends Document {
+  startViewTransition?(callback: () => void | Promise<void>): ViewTransition;
+}
+
+/**
+ * Soft glow overlay из точки клика. Параллельно VT-анимации появляется
+ * полупрозрачный radial-gradient + blur, который остаётся видимым 200ms
+ * после завершения VT (1000ms = 800 VT + 200 holding) и за следующие 200ms
+ * плавно затухает. Tone подобран под --bg новой темы:
+ *   • dark → rgba(0,0,0,0.45) — углубляет ощущение темноты
+ *   • light → rgba(255,255,255,0.55) — мягкое свечение
+ *
+ * Уважает prefers-reduced-motion: при reduce — выходит без overlay.
+ */
+function spawnThemeGlow(
+  x: number,
+  y: number,
+  resolvedTo: 'dark' | 'light',
 ): void {
-  ensureThemeTransitionStyle();
-
-  // Точка из которой распускается новая тема (последний pointerdown).
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const point = lastPointerPoint ?? { x: vw / 2, y: vh };
-  // Max radius до самого дальнего угла + 120px feather.
-  const maxRadius =
-    Math.hypot(
-      Math.max(point.x, vw - point.x),
-      Math.max(point.y, vh - point.y),
-    ) + 120;
-
-  // Overlay цвета СТАРОЙ темы + mask с iris-дыркой (растёт из точки клика).
-  const overlay = document.createElement('div');
-  overlay.className = 'ds2-theme-overlay';
-  // DS v2.0: читаем --bg из CSS-переменных (SSOT). Hex fallback — safety net,
-  // если var ещё не доступна (FOUC до применения темы).
-  const cs = getComputedStyle(document.documentElement);
-  const bgVar = cs.getPropertyValue('--bg').trim();
-  overlay.style.background =
-    bgVar || (from === 'dark' ? '#0f1114' : '#f3f3f3');
-  overlay.style.setProperty('--iris-x', `${point.x}px`);
-  overlay.style.setProperty('--iris-y', `${point.y}px`);
-  overlay.style.setProperty('--iris-max', `${maxRadius}px`);
-  document.body.appendChild(overlay);
-
-  // Даём браузеру ~1 кадр отрисовать overlay и начать iris-анимацию
-  // ПЕРЕД heavy AntD re-render'ом.
+  if (typeof document === 'undefined') return;
+  if (
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  ) {
+    return;
+  }
+  const glow = document.createElement('div');
+  const tone =
+    resolvedTo === 'dark'
+      ? 'rgba(0, 0, 0, 0.45)'
+      : 'rgba(255, 255, 255, 0.55)';
+  glow.style.cssText = `
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2147483646;
+    background: radial-gradient(
+      circle 800px at ${x}px ${y}px,
+      ${tone} 0%,
+      transparent 65%
+    );
+    filter: blur(32px);
+    opacity: 0;
+    transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: opacity;
+  `;
+  document.body.appendChild(glow);
+  requestAnimationFrame(() => {
+    glow.style.opacity = '1';
+  });
+  // 800ms VT + 200ms holding → fade-out 200ms → remove.
   window.setTimeout(() => {
-    applyTheme();
-  }, 16);
+    glow.style.opacity = '0';
+    window.setTimeout(() => glow.remove(), 220);
+  }, 1000);
+}
 
-  // 780мс animation + буфер.
-  window.setTimeout(() => overlay.remove(), 820);
+/**
+ * Theme swap через View Transitions API — профессиональный паттерн
+ * (по Akash Hamirwasia / Chrome team / Web Animations API).
+ *
+ * Шаги:
+ *   1) `startViewTransition(callback)` снимает OLD-snapshot мгновенно.
+ *   2) Внутри callback `flushSync` форсит React commit DOM до snapshot NEW.
+ *      Без этого AntD ConfigProvider, theme-зависимые компоненты, KPI
+ *      карточки попадут в snapshot частично-обновлёнными.
+ *   3) `vt.ready` Promise — резолвится когда pseudo-elements ::view-transition-*
+ *      созданы и прикреплены. ТОЛЬКО после этого запускаем анимацию.
+ *   4) `Element.animate({clipPath: [...]}, {pseudoElement: '::view-transition-new(root)'})`
+ *      — Web Animations API. Точный maxRadius через Math.hypot (всегда
+ *      покрывает экран до furthest corner). Soft edge ощущение даёт
+ *      параллельный glow-overlay через `spawnThemeGlow`.
+ *
+ * Известное ограничение: ECharts canvas рендерится через `chart.setOption()`
+ * в useEffect — он выполняется СИНХРОННО внутри flushSync если useEffect
+ * успел зарегистрироваться, иначе с задержкой 1 RAF. flushSync помогает
+ * максимально, но 100% синхронизации canvas pixels не гарантирует —
+ * canvas это monolithic raster, и `view-transition-name` на нём
+ * неэффективен (известное ограничение VT API).
+ *
+ * Fallback (instant swap) — для браузеров без VT API или WAAPI .animate с
+ * pseudoElement (Chrome 116+).
+ */
+function runThemeViewTransition(
+  resolvedTo: 'dark' | 'light',
+  applyTheme: () => void,
+): boolean {
+  if (typeof document === 'undefined') {
+    applyTheme();
+    return false;
+  }
+  const doc = document as DocumentWithVT;
+  if (typeof doc.startViewTransition !== 'function') {
+    applyTheme();
+    return false;
+  }
+
+  // Точка клика — центр clip-path circle и glow overlay.
+  const point =
+    lastPointerPoint ?? {
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+    };
+  document.documentElement.style.setProperty('--ds-tt-x', `${point.x}px`);
+  document.documentElement.style.setProperty('--ds-tt-y', `${point.y}px`);
+
+  // Точный максимальный радиус — расстояние до furthest viewport corner.
+  // Гарантирует что круг доходит до всех краёв независимо от позиции клика.
+  const maxRadius = Math.hypot(
+    Math.max(point.x, window.innerWidth - point.x),
+    Math.max(point.y, window.innerHeight - point.y),
+  );
+
+  const vt = doc.startViewTransition(() => {
+    // flushSync — React commit DOM СИНХРОННО внутри callback'а (важно для
+    // AntD ConfigProvider, theme-context consumers, KPI styled-компонентов).
+    // CSS-переменные через data-theme flip'аются мгновенно (sync update DOM).
+    flushSync(() => {
+      document.documentElement.setAttribute('data-theme', resolvedTo);
+      applyTheme();
+    });
+  });
+
+  // После .ready — pseudo-elements готовы. Запускаем programmatic
+  // animation через WAAPI (более точный контроль чем CSS keyframes).
+  vt.ready
+    .then(() => {
+      document.documentElement.animate(
+        {
+          clipPath: [
+            `circle(0px at ${point.x}px ${point.y}px)`,
+            `circle(${maxRadius}px at ${point.x}px ${point.y}px)`,
+          ],
+        },
+        {
+          duration: 800,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          pseudoElement: '::view-transition-new(root)',
+          fill: 'forwards',
+        },
+      );
+    })
+    .catch(() => {
+      /* VT skipped — не критично, тема уже применена через flushSync. */
+    });
+
+  // Soft glow overlay параллельно VT — даёт мягкий ореол вокруг clip-path
+  // round (clipPath имеет hard edge сам по себе; glow добавляет soft fade).
+  spawnThemeGlow(point.x, point.y, resolvedTo);
+  return true;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -196,9 +278,9 @@ export function SupersetThemeProvider({
     return unsubscribe;
   }, [themeController]);
 
-  // Инжектим CSS iris-анимации + pointer listener при mount.
+  // Pointer listener при mount — для запоминания координат клика
+  // (используется как центр clip-path-круга в VT API анимации).
   useEffect(() => {
-    ensureThemeTransitionStyle();
     initPointerCapture();
   }, []);
 
@@ -232,24 +314,15 @@ export function SupersetThemeProvider({
   );
 
   /**
-   * Смена темы с plavной анимацией через View Transitions API (Chrome 111+,
-   * Safari 18+, Firefox 129+).
+   * Смена темы через CSS View Transitions API. Браузер делает screenshot
+   * OLD состояния, применяет swap, делает screenshot NEW состояния и
+   * анимирует переход через clip-path circle, растущий из точки клика.
+   * Обе темы видны одновременно как два слоя.
    *
-   * Темная ← светлая: wipe слева-направо.
-   * Светлая ← темная: wipe справа-налево.
-   *
-   * Fallback на браузерах без VT API: мгновенное переключение без анимации.
-   * Также честим `prefers-reduced-motion`.
-   */
-  /**
-   * Смена темы с плавной overlay-анимацией (градиент-волна через экран).
-   * Light → Dark: волна слева направо (sky → violet → #0f1114).
-   * Dark → Light: волна справа налево (sky → fuchsia → #ffffff).
-   *
-   * Раньше использовался View Transitions API, но Chrome 147+ автоматически
-   * блокирует VT API когда OS-настройка `prefers-reduced-motion: reduce`
-   * включена (выдаёт «Transition was aborted because of invalid state»),
-   * а переопределить это из CSS нельзя. Manual overlay работает везде.
+   * Fallback (instant swap без анимации) для:
+   *   - браузеров без VT API
+   *   - prefers-reduced-motion: reduce
+   *   - same-mode toggle (никакой анимации не нужно)
    */
   const setThemeMode = useCallback(
     (newMode: ThemeMode) => {
@@ -263,12 +336,8 @@ export function SupersetThemeProvider({
         themeController.setThemeMode(newMode);
         return;
       }
-      // Инициализируем CSS/pointer capture на всякий случай.
-      ensureThemeTransitionStyle();
       initPointerCapture();
-      runThemeOverlayAnimation(from, () => {
-        // Без flushSync — React сам batch'нет updates, не блокирует
-        // main thread синхронно на 1000+мс.
+      runThemeViewTransition(to, () => {
         themeController.setThemeMode(newMode);
       });
     },

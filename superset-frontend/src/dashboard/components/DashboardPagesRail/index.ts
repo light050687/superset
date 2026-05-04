@@ -9,8 +9,5 @@
  *
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
-export { DashboardSideRail } from './DashboardSideRail';
-export { FiltersDrawer } from './FiltersDrawer';
-export { PagesDrawer } from './PagesDrawer';
-export { BuilderDrawer } from './BuilderDrawer';
-export { DashboardSettingsDrawer } from './DashboardSettingsDrawer';
+export { DashboardPagesRail } from './DashboardPagesRail';
+export { default } from './DashboardPagesRail';

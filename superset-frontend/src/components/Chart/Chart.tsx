@@ -40,6 +40,7 @@ import { isCurrentUserBot } from 'src/utils/isBot';
 import { ChartSource } from 'src/types/ChartSource';
 import { ResourceStatus } from 'src/hooks/apiResources/apiResources';
 import { Dispatch } from 'redux';
+import { enqueueChartFetch } from 'src/dashboard/utils/chartFetchQueue';
 import ChartRenderer from './ChartRenderer';
 import { ChartErrorMessage } from './ChartErrorMessage';
 import { getChartRequiredFieldsMissingMessage } from '../../utils/getChartRequiredFieldsMissingMessage';
@@ -80,6 +81,12 @@ export interface ChartProps {
   datasetsStatus?: 'loading' | 'error' | 'complete';
   isInView?: boolean;
   emitCrossFilters?: boolean;
+  /** Fetch strategy: lazy_offscreen — пропускать runQuery если !isInView. */
+  lazyOffscreen?: boolean;
+  /** Priority в chartFetchQueue (visible: -y_pos, off-screen: 1000+y_pos). */
+  fetchPriority?: number;
+  /** Edit mode bypass — все чарты fire сразу для drag/drop. */
+  dashboardEditMode?: boolean;
 }
 
 export type Actions = {
@@ -124,6 +131,11 @@ const defaultProps: Partial<ChartProps> = {
   chartStackTrace: undefined,
   force: false,
   isInView: true,
+  // Defaults для fetch strategy. В Explore mode (1 chart) очередь не
+  // блокирует (concurrency=8 + 1 chart → fire immediately).
+  lazyOffscreen: false,
+  fetchPriority: 0,
+  dashboardEditMode: false,
 };
 
 const Styles = styled.div<{ height: number; width?: number }>`
@@ -191,15 +203,48 @@ class Chart extends PureComponent<ChartProps, {}> {
     }
   }
 
+  /**
+   * Решает, должен ли chart выполнять fetch:
+   *   • Edit mode → always fire (drag/drop требует немедленной отрисовки)
+   *   • Bot (Selenium) → always fire (screenshot endpoint)
+   *   • Lazy off-screen → skip пока не появится в viewport
+   *   • Иначе → fire через очередь
+   */
+  shouldFetch(): boolean {
+    if (this.props.dashboardEditMode) return true;
+    if (isCurrentUserBot()) return true;
+    if (!this.props.lazyOffscreen) return true;
+    return this.props.isInView !== false;
+  }
+
   runQuery() {
-    // Create chart with POST request
-    this.props.actions.postChartFormData(
-      this.props.formData,
-      Boolean(this.props.force || getUrlParam(URL_PARAMS.force)), // allow override via url params force=true
-      this.props.timeout,
-      this.props.chartId,
-      this.props.dashboardId,
-      this.props.ownState,
+    if (!this.shouldFetch()) {
+      // Off-screen + lazy=ON → не fires. Когда юзер скроллит, isInView
+      // → true, componentDidUpdate триггерит runQuery снова.
+      return;
+    }
+    const dispatchFetch = () =>
+      Promise.resolve(
+        this.props.actions.postChartFormData(
+          this.props.formData,
+          Boolean(this.props.force || getUrlParam(URL_PARAMS.force)),
+          this.props.timeout,
+          this.props.chartId,
+          this.props.dashboardId,
+          this.props.ownState,
+        ),
+      );
+    // Edit mode и боты идут мимо очереди — concurrency=Infinity всё равно,
+    // но прямой dispatch даёт чище поведение (нет slot-ожидания).
+    if (this.props.dashboardEditMode || isCurrentUserBot()) {
+      dispatchFetch();
+      return;
+    }
+    // Concurrency-limited fetch с priority: backend получает max N
+    // одновременных POST'ов (default 8) с visible сверху первыми. Reject
+    // не ломает очередь — Redux уже знает про abort через CHART_UPDATE_*.
+    enqueueChartFetch(dispatchFetch, this.props.fetchPriority ?? 0).catch(
+      () => {},
     );
   }
 

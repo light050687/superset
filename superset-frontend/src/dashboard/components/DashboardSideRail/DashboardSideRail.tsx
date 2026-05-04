@@ -717,12 +717,11 @@ export const DashboardSideRail: FC = () => {
 
   /* Click outside — закрываем popup'ы если клик вне самого popup'а
      И вне его trigger-кнопки (иначе trigger-click сразу же реоткроет).
-     Также игнорируем DockGrabber (та полоска сверху popup'а): юзер
-     ожидает что click на неё свернёт ВЕСЬ floating dock, а не только
-     popup. DockGrabber вызовет collapse → весь shell схлопнется →
-     mini-rail тоже скроется, popup останется open в Redux но не
-     виден визуально. При следующем expand юзер вернётся в то же
-     состояние popup'а. */
+     Также игнорируем DockGrabber (полоска сверху popup'а): её click
+     схлопнёт ВЕСЬ floating dock через ShellContext, popup при этом
+     визуально скрывается через `$hidden || isDockCollapsed` в PopoverMenu
+     (см. рендер ниже), но openPopoverId остаётся в state — при
+     следующем expand юзер вернётся в то же состояние popup'а. */
   useEffect(() => {
     if (!openPopoverId) return undefined;
     const handler = (e: MouseEvent) => {
@@ -1231,12 +1230,12 @@ export const DashboardSideRail: FC = () => {
           return (
             <PopoverMenu
               key={`popup-${popItem.id}`}
-              ref={isOpen ? popoverRef : undefined}
+              ref={isOpen && !isDockCollapsed ? popoverRef : undefined}
               role="menu"
               aria-label={popItem.label}
-              aria-hidden={!isOpen}
+              aria-hidden={!isOpen || isDockCollapsed}
               $metrics={dockMetrics}
-              $hidden={!isOpen}
+              $hidden={!isOpen || isDockCollapsed}
             >
               {popItem.items.map(menuItem => {
                 if (menuItem.divider) {
@@ -1249,7 +1248,7 @@ export const DashboardSideRail: FC = () => {
                     role="menuitem"
                     title={menuItem.label}
                     $danger={menuItem.danger}
-                    disabled={menuItem.disabled || !isOpen}
+                    disabled={menuItem.disabled || !isOpen || isDockCollapsed}
                     onClick={() => {
                       if (menuItem.disabled) return;
                       closePopover();

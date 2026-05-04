@@ -62,6 +62,7 @@ export enum FeatureFlag {
   SlackEnableAvatars = 'SLACK_ENABLE_AVATARS',
   EnableDashboardScreenshotEndpoints = 'ENABLE_DASHBOARD_SCREENSHOT_ENDPOINTS',
   EnableDashboardDownloadWebDriverScreenshot = 'ENABLE_DASHBOARD_DOWNLOAD_WEBDRIVER_SCREENSHOT',
+  EnableDashboardFetchStrategy = 'ENABLE_DASHBOARD_FETCH_STRATEGY',
   TableV2TimeComparisonEnabled = 'TABLE_V2_TIME_COMPARISON_ENABLED',
   AgGridTableEnabled = 'AG_GRID_TABLE_ENABLED',
 }

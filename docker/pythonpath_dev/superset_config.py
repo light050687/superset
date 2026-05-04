@@ -108,6 +108,11 @@ FEATURE_FLAGS = {
     # дашборда (в рамках одной страницы дубль по-прежнему запрещён).
     # Frontend SliceAdder скоупит «Добавлено»-проверку по активной странице.
     "ALLOW_DUPLICATE_CHARTS_PER_PAGE": True,
+    # Concurrency-limited chart fetch (native priority queue, max 8) +
+    # viewport priority + lazy off-screen skip + DS 2.0 skeleton overlay.
+    # Настройки в DevToolsPanel → Настройки дашборда. Per-dashboard
+    # config в json_metadata.fetch_strategy.
+    "ENABLE_DASHBOARD_FETCH_STRATEGY": True,
 }
 ALERT_REPORTS_NOTIFICATION_DRY_RUN = True
 WEBDRIVER_BASEURL = f"http://superset_app{os.environ.get('SUPERSET_APP_ROOT', '/')}/"  # When using docker compose baseurl should be http://superset_nginx{ENV{BASEPATH}}/  # noqa: E501
