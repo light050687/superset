@@ -675,7 +675,6 @@ export const DashboardSideRail: FC = () => {
   const dashboardTitle = layout?.[DASHBOARD_HEADER_ID]?.meta?.text;
   const userCanEdit = !!dashboardInfo?.dash_edit_perm;
   const userCanSave = !!dashboardInfo?.dash_save_perm;
-  const userCanShare = !!dashboardInfo?.dash_share_perm;
 
   const dashboardComponentId = useMemo(
     () => [...(directPathToChild || [])].pop(),

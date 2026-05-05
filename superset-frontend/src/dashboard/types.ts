@@ -98,6 +98,12 @@ export type DashboardState = {
   editMode: boolean;
   isPublished: boolean;
   directPathToChild: string[];
+  /* Постоянный путь к активной странице (Pages навигация). Хранится
+     отдельно от directPathToChild чтобы filter blur не стирал его —
+     см. memory project_pages_activePagePath. Опциональное: для
+     дашбордов без Pages поля нет, инициализируется в DashboardBuilder
+     при первом рендере, если topLevelPages присутствует. */
+  activePagePath?: string[];
   activeTabs: ActiveTabs;
   fullSizeChartId: number | null;
   isRefreshing: boolean;
