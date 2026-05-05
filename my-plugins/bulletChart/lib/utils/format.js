@@ -13,6 +13,9 @@ exports.formatRussianPlain = formatRussianPlain;
 exports.formatStoresCount = formatStoresCount;
 exports.formatDeltaPP = formatDeltaPP;
 exports.makeFormatters = makeFormatters;
+exports.fmtRub = fmtRub;
+exports.fmtPct = fmtPct;
+exports.fmtCnt = fmtCnt;
 const RU = 'ru-RU';
 function ruNumber(value, fractionDigits) {
     return new Intl.NumberFormat(RU, {
@@ -25,6 +28,11 @@ function formatRussianSmart(value, decimals = -1, suffix = '') {
     const abs = Math.abs(value);
     const sign = value < 0 ? '\u2212' : '';
     const sfx = suffix ? ` ${suffix}` : '';
+    if (abs >= 1000000000000) {
+        const v = abs / 1000000000000;
+        const d = decimals >= 0 ? decimals : abs >= 10000000000000 ? 1 : 2;
+        return `${sign}${ruNumber(v, d)} трлн${sfx}`;
+    }
     if (abs >= 1000000000) {
         const v = abs / 1000000000;
         const d = decimals >= 0 ? decimals : abs >= 10000000000 ? 1 : 2;
@@ -87,5 +95,45 @@ function makeFormatters(cfg) {
     const deltaPP = (n) => formatDeltaPP(n, decimals, unitLabel);
     const integer = (n) => ruNumber(Math.trunc(n), 0);
     return { value, deltaPP, integer };
+}
+/**
+ * Канонический fmtRub (DS 2.0): авто-переключение единицы для рублёвых сумм.
+ * Базовая единица входа — рубли. До запятой ≤3 цифр.
+ *
+ *  - <10k       → "1 234 ₽"
+ *  - <1M        → "1 234 тыс ₽"
+ *  - <1B        → "1,23 млн ₽"
+ *  - <1T        → "1,23 млрд ₽"
+ *  - иначе      → "1,23 трлн ₽"
+ */
+function fmtRub(v, decimals = 2) {
+    if (v == null || !Number.isFinite(v))
+        return '—';
+    const abs = Math.abs(v);
+    if (abs >= 1000000000000) {
+        return `${ruNumber(v / 1000000000000, decimals)} трлн ₽`;
+    }
+    if (abs >= 1000000000) {
+        return `${ruNumber(v / 1000000000, decimals)} млрд ₽`;
+    }
+    if (abs >= 1000000) {
+        return `${ruNumber(v / 1000000, decimals)} млн ₽`;
+    }
+    if (abs >= 10000) {
+        return `${ruNumber(v / 1000, 0)} тыс ₽`;
+    }
+    return `${ruNumber(v, 0)} ₽`;
+}
+/** Процент в форме «12,4%». */
+function fmtPct(v, decimals = 1) {
+    if (v == null || !Number.isFinite(v))
+        return '—';
+    return `${ruNumber(v, decimals)}%`;
+}
+/** Целое количество шт: «1 234 шт». */
+function fmtCnt(v) {
+    if (v == null || !Number.isFinite(v))
+        return '—';
+    return `${ruNumber(Math.round(v), 0)} шт`;
 }
 //# sourceMappingURL=format.js.map

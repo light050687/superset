@@ -23,6 +23,10 @@ const SwatchRow = styled.span `
   align-items: center;
   gap: 8px;
 `;
+const AccentLabel = styled.span `
+  font-family: var(--m);
+  font-size: var(--fs-micro);
+`;
 const Swatch = styled.span `
   display: inline-block;
   width: 10px;
@@ -34,7 +38,7 @@ const Swatch = styled.span `
 `;
 const HelpText = styled.div `
   font-family: 'Manrope', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: ${({ tone, theme }) => {
     const dark = isDarkTheme(theme?.colorBgContainer);
     const tokens = dark ? DARK_TOKENS : LIGHT_TOKENS;
@@ -79,7 +83,7 @@ function CategoryColorMapControl(props) {
     }, [rows, onChange]);
     const accentOptions = useMemo(() => ACCENT_PALETTE.map((a) => ({
         value: a,
-        label: (_jsxs(SwatchRow, { children: [_jsx(Swatch, { color: tokens[a] }), _jsx("span", { style: { fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }, children: a })] })),
+        label: (_jsxs(SwatchRow, { children: [_jsx(Swatch, { color: tokens[a] }), _jsx(AccentLabel, { children: a })] })),
     })), [tokens]);
     const hasDuplicates = duplicateNames.size > 0;
     return (_jsxs(Wrap, { children: [rows.length === 0 && (_jsx(HelpText, { tone: "muted", children: "\u041D\u0435\u0442 \u043F\u0435\u0440\u0435\u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0439 \u2014 \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0438 \u043F\u043E\u043B\u0443\u0447\u0430\u0442 \u0446\u0432\u0435\u0442\u0430 \u0438\u0437 \u0430\u0432\u0442\u043E\u043F\u0430\u043B\u0438\u0442\u0440\u044B \u043F\u043E \u043F\u043E\u0440\u044F\u0434\u043A\u0443." })), rows.map((row, idx) => {

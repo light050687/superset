@@ -4,8 +4,15 @@
  * которые устанавливаются в CardRoot через data-theme.
  */
 import { styled, css } from '@superset-ui/core';
+import { keyframes } from '@emotion/react';
 import { DARK_TOKENS, LIGHT_TOKENS, FONTS } from './themeTokens';
 const EASE = 'cubic-bezier(.2, .8, .25, 1)';
+// DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
+// race-condition-free относительно <style dangerouslySetInnerHTML> (см. donut).
+const cardInKf = keyframes `
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 /** Глобальные keyframes инжектируются через <style>-тег в компоненте. */
 export const KEYFRAMES_CSS = `
   @keyframes sr-tt-fade { from { opacity: 0; transform: translateY(-2px) } to { opacity: 1; transform: translateY(0) } }
@@ -59,6 +66,7 @@ export const CardRoot = styled.div `
     ${themeVars(LIGHT_TOKENS)}
   }
 
+  position: relative;
   font-family: var(--f);
   color: var(--ink);
   background: var(--s);
@@ -68,15 +76,68 @@ export const CardRoot = styled.div `
   box-shadow: var(--sh);
   width: 100%;
   height: 100%;
+  /* DS v2.0: container query для fluid типографики */
+  container-type: inline-size;
+  container-name: risk;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
   font-feature-settings: 'tnum' 1;
   -webkit-font-smoothing: antialiased;
   font-variant-numeric: tabular-nums;
+  /* DS 2.0 mount animation. Эмоция keyframes() — race-condition-free. При
+     переходе loading → loaded React unmount'ит loading-CardRoot и mount'ит
+     новый → animation запускается ровно когда юзер видит контент. */
+  animation: ${cardInKf} 0.6s ${EASE} both;
 
   * {
     box-sizing: border-box;
+  }
+`;
+/* DS 2.0 §06 — Partial badge: данные неполные. */
+export const PartialBadge = styled.span `
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--wn-b);
+  color: var(--wn);
+  font-family: var(--m);
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-left: 8px;
+  vertical-align: middle;
+  user-select: none;
+`;
+/* DS 2.0 §06 — Stale bar: тонкая sky-полоса сверху Card. */
+export const StaleBar = styled.div `
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--c-sky) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: rm-stale-slide 1.6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+
+  @keyframes rm-stale-slide {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
   }
 `;
 export const CardHead = styled.div `
@@ -94,18 +155,21 @@ export const TitleBlock = styled.div `
   min-width: 0;
 `;
 export const CardTitle = styled.div `
-  font-size: 13px;
+  /* DS v2.0 fluid: --fs-micro UPPER моно для card title */
+  font-family: var(--m);
+  font-size: var(--fs-micro);
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink);
 `;
 export const CardSubtitle = styled.div `
-  font-size: 10px;
+  /* DS v2.0 fluid: --fs-micro моно для подзаголовка */
+  font-size: var(--fs-micro);
   font-weight: 500;
   color: var(--g500);
   font-family: var(--m);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -134,7 +198,7 @@ export const Toolbar = styled.div `
   display: inline-flex;
   background: var(--g100);
   border: 1px solid var(--g200);
-  border-radius: 7px;
+  border-radius: 6px;
   padding: 3px;
   gap: 1px;
   height: 30px;
@@ -147,7 +211,7 @@ export const TbBtn = styled.button `
   justify-content: center;
   background: transparent;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   color: var(--g500);
   cursor: pointer;
   transition: 0.12s;
@@ -192,7 +256,7 @@ export const SelectDd = styled.div `
   right: -2px;
   background: var(--s);
   border: 1px solid var(--g300);
-  border-radius: 9px;
+  border-radius: 6px;
   padding: 4px;
   min-width: 240px;
   box-shadow: var(--dd-shadow);
@@ -214,7 +278,7 @@ export const SelectDdItem = styled.button `
   border-radius: 6px;
   cursor: pointer;
   font-family: var(--f);
-  font-size: 11px;
+  font-size: var(--fs-meta);
   font-weight: 600;
   color: var(--ink);
   letter-spacing: -0.005em;
@@ -299,12 +363,12 @@ export const SearchInput = styled.input `
   width: 100%;
   background: var(--g100);
   border: 1px solid var(--g200);
-  border-radius: 7px;
+  border-radius: 6px;
   padding: 7px 10px 7px 28px;
   height: 30px;
   color: var(--ink);
   font-family: var(--f);
-  font-size: 11px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   outline: none;
   transition: border-color 0.15s var(--ease);
@@ -327,13 +391,14 @@ export const SearchSelectBtn = styled.button `
   background: var(--c-sky);
   border: 1px solid var(--c-sky);
   color: var(--on-accent);
-  border-radius: 7px;
+  border-radius: 6px;
   padding: 0 10px;
   height: 30px;
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-nano);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
   transition: 0.15s;
   white-space: nowrap;
@@ -407,7 +472,7 @@ export const SelectionOverlay = styled.div `
     position: absolute;
     border: 1.5px dashed var(--c-sky);
     background: var(--selection-tint);
-    border-radius: 2px;
+    border-radius: 6px;
   }
 
   .selection-lasso {
@@ -426,7 +491,7 @@ export const QuadAnnot = styled.div `
   background: var(--annot-bg);
   backdrop-filter: blur(4px);
   border: 1px solid var(--g300);
-  border-radius: 7px;
+  border-radius: 6px;
   padding: 7px 10px 8px;
   min-width: 90px;
   text-align: ${(p) => (p.side === 'right' ? 'right' : 'left')};
@@ -435,8 +500,9 @@ export const QuadAnnot = styled.div `
     border-color: var(--g200);
   }
 
+  /* DS v2.0 P0: 8.5px → --fs-nano (10) UPPER. Минимум 10 для UPPER quadrant labels */
   .qa-label {
-    font-size: 8.5px;
+    font-size: var(--fs-nano);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -444,25 +510,30 @@ export const QuadAnnot = styled.div `
   }
   .qa-count {
     font-family: var(--f);
-    font-size: 13px;
+    font-size: var(--fs-interactive);
     font-weight: 800;
     color: var(--ink);
     letter-spacing: -0.01em;
     line-height: 1.1;
+    font-variant-numeric: tabular-nums;
 
     .u {
-      font-size: 8.5px;
-      font-weight: 600;
+      font-size: var(--fs-nano);
+      font-weight: 700;
       color: var(--g500);
       margin-left: 3px;
       font-family: var(--m);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
   }
   .qa-loss {
-    font-size: 8.5px;
-    font-weight: 600;
+    font-size: var(--fs-nano);
+    font-weight: 700;
     color: var(--g500);
     margin-top: 2px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 `;
 export const Legend = styled.div `
@@ -483,7 +554,7 @@ export const LegendItem = styled.button `
   background: none;
   border: none;
   padding: 2px 4px;
-  border-radius: 4px;
+  border-radius: 6px;
 
   &.off {
     opacity: 0.35;
@@ -500,10 +571,10 @@ export const LegendItem = styled.button `
   }
   .lg-l {
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-meta);
     font-weight: 600;
     color: var(--g600);
-    letter-spacing: 0.03em;
+    letter-spacing: 0.01em;
   }
   &:hover .lg-l {
     color: var(--ink);
@@ -518,10 +589,10 @@ export const Footer = styled.div `
   padding-top: 12px;
   border-top: 1px solid var(--g200);
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--g500);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
   flex-shrink: 0;
   flex-wrap: wrap;
 
@@ -531,28 +602,53 @@ export const Footer = styled.div `
     gap: 14px;
     flex-wrap: wrap;
   }
+  /* DS 2.0 canonical: .hi/.hi-sep/.hi-arrow вместо .hint-item — единая семантика. */
+  .hi,
   .hint-item {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
   }
+  /* DS 2.0: иконки 16px (раньше 11px — мелковато). */
+  .hi svg,
   .hint-item svg {
-    width: 11px;
-    height: 11px;
+    width: 16px;
+    height: 16px;
     color: var(--g500);
+    flex-shrink: 0;
+  }
+  .hi .hi-arrow {
+    /* Типографический «◂» внутри hint-текста. */
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--g700);
+    margin-right: 2px;
+    vertical-align: -1px;
+  }
+  .hi-sep {
+    /* Вертикальный разделитель между подсказками. */
+    display: inline-block;
+    width: 1px;
+    height: 14px;
+    background: var(--g300);
+    margin: 0 4px;
+    vertical-align: middle;
   }
   kbd {
     display: inline-block;
     background: var(--g100);
     border: 1px solid var(--g300);
-    border-radius: 3px;
+    border-radius: 6px;
     padding: 1px 5px;
     font-family: var(--m);
-    font-size: 9px;
+    font-size: var(--fs-nano);
     font-weight: 700;
     color: var(--g700);
     line-height: 1;
     vertical-align: baseline;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 `;
 export const Tooltip = styled.div `
@@ -563,7 +659,7 @@ export const Tooltip = styled.div `
   padding: 12px 14px 10px;
   box-shadow: var(--tooltip-shadow);
   font-family: var(--f);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: var(--ink);
   pointer-events: none;
   z-index: 2000;
@@ -586,7 +682,7 @@ export const Tooltip = styled.div `
   }
   .tt-status {
     width: 8px;
-    border-radius: 3px;
+    border-radius: 6px;
     flex-shrink: 0;
     align-self: stretch;
   }
@@ -595,7 +691,7 @@ export const Tooltip = styled.div `
     min-width: 0;
   }
   .tt-name {
-    font-size: 13px;
+    font-size: var(--fs-interactive);
     font-weight: 700;
     color: var(--ink);
     line-height: 1.25;
@@ -603,11 +699,11 @@ export const Tooltip = styled.div `
     letter-spacing: -0.005em;
   }
   .tt-sub {
-    font-size: 9px;
+    font-size: var(--fs-micro);
     font-weight: 500;
     color: var(--g500);
     font-family: var(--m);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
   }
   .tt-rows {
     display: flex;
@@ -622,17 +718,18 @@ export const Tooltip = styled.div `
     font-family: var(--m);
   }
   .tt-l {
-    font-size: 9.5px;
-    font-weight: 500;
+    font-size: var(--fs-micro);
+    font-weight: 600;
     color: var(--g500);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
   .tt-v {
-    font-size: 11px;
+    font-size: var(--fs-meta);
     font-weight: 700;
     color: var(--ink);
     letter-spacing: -0.005em;
+    font-variant-numeric: tabular-nums;
 
     &.up {
       color: var(--up);
@@ -650,7 +747,7 @@ export const Tooltip = styled.div `
     background: var(--g50);
     border: 1px solid var(--g200);
     border-radius: 6px;
-    font-size: 10px;
+    font-size: var(--fs-meta);
     font-weight: 600;
     letter-spacing: -0.005em;
   }
@@ -659,10 +756,10 @@ export const Tooltip = styled.div `
     padding-top: 9px;
     border-top: 1px solid var(--g200);
     font-family: var(--m);
-    font-size: 9px;
+    font-size: var(--fs-micro);
     font-weight: 500;
     color: var(--g500);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -672,13 +769,15 @@ export const Tooltip = styled.div `
     display: inline-block;
     background: var(--g200);
     border: 1px solid var(--g300);
-    border-radius: 3px;
+    border-radius: 6px;
     padding: 1px 4px;
     font-family: var(--m);
-    font-size: 8px;
+    font-size: var(--fs-nano);
     font-weight: 700;
     color: var(--g700);
     line-height: 1;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 `;
 /* ============================================================
@@ -720,7 +819,7 @@ export const Modal = styled.div `
   }
   .m-status {
     width: 8px;
-    border-radius: 3px;
+    border-radius: 6px;
     flex-shrink: 0;
     align-self: stretch;
     min-height: 40px;
@@ -730,7 +829,8 @@ export const Modal = styled.div `
     min-width: 0;
   }
   .m-title {
-    font-size: 18px;
+    /* DS v2.0 fluid: --fs-subtitle (16-20) для модального заголовка */
+    font-size: var(--fs-subtitle);
     font-weight: 800;
     color: var(--ink);
     letter-spacing: -0.01em;
@@ -738,16 +838,16 @@ export const Modal = styled.div `
     margin-bottom: 2px;
   }
   .m-sub {
-    font-size: 10px;
+    font-size: var(--fs-meta);
     font-weight: 500;
     color: var(--g500);
     font-family: var(--m);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
   }
   .m-close {
     background: transparent;
     border: 1px solid var(--g300);
-    border-radius: 7px;
+    border-radius: 6px;
     width: 30px;
     height: 30px;
     display: flex;
@@ -785,7 +885,7 @@ export const Modal = styled.div `
     padding: 12px 14px;
   }
   .m-stat-l {
-    font-size: 9px;
+    font-size: var(--fs-micro);
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -794,21 +894,23 @@ export const Modal = styled.div `
     margin-bottom: 6px;
   }
   .m-stat-v {
-    font-size: 18px;
+    /* DS v2.0 fluid: --fs-subtitle (16-20) для KPI value в модалке */
+    font-size: var(--fs-subtitle);
     font-weight: 800;
     color: var(--ink);
     letter-spacing: -0.02em;
     line-height: 1.1;
+    font-variant-numeric: tabular-nums;
 
     .u {
       font-weight: 600;
       color: var(--g500);
-      font-size: 11px;
+      font-size: var(--fs-micro);
       margin-left: 2px;
     }
   }
   .m-stat-d {
-    font-size: 9.5px;
+    font-size: var(--fs-micro);
     font-weight: 600;
     font-family: var(--m);
     margin-top: 4px;
@@ -830,7 +932,7 @@ export const Modal = styled.div `
     margin-bottom: 0;
   }
   .m-section-l {
-    font-size: 9px;
+    font-size: var(--fs-micro);
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -874,10 +976,10 @@ export const BulletRow = styled.div `
 
   .m-br-label {
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-micro);
     font-weight: 700;
     color: var(--g500);
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
   .m-br-chart {
@@ -889,10 +991,11 @@ export const BulletRow = styled.div `
     top: 0;
     bottom: 0;
     left: 0;
-    border-radius: 3px;
+    border-radius: 6px;
   }
   .m-br-band-1 {
     background: var(--g100);
+    width: 100%;
   }
   .m-br-band-2 {
     background: var(--g200);
@@ -906,7 +1009,7 @@ export const BulletRow = styled.div `
     transform: translateY(-50%);
     left: 0;
     height: 6px;
-    border-radius: 2px;
+    border-radius: 6px;
     z-index: 2;
   }
   .m-br-target {
@@ -916,7 +1019,7 @@ export const BulletRow = styled.div `
     width: 2.5px;
     background: var(--ink);
     z-index: 3;
-    border-radius: 1.5px;
+    border-radius: 6px;
 
     &::before,
     &::after {
@@ -927,7 +1030,7 @@ export const BulletRow = styled.div `
       width: 8px;
       height: 2px;
       background: var(--ink);
-      border-radius: 1px;
+      border-radius: 6px;
     }
     &::before {
       top: -2px;
@@ -938,17 +1041,20 @@ export const BulletRow = styled.div `
   }
   .m-br-val {
     font-family: var(--m);
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 700;
     text-align: right;
     letter-spacing: -0.005em;
+    font-variant-numeric: tabular-nums;
 
     .plan-note {
       display: block;
-      font-size: 8.5px;
-      font-weight: 500;
+      font-size: var(--fs-nano);
+      font-weight: 700;
       color: var(--g500);
       margin-top: 1px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
   }
 `;
@@ -958,7 +1064,7 @@ export const StoreRow = styled.div `
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  border-radius: 7px;
+  border-radius: 6px;
   background: var(--g50);
   border: 1px solid var(--g200);
   cursor: pointer;
@@ -970,13 +1076,13 @@ export const StoreRow = styled.div `
 
   .rank {
     font-family: var(--m);
-    font-size: 9px;
+    font-size: var(--fs-micro);
     font-weight: 700;
     color: var(--g500);
     text-align: center;
   }
   .name {
-    font-size: 11.5px;
+    font-size: var(--fs-meta);
     font-weight: 600;
     color: var(--ink);
     overflow: hidden;
@@ -986,17 +1092,18 @@ export const StoreRow = styled.div `
     .city {
       color: var(--g500);
       font-weight: 500;
-      font-size: 9.5px;
+      font-size: var(--fs-micro);
       font-family: var(--m);
       margin-left: 6px;
     }
   }
   .cell-v {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 700;
     letter-spacing: -0.005em;
     text-align: right;
+    font-variant-numeric: tabular-nums;
 
     &.up {
       color: var(--up);
@@ -1011,7 +1118,7 @@ export const StoreRow = styled.div `
   .mini-bullet {
     height: 7px;
     background: var(--g200);
-    border-radius: 2px;
+    border-radius: 6px;
     position: relative;
   }
   .mini-bar {
@@ -1020,7 +1127,13 @@ export const StoreRow = styled.div `
     top: 50%;
     transform: translateY(-50%);
     height: 5px;
-    border-radius: 1px;
+    border-radius: 6px;
+  }
+  .mini-bar.mini-bar--x {
+    background: var(--c-tangerine);
+  }
+  .mini-bar.mini-bar--y {
+    background: var(--c-sky);
   }
   .mini-target {
     position: absolute;
@@ -1028,7 +1141,7 @@ export const StoreRow = styled.div `
     bottom: -2px;
     width: 2px;
     background: var(--ink);
-    border-radius: 1px;
+    border-radius: 6px;
   }
 `;
 export const Skeleton = styled.div `
@@ -1041,6 +1154,6 @@ export const EmptyBlock = styled.div `
   text-align: center;
   color: var(--g500);
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-meta);
 `;
 //# sourceMappingURL=styles.js.map

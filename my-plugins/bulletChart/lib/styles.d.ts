@@ -6,14 +6,24 @@
  * Keyframes подаются отдельной <style> тэгом в BulletChart.tsx.
  */
 export declare const ROOT_CLASS = "bullet-chart-root";
-export declare const KEYFRAMES_CSS = "\n@keyframes bc-row-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}\n@keyframes bc-bar-grow{from{width:0}to{width:var(--bc-bar-w)}}\n@keyframes bc-dd-fade{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:translateY(0)}}\n@keyframes bc-tt-fade{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:translateY(0)}}\n@keyframes bc-m-fade{from{opacity:0}to{opacity:1}}\n@keyframes bc-m-pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}\n@keyframes bc-skeleton-pulse{0%{opacity:.12}50%{opacity:.22}100%{opacity:.12}}\n";
+export declare const KEYFRAMES_CSS = "\n@keyframes bc-row-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}\n@keyframes bc-bar-grow{from{width:0}to{width:var(--bc-bar-w)}}\n@keyframes bc-dd-fade{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:translateY(0)}}\n@keyframes bc-tt-fade{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:translateY(0)}}\n@keyframes bc-m-fade{from{opacity:0}to{opacity:1}}\n@keyframes bc-m-pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}\n@keyframes bc-skeleton-pulse{0%{opacity:.12}50%{opacity:.22}100%{opacity:.12}}\n@keyframes bc-stale-slide{0%{background-position:200% 0}100%{background-position:-200% 0}}\n";
 export declare const Root: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
 } & {
     isDarkMode: boolean;
+    widthPx: number;
+    heightPx: number;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
 export declare const Card: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const PartialBadge: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, {}>;
+export declare const StaleBar: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
@@ -106,6 +116,7 @@ export declare const BBand: import("@emotion/styled").StyledComponent<{
     as?: React.ElementType;
 } & {
     bg: "good" | "warn" | "bad";
+    widthPct: number;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
 export declare const BBar: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
@@ -294,5 +305,31 @@ export declare const StateOverlay: import("@emotion/styled").StyledComponent<{
 export declare const Skeleton: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
+} & {
+    widthPct?: number;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const ErrorCaption: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, {}>;
+export declare const HintCaption: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, {}>;
+export declare const FootDot: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, {}>;
+export declare const DetailErrorBlock: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const TtHeadBody: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const TtDot: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, {}>;
 //# sourceMappingURL=styles.d.ts.map

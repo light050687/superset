@@ -76,6 +76,7 @@ export interface ParetoCardFormData extends QueryFormData {
     metricRevenue?: QueryFormMetric;
     metricPrev?: QueryFormMetric;
     headerText?: string;
+    subtitleText?: string;
     metricLabel?: string;
     metricUnit?: string;
     metricGenitive?: string;
@@ -104,6 +105,7 @@ export interface ParetoCardProps {
     height: number;
     items: ParetoItem[];
     headerText: string;
+    subtitleText: string;
     metricLabel: string;
     metricUnit: string;
     metricGenitive: string;

@@ -35,4 +35,19 @@ export declare function makeFormatters(cfg: FormatterConfig): {
     deltaPP: (n: number) => string;
     integer: (n: number) => string;
 };
+/**
+ * Канонический fmtRub (DS 2.0): авто-переключение единицы для рублёвых сумм.
+ * Базовая единица входа — рубли. До запятой ≤3 цифр.
+ *
+ *  - <10k       → "1 234 ₽"
+ *  - <1M        → "1 234 тыс ₽"
+ *  - <1B        → "1,23 млн ₽"
+ *  - <1T        → "1,23 млрд ₽"
+ *  - иначе      → "1,23 трлн ₽"
+ */
+export declare function fmtRub(v: number | null | undefined, decimals?: number): string;
+/** Процент в форме «12,4%». */
+export declare function fmtPct(v: number | null | undefined, decimals?: number): string;
+/** Целое количество шт: «1 234 шт». */
+export declare function fmtCnt(v: number | null | undefined): string;
 //# sourceMappingURL=format.d.ts.map

@@ -1,5 +1,5 @@
 export declare const CARD_CLASS = "wo-ts-card";
-export declare const KEYFRAMES_CSS = "\n@keyframes wo-card-in {\n  from { opacity: 0; transform: translateY(4px); }\n  to { opacity: 1; transform: translateY(0); }\n}\n@keyframes wo-skeleton-pulse {\n  0% { opacity: .12 }\n  50% { opacity: .22 }\n  100% { opacity: .12 }\n}\n@keyframes wo-dd-fade {\n  from { opacity: 0; transform: translateY(-4px); }\n  to { opacity: 1; transform: translateY(0); }\n}\n@keyframes wo-stale-shimmer {\n  from { background-position: 200% 0; }\n  to { background-position: -200% 0; }\n}\n@media (prefers-reduced-motion: reduce) {\n  *, *::before, *::after {\n    animation-duration: 0.001ms !important;\n    animation-iteration-count: 1 !important;\n    transition-duration: 0.001ms !important;\n  }\n}\n";
+export declare const KEYFRAMES_CSS = "\n@keyframes wo-card-in {\n  from { opacity: 0; transform: translateY(4px); }\n  to { opacity: 1; transform: translateY(0); }\n}\n@keyframes wo-skeleton-pulse {\n  0% { opacity: .12 }\n  50% { opacity: .22 }\n  100% { opacity: .12 }\n}\n@keyframes wo-dd-fade {\n  from { opacity: 0; transform: translateY(-4px); }\n  to { opacity: 1; transform: translateY(0); }\n}\n@keyframes wo-stale-shimmer {\n  from { background-position: 200% 0; }\n  to { background-position: -200% 0; }\n}\n@media (prefers-reduced-motion: never-match) {\n  *, *::before, *::after {\n    animation-duration: 0.001ms !important;\n    animation-iteration-count: 1 !important;\n    transition-duration: 0.001ms !important;\n  }\n}\n";
 export declare const Root: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
@@ -54,6 +54,12 @@ export declare const UnitButton: import("@emotion/styled").StyledComponent<{
 export declare const DropdownRoot: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const DropdownPanel: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+} & {
+    open?: boolean;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
 export declare const DropdownMenu: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;

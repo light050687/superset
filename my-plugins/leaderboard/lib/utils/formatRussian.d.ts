@@ -10,9 +10,19 @@ export declare const nf2: (v: number) => string;
 export declare const fmtPct: (v: number) => string;
 /** "+1,23 п.п." или "−0,45 %" — дельта со знаком. */
 export declare const fmtDelta: (v: number, unit?: string) => string;
-/** "1 234 ₽" — целое с символом рубля после. */
-export declare const fmtRub: (v: number) => string;
-/** "12 млн ₽" — млн с короткой подписью. */
+/**
+ * Канонический fmtRub (DS 2.0): авто-переключение единицы для рублёвых сумм.
+ * Базовая единица входа — рубли. До запятой ≤3 цифр.
+ *
+ *  - <10k       → "1 234 ₽"
+ *  - <1M        → "1 234 тыс ₽"
+ *  - <1B        → "1,23 млн ₽"
+ *  - <1T        → "1,23 млрд ₽"
+ *  - иначе      → "1,23 трлн ₽"
+ */
+export declare const fmtRub: (v: number, decimals?: number) => string;
+/** "12 млн ₽" — статичная форма с предзаданной единицей "млн". Используется
+ *  там, где значение УЖЕ в млн ₽ (не нужен auto-unit). */
 export declare const fmtMln: (v: number) => string;
 /** "DD.MM.YYYY" — российская дата. */
 export declare const fmtDate: (d: Date) => string;

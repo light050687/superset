@@ -7,13 +7,20 @@
  * Keyframes подаются отдельной <style> тэгом в BulletChart.tsx.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TtFoot = exports.TtStatusText = exports.TtV = exports.TtL = exports.TtRow = exports.TtRows = exports.TtSub = exports.TtName = exports.TtStatus = exports.TtHead = exports.Tooltip = exports.Kbd = exports.LegendBand = exports.LegendTarget = exports.LegendBar = exports.LegendItem = exports.FootLegend = exports.FootHint = exports.CardFooter = exports.BSpark = exports.BMetaV = exports.BMetaL = exports.BMetaCell = exports.BMetaRow = exports.BTarget = exports.BBar = exports.BBand = exports.BChart = exports.BArrow = exports.BVal = exports.BMain = exports.BMeta = exports.BName = exports.BNameWrap = exports.BTop = exports.BRow = exports.BulletList = exports.FilterPill = exports.IconDdBtn = exports.IconDd = exports.IconDdWrap = exports.Controls = exports.CardSub = exports.CardTitle = exports.TitleBlock = exports.CardHead = exports.Card = exports.Root = exports.KEYFRAMES_CSS = exports.ROOT_CLASS = void 0;
-exports.Skeleton = exports.StateOverlay = exports.StoreRow = exports.StoreList = exports.ModalSectionL = exports.ModalSection = exports.ModalStatD = exports.ModalStatV = exports.ModalStatL = exports.ModalStat = exports.ModalSummary = exports.ModalCloseBtn = exports.ModalSub = exports.ModalTitle = exports.ModalTitles = exports.ModalHead = exports.ModalBox = exports.ModalBg = void 0;
+exports.TtV = exports.TtL = exports.TtRow = exports.TtRows = exports.TtSub = exports.TtName = exports.TtStatus = exports.TtHead = exports.Tooltip = exports.Kbd = exports.LegendBand = exports.LegendTarget = exports.LegendBar = exports.LegendItem = exports.FootLegend = exports.FootHint = exports.CardFooter = exports.BSpark = exports.BMetaV = exports.BMetaL = exports.BMetaCell = exports.BMetaRow = exports.BTarget = exports.BBar = exports.BBand = exports.BChart = exports.BArrow = exports.BVal = exports.BMain = exports.BMeta = exports.BName = exports.BNameWrap = exports.BTop = exports.BRow = exports.BulletList = exports.FilterPill = exports.IconDdBtn = exports.IconDd = exports.IconDdWrap = exports.Controls = exports.CardSub = exports.CardTitle = exports.TitleBlock = exports.CardHead = exports.StaleBar = exports.PartialBadge = exports.Card = exports.Root = exports.KEYFRAMES_CSS = exports.ROOT_CLASS = void 0;
+exports.TtDot = exports.TtHeadBody = exports.DetailErrorBlock = exports.FootDot = exports.HintCaption = exports.ErrorCaption = exports.Skeleton = exports.StateOverlay = exports.StoreRow = exports.StoreList = exports.ModalSectionL = exports.ModalSection = exports.ModalStatD = exports.ModalStatV = exports.ModalStatL = exports.ModalStat = exports.ModalSummary = exports.ModalCloseBtn = exports.ModalSub = exports.ModalTitle = exports.ModalTitles = exports.ModalHead = exports.ModalBox = exports.ModalBg = exports.TtFoot = exports.TtStatusText = void 0;
 const core_1 = require("@superset-ui/core");
+const react_1 = require("@emotion/react");
 const themeTokens_1 = require("./themeTokens");
 /** Стандартный easing (совпадает с --ease из прототипа) */
 const EASE = 'cubic-bezier(0.2, 0.8, 0.25, 1)';
 exports.ROOT_CLASS = 'bullet-chart-root';
+// DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
+// race-condition-free относительно <style dangerouslySetInnerHTML> (см. donut).
+const cardInKf = (0, react_1.keyframes) `
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 /* ──────────────────────────────────────────────────────────
    Keyframes (инжектятся в <style dangerouslySetInnerHTML>)
    ────────────────────────────────────────────────────────── */
@@ -25,6 +32,7 @@ exports.KEYFRAMES_CSS = `
 @keyframes bc-m-fade{from{opacity:0}to{opacity:1}}
 @keyframes bc-m-pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes bc-skeleton-pulse{0%{opacity:.12}50%{opacity:.22}100%{opacity:.12}}
+@keyframes bc-stale-slide{0%{background-position:200% 0}100%{background-position:-200% 0}}
 `;
 /* ──────────────────────────────────────────────────────────
    Root (фиксирует width/height от Superset, задаёт тему)
@@ -44,6 +52,11 @@ exports.Root = core_1.styled.div `
       --sh:${isDarkMode ? '0 1px 2px rgba(0,0,0,.4)' : '0 1px 2px rgba(15,17,20,.08)'};
     `;
 }}
+  width: ${({ widthPx }) => widthPx}px;
+  height: ${({ heightPx }) => heightPx}px;
+  /* DS v2.0: container query для fluid типографики (cqi растёт с шириной карточки) */
+  container-type: inline-size;
+  container-name: bullet;
   font-family: var(--f);
   color: var(--ink);
   font-feature-settings: 'tnum' 1;
@@ -58,9 +71,10 @@ exports.Root = core_1.styled.div `
    Card — основная карточка
    ────────────────────────────────────────────────────────── */
 exports.Card = core_1.styled.div `
+  position: relative;
   background: var(--s);
   border: 1px solid var(--g200);
-  border-radius: 14px;
+  border-radius: 10px;
   padding: 18px 22px 16px;
   box-shadow: var(--sh);
   width: 100%;
@@ -68,6 +82,48 @@ exports.Card = core_1.styled.div `
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* DS 2.0 mount animation. Эмоция keyframes() — race-condition-free.
+     При переходе loading → loaded React unmount'ит loading-Card и mount'ит
+     новый → animation запускается ровно когда юзер видит контент. */
+  animation: ${cardInKf} 0.6s ${EASE} both;
+`;
+/* DS 2.0 §06 «Состояния» — Partial badge: данные неполные. */
+exports.PartialBadge = core_1.styled.span `
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--wn-b);
+  color: var(--wn);
+  font-family: var(--m);
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-left: 8px;
+  vertical-align: middle;
+  user-select: none;
+`;
+/* DS 2.0 §06 «Состояния» — Stale bar: тонкая sky-полоса сверху Card,
+   данные из кеша. Slide animation как progress indicator. */
+exports.StaleBar = core_1.styled.div `
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--c-sky) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: bc-stale-slide 1.6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
 `;
 /* ── Header ── */
 exports.CardHead = core_1.styled.div `
@@ -84,18 +140,21 @@ exports.TitleBlock = core_1.styled.div `
   min-width: 0;
 `;
 exports.CardTitle = core_1.styled.div `
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  /* DS v2.0 fluid: --fs-micro (11-13) UPPER моно для card title */
+  font-family: var(--m);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink);
 `;
 exports.CardSub = core_1.styled.div `
-  font-size: 10px;
+  /* DS v2.0 fluid: --fs-meta (12-14) mono для подзаголовка */
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--g500);
   font-family: var(--m);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -121,11 +180,11 @@ exports.IconDd = core_1.styled.div `
   top: 0; left: 0; right: 0;
   background: var(--g100);
   border: 1px solid ${({ open }) => (open ? 'var(--g300)' : 'var(--g200)')};
-  border-radius: 7px;
+  border-radius: 6px;
   overflow: hidden;
   transition: border-color 0.15s ${EASE};
   z-index: ${({ open }) => (open ? 200 : 1)};
-  box-shadow: ${({ open }) => (open ? '0 6px 18px rgba(0,0,0,.2)' : 'none')};
+  box-shadow: none;
   &:hover { border-color: var(--g300); }
 `;
 exports.IconDdBtn = core_1.styled.button `
@@ -140,7 +199,7 @@ exports.IconDdBtn = core_1.styled.button `
   color: var(--g500);
   cursor: pointer;
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 600;
   transition: color 0.12s ${EASE};
   &:hover { color: var(--ink); background: var(--g200); }
@@ -156,18 +215,18 @@ exports.FilterPill = core_1.styled.button `
   gap: 5px;
   background: ${({ active }) => (active ? 'var(--dn)' : 'var(--g100)')};
   border: 1px solid ${({ active }) => (active ? 'var(--dn)' : 'var(--g200)')};
-  border-radius: 7px;
+  border-radius: 6px;
   padding: 7px 11px 7px 9px;
   height: 30px;
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 600;
-  letter-spacing: 0.02em;
-  color: ${({ active }) => (active ? '#fff' : 'var(--g500)')};
+  letter-spacing: 0.01em;
+  color: ${({ active }) => (active ? 'var(--s)' : 'var(--g500)')};
   cursor: pointer;
   transition: all 0.15s ${EASE};
   &:hover {
-    color: ${({ active }) => (active ? '#fff' : 'var(--ink)')};
+    color: ${({ active }) => (active ? 'var(--s)' : 'var(--ink)')};
     border-color: ${({ active }) => (active ? 'var(--dn)' : 'var(--g300)')};
   }
   &:focus-visible {
@@ -190,7 +249,7 @@ exports.BRow = core_1.styled.div `
   --status-color: ${({ statusColor }) => statusColor};
   position: relative;
   padding: 14px 12px 12px;
-  border-radius: 9px;
+  border-radius: 10px;
   cursor: pointer;
   transition: background 0.15s ${EASE};
   opacity: ${({ dimmed }) => (dimmed ? 0.45 : 1)};
@@ -222,7 +281,7 @@ exports.BRow = core_1.styled.div `
           left:0;top:8px;bottom:8px;
           width:3px;
           background:var(--status-color);
-          border-radius:0 2px 2px 0;
+          border-radius:0;
         }`
     : ''}
 `;
@@ -240,17 +299,19 @@ exports.BNameWrap = core_1.styled.div `
   flex-wrap: wrap;
 `;
 exports.BName = core_1.styled.div `
-  font-size: 14px;
-  font-weight: 700;
+  /* DS v2.0 fluid: --fs-body-strong (14-17) для имени bullet-метрики */
+  font-size: var(--fs-body);
+  font-weight: 600;
   color: var(--ink);
   letter-spacing: -0.01em;
 `;
 exports.BMeta = core_1.styled.div `
+  /* DS v2.0 fluid: --fs-meta (12-14) mono для метаданных bullet */
   font-family: var(--m);
-  font-size: 9.5px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--g500);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -262,22 +323,27 @@ exports.BMain = core_1.styled.div `
   justify-content: flex-end;
 `;
 exports.BVal = core_1.styled.div `
+  /* DS v2.0 P0: hero KPI — fluid clamp(28px, 1.5rem + 2.4cqi, 56px).
+     Минимум 28px (бывший 18px нарушал DS v2.0). */
   font-family: var(--m);
-  font-size: 18px;
+  font-size: var(--fs-hero);
   font-weight: 800;
   color: var(--status-color);
   letter-spacing: -0.02em;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
   .u {
-    font-size: 11px;
+    /* Unit (₽, %) рядом с hero — на одну ступень меньше */
+    font-size: var(--fs-meta);
     font-weight: 600;
     color: var(--g500);
     margin-left: 2px;
   }
 `;
 exports.BArrow = core_1.styled.div `
+  /* DS v2.0 fluid: --fs-meta для тренд-стрелки */
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 600;
   color: var(--status-color);
   display: inline-flex;
@@ -296,7 +362,8 @@ exports.BBand = core_1.styled.div `
   top: 0;
   bottom: 0;
   left: 0;
-  border-radius: 3px;
+  border-radius: 0;
+  width: ${({ widthPct }) => widthPct}%;
   background: ${({ bg }) => bg === 'good' ? 'var(--band-good)' : bg === 'warn' ? 'var(--band-warn)' : 'var(--band-bad)'};
 `;
 exports.BBar = core_1.styled.div `
@@ -308,7 +375,7 @@ exports.BBar = core_1.styled.div `
   height: 6px;
   width: ${({ widthPct }) => widthPct}%;
   background: var(--status-color);
-  border-radius: 2px;
+  border-radius: 0;
   z-index: 2;
   animation: bc-bar-grow 0.4s ${EASE};
 `;
@@ -320,7 +387,7 @@ exports.BTarget = core_1.styled.div `
   width: 2.5px;
   background: var(--ink);
   z-index: 3;
-  border-radius: 1.5px;
+  border-radius: 0;
   &::before, &::after {
     content: '';
     position: absolute;
@@ -329,7 +396,7 @@ exports.BTarget = core_1.styled.div `
     width: 8px;
     height: 2px;
     background: var(--ink);
-    border-radius: 1px;
+    border-radius: 0;
   }
   &::before { top: -2px; }
   &::after { bottom: -2px; }
@@ -351,7 +418,9 @@ exports.BMetaCell = core_1.styled.div `
   min-width: 0;
 `;
 exports.BMetaL = core_1.styled.div `
-  font-size: 8.5px;
+  /* DS v2.0 fluid: --fs-micro UPPER для bullet meta-label */
+  font-family: var(--m);
+  font-size: var(--fs-micro);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -359,9 +428,12 @@ exports.BMetaL = core_1.styled.div `
   opacity: 0.85;
 `;
 exports.BMetaV = core_1.styled.div `
-  font-size: 11px;
+  /* DS v2.0 fluid: --fs-meta для bullet meta-value */
+  font-family: var(--m);
+  font-size: var(--fs-meta);
   font-weight: 600;
   letter-spacing: -0.005em;
+  font-variant-numeric: tabular-nums;
   color: ${({ tone }) => tone === 'up'
     ? 'var(--up)'
     : tone === 'dn'
@@ -388,10 +460,10 @@ exports.CardFooter = core_1.styled.div `
   padding-top: 12px;
   border-top: 1px solid var(--g200);
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--g500);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
   flex-wrap: wrap;
   gap: 10px;
 `;
@@ -414,7 +486,7 @@ exports.LegendItem = core_1.styled.div `
 exports.LegendBar = core_1.styled.span `
   width: 14px;
   height: 6px;
-  border-radius: 1px;
+  border-radius: 0;
   background: var(--ink);
 `;
 exports.LegendTarget = core_1.styled.span `
@@ -422,7 +494,7 @@ exports.LegendTarget = core_1.styled.span `
   width: 2.5px;
   height: 10px;
   background: var(--ink);
-  border-radius: 1.5px;
+  border-radius: 0;
   position: relative;
   &::before, &::after {
     content: '';
@@ -432,7 +504,7 @@ exports.LegendTarget = core_1.styled.span `
     width: 7px;
     height: 1.5px;
     background: var(--ink);
-    border-radius: 1px;
+    border-radius: 0;
   }
   &::before { top: -1.5px; }
   &::after { bottom: -1.5px; }
@@ -442,16 +514,16 @@ exports.LegendBand = core_1.styled.span `
   width: 14px;
   height: 5px;
   background: var(--g200);
-  border-radius: 1px;
+  border-radius: 0;
 `;
 exports.Kbd = core_1.styled.kbd `
   display: inline-block;
   background: var(--g100);
   border: 1px solid var(--g300);
-  border-radius: 3px;
+  border-radius: 6px;
   padding: 1px 5px;
   font-family: var(--m);
-  font-size: 9px;
+  font-size: var(--fs-micro);
   font-weight: 700;
   color: var(--g700);
   line-height: 1;
@@ -467,9 +539,9 @@ exports.Tooltip = core_1.styled.div `
   border: 1px solid var(--g300);
   border-radius: 10px;
   padding: 12px 14px 10px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--sh);
   font-family: var(--f);
-  font-size: 11px;
+  font-size: var(--fs-meta);
   color: var(--ink);
   pointer-events: none;
   z-index: 500;
@@ -487,13 +559,13 @@ exports.TtHead = core_1.styled.div `
 `;
 exports.TtStatus = core_1.styled.div `
   width: 8px;
-  border-radius: 3px;
+  border-radius: 0;
   flex-shrink: 0;
   align-self: stretch;
   background: var(--status-color);
 `;
 exports.TtName = core_1.styled.div `
-  font-size: 13px;
+  font-size: var(--fs-body);
   font-weight: 700;
   color: var(--ink);
   line-height: 1.25;
@@ -501,11 +573,11 @@ exports.TtName = core_1.styled.div `
   letter-spacing: -0.005em;
 `;
 exports.TtSub = core_1.styled.div `
-  font-size: 9px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--g500);
   font-family: var(--m);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 `;
 exports.TtRows = core_1.styled.div `
   display: flex;
@@ -520,16 +592,17 @@ exports.TtRow = core_1.styled.div `
   font-family: var(--m);
 `;
 exports.TtL = core_1.styled.div `
-  font-size: 9.5px;
-  font-weight: 500;
+  font-size: var(--fs-micro);
+  font-weight: 600;
   color: var(--g500);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 `;
 exports.TtV = core_1.styled.div `
-  font-size: 11px;
+  font-size: var(--fs-meta);
   font-weight: 700;
   letter-spacing: -0.005em;
+  font-variant-numeric: tabular-nums;
   color: ${({ tone }) => tone === 'up'
     ? 'var(--up)'
     : tone === 'dn'
@@ -544,7 +617,7 @@ exports.TtStatusText = core_1.styled.div `
   background: var(--g50);
   border: 1px solid var(--g200);
   border-radius: 6px;
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 600;
   color: var(--status-color);
 `;
@@ -553,7 +626,7 @@ exports.TtFoot = core_1.styled.div `
   padding-top: 9px;
   border-top: 1px solid var(--g200);
   font-family: var(--m);
-  font-size: 9px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--g500);
   display: flex;
@@ -583,7 +656,7 @@ exports.ModalBox = core_1.styled.div `
   max-width: 820px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--sh);
   animation: bc-m-pop 0.2s ${EASE};
 `;
 exports.ModalHead = core_1.styled.div `
@@ -597,7 +670,7 @@ exports.ModalTitles = core_1.styled.div `
   min-width: 0;
 `;
 exports.ModalTitle = core_1.styled.div `
-  font-size: 18px;
+  font-size: var(--fs-title);
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.01em;
@@ -605,16 +678,16 @@ exports.ModalTitle = core_1.styled.div `
   margin-bottom: 2px;
 `;
 exports.ModalSub = core_1.styled.div `
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--g500);
   font-family: var(--m);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 `;
 exports.ModalCloseBtn = core_1.styled.button `
   background: transparent;
   border: 1px solid var(--g300);
-  border-radius: 7px;
+  border-radius: 6px;
   width: 30px;
   height: 30px;
   display: flex;
@@ -644,7 +717,7 @@ exports.ModalStat = core_1.styled.div `
   padding: 12px 14px;
 `;
 exports.ModalStatL = core_1.styled.div `
-  font-size: 9px;
+  font-size: var(--fs-micro);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -653,16 +726,18 @@ exports.ModalStatL = core_1.styled.div `
   margin-bottom: 6px;
 `;
 exports.ModalStatV = core_1.styled.div `
-  font-size: 18px;
+  /* DS v2.0: hero KPI в модалке — fluid 28→56 */
+  font-size: var(--fs-hero);
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.02em;
   line-height: 1.1;
   font-family: var(--m);
-  .u { font-weight: 600; color: var(--g500); font-size: 11px; margin-left: 2px; }
+  font-variant-numeric: tabular-nums;
+  .u { font-weight: 600; color: var(--g500); font-size: var(--fs-meta); margin-left: 2px; }
 `;
 exports.ModalStatD = core_1.styled.div `
-  font-size: 9.5px;
+  font-size: var(--fs-meta);
   font-weight: 600;
   font-family: var(--m);
   margin-top: 4px;
@@ -679,7 +754,8 @@ exports.ModalSection = core_1.styled.div `
   &:last-child { margin-bottom: 0; }
 `;
 exports.ModalSectionL = core_1.styled.div `
-  font-size: 9px;
+  /* DS v2.0 fluid: --fs-micro UPPER для section label в модалке */
+  font-size: var(--fs-micro);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -702,16 +778,16 @@ exports.StoreRow = core_1.styled.div `
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
-  border-radius: 7px;
+  border-radius: 6px;
   background: var(--g50);
   border: 1px solid var(--g200);
-  .rank { font-family: var(--m); font-size: 9px; font-weight: 700; color: var(--g500); text-align: center; }
-  .name { font-size: 11.5px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .mini-bullet { height: 8px; background: var(--g200); border-radius: 2px; position: relative; overflow: visible; }
-  .mini-bar { position: absolute; left: 0; top: 50%; transform: translateY(-50%); height: 6px; border-radius: 1.5px; }
-  .mini-target { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); border-radius: 1px; }
-  .pct { font-family: var(--m); font-size: 11px; font-weight: 700; text-align: right; letter-spacing: -0.01em; }
-  .delta { font-family: var(--m); font-size: 9.5px; font-weight: 600; text-align: right; }
+  .rank { font-family: var(--m); font-size: var(--fs-micro); font-weight: 700; color: var(--g500); text-align: center; }
+  .name { font-size: var(--fs-meta); font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mini-bullet { height: 8px; background: var(--g200); border-radius: 0; position: relative; overflow: visible; }
+  .mini-bar { position: absolute; left: 0; top: 50%; transform: translateY(-50%); height: 6px; border-radius: 0; }
+  .mini-target { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); border-radius: 0; }
+  .pct { font-family: var(--m); font-size: var(--fs-micro); font-weight: 700; text-align: right; letter-spacing: -0.01em; }
+  .delta { font-family: var(--m); font-size: var(--fs-meta); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
   .delta.up { color: var(--up); }
   .delta.dn { color: var(--dn); }
   .delta.wn { color: var(--g500); }
@@ -727,7 +803,7 @@ exports.StateOverlay = core_1.styled.div `
   gap: 8px;
   padding: 28px 16px;
   color: var(--g500);
-  font-size: 12px;
+  font-size: var(--fs-body);
   flex: 1;
 `;
 exports.Skeleton = core_1.styled.div `
@@ -736,5 +812,35 @@ exports.Skeleton = core_1.styled.div `
   background: var(--g200);
   animation: bc-skeleton-pulse 1.4s ease-in-out infinite;
   margin-bottom: 8px;
+  width: ${({ widthPct }) => (widthPct != null ? `${widthPct}%` : '100%')};
+`;
+/* ── Inline-style replacements (DS 2.0 §17 — Emotion-only). ── */
+/* Error caption used inside StateOverlay (BulletChart loading-error/render-error). */
+exports.ErrorCaption = core_1.styled.span `
+  color: var(--dn);
+`;
+/* Hint caption — fluid --fs-micro. */
+exports.HintCaption = core_1.styled.span `
+  font-size: var(--fs-micro);
+  color: var(--g500);
+`;
+/* Footer dot separator. */
+exports.FootDot = core_1.styled.span `
+  color: var(--g500);
+`;
+/* Detail-modal: error block. */
+exports.DetailErrorBlock = core_1.styled.div `
+  color: var(--dn);
+  font-size: var(--fs-meta);
+  padding: 12px 0;
+`;
+/* Tooltip head body — flexible, takes remaining space. */
+exports.TtHeadBody = core_1.styled.div `
+  flex: 1;
+  min-width: 0;
+`;
+/* Tooltip footer dot separator. */
+exports.TtDot = core_1.styled.span `
+  color: var(--g400);
 `;
 //# sourceMappingURL=styles.js.map

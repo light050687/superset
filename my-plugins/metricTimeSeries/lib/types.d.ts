@@ -88,6 +88,7 @@ export interface WriteoffsTSFormData extends QueryFormData {
     groupbyCategory?: string | string[];
     categoriesLimit?: number;
     headerText?: string;
+    subtitleText?: string;
     defaultMode: ChartMode;
     defaultGranularity: Granularity;
     defaultUnit: Unit;
@@ -108,6 +109,8 @@ export interface WriteoffsTSProps {
     height: number;
     /** Card header text (from controlPanel or default) */
     headerText: string;
+    /** Optional subtitle (DS 2.0). Fallback to localized time_range. */
+    subtitleText: string;
     /** 6-state data status per Design System v2.0 */
     dataState: DataState;
     /** Optional error message when dataState === 'error' */

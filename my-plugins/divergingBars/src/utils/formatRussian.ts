@@ -32,6 +32,8 @@ export const nf2 = new Intl.NumberFormat('ru-RU', {
  */
 export function fmtRub(v: number): string {
   const abs = Math.abs(v);
+  // Расширено до трлн (DS 2.0): большие компании могут перешагнуть млрд тыс ₽.
+  if (abs >= 1_000_000_000) return `${nf1.format(v / 1_000_000_000)}T`;
   if (abs >= 1_000_000) return `${nf1.format(v / 1_000_000)}B`;
   if (abs >= 10_000) return `${nf0.format(v / 1000)}M`;
   if (abs >= 1000) return `${nf1.format(v / 1000)}M`;
@@ -78,4 +80,41 @@ export function signPrefix(v: number): string {
   if (v > 0) return '+';
   if (v < 0) return '\u2212';
   return '';
+}
+
+/**
+ * \u041a\u0430\u043d\u043e\u043d\u0438\u0447\u0435\u0441\u043a\u0438\u0439 fmtRubFull (DS 2.0): \u0430\u0432\u0442\u043e-\u043f\u0435\u0440\u0435\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u0435 \u0435\u0434\u0438\u043d\u0438\u0446\u044b \u0434\u043b\u044f \u0440\u0443\u0431\u043b\u0451\u0432\u044b\u0445 \u0441\u0443\u043c\u043c.
+ * \u0420\u0430\u0431\u043e\u0442\u0430\u0435\u0442 \u043d\u0430 \u043f\u043e\u043b\u043d\u044b\u0445 \u0440\u0443\u0431\u043b\u044f\u0445 (\u041d\u0415 \u0442\u044b\u0441 \u20bd). \u0418\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u0442\u0441\u044f \u0434\u043b\u044f \u043d\u043e\u0432\u044b\u0445 \u0432\u044b\u0437\u043e\u0432\u043e\u0432
+ * subtitle/\u0442\u0443\u043b\u0442\u0438\u043f\u043e\u0432 \u0433\u0434\u0435 \u0434\u0430\u043d\u043d\u044b\u0435 \u043f\u0440\u0438\u0445\u043e\u0434\u044f\u0442 \u0432 \u0440\u0443\u0431\u043b\u044f\u0445 \u0438\u0437 \u0411\u0414.
+ *
+ *  - <10k       \u2192 "1 234 \u20bd"
+ *  - <1M        \u2192 "1 234 \u0442\u044b\u0441 \u20bd"
+ *  - <1B        \u2192 "1,23 \u043c\u043b\u043d \u20bd"
+ *  - <1T        \u2192 "1,23 \u043c\u043b\u0440\u0434 \u20bd"
+ *  - \u0438\u043d\u0430\u0447\u0435      \u2192 "1,23 \u0442\u0440\u043b\u043d \u20bd"
+ */
+export function fmtRubFull(
+  v: number | null | undefined,
+  decimals = 2,
+): string {
+  if (v == null || !Number.isFinite(v)) return '\u2014';
+  const abs = Math.abs(v);
+  const nf = (d: number) =>
+    new Intl.NumberFormat('ru-RU', {
+      minimumFractionDigits: d,
+      maximumFractionDigits: d,
+    });
+  if (abs >= 1_000_000_000_000) {
+    return `${nf(decimals).format(v / 1_000_000_000_000)} \u0442\u0440\u043b\u043d \u20bd`;
+  }
+  if (abs >= 1_000_000_000) {
+    return `${nf(decimals).format(v / 1_000_000_000)} \u043c\u043b\u0440\u0434 \u20bd`;
+  }
+  if (abs >= 1_000_000) {
+    return `${nf(decimals).format(v / 1_000_000)} \u043c\u043b\u043d \u20bd`;
+  }
+  if (abs >= 10_000) {
+    return `${nf(0).format(v / 1_000)} \u0442\u044b\u0441 \u20bd`;
+  }
+  return `${nf(0).format(v)} \u20bd`;
 }

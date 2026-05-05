@@ -4,6 +4,28 @@ import { fmtPct, fmtSmart, } from '../utils/formatRussian';
 import { parseTimeValue, isoWeekNumber, ruMonthName, } from '../utils/dateHelpers';
 import { CATEGORY_PALETTE, OTHER_COLOR, pickPaletteEntry, } from '../utils/colorPalette';
 /**
+ * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
+ */
+function formatTimeRangeRu(tr) {
+    if (!tr || tr === 'No filter')
+        return 'за период';
+    const map = {
+        'Last day': 'за день',
+        'Last week': 'за неделю',
+        'Last month': 'за месяц',
+        'Last quarter': 'за квартал',
+        'Last year': 'за год',
+        Today: 'сегодня',
+        'This week': 'за эту неделю',
+        'This month': 'за этот месяц',
+        'This year': 'за этот год',
+        'previous calendar week': 'за прошлую неделю',
+        'previous calendar month': 'за прошлый месяц',
+        'previous calendar year': 'за прошлый год',
+    };
+    return map[tr] ?? tr;
+}
+/**
  * Luminance-based dark-mode detection.
  * Mirrors @superset-ui/core isThemeDark (threshold 128) via colorBgContainer.
  */
@@ -166,6 +188,11 @@ export default function transformProps(chartProps) {
     const showBrushButton = formData.showBrushButton ?? true;
     const enableDrillDown = formData.enableDrillDown ?? true;
     const headerText = formData.headerText || 'Динамика списаний';
+    const fdRec = formData;
+    const userSubtitle = formData.subtitleText;
+    const subtitleText = userSubtitle?.trim() ||
+        formatTimeRangeRu(fdRec['time_range'] ??
+            fdRec['timeRange']);
     // Number formatting: auto-scaling by magnitude (тыс/млн/млрд) + user suffix.
     // Default suffix is "₽" — fmtSmart applies the correct prefix based on value magnitude.
     const userSuffix = formData.valueSuffix ?? '₽';
@@ -195,6 +222,7 @@ export default function transformProps(chartProps) {
             dataState: 'populated',
             timePoints: preset.timePoints,
             categories: preset.categories,
+            subtitleText,
             defaultMode: mode,
             defaultGranularity: granularity,
             defaultUnit: unit,
@@ -221,6 +249,7 @@ export default function transformProps(chartProps) {
             dataState: 'empty',
             timePoints: [],
             categories: [],
+            subtitleText,
             defaultMode: mode,
             defaultGranularity: granularity,
             defaultUnit: unit,
@@ -246,6 +275,7 @@ export default function transformProps(chartProps) {
                 'Проверьте настройку "Time Column" в датасете.',
             timePoints: [],
             categories: [],
+            subtitleText,
             defaultMode: mode,
             defaultGranularity: granularity,
             defaultUnit: unit,
@@ -312,6 +342,7 @@ export default function transformProps(chartProps) {
         width,
         height,
         headerText,
+        subtitleText,
         dataState,
         errorMessage: dataState === 'error' ? 'Не задана мера "Факт"' : undefined,
         timePoints,

@@ -71,7 +71,7 @@ function TrendChartInner({ data, tokens }) {
                     padding: '6px 10px',
                     fontFamily: tokens.fontMono,
                     pointerEvents: 'none',
-                    boxShadow: '0 8px 20px rgba(0,0,0,.25)',
+                    boxShadow: 'var(--glass-shadow)',
                 }, children: [_jsx("div", { style: {
                             fontSize: 9,
                             color: tokens.g500,

@@ -23,6 +23,16 @@ export interface FormattedParts {
   unit: string;
 }
 
+/**
+ * Канонический fmtRub (DS 2.0): авто-переключение единицы для рублёвых сумм.
+ * Базовая единица входа — МИЛЛИОНЫ рублей (как в исходных данных rankedBars).
+ * До запятой ≤3 цифр всегда (когда выходит за 999 — поднимается на следующую).
+ *
+ *  - <1 млн     → "X тыс ₽"
+ *  - <1 000     → "X,Y млн ₽"
+ *  - <1 000 000 → "X,YZ млрд ₽"
+ *  - иначе      → "X,YZ трлн ₽"
+ */
 export function fmtRub(
   value: number,
   decimals: number = 1,
@@ -31,7 +41,20 @@ export function fmtRub(
   if (!Number.isFinite(value)) {
     return { number: '—', unit: '' };
   }
-  if (Math.abs(value) >= 1) {
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) {
+    return {
+      number: nf(decimals + 1).format(value / 1_000_000),
+      unit: ' трлн ₽',
+    };
+  }
+  if (abs >= 1_000) {
+    return {
+      number: nf(decimals + 1).format(value / 1_000),
+      unit: ' млрд ₽',
+    };
+  }
+  if (abs >= 1) {
     return { number: nf(decimals).format(value), unit: ` ${suffix}` };
   }
   const inThousands = value * 1000;

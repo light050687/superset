@@ -10,6 +10,7 @@ export default function HintRow() {
         </svg>
         <span>клик — фильтр</span>
       </span>
+      <span className="hi-sep" aria-hidden="true" />
       <span className="hi">
         <svg
           viewBox="0 0 16 16"

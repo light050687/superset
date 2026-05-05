@@ -96,6 +96,7 @@ export interface StructureDonutProps {
     padAngle: number;
     borderRadius: number;
     showOuterLabelsPct: boolean;
+    rubDecimals: number;
     isDarkMode: boolean;
     theme: typeof supersetTheme;
     mockModeEnabled: boolean;
@@ -112,5 +113,6 @@ export interface BuildOptionState {
     padAngle: number;
     borderRadius: number;
     showOuterLabelsPct: boolean;
+    rubDecimals?: number;
 }
 //# sourceMappingURL=types.d.ts.map

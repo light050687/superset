@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SkeletonGrid = exports.StateOverlay = exports.CmpTable = exports.DrillBars = exports.DrillSectionTitle = exports.DrillSummary = exports.ModalBody = exports.ModalClose = exports.ModalTitle = exports.ModalHead = exports.Modal = exports.ModalBackdrop = exports.ModalRoot = exports.ColProfile = exports.Tooltip = exports.HintBar = exports.ScaleItem = exports.Scale = exports.Footer = exports.Cell = exports.Pivot = exports.PivotWrap = exports.Chip = exports.UnitButton = exports.Unit = exports.Controls = exports.BreadcrumbBack = exports.BreadcrumbSel = exports.BreadcrumbCurrent = exports.Breadcrumbs = exports.Title = exports.TitleBlock = exports.Header = exports.Card = exports.Root = exports.KEYFRAMES_CSS = exports.ROOT_CLASS = void 0;
+exports.StaleBar = exports.PartialBadge = exports.DrillHelperText = exports.SkeletonGrid = exports.StateOverlay = exports.CmpTable = exports.DrillBars = exports.DrillSectionTitle = exports.DrillSummary = exports.ModalBody = exports.ModalClose = exports.ModalTitle = exports.ModalHead = exports.Modal = exports.ModalBackdrop = exports.ModalRoot = exports.ColProfile = exports.Tooltip = exports.HintBar = exports.ScaleItem = exports.Scale = exports.Footer = exports.Cell = exports.Pivot = exports.PivotWrap = exports.Chip = exports.UnitButton = exports.Unit = exports.Controls = exports.BreadcrumbBack = exports.BreadcrumbSel = exports.BreadcrumbPlus = exports.BreadcrumbDot = exports.BreadcrumbCurrent = exports.Breadcrumbs = exports.Title = exports.TitleBlock = exports.Header = exports.Card = exports.Root = exports.KEYFRAMES_CSS = exports.ROOT_CLASS = void 0;
 const core_1 = require("@superset-ui/core");
+const react_1 = require("@emotion/react");
 const themeTokens_1 = require("./themeTokens");
 /*
  * Design System v2.0 tokens as CSS custom properties.
@@ -12,6 +13,12 @@ const themeTokens_1 = require("./themeTokens");
  */
 const EASE = 'cubic-bezier(0.4, 0, 0.2, 1)';
 exports.ROOT_CLASS = 'heatmap-pivot';
+// DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
+// race-condition-free относительно <style dangerouslySetInnerHTML> (см. donut).
+const cardInKf = (0, react_1.keyframes) `
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 /*
  * Keyframes injected via <style> in component. DS 2.0 §08:
  *  - skeleton shimmer: --g100, opacity 0.4 → 0.7, длительность 0.8s
@@ -26,7 +33,11 @@ exports.KEYFRAMES_CSS = `
 @keyframes hp-skeleton-pulse {
   0%{opacity:.4} 50%{opacity:.7} 100%{opacity:.4}
 }
-@media (prefers-reduced-motion: reduce) {
+@keyframes hp-stale-slide {
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
+@media (prefers-reduced-motion: never-match) {
   .heatmap-pivot *, .heatmap-pivot *::before, .heatmap-pivot *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
@@ -83,6 +94,8 @@ exports.Root = core_1.styled.div `
   --c-violet: ${themeTokens_1.LIGHT_TOKENS.cViolet};
   --f: ${themeTokens_1.FONTS.text};
   --m: ${themeTokens_1.FONTS.mono};
+  --sh: 0 1px 3px rgba(15, 17, 20, 0.06);
+  --modal-scrim: rgba(0, 0, 0, 0.55);
 
   &[data-theme='dark'] {
     --bg: ${themeTokens_1.DARK_TOKENS.bg};
@@ -104,16 +117,24 @@ exports.Root = core_1.styled.div `
     --wn-b: ${themeTokens_1.DARK_TOKENS.wnBg};
     --c-sky: ${themeTokens_1.DARK_TOKENS.cSky};
     --c-violet: ${themeTokens_1.DARK_TOKENS.cViolet};
+    --sh: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --modal-scrim: rgba(0, 0, 0, 0.7);
   }
 
   width: 100%;
   height: 100%;
+  /* DS v2.0: container query для fluid типографики (cqi растёт с шириной карточки) */
+  container-type: inline-size;
+  container-name: heatmap;
   box-sizing: border-box;
   overflow: visible;
   display: flex;
   flex-direction: column;
   font-family: var(--f);
   color: var(--ink);
+  /* DS v2.0 §02: tabular-nums наследуется на всю карточку (heatmap, тултипы,
+     бейджи, totals — числа выровнены по ширине). */
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 `;
 /* ── Card ── */
@@ -128,7 +149,12 @@ exports.Card = core_1.styled.div `
   flex: 1;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--sh);
+  /* DS 2.0 mount animation. fill-mode both — initial state мгновенно. При
+     переходе loading/error → populated React unmount'ит соответствующий
+     Card и mount'ит новый → animation запускается ровно когда юзер видит
+     реальный контент. */
+  animation: ${cardInKf} 0.6s ${EASE} both;
 `;
 exports.Header = core_1.styled.div `
   display: flex;
@@ -145,20 +171,20 @@ exports.TitleBlock = core_1.styled.div `
   flex: 1;
 `;
 exports.Title = core_1.styled.div `
-  /* DS 2.0 §02 «Заголовок секции»: 14px / 700 / UPPERCASE / 0.05em */
-  font-size: 14px;
-  line-height: 18px;
+  /* DS 2.0 §02 fluid: --fs-micro (11-13) UPPER моно для секции */
+  font-family: var(--m);
+  font-size: var(--fs-micro);
+  line-height: 1.4;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink);
 `;
 exports.Breadcrumbs = core_1.styled.div `
-  /* DS 2.0 §02 «Подзаголовок / мета»: 11px моно / 400 */
-  /* DS 2.0 §10: для текста <14px — только --ink/--g700/--g600 (не --g500) */
+  /* DS 2.0 §02 fluid: --fs-micro для breadcrumb (≥11) */
   font-family: var(--m);
-  font-size: 11px;
-  font-weight: 400;
+  font-size: var(--fs-micro);
+  font-weight: 500;
   color: var(--g600);
   letter-spacing: 0.03em;
   display: flex;
@@ -171,25 +197,34 @@ exports.BreadcrumbCurrent = core_1.styled.span `
   color: var(--g700);
   font-weight: 500;
 `;
+exports.BreadcrumbDot = core_1.styled.span `
+  color: var(--g300);
+`;
+exports.BreadcrumbPlus = core_1.styled.span `
+  color: var(--g300);
+  margin: 0 4px;
+`;
 exports.BreadcrumbSel = core_1.styled.span `
   color: var(--ink);
   font-weight: 600;
 `;
 exports.BreadcrumbBack = core_1.styled.button `
-  /* DS 2.0 §10: для текста <14px только --ink/--g700/--g600 */
   border: none;
   background: transparent;
   cursor: pointer;
   font-family: var(--m);
-  font-size: 11px;
-  font-weight: 600;
+  /* DS 2.0: ◂ back-button — крупный (18px/700), читается с дистанции. */
+  font-size: 18px;
+  font-weight: 700;
   color: var(--g600);
-  padding: 0 4px;
-  border-radius: 3px;
+  padding: 0 6px;
+  border-radius: 6px;
   line-height: 1;
   display: inline-flex;
   align-items: center;
-  height: 14px;
+  justify-content: center;
+  height: 22px;
+  min-width: 22px;
   transition: color 0.15s ${EASE}, background 0.15s ${EASE};
 
   &:hover {
@@ -225,12 +260,12 @@ exports.Unit = core_1.styled.div `
   }
 `;
 exports.UnitButton = core_1.styled.button `
-  /* DS 2.0 §02: интерактивный текст не меньше 11px; touch target ≥40 desktop / 44 tablet */
+  /* DS 2.0 §02 fluid: --fs-micro для интерактивных UNIT-кнопок */
   border: none;
   background: ${({ on }) => (on ? 'var(--c-sky)' : 'transparent')};
-  color: ${({ on }) => (on ? '#fff' : 'var(--g600)')};
+  color: ${({ on }) => (on ? 'var(--s)' : 'var(--g600)')};
   font-family: var(--f);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   padding: 6px 13px;
   border-radius: 5px;
@@ -240,7 +275,7 @@ exports.UnitButton = core_1.styled.button `
   min-width: 40px;
   letter-spacing: 0.01em;
   white-space: nowrap;
-  box-shadow: ${({ on }) => (on ? '0 1px 3px rgba(0,0,0,0.06)' : 'none')};
+  box-shadow: ${({ on }) => (on ? 'var(--sh)' : 'none')};
 
   @media (max-width: 1024px) {
     min-height: 40px;
@@ -260,7 +295,7 @@ exports.UnitButton = core_1.styled.button `
   }
 `;
 exports.Chip = core_1.styled.button `
-  /* DS 2.0 §02: touch target adaptive */
+  /* DS 2.0 §02 fluid: --fs-micro для chip */
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -268,9 +303,9 @@ exports.Chip = core_1.styled.button `
   border: 1px solid ${({ on }) => (on ? 'var(--c-sky)' : 'var(--g200)')};
   border-radius: 7px;
   font-family: var(--f);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 600;
-  color: ${({ on }) => (on ? '#fff' : 'var(--g600)')};
+  color: ${({ on }) => (on ? 'var(--s)' : 'var(--g600)')};
   padding: 6px 12px;
   min-height: 32px;
   cursor: pointer;
@@ -295,7 +330,7 @@ exports.Chip = core_1.styled.button `
 
   .sigma {
     font-family: var(--m);
-    font-size: 13px;
+    font-size: var(--fs-interactive);
     font-weight: 700;
     line-height: 1;
   }
@@ -314,13 +349,13 @@ exports.Pivot = core_1.styled.table `
   font-variant-numeric: tabular-nums;
 
   thead th {
-    /* DS 2.0 §02 «Заголовок столбца»: 11px моно / 600 / 0.06em UPPERCASE */
+    /* DS 2.0 §02 fluid: --fs-micro UPPER моно для column-header */
     position: sticky;
     top: 0;
     z-index: 3;
     background: var(--s);
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -352,7 +387,7 @@ exports.Pivot = core_1.styled.table `
     display: inline-block;
     margin-left: 6px;
     font-family: var(--m);
-    font-size: 9px;
+    font-size: var(--fs-micro);
     color: var(--c-sky);
     vertical-align: baseline;
   }
@@ -367,7 +402,7 @@ exports.Pivot = core_1.styled.table `
     z-index: 2;
     background: var(--s);
     font-family: var(--f);
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 500;
     color: var(--g600);
     text-align: left;
@@ -435,8 +470,8 @@ exports.Pivot = core_1.styled.table `
     font-weight: 700;
     color: var(--ink);
     text-transform: uppercase;
-    font-size: 10px;
-    letter-spacing: 0.06em;
+    font-size: var(--fs-nano);
+    letter-spacing: 0.08em;
     z-index: 4;
   }
   .totals-col {
@@ -449,8 +484,8 @@ exports.Pivot = core_1.styled.table `
   thead th.totals-col {
     z-index: 5;
     text-transform: uppercase;
-    font-size: 10px;
-    letter-spacing: 0.06em;
+    font-size: var(--fs-nano);
+    letter-spacing: 0.08em;
     color: var(--ink);
   }
   tr.totals-row td.totals-col {
@@ -476,7 +511,7 @@ exports.Cell = core_1.styled.div `
   height: 42px;
   border-radius: 8px;
   font-family: var(--m);
-  font-size: 12px;
+  font-size: var(--fs-meta);
   font-weight: 600;
   color: var(--g700);
   transition: all 0.15s ${EASE};
@@ -485,11 +520,9 @@ exports.Cell = core_1.styled.div `
   font-variant-numeric: tabular-nums;
 
   @media (max-width: 1024px) {
-    font-size: 13px;
     height: 48px;
   }
   @media (max-width: 428px) {
-    font-size: 13px;
     height: 52px;
   }
 
@@ -537,7 +570,7 @@ exports.Cell = core_1.styled.div `
 
   &:hover:not(.nd) {
     transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--sh);
     filter: brightness(1.08);
   }
 
@@ -607,25 +640,25 @@ exports.ScaleItem = core_1.styled.div `
   }
 
   .label {
-    /* DS 2.0 §10: 10px → --g600 (5.9:1 на bg = WCAG AA pass) */
+    /* DS 2.0 fluid: --fs-meta для scale-label (был 10px) */
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-meta);
     font-weight: 500;
     color: var(--g600);
-    letter-spacing: 0.03em;
+    letter-spacing: 0.01em;
     white-space: nowrap;
   }
 `;
 exports.HintBar = core_1.styled.div `
-  /* DS 2.0 §10: для текста <14px только --ink/--g700/--g600. 10px hint → --g600. */
+  /* DS 2.0 fluid: --fs-meta для hint-bar (был 10px) */
   display: flex;
   align-items: center;
   gap: 14px;
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--g600);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
   flex-wrap: wrap;
   justify-content: center;
 
@@ -634,11 +667,30 @@ exports.HintBar = core_1.styled.div `
     align-items: center;
     gap: 6px;
   }
-  svg {
-    width: 11px;
-    height: 11px;
+  /* DS 2.0: иконки 16px (раньше 11px — не видно). */
+  .hi svg {
+    width: 16px;
+    height: 16px;
     color: var(--g600);
     flex-shrink: 0;
+  }
+  .hi .hi-arrow {
+    /* Типографический «◂» внутри hint-текста, той же формы что в breadcrumb. */
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--g700);
+    margin-right: 2px;
+    vertical-align: -1px;
+  }
+  .hi-sep {
+    /* Вертикальный разделитель между подсказками. */
+    display: inline-block;
+    width: 1px;
+    height: 14px;
+    background: var(--g300);
+    margin: 0 4px;
+    vertical-align: middle;
   }
 `;
 /* ── Tooltip / popover ── */
@@ -650,9 +702,9 @@ exports.Tooltip = core_1.styled.div `
   color: var(--s);
   border-radius: 6px;
   padding: 8px 12px 9px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--sh);
   font-family: var(--f);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   max-width: 280px;
   opacity: 0;
   transform: translateY(-4px);
@@ -664,7 +716,7 @@ exports.Tooltip = core_1.styled.div `
   }
   .tt-title {
     font-weight: 600;
-    font-size: 11px;
+    font-size: var(--fs-micro);
     margin-bottom: 4px;
     display: flex;
     align-items: center;
@@ -677,7 +729,7 @@ exports.Tooltip = core_1.styled.div `
   }
   .tt-row {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 500;
     line-height: 1.55;
     display: flex;
@@ -697,7 +749,7 @@ exports.ColProfile = core_1.styled.div `
   border: 1px solid var(--g200);
   border-radius: 8px;
   padding: 10px 14px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--sh);
   min-width: 220px;
   opacity: 0;
   transform: translateY(-4px);
@@ -708,11 +760,11 @@ exports.ColProfile = core_1.styled.div `
     transform: translateY(0);
   }
   .cp-t {
-    font-family: var(--f);
-    font-size: 11px;
+    font-family: var(--m);
+    font-size: var(--fs-micro);
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     color: var(--ink);
     margin-bottom: 6px;
   }
@@ -721,7 +773,7 @@ exports.ColProfile = core_1.styled.div `
     justify-content: space-between;
     gap: 14px;
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-meta);
     color: var(--g600);
     line-height: 1.7;
   }
@@ -748,7 +800,7 @@ exports.ModalRoot = core_1.styled.div `
 exports.ModalBackdrop = core_1.styled.div `
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--modal-scrim);
   backdrop-filter: blur(2px);
   opacity: 1;
   animation: hp-fade-in 0.18s ${EASE};
@@ -757,8 +809,8 @@ exports.Modal = core_1.styled.div `
   position: relative;
   background: var(--s);
   border: 1px solid var(--g200);
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  box-shadow: var(--sh);
   max-width: min(720px, 100%);
   width: 100%;
   max-height: calc(100vh - 48px);
@@ -784,15 +836,16 @@ exports.ModalTitle = core_1.styled.div `
 
   .m-eyebrow {
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-micro);
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--g600); /* DS §10: <14px → не менее --g600 */
+    color: var(--g600);
   }
   .m-h {
+    /* DS v2.0 fluid: --fs-title (20-28) для modal heading */
     font-family: var(--f);
-    font-size: 17px;
+    font-size: var(--fs-title);
     font-weight: 800;
     letter-spacing: -0.02em;
     color: var(--ink);
@@ -857,16 +910,18 @@ exports.DrillSummary = core_1.styled.div `
   margin-bottom: 18px;
 
   .s-l {
+    /* DS v2.0: 9px → --fs-micro (минимум 11) UPPER */
     font-family: var(--m);
-    font-size: 9px;
+    font-size: var(--fs-micro);
     font-weight: 600;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--g600); /* DS §10: <14px → не менее --g600 */
+    color: var(--g600);
   }
   .s-v {
+    /* DS v2.0 P0: drill summary value 15px → --fs-subtitle (16-20) */
     font-family: var(--m);
-    font-size: 15px;
+    font-size: var(--fs-subtitle);
     font-weight: 700;
     color: var(--g700);
     font-variant-numeric: tabular-nums;
@@ -883,10 +938,10 @@ exports.DrillSummary = core_1.styled.div `
   }
 `;
 exports.DrillSectionTitle = core_1.styled.div `
-  font-family: var(--f);
-  font-size: 11px;
+  font-family: var(--m);
+  font-size: var(--fs-micro);
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--g600);
   margin-bottom: 10px;
@@ -904,7 +959,7 @@ exports.DrillBars = core_1.styled.div `
   }
   .dbf-l {
     font-family: var(--f);
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 500;
     color: var(--g700);
   }
@@ -921,15 +976,15 @@ exports.DrillBars = core_1.styled.div `
   }
   .dbf-v {
     font-family: var(--m);
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     text-align: right;
     color: var(--g700);
   }
   .dbf-v .pct {
-    color: var(--g600); /* DS §10: <14px → не менее --g600 */
-    font-size: 10px;
+    color: var(--g600);
+    font-size: var(--fs-micro);
     margin-left: 4px;
   }
 `;
@@ -958,16 +1013,16 @@ exports.CmpTable = core_1.styled.table `
     width: 72px;
     text-align: right;
     font-family: var(--m);
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 700;
-    color: var(--g600); /* DS §10: <14px → не менее --g600 */
+    color: var(--g600);
   }
   .cmp-h-badge {
     display: inline-flex;
     align-items: center;
     gap: 5px;
     font-family: var(--m);
-    font-size: 9px;
+    font-size: var(--fs-nano);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -992,7 +1047,7 @@ exports.CmpTable = core_1.styled.table `
   }
   .cmp-h-name {
     font-family: var(--f);
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 700;
     color: var(--ink);
     line-height: 1.35;
@@ -1010,18 +1065,18 @@ exports.CmpTable = core_1.styled.table `
     padding: 10px 14px;
     text-align: left;
     font-family: var(--m);
-    font-size: 10px;
-    font-weight: 500;
-    color: var(--g600); /* DS §10: <14px → не менее --g600 */
+    font-size: var(--fs-micro);
+    font-weight: 600;
+    color: var(--g600);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     white-space: nowrap;
   }
   tbody td {
     padding: 10px 14px;
     text-align: right;
     font-family: var(--m);
-    font-size: 13px;
+    font-size: var(--fs-interactive);
     font-weight: 600;
     white-space: nowrap;
   }
@@ -1032,7 +1087,7 @@ exports.CmpTable = core_1.styled.table `
     color: var(--c-violet);
   }
   tbody td.cmp-d {
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 700;
     color: var(--g600);
   }
@@ -1044,12 +1099,12 @@ exports.CmpTable = core_1.styled.table `
   }
   tbody.cmp-sub tr.cmp-sub-title td {
     padding: 14px 14px 6px;
-    font-family: var(--f);
-    font-size: 10px;
+    font-family: var(--m);
+    font-size: var(--fs-micro);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--g600); /* DS §10: <14px → не менее --g600 */
+    color: var(--g600);
     text-align: left;
     border-top: 1px solid var(--g200);
   }
@@ -1057,7 +1112,7 @@ exports.CmpTable = core_1.styled.table `
     border-bottom: none;
   }
   tbody.cmp-sub td {
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 500;
     color: var(--g700);
   }
@@ -1074,9 +1129,9 @@ exports.StateOverlay = core_1.styled.div `
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--g600); /* DS §10: <14px → не менее --g600 */
+  color: var(--g600);
   font-family: var(--f);
-  font-size: 13px;
+  font-size: var(--fs-interactive);
   padding: 24px;
   text-align: center;
 `;
@@ -1096,5 +1151,50 @@ exports.SkeletonGrid = core_1.styled.div `
   .sk.hdr {
     height: 24px;
   }
+`;
+/* DrillModal helper texts (loading / empty state) */
+exports.DrillHelperText = core_1.styled.div `
+  color: var(--g600);
+  font-size: var(--fs-meta);
+`;
+/* DS 2.0 §06 «Состояния» — Partial badge: показывает что данные не
+   полные (часть фильтров отвергнута). UPPER mono nano warning-цвет. */
+exports.PartialBadge = core_1.styled.span `
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--wn-b);
+  color: var(--wn);
+  font-family: var(--m);
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-left: 8px;
+  vertical-align: middle;
+  user-select: none;
+`;
+/* DS 2.0 §06 «Состояния» — Stale bar: тонкая sky-полоса сверху Card,
+   show'ит что данные пришли из кеша (могут быть устаревшие). Slide
+   animation как progress indicator. */
+exports.StaleBar = core_1.styled.div `
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--c-sky) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: hp-stale-slide 1.6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
 `;
 //# sourceMappingURL=styles.js.map

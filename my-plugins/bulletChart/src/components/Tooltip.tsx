@@ -3,8 +3,10 @@ import { createPortal } from 'react-dom';
 import {
   Kbd,
   Tooltip as TooltipBox,
+  TtDot,
   TtFoot,
   TtHead,
+  TtHeadBody,
   TtL,
   TtName,
   TtRow,
@@ -129,12 +131,12 @@ const BulletTooltip: React.FC<TooltipProps> = ({
     <TooltipBox role="tooltip" style={{ left, top }} statusColor={statusColor}>
       <TtHead>
         <TtStatus />
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <TtHeadBody>
           <TtName>{row.name}</TtName>
           {row.stores != null ? (
             <TtSub>{formatStoresCount(row.stores)}</TtSub>
           ) : null}
-        </div>
+        </TtHeadBody>
       </TtHead>
       <TtRows>
         <TtRow>
@@ -191,7 +193,7 @@ const BulletTooltip: React.FC<TooltipProps> = ({
         <TtFoot>
           <Kbd>Click</Kbd>
           <span>фильтр</span>
-          <span style={{ color: 'var(--g400)' }}>·</span>
+          <TtDot>·</TtDot>
           <Kbd>Ctrl</Kbd>
           <span>+</span>
           <Kbd>Click</Kbd>

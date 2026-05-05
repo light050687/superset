@@ -149,6 +149,20 @@ const config: ControlPanelConfig = {
         ],
         [
           {
+            name: 'subtitle_text',
+            config: {
+              type: 'TextControl',
+              label: t('Подзаголовок'),
+              description: t(
+                'Если пусто — берётся активный диапазон времени (Last year → «за год»).',
+              ),
+              default: '',
+              renderTrigger: true,
+            },
+          },
+        ],
+        [
+          {
             name: 'metric_label',
             config: {
               type: 'TextControl',

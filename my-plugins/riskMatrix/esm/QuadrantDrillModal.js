@@ -1,8 +1,54 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useMemo, useState } from 'react';
+import { styled } from '@superset-ui/core';
 import { getQuadrant, storeBadness } from './utils/quadrants';
 import { ModalBg, Modal, StoreRow, SearchWrap, SearchInput, EmptyBlock } from './styles';
 import { useFocusTrap } from './utils/useFocusTrap';
+/* === Локальные styled-обёртки (миграция inline style → Emotion, P-011) === */
+/** Контейнер для поиска поверх списка квадранта. */
+const SearchContainer = styled.div `
+  margin-bottom: 10px;
+`;
+/** Заголовочная строка таблицы объектов квадранта (#, имя, X, бар X, Y, бар Y). */
+const StoreListHeader = styled.div `
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 60px minmax(120px, 180px) 60px minmax(120px, 180px);
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  font-family: var(--m);
+  /* DS v2.0 P0: 8.5px → --fs-nano (10) UPPER */
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--g500);
+  border-bottom: 1px solid var(--g200);
+  margin-bottom: 6px;
+`;
+/** Колонка-ячейка с центрированием. */
+const HeaderCellCenter = styled.span `
+  text-align: center;
+`;
+/** Колонка-ячейка с выравниванием вправо. */
+const HeaderCellRight = styled.span `
+  text-align: right;
+`;
+/** Подпись «факт vs план» — приглушённая, по центру. */
+const HeaderCellMuted = styled.span `
+  text-align: center;
+  opacity: 0.7;
+`;
+/** Колонка-обёртка для строк объектов в квадранте. */
+const StoreList = styled.div `
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+/** Обёртка SearchWrap, занимающая всю ширину секции. */
+const FullWidthSearchWrap = styled(SearchWrap) `
+  width: 100%;
+`;
 const LIMIT = 50;
 const QuadrantDrillModal = ({ quadrantKey, quadrants, thresholds, stores, allStoresTotal, formatColorMap, formatX, formatY, formatLoss, formatCount, xShort, yShort, onClose, onOpenStore, }) => {
     const [q, setQ] = useState('');
@@ -33,21 +79,7 @@ const QuadrantDrillModal = ({ quadrantKey, quadrants, thresholds, stores, allSto
                                         ? inQuadrant.reduce((s, x) => s + x.y, 0) / inQuadrant.length
                                         : 0) })] })] }), _jsxs("div", { className: "m-section", children: [_jsxs("div", { className: "m-section-l", children: [_jsx("span", { children: "\u041E\u0431\u044A\u0435\u043A\u0442\u044B \u043A\u0432\u0430\u0434\u0440\u0430\u043D\u0442\u0430" }), _jsx("span", { className: "count", children: q.trim()
                                         ? `${filtered.length} из ${inQuadrant.length} найдено`
-                                        : `${inQuadrant.length} всего · показано ${filtered.length}` })] }), _jsx("div", { style: { marginBottom: 10 }, children: _jsxs(SearchWrap, { className: q.length > 0 ? 'has-value' : '', style: { width: '100%' }, children: [_jsxs("svg", { className: "search-icon", viewBox: "0 0 14 14", fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", "aria-hidden": "true", children: [_jsx("circle", { cx: "6", cy: "6", r: "4" }), _jsx("line", { x1: "9.5", y1: "9.5", x2: "12.5", y2: "12.5" })] }), _jsx(SearchInput, { type: "text", placeholder: "\u041F\u043E\u0438\u0441\u043A \u043F\u043E \u0438\u043C\u0435\u043D\u0438 \u0438\u043B\u0438 \u0433\u043E\u0440\u043E\u0434\u0443\u2026", autoComplete: "off", value: q, onChange: (e) => setQ(e.target.value), "aria-label": "\u041F\u043E\u0438\u0441\u043A \u043F\u043E \u043E\u0431\u044A\u0435\u043A\u0442\u0430\u043C \u043A\u0432\u0430\u0434\u0440\u0430\u043D\u0442\u0430" }), _jsx("button", { type: "button", className: "search-clear", onClick: () => setQ(''), "aria-label": "\u041E\u0447\u0438\u0441\u0442\u0438\u0442\u044C", children: _jsxs("svg", { viewBox: "0 0 10 10", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: [_jsx("line", { x1: "2", y1: "2", x2: "8", y2: "8" }), _jsx("line", { x1: "8", y1: "2", x2: "2", y2: "8" })] }) })] }) }), filtered.length === 0 ? (_jsxs(EmptyBlock, { children: ["\u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E", q.trim() ? ` по запросу «${q}»` : ''] })) : (_jsxs("div", { style: {
-                                display: 'grid',
-                                gridTemplateColumns: '24px minmax(0,1fr) 60px minmax(120px, 180px) 60px minmax(120px, 180px)',
-                                alignItems: 'center',
-                                gap: 10,
-                                padding: '6px 12px',
-                                fontFamily: 'var(--m)',
-                                fontSize: 8.5,
-                                fontWeight: 700,
-                                letterSpacing: '0.05em',
-                                textTransform: 'uppercase',
-                                color: 'var(--g500)',
-                                borderBottom: '1px solid var(--g200)',
-                                marginBottom: 6,
-                            }, children: [_jsx("span", { style: { textAlign: 'center' }, children: "#" }), _jsx("span", { children: "\u041E\u0431\u044A\u0435\u043A\u0442" }), _jsx("span", { style: { textAlign: 'right' }, children: xShort }), _jsx("span", { style: { textAlign: 'center', opacity: 0.7 }, children: "\u0444\u0430\u043A\u0442 vs \u043F\u043B\u0430\u043D" }), _jsx("span", { style: { textAlign: 'right' }, children: yShort }), _jsx("span", { style: { textAlign: 'center', opacity: 0.7 }, children: "\u0444\u0430\u043A\u0442 vs \u043F\u043B\u0430\u043D" })] })), _jsx("div", { style: { display: 'flex', flexDirection: 'column', gap: 4 }, children: filtered.map((s, i) => {
+                                        : `${inQuadrant.length} всего · показано ${filtered.length}` })] }), _jsx(SearchContainer, { children: _jsxs(FullWidthSearchWrap, { className: q.length > 0 ? 'has-value' : '', children: [_jsxs("svg", { className: "search-icon", viewBox: "0 0 14 14", fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", "aria-hidden": "true", children: [_jsx("circle", { cx: "6", cy: "6", r: "4" }), _jsx("line", { x1: "9.5", y1: "9.5", x2: "12.5", y2: "12.5" })] }), _jsx(SearchInput, { type: "text", placeholder: "\u041F\u043E\u0438\u0441\u043A \u043F\u043E \u0438\u043C\u0435\u043D\u0438 \u0438\u043B\u0438 \u0433\u043E\u0440\u043E\u0434\u0443\u2026", autoComplete: "off", value: q, onChange: (e) => setQ(e.target.value), "aria-label": "\u041F\u043E\u0438\u0441\u043A \u043F\u043E \u043E\u0431\u044A\u0435\u043A\u0442\u0430\u043C \u043A\u0432\u0430\u0434\u0440\u0430\u043D\u0442\u0430" }), _jsx("button", { type: "button", className: "search-clear", onClick: () => setQ(''), "aria-label": "\u041E\u0447\u0438\u0441\u0442\u0438\u0442\u044C", children: _jsxs("svg", { viewBox: "0 0 10 10", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: [_jsx("line", { x1: "2", y1: "2", x2: "8", y2: "8" }), _jsx("line", { x1: "8", y1: "2", x2: "2", y2: "8" })] }) })] }) }), filtered.length === 0 ? (_jsxs(EmptyBlock, { children: ["\u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E", q.trim() ? ` по запросу «${q}»` : ''] })) : (_jsxs(StoreListHeader, { children: [_jsx(HeaderCellCenter, { children: "#" }), _jsx("span", { children: "\u041E\u0431\u044A\u0435\u043A\u0442" }), _jsx(HeaderCellRight, { children: xShort }), _jsx(HeaderCellMuted, { children: "\u0444\u0430\u043A\u0442 vs \u043F\u043B\u0430\u043D" }), _jsx(HeaderCellRight, { children: yShort }), _jsx(HeaderCellMuted, { children: "\u0444\u0430\u043A\u0442 vs \u043F\u043B\u0430\u043D" })] })), _jsx(StoreList, { children: filtered.map((s, i) => {
                                 const dx = s.planX && s.planX !== 0 ? (s.x - s.planX) / s.planX : 0;
                                 const dy = s.planY && s.planY !== 0 ? (s.y - s.planY) / s.planY : 0;
                                 const dxCls = dx > 0.03 ? 'dn' : dx < -0.03 ? 'up' : 'wn';
@@ -61,7 +93,7 @@ const QuadrantDrillModal = ({ quadrantKey, quadrants, thresholds, stores, allSto
                                             e.preventDefault();
                                             onOpenStore(s.id);
                                         }
-                                    }, children: [_jsx("div", { className: "rank", children: String(i + 1).padStart(2, '0') }), _jsxs("div", { className: "name", children: [s.name, s.city && _jsx("span", { className: "city", children: s.city })] }), _jsx("div", { className: `cell-v ${dxCls}`, children: formatX(s.x) }), _jsxs("div", { className: "mini-bullet", children: [_jsx("div", { className: "mini-bar", style: { width: `${xBarPct}%`, background: 'var(--c-tangerine)' } }), s.planX != null && (_jsx("div", { className: "mini-target", style: { left: `calc(${xTargetPct}% - 1px)` } }))] }), _jsx("div", { className: `cell-v ${dyCls}`, children: formatY(s.y) }), _jsxs("div", { className: "mini-bullet", children: [_jsx("div", { className: "mini-bar", style: { width: `${yBarPct}%`, background: 'var(--c-sky)' } }), s.planY != null && (_jsx("div", { className: "mini-target", style: { left: `calc(${yTargetPct}% - 1px)` } }))] })] }, s.id));
+                                    }, children: [_jsx("div", { className: "rank", children: String(i + 1).padStart(2, '0') }), _jsxs("div", { className: "name", children: [s.name, s.city && _jsx("span", { className: "city", children: s.city })] }), _jsx("div", { className: `cell-v ${dxCls}`, children: formatX(s.x) }), _jsxs("div", { className: "mini-bullet", children: [_jsx("div", { className: "mini-bar mini-bar--x", style: { width: `${xBarPct}%` } }), s.planX != null && (_jsx("div", { className: "mini-target", style: { left: `calc(${xTargetPct}% - 1px)` } }))] }), _jsx("div", { className: `cell-v ${dyCls}`, children: formatY(s.y) }), _jsxs("div", { className: "mini-bullet", children: [_jsx("div", { className: "mini-bar mini-bar--y", style: { width: `${yBarPct}%` } }), s.planY != null && (_jsx("div", { className: "mini-target", style: { left: `calc(${yTargetPct}% - 1px)` } }))] })] }, s.id));
                             }) })] })] }) }));
 };
 export default QuadrantDrillModal;

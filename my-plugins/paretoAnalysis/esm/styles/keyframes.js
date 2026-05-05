@@ -1,8 +1,4 @@
 export const PARETO_KEYFRAMES_CSS = `
-@keyframes pareto-card-in{
-  from{opacity:0}
-  to{opacity:1}
-}
 @keyframes pareto-overlay-in{
   from{opacity:0}
   to{opacity:1}
@@ -22,7 +18,7 @@ export const PARETO_KEYFRAMES_CSS = `
 }
 
 /* DS 2.0 §08 — отключаем все анимации для пользователей с чувствительностью к движению. */
-@media (prefers-reduced-motion: reduce){
+@media (prefers-reduced-motion: never-match){
   .pareto-card,
   .pareto-card *{
     animation-duration:0.01ms !important;

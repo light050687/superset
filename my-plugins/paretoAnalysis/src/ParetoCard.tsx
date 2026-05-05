@@ -13,9 +13,12 @@ import {
   CardHead,
   CardTitleGroup,
   CardTitle,
+  CardSubtitle,
   ControlsRow,
   ChartBox,
   CardFooter,
+  SkeletonBlock,
+  StateCenter,
   PARETO_CARD_CLASS,
 } from './styles/styled';
 import { PARETO_KEYFRAMES_CSS } from './styles/keyframes';
@@ -58,6 +61,7 @@ function ParetoCardInner(props: ParetoCardProps) {
     height,
     items: rawItems,
     headerText,
+    subtitleText,
     metricLabel,
     metricUnit,
     metricGenitive,
@@ -135,6 +139,36 @@ function ParetoCardInner(props: ParetoCardProps) {
   // будут ссылаться на один и тот же element id.
   const titleId = useId();
 
+  // DS 2.0 canonical: loading имеет свой раздельный return со своим <Card>.
+  // При переходе loading → loaded React unmount'ит loading-Card и mount'ит
+  // новый → cardInKf animation запускается ровно когда юзер видит реальный
+  // контент (см. styled.ts:cardInKf и canonical donut StructureDonut.tsx).
+  if (dataState === 'loading') {
+    return (
+      <ParetoCardRoot
+        ref={rootRef}
+        width={width}
+        height={height}
+        data-theme={isDarkMode ? 'dark' : 'light'}
+        className={PARETO_CARD_CLASS}
+      >
+        <Global styles={css`${PARETO_KEYFRAMES_CSS}`} />
+        <Card role="region" aria-labelledby={titleId} aria-busy="true">
+          <CardHead>
+            <CardTitleGroup>
+              <CardTitle id={titleId}>{headerText}</CardTitle>
+              {subtitleText && <CardSubtitle>{subtitleText}</CardSubtitle>}
+            </CardTitleGroup>
+          </CardHead>
+          <StateCenter role="status" aria-label="Загрузка">
+            <SkeletonBlock w="60%" h="18px" />
+            <SkeletonBlock w="100%" h="220px" />
+          </StateCenter>
+        </Card>
+      </ParetoCardRoot>
+    );
+  }
+
   return (
     <ParetoCardRoot
       ref={rootRef}
@@ -148,6 +182,7 @@ function ParetoCardInner(props: ParetoCardProps) {
         <CardHead>
           <CardTitleGroup>
             <CardTitle id={titleId}>{headerText}</CardTitle>
+            {subtitleText && <CardSubtitle>{subtitleText}</CardSubtitle>}
             <Breadcrumb
               state={state}
               items={computed.items}

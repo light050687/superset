@@ -43,6 +43,11 @@ const SwatchRow = styled.span`
   gap: 8px;
 `;
 
+const AccentLabel = styled.span`
+  font-family: var(--m);
+  font-size: var(--fs-micro);
+`;
+
 const Swatch = styled.span<{ color: string }>`
   display: inline-block;
   width: 10px;
@@ -55,7 +60,7 @@ const Swatch = styled.span<{ color: string }>`
 
 const HelpText = styled.div<{ tone: 'muted' | 'warn' }>`
   font-family: 'Manrope', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: ${({ tone, theme }) => {
     const dark = isDarkTheme(
       (theme as unknown as { colorBgContainer?: string })?.colorBgContainer,
@@ -121,9 +126,7 @@ function CategoryColorMapControl(
         label: (
           <SwatchRow>
             <Swatch color={tokens[a]} />
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }}>
-              {a}
-            </span>
+            <AccentLabel>{a}</AccentLabel>
           </SwatchRow>
         ),
       })),

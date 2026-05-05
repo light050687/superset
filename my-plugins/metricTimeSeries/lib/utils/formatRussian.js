@@ -33,15 +33,24 @@ function ruInt(value) {
 /**
  * Tooltip/main value formatter for RUB scale.
  *
- * Values are assumed to come in millions of rubles (as in the mockup).
- * Anything >= 1 млн → "X,X млн ₽"
- * Below 1 (e.g. 0.5 млн = 500 тыс) → "X тыс ₽"
- * Null → "—"
+ * Канонический fmtRub (DS 2.0): входное значение интерпретируется как
+ * МИЛЛИОНЫ рублей (как в исходных данных). Расширено auto-unit до трлн:
+ *  - value < 0.001       → "—"
+ *  - value <  1          → "X тыс ₽"
+ *  - value <  1 000      → "X,X млн ₽"
+ *  - value <  1 000 000  → "X,XX млрд ₽"
+ *  - иначе               → "X,XX трлн ₽"
  */
-function fmtRub(value) {
+function fmtRub(value, decimals = 2) {
     if (value == null)
         return '—';
     const abs = Math.abs(value);
+    if (abs >= 1000000) {
+        return `${ruNumber(value / 1000000, decimals)} трлн ₽`;
+    }
+    if (abs >= 1000) {
+        return `${ruNumber(value / 1000, decimals)} млрд ₽`;
+    }
     if (abs >= 1) {
         return `${ruNumber(value, 1)} млн ₽`;
     }
@@ -77,6 +86,10 @@ function fmtSmart(value, decimals = -1, suffix = '') {
         return '—';
     const abs = Math.abs(value);
     const sfx = suffix ? ` ${suffix}` : '';
+    if (abs >= 1000000000000) {
+        const d = decimals >= 0 ? decimals : abs >= 10000000000000 ? 1 : 2;
+        return `${ruNumber(value / 1000000000000, d)} трлн${sfx}`;
+    }
     if (abs >= 1000000000) {
         const d = decimals >= 0 ? decimals : abs >= 10000000000 ? 1 : 2;
         return `${ruNumber(value / 1000000000, d)} млрд${sfx}`;

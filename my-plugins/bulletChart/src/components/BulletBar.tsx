@@ -72,7 +72,7 @@ const BulletBar: React.FC<BulletBarProps> = ({
         <BBand
           key={i}
           bg={b.kind}
-          style={{ width: `${b.w}%` }}
+          widthPct={b.w}
           aria-hidden="true"
         />
       ))}

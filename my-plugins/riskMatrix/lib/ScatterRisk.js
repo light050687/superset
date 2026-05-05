@@ -38,7 +38,38 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = __importStar(require("react"));
+const core_1 = require("@superset-ui/core");
 const styles_1 = require("./styles");
+/* === Локальные styled-обёртки (миграция inline style → Emotion, P-011) === */
+/** Overlay поверх ChartArea, когда нет данных. */
+const EmptyOverlay = (0, core_1.styled)(styles_1.EmptyBlock) `
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--s);
+  z-index: 20;
+`;
+/** Заголовок пустого состояния («Нет данных»). */
+const EmptyTitle = core_1.styled.div `
+  font-size: var(--fs-interactive);
+  font-weight: 700;
+  color: var(--g700);
+`;
+/** Подсказка пустого состояния (рекомендация по настройке). */
+const EmptyHint = core_1.styled.div `
+  font-size: var(--fs-meta);
+  color: var(--g500);
+`;
+/** SVG-overlay для lasso-выбора: кладётся абсолютно поверх ChartArea. */
+const LassoSvg = core_1.styled.svg `
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+`;
 const Toolbar_1 = __importDefault(require("./Toolbar"));
 const Legend_1 = __importDefault(require("./Legend"));
 const quadrants_1 = require("./utils/quadrants");
@@ -62,7 +93,7 @@ function resolveFormatColor(map, format, hostEl) {
     return 'currentColor';
 }
 const ScatterRisk = (props) => {
-    const { width, height, stores, formats, thresholdX, thresholdY, hasThresholds, quadrants, enableQuadrantAnnotations, enableWorstStar, title, subtitle, xLabel, yLabel, xUnit, yUnit, sizeUnit, formatX, formatY, formatSize, formatLoss, formatCount, xShort, yShort, isDarkMode, setDataMask, filterState, storeColumn, drillEnabled, detailQueryParams, shortcutsHint, } = props;
+    const { width, height, stores, formats, thresholdX, thresholdY, hasThresholds, quadrants, enableQuadrantAnnotations, enableWorstStar, title, subtitle, xLabel, yLabel, xUnit, yUnit, sizeUnit, formatX, formatY, formatSize, formatLoss, formatCount, xShort, yShort, isDarkMode, setDataMask, filterState, storeColumn, drillEnabled, detailQueryParams, shortcutsHint, dataState, } = props;
     // ── State ──
     const [hiddenFormats, setHiddenFormats] = (0, react_1.useState)(new Set());
     const [activeFilters, setActiveFilters] = (0, react_1.useState)(() => {
@@ -743,22 +774,18 @@ const ScatterRisk = (props) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hasThresholds, enableQuadrantAnnotations, width, height, viewDomain, autoDomain]);
     const themeMode = isDarkMode ? 'dark' : 'light';
-    return ((0, jsx_runtime_1.jsxs)(styles_1.CardRoot, { "data-theme": themeMode, role: "region", "aria-labelledby": "sr-card-title", children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsxs)(styles_1.CardHead, { children: [(0, jsx_runtime_1.jsxs)(styles_1.TitleBlock, { children: [(0, jsx_runtime_1.jsx)(styles_1.CardTitle, { id: "sr-card-title", children: title }), (0, jsx_runtime_1.jsxs)(styles_1.CardSubtitle, { children: [subtitle && (0, jsx_runtime_1.jsx)("span", { children: subtitle }), subtitle && (0, jsx_runtime_1.jsx)("span", { className: "dot" }), (0, jsx_runtime_1.jsxs)("span", { className: "strong", children: [formatCount(stores.length), " \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u0432"] }), activeFilters.size > 0 && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("span", { className: "dot" }), (0, jsx_runtime_1.jsxs)("span", { children: [formatCount(activeFilters.size), " \u0432\u044B\u0431\u0440\u0430\u043D\u043E"] })] }))] })] }), (0, jsx_runtime_1.jsx)(styles_1.Controls, { children: (0, jsx_runtime_1.jsx)(Toolbar_1.default, { selectMode: selectMode, hasFilters: activeFilters.size > 0, onAction: onSelectAction, onReset: onReset, onClear: onClearFilters, searchQuery: searchQuery, onSearchChange: setSearchQuery, searchMatchesCount: searchMatches.length, onSearchSelect: onSearchSelect }) })] }), (0, jsx_runtime_1.jsxs)(styles_1.ChartArea, { ref: chartAreaRef, className: [selectMode ? 'mode-select' : '', panActive ? 'panning' : ''].join(' ').trim(), onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseLeave, children: [stores.length === 0 && ((0, jsx_runtime_1.jsxs)(styles_1.EmptyBlock, { style: {
-                            position: 'absolute',
-                            inset: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexDirection: 'column',
-                            gap: 8,
-                            background: 'var(--s)',
-                            zIndex: 20,
-                        }, role: "status", "aria-live": "polite", children: [(0, jsx_runtime_1.jsx)("div", { style: { fontSize: 13, fontWeight: 700, color: 'var(--g700)' }, children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445" }), (0, jsx_runtime_1.jsx)("div", { style: { fontSize: 10, color: 'var(--g500)' }, children: "\u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043C\u0435\u0442\u0440\u0438\u043A\u0438 X/Y \u0438 \u0438\u0437\u043C\u0435\u0440\u0435\u043D\u0438\u0435 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u0430 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445" })] })), (0, jsx_runtime_1.jsx)(styles_1.ChartSvg, { ref: svgRef, onClick: handleSvgClick, onDoubleClick: handleSvgDoubleClick, onMouseMove: handleSvgMouseMove, onMouseLeave: handleSvgMouseLeave, onKeyDown: handleSvgKeyDown }), (0, jsx_runtime_1.jsxs)(styles_1.SelectionOverlay, { children: [selectMode === 'rect' && selectionStart && selectionPath.length > 0 && ((0, jsx_runtime_1.jsx)("div", { className: "selection-rect", style: {
+    // DS 2.0 canonical: loading имеет свой раздельный return со своим CardRoot.
+    // При переходе loading → loaded React unmount'ит loading-CardRoot и mount'ит
+    // новый → cardInKf animation запускается ровно когда юзер видит контент.
+    if (dataState === 'loading') {
+        return ((0, jsx_runtime_1.jsxs)(styles_1.CardRoot, { "data-theme": themeMode, role: "region", "aria-busy": "true", children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsx)(styles_1.CardHead, { children: (0, jsx_runtime_1.jsx)(styles_1.TitleBlock, { children: (0, jsx_runtime_1.jsx)(styles_1.CardTitle, { children: title }) }) }), (0, jsx_runtime_1.jsx)("div", { role: "status", "aria-label": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430", style: { flex: 1 } })] }));
+    }
+    return ((0, jsx_runtime_1.jsxs)(styles_1.CardRoot, { "data-theme": themeMode, role: "region", "aria-labelledby": "sr-card-title", children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), dataState === 'stale' && (0, jsx_runtime_1.jsx)(styles_1.StaleBar, { "aria-hidden": "true" }), (0, jsx_runtime_1.jsxs)(styles_1.CardHead, { children: [(0, jsx_runtime_1.jsxs)(styles_1.TitleBlock, { children: [(0, jsx_runtime_1.jsxs)(styles_1.CardTitle, { id: "sr-card-title", children: [title, dataState === 'partial' && ((0, jsx_runtime_1.jsx)(styles_1.PartialBadge, { title: "\u0427\u0430\u0441\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0445 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430", children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u043E" }))] }), (0, jsx_runtime_1.jsxs)(styles_1.CardSubtitle, { children: [subtitle && (0, jsx_runtime_1.jsx)("span", { children: subtitle }), subtitle && (0, jsx_runtime_1.jsx)("span", { className: "dot" }), (0, jsx_runtime_1.jsxs)("span", { className: "strong", children: [formatCount(stores.length), " \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u0432"] }), activeFilters.size > 0 && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("span", { className: "dot" }), (0, jsx_runtime_1.jsxs)("span", { children: [formatCount(activeFilters.size), " \u0432\u044B\u0431\u0440\u0430\u043D\u043E"] })] }))] })] }), (0, jsx_runtime_1.jsx)(styles_1.Controls, { children: (0, jsx_runtime_1.jsx)(Toolbar_1.default, { selectMode: selectMode, hasFilters: activeFilters.size > 0, onAction: onSelectAction, onReset: onReset, onClear: onClearFilters, searchQuery: searchQuery, onSearchChange: setSearchQuery, searchMatchesCount: searchMatches.length, onSearchSelect: onSearchSelect }) })] }), (0, jsx_runtime_1.jsxs)(styles_1.ChartArea, { ref: chartAreaRef, className: [selectMode ? 'mode-select' : '', panActive ? 'panning' : ''].join(' ').trim(), onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseLeave, children: [stores.length === 0 && ((0, jsx_runtime_1.jsxs)(EmptyOverlay, { role: "status", "aria-live": "polite", children: [(0, jsx_runtime_1.jsx)(EmptyTitle, { children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445" }), (0, jsx_runtime_1.jsx)(EmptyHint, { children: "\u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043C\u0435\u0442\u0440\u0438\u043A\u0438 X/Y \u0438 \u0438\u0437\u043C\u0435\u0440\u0435\u043D\u0438\u0435 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u0430 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445" })] })), (0, jsx_runtime_1.jsx)(styles_1.ChartSvg, { ref: svgRef, onClick: handleSvgClick, onDoubleClick: handleSvgDoubleClick, onMouseMove: handleSvgMouseMove, onMouseLeave: handleSvgMouseLeave, onKeyDown: handleSvgKeyDown }), (0, jsx_runtime_1.jsxs)(styles_1.SelectionOverlay, { children: [selectMode === 'rect' && selectionStart && selectionPath.length > 0 && ((0, jsx_runtime_1.jsx)("div", { className: "selection-rect", style: {
                                     left: Math.min(selectionStart.x, selectionPath[selectionPath.length - 1].x),
                                     top: Math.min(selectionStart.y, selectionPath[selectionPath.length - 1].y),
                                     width: Math.abs(selectionPath[selectionPath.length - 1].x - selectionStart.x),
                                     height: Math.abs(selectionPath[selectionPath.length - 1].y - selectionStart.y),
-                                } })), selectMode === 'lasso' && selectionPath.length > 1 && ((0, jsx_runtime_1.jsx)("svg", { width: "100%", height: "100%", style: { position: 'absolute', inset: 0, pointerEvents: 'none' }, children: (0, jsx_runtime_1.jsx)("path", { className: "selection-lasso", d: selectionPath
+                                } })), selectMode === 'lasso' && selectionPath.length > 1 && ((0, jsx_runtime_1.jsx)(LassoSvg, { width: "100%", height: "100%", children: (0, jsx_runtime_1.jsx)("path", { className: "selection-lasso", d: selectionPath
                                         .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(0)} ${p.y.toFixed(0)}`)
                                         .join(' ') + ' Z' }) }))] }), quadrantStats &&
                         enableQuadrantAnnotations &&
@@ -791,8 +818,8 @@ const ScatterRisk = (props) => {
                             // Делим по тире: левая часть — клавиши (в <kbd>), правая — описание.
                             const [keyPart, descPart] = part.split(/\s+[—-]\s+/);
                             const keys = (keyPart ?? part).split('+').map((k) => k.trim()).filter(Boolean);
-                            return ((0, jsx_runtime_1.jsxs)("div", { className: "hint-item", children: [keys.map((k, ki) => ((0, jsx_runtime_1.jsxs)(react_1.default.Fragment, { children: [ki > 0 && (0, jsx_runtime_1.jsx)("span", { children: "+" }), (0, jsx_runtime_1.jsx)("kbd", { children: k })] }, ki))), descPart && (0, jsx_runtime_1.jsxs)("span", { children: ["\u2014 ", descPart] })] }, i));
-                        }) }), (0, jsx_runtime_1.jsx)("div", { className: "hint", children: (0, jsx_runtime_1.jsxs)("div", { className: "hint-item", children: [(0, jsx_runtime_1.jsx)("svg", { viewBox: "0 0 12 12", fill: "none", stroke: "currentColor", strokeWidth: "1.5", children: (0, jsx_runtime_1.jsx)("circle", { cx: "6", cy: "6", r: "4" }) }), (0, jsx_runtime_1.jsxs)("span", { children: ["\u0440\u0430\u0437\u043C\u0435\u0440 = ", sizeUnit] })] }) })] }), (0, jsx_runtime_1.jsx)(styles_1.Tooltip, { ref: tooltipRef, role: "tooltip", "aria-hidden": "true" }), drillEnabled && drillStoreId && ((0, jsx_runtime_1.jsx)(StoreDrillModal_1.default, { storeId: drillStoreId, stores: stores, quadrants: quadrants, thresholds: thresholds, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatSize: formatSize, formatLoss: formatLoss, xShort: xShort, yShort: yShort, sizeUnit: sizeUnit, detailQueryParams: detailQueryParams, onClose: () => setDrillStoreId(null) })), drillEnabled && drillQuadrant && ((0, jsx_runtime_1.jsx)(QuadrantDrillModal_1.default, { quadrantKey: drillQuadrant, quadrants: quadrants, thresholds: thresholds, stores: visibleStores, allStoresTotal: stores.length, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatLoss: formatLoss, formatCount: formatCount, xShort: xShort, yShort: yShort, onClose: () => setDrillQuadrant(null), onOpenStore: (id) => setDrillStoreId(id) }))] }));
+                            return ((0, jsx_runtime_1.jsxs)(react_1.default.Fragment, { children: [i > 0 && (0, jsx_runtime_1.jsx)("span", { className: "hi-sep", "aria-hidden": "true" }), (0, jsx_runtime_1.jsxs)("span", { className: "hi", children: [keys.map((k, ki) => ((0, jsx_runtime_1.jsxs)(react_1.default.Fragment, { children: [ki > 0 && (0, jsx_runtime_1.jsx)("span", { children: "+" }), (0, jsx_runtime_1.jsx)("kbd", { children: k })] }, ki))), descPart && (0, jsx_runtime_1.jsxs)("span", { children: ["\u2014 ", descPart] })] })] }, i));
+                        }) }), (0, jsx_runtime_1.jsx)("div", { className: "hint", children: (0, jsx_runtime_1.jsxs)("span", { className: "hi", children: [(0, jsx_runtime_1.jsx)("svg", { viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "1.5", children: (0, jsx_runtime_1.jsx)("circle", { cx: "8", cy: "8", r: "5" }) }), (0, jsx_runtime_1.jsxs)("span", { children: ["\u0440\u0430\u0437\u043C\u0435\u0440 = ", sizeUnit] })] }) })] }), (0, jsx_runtime_1.jsx)(styles_1.Tooltip, { ref: tooltipRef, role: "tooltip", "aria-hidden": "true" }), drillEnabled && drillStoreId && ((0, jsx_runtime_1.jsx)(StoreDrillModal_1.default, { storeId: drillStoreId, stores: stores, quadrants: quadrants, thresholds: thresholds, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatSize: formatSize, formatLoss: formatLoss, xShort: xShort, yShort: yShort, sizeUnit: sizeUnit, detailQueryParams: detailQueryParams, onClose: () => setDrillStoreId(null) })), drillEnabled && drillQuadrant && ((0, jsx_runtime_1.jsx)(QuadrantDrillModal_1.default, { quadrantKey: drillQuadrant, quadrants: quadrants, thresholds: thresholds, stores: visibleStores, allStoresTotal: stores.length, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatLoss: formatLoss, formatCount: formatCount, xShort: xShort, yShort: yShort, onClose: () => setDrillQuadrant(null), onOpenStore: (id) => setDrillStoreId(id) }))] }));
 };
 exports.default = ScatterRisk;
 //# sourceMappingURL=ScatterRisk.js.map

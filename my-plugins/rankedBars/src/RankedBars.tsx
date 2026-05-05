@@ -20,6 +20,7 @@ import {
   Controls,
   RankList,
   SkeletonRow,
+  StaleBar,
   StateWrap,
   TitleBlock,
 } from './styles';
@@ -383,12 +384,46 @@ const RankedBars: React.FC<RankedBarsProps> = props => {
 
   const totalRowsCount = rows.length;
 
+  // DS 2.0 canonical: loading имеет свой раздельный return со своим CardRoot.
+  // При переходе loading → loaded React unmount'ит loading-CardRoot и mount'ит
+  // новый → cardInKf animation запускается ровно когда юзер видит контент.
+  if (dataState === 'loading') {
+    return (
+      <CardRoot
+        data-theme={themeMode}
+        role="region"
+        aria-labelledby="rb-card-title"
+        aria-busy="true"
+      >
+        <CardHead>
+          <TitleBlock>
+            <CardTitle id="rb-card-title">{headerText}</CardTitle>
+          </TitleBlock>
+        </CardHead>
+        <RankList $hasFilter={false} role="list" aria-busy="true">
+          {Array.from({ length: topNVisible }).map((_, i) => (
+            <SkeletonRow key={i}>
+              <span className="icon" />
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </SkeletonRow>
+          ))}
+        </RankList>
+      </CardRoot>
+    );
+  }
+
   return (
     <CardRoot
       data-theme={themeMode}
       role="region"
       aria-labelledby="rb-card-title"
     >
+      {dataState === 'stale' && <StaleBar aria-hidden="true" />}
       <CardHead>
         <TitleBlock>
           <CardTitle id="rb-card-title">{headerText}</CardTitle>

@@ -4,9 +4,16 @@
  * через атрибут data-theme (light | dark).
  */
 import { styled } from '@superset-ui/core';
+import { keyframes } from '@emotion/react';
 import { LIGHT_TOKENS as L, DARK_TOKENS as D } from './tokens';
 import { EASE } from './keyframes';
 export const PARETO_CARD_CLASS = 'pareto-card';
+// DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
+// race-condition-free относительно <style dangerouslySetInnerHTML> (см. donut).
+const cardInKf = keyframes `
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 // ═══════════════════════════════════════
 // Root — CSS-vars light/dark
 // ═══════════════════════════════════════
@@ -35,6 +42,7 @@ export const ParetoCardRoot = styled.div `
   --f: ${L.fontSans};
   --m: ${L.fontMono};
   --sh: 0 1px 3px rgba(15, 17, 20, 0.06);
+  --modal-scrim: rgba(0, 0, 0, 0.55);
 
   &[data-theme='dark'] {
     --bg: ${D.bg};
@@ -57,13 +65,19 @@ export const ParetoCardRoot = styled.div `
     --c-fuchsia: ${D.cFuchsia};
     --c-amber: ${D.cAmber};
     --sh: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --modal-scrim: rgba(0, 0, 0, 0.7);
   }
 
   width: ${({ width }) => width}px;
   height: ${({ height }) => height}px;
+  /* DS v2.0: container query для fluid типографики (cqi растёт с шириной карточки) */
+  container-type: inline-size;
+  container-name: pareto;
   font-family: var(--f);
   color: var(--ink);
-  animation: pareto-card-in 0.22s ${EASE};
+  /* DS v2.0 §02 «Числа»: tabular-nums ВСЕГДА (наследуется на легенду, цифры
+     в карточке выровнены по ширине). */
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   box-sizing: border-box;
 
@@ -86,6 +100,10 @@ export const Card = styled.div `
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* DS 2.0 mount animation. fill-mode both — initial state мгновенно. При
+     переходе loading → loaded React unmount'ит loading-Card и mount'ит
+     новый → animation запускается ровно когда юзер видит реальный контент. */
+  animation: ${cardInKf} 0.6s ${EASE} both;
 `;
 export const CardHead = styled.div `
   display: flex;
@@ -103,15 +121,26 @@ export const CardTitleGroup = styled.div `
   flex: 1;
 `;
 export const CardTitle = styled.div `
-  font-size: 12px;
+  /* DS v2.0 fluid: --fs-micro UPPER моно для card title */
+  font-family: var(--m);
+  font-size: var(--fs-micro);
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink);
 `;
+export const CardSubtitle = styled.div `
+  /* DS 2.0: subtitle с локализованным time_range («за год», «за месяц»). */
+  font-family: var(--m);
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  color: var(--g500);
+  letter-spacing: 0.02em;
+  margin-top: 1px;
+`;
 export const BreadcrumbRow = styled.div `
   font-family: var(--m);
-  font-size: 9px;
+  font-size: var(--fs-micro);
   color: var(--g500);
   letter-spacing: 0.03em;
   display: flex;
@@ -124,16 +153,19 @@ export const BreadcrumbBtn = styled.button `
   background: transparent;
   cursor: pointer;
   font-family: var(--m);
-  font-size: 11px;
-  font-weight: 600;
+  /* DS 2.0: ◂ back-button — крупный (18px/700), чтобы юзер сразу видел «назад». */
+  font-size: 18px;
+  font-weight: 700;
   color: var(--g500);
-  padding: 0 4px;
-  border-radius: 3px;
+  padding: 0 6px;
+  border-radius: 6px;
   transition: color 0.15s ${EASE}, background 0.15s ${EASE};
   line-height: 1;
   display: inline-flex;
   align-items: center;
-  height: 14px;
+  justify-content: center;
+  height: 22px;
+  min-width: 22px;
   &:hover,
   &:focus-visible {
     color: var(--ink);
@@ -173,7 +205,7 @@ export const UnitBtn = styled.button `
   background: ${({ active }) => (active ? 'var(--c-sky)' : 'transparent')};
   color: ${({ active }) => (active ? 'var(--on-accent)' : 'var(--g500)')};
   font-family: var(--f);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   padding: 5px 13px;
   border-radius: 5px;
@@ -204,7 +236,7 @@ export const Chip = styled.button `
     ${({ active }) => (active ? 'var(--c-sky)' : 'var(--g200)')};
   border-radius: 7px;
   font-family: var(--f);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   color: ${({ active }) => (active ? 'var(--on-accent)' : 'var(--g500)')};
   padding: 5px 11px;
@@ -236,22 +268,22 @@ export const ThresholdWrap = styled.label `
   padding: 5px 12px;
   min-height: 30px;
   font-family: var(--f);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   color: var(--g500);
   letter-spacing: 0.01em;
 `;
 export const ThresholdLabel = styled.span `
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   color: var(--g500);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 `;
 export const ThresholdValue = styled.span `
   font-family: var(--m);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 700;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
@@ -315,13 +347,13 @@ export const VitalFewLine = styled.div `
   gap: 8px;
   margin: 2px 0 12px;
   font-family: var(--f);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: var(--g500);
   letter-spacing: 0.01em;
 
   b {
     font-family: var(--m);
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 700;
     color: var(--ink);
     font-variant-numeric: tabular-nums;
@@ -368,10 +400,10 @@ export const HintItem = styled.div `
   align-items: center;
   gap: 14px;
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--g500);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
   white-space: nowrap;
   justify-self: start;
 
@@ -380,11 +412,31 @@ export const HintItem = styled.div `
     align-items: center;
     gap: 6px;
   }
+  /* DS 2.0: иконки 16px (раньше 11px — не видно). */
   .hi svg {
-    width: 11px;
-    height: 11px;
+    width: 16px;
+    height: 16px;
     color: var(--g500);
     flex-shrink: 0;
+  }
+  .hi .hi-arrow {
+    /* Типографический «◂» внутри hint-текста, той же формы что в breadcrumb. */
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--g600);
+    margin-right: 2px;
+    vertical-align: -1px;
+  }
+  .hi-sep {
+    /* Вертикальный разделитель между подсказками — заменяет SVG-стрелки «→»
+       которые читались как direction-индикатор, а не как граница. */
+    display: inline-block;
+    width: 1px;
+    height: 14px;
+    background: var(--g300);
+    margin: 0 4px;
+    vertical-align: middle;
   }
 `;
 export const LegendRow = styled.div `
@@ -430,10 +482,10 @@ export const LgLine = styled.span `
 `;
 export const LgLabel = styled.span `
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--g600);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
   white-space: nowrap;
 
   ${Lg}:hover & {
@@ -475,15 +527,15 @@ export const TooltipEl = styled.div `
   color: var(--s);
   border-radius: 6px;
   padding: 9px 13px 10px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--sh);
   font-family: var(--f);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   max-width: 300px;
   animation: pareto-tooltip-in 0.12s ${EASE};
 
   .tt-title {
     font-weight: 700;
-    font-size: 11px;
+    font-size: var(--fs-micro);
     margin-bottom: 5px;
     display: flex;
     align-items: center;
@@ -495,18 +547,19 @@ export const TooltipEl = styled.div `
     border-radius: 2px;
   }
   .tt-title .zone {
+    /* DS v2.0 fluid: --fs-nano UPPER для zone tag */
     font-family: var(--m);
-    font-size: 9px;
+    font-size: var(--fs-nano);
     font-weight: 700;
     margin-left: auto;
     padding: 1px 5px;
     border-radius: 3px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
   }
   .tt-row {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 500;
     line-height: 1.6;
     display: flex;
@@ -546,7 +599,7 @@ export const ModalOverlay = styled.div `
   .backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
+    background: var(--modal-scrim);
     backdrop-filter: blur(2px);
   }
 `;
@@ -554,8 +607,8 @@ export const ModalCard = styled.div `
   position: relative;
   background: var(--s);
   border: 1px solid var(--g200);
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  box-shadow: var(--sh);
   max-width: min(680px, 100%);
   width: 100%;
   max-height: calc(100vh - 48px);
@@ -582,15 +635,16 @@ export const ModalTitle = styled.div `
 
   .m-eyebrow {
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-micro);
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--g500);
   }
   .m-h {
+    /* DS v2.0 fluid: --fs-title (20-28) для modal heading */
     font-family: var(--f);
-    font-size: 17px;
+    font-size: var(--fs-title);
     font-weight: 800;
     letter-spacing: -0.02em;
     color: var(--ink);
@@ -647,16 +701,18 @@ export const DrillSummaryGrid = styled.div `
   margin-bottom: 18px;
 
   .s-l {
+    /* DS v2.0: 9px → var(--fs-micro) (минимум 11) UPPER */
     font-family: var(--m);
-    font-size: 9px;
+    font-size: var(--fs-micro);
     font-weight: 600;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--g500);
   }
   .s-v {
+    /* DS v2.0 P0: drill summary value 15px → --fs-subtitle (16-20) */
     font-family: var(--m);
-    font-size: 15px;
+    font-size: var(--fs-subtitle);
     font-weight: 700;
     color: var(--g700);
     font-variant-numeric: tabular-nums;
@@ -702,21 +758,22 @@ export const DrillContext = styled.div `
   }
   .ctx-label {
     font-family: var(--f);
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 600;
     color: var(--g700);
     letter-spacing: -0.01em;
   }
   .ctx-hint {
+    /* DS v2.0: 9px → var(--fs-micro) */
     font-family: var(--m);
-    font-size: 9px;
+    font-size: var(--fs-micro);
     font-weight: 500;
     color: var(--g500);
-    letter-spacing: 0.03em;
+    letter-spacing: 0.01em;
   }
   .ctx-v {
     font-family: var(--m);
-    font-size: 13px;
+    font-size: var(--fs-interactive);
     font-weight: 700;
     color: var(--g700);
     font-variant-numeric: tabular-nums;
@@ -764,10 +821,10 @@ export const DrillContext = styled.div `
   }
 `;
 export const DrillSectionTitle = styled.div `
-  font-family: var(--f);
-  font-size: 11px;
+  font-family: var(--m);
+  font-size: var(--fs-micro);
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--g600);
   margin-bottom: 10px;
@@ -785,7 +842,7 @@ export const DrillBars = styled.div `
   }
   .dbf-l {
     font-family: var(--f);
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 500;
     color: var(--g700);
   }
@@ -802,7 +859,7 @@ export const DrillBars = styled.div `
   }
   .dbf-v {
     font-family: var(--m);
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     text-align: right;
@@ -810,7 +867,7 @@ export const DrillBars = styled.div `
   }
   .dbf-v .pct {
     color: var(--g500);
-    font-size: 10px;
+    font-size: var(--fs-micro);
     margin-left: 4px;
   }
 `;
@@ -830,16 +887,16 @@ export const StateCenter = styled.div `
   text-align: center;
 `;
 export const StateTitle = styled.div `
-  font-size: 13px;
+  font-size: var(--fs-body);
   font-weight: 600;
   color: var(--g600);
   letter-spacing: -0.01em;
 `;
 export const StateSub = styled.div `
   font-family: var(--m);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: var(--g500);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 `;
 export const SkeletonBlock = styled.div `
   width: ${({ w }) => w ?? '100%'};

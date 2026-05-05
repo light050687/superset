@@ -35,4 +35,13 @@ export declare function formatRussianPercent(pct: number, decimals?: number): st
  *   formatRussianDeltaPercent(0)    → "0,0%"
  */
 export declare function formatRussianDeltaPercent(pct: number, decimals?: number): string;
+/**
+ * Канонический fmtRub (DS 2.0): авто-переключение единицы для рублёвых сумм.
+ *  - <10k       → "1 234 ₽"
+ *  - <1M        → "1 234 тыс ₽"
+ *  - <1B        → "1,23 млн ₽"
+ *  - <1T        → "1,23 млрд ₽"
+ *  - иначе      → "1,23 трлн ₽"
+ */
+export declare function fmtRub(v: number | null | undefined, decimals?: number): string;
 //# sourceMappingURL=formatRussian.d.ts.map

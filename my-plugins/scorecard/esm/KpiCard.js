@@ -1,17 +1,19 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { CARD_CLASS, KEYFRAMES_CSS, KpiCardRoot, Card, CardHead, CardTitle, ToggleGroup, ToggleButton, DataContainer, DataLayer, HeroValue, Subtitle, ComparisonSection, ComparisonItem, ComparisonLabel, ComparisonValue, DeltaPill, EmptyStateWrap, EmptyStateIcon, EmptyStateText, PartialBadge, MockBadge, SkeletonBlock, SkeletonWrap, ErrorStateIcon, RefreshBar, } from './styles';
+import { CARD_CLASS, KEYFRAMES_CSS, KpiCardRoot, Card, CardHead, CardTitle, SkeletonText, ToggleGroup, ToggleButton, DataContainer, DataLayer, HeroValue, Subtitle, ComparisonSection, ComparisonItem, ComparisonLabel, ComparisonValue, DeltaPill, EmptyStateWrap, EmptyStateIcon, EmptyStateText, PartialBadge, MockBadge, ErrorStateIcon, RefreshBar, } from './styles';
 import DetailModal from './DetailModal';
 /* ── Counter animation ──────────────────────────────────────────────
  * The integer part of the hero value counts up from 0 → target.
  * Easing: cubic-bezier(.4,0,.2,1) ≈ easeOutQuart.
  * ────────────────────────────────────────────────────────────────── */
-const COUNTER_DELAY_MS = 250;
+const COUNTER_DELAY_MS = 350;
 function easeOutQuart(t) {
     return 1 - (1 - t) ** 4;
 }
 function counterDuration(target) {
-    return Math.min(1200, 700 + target * 30);
+    // Замедленная версия: пользователь попросил визуально мягче — DS 2.0
+    // hard-cap всё ещё 0.9s; для маленьких чисел минимум 500мс.
+    return Math.min(900, 500 + target * 20);
 }
 function parseHeroInt(value) {
     const m = value.match(/^(.*?)(\d+)([\s\S]*)$/);
@@ -102,12 +104,24 @@ formatValueA, formatValueB, formatDelta, detailTopN, detailPageSize, mockModeEna
     const [hasAnimated, setHasAnimated] = useState(false);
     const rootRef = useRef(null);
     // ── Hide Superset dashboard chart wrapper (title, background, shadow) ──
+    // NOTE: Этот эффект СНАЧАЛА жил здесь как per-instance DOM manipulation
+    // (inject <style>, переместить ⋮ через ref). После того как universal
+    // CSS-reset был добавлен в DashboardBuilder.tsx (для всех ext-* плагинов
+    // через :has(div[data-test-viz-type^='ext-'])), эта инжекция стала
+    // дублировать работу — оба правила пытались позиционировать .header-controls,
+    // что приводило к двум видимым «троеточиям» на разных позициях.
+    // Оставляем только cleanup для уже existing __kpiDotsCleanup рефов
+    // (старые DOM listeners из прошлых mount'ов), без новой DOM-манипуляции.
     // Keep the three-dot menu (⋮) accessible but hide title text and wrapper chrome
     useEffect(() => {
         const el = rootRef.current;
         if (!el)
             return;
-        // Inject global CSS once for all KPI Card instances
+        // Inject global CSS once for all KPI Card instances.
+        // RESTORED: Юзер хочет dot-menu СНАРУЖИ Card (top:6 right:-6),
+        // как было до коммита dee3b0d. Universal CSS в DashboardBuilder.tsx
+        // теперь exclude'ит ext-kpi-card из dot-menu правил, поэтому здесь
+        // injected style снова рулит позиционированием для KPI индивидуально.
         const STYLE_ID = 'kpi-card-superset-wrapper-reset';
         if (!document.getElementById(STYLE_ID)) {
             const style = document.createElement('style');
@@ -287,7 +301,9 @@ formatValueA, formatValueB, formatDelta, detailTopN, detailPageSize, mockModeEna
     }, []);
     // Disable entrance animations after initial render completes
     useEffect(() => {
-        const timer = window.setTimeout(() => setHasAnimated(true), 1200);
+        /* 1700ms покрывает весь каскад: kpi-card-in 0.85s + delta-pill delay
+           0.95s + duration 0.6s = ~1.55s. Плюс buffer 150мс. */
+        const timer = window.setTimeout(() => setHasAnimated(true), 1700);
         return () => clearTimeout(timer);
     }, []);
     const isA = activeMode === 'a';
@@ -296,7 +312,7 @@ formatValueA, formatValueB, formatDelta, detailTopN, detailPageSize, mockModeEna
     const isStale = dataState === 'stale';
     // ── Loading state — skeleton placeholder ──
     if (dataState === 'loading') {
-        return (_jsxs(KpiCardRoot, { ref: rootRef, width: width, height: height, "data-theme": isDarkMode ? 'dark' : 'light', role: "figure", "aria-label": `${headerText}: загрузка`, "aria-busy": "true", children: [_jsx("style", { dangerouslySetInnerHTML: { __html: KEYFRAMES_CSS } }), _jsxs(Card, { className: CARD_CLASS, children: [_jsx(CardHead, { children: _jsx(SkeletonBlock, { w: "120px", h: 14 }) }), _jsxs(SkeletonWrap, { children: [_jsx(SkeletonBlock, { w: "180px", h: 36 }), _jsx(SkeletonBlock, { w: "100px", h: 12 }), _jsx(SkeletonBlock, { w: "260px", h: 14 })] })] })] }));
+        return (_jsxs(KpiCardRoot, { ref: rootRef, width: width, height: height, "data-theme": isDarkMode ? 'dark' : 'light', role: "figure", "aria-label": `${headerText}: загрузка`, "aria-busy": "true", children: [_jsx("style", { dangerouslySetInnerHTML: { __html: KEYFRAMES_CSS } }), _jsxs(Card, { className: CARD_CLASS, children: [_jsx(CardHead, { children: _jsx(CardTitle, { children: _jsx(SkeletonText, { children: '      ' }) }) }), _jsx(DataContainer, { children: _jsxs(DataLayer, { children: [_jsx(HeroValue, { children: _jsx(SkeletonText, { children: '—————' }) }), _jsx(Subtitle, { children: _jsx(SkeletonText, { children: '——————————' }) }), _jsx(ComparisonSection, { skipAnimation: true, children: _jsxs(ComparisonItem, { children: [_jsx(ComparisonLabel, { children: _jsx(SkeletonText, { children: '———' }) }), _jsx(ComparisonValue, { children: _jsx(SkeletonText, { children: '—————' }) }), _jsx(DeltaPill, { status: "neutral", skipAnimation: true, children: _jsx(SkeletonText, { children: '————' }) })] }) })] }) })] })] }));
     }
     // ── Error state — query or render failure ──
     if (dataState === 'error') {

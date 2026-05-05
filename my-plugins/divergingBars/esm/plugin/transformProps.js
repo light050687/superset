@@ -1,6 +1,28 @@
 import { getMetricLabel } from '@superset-ui/core';
 import { getPreset } from '../mocks/presets';
 import { DEFAULT_FORMATS } from '../utils/mockGenerator';
+/**
+ * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
+ */
+function formatTimeRangeRu(tr) {
+    if (!tr || tr === 'No filter')
+        return 'за период';
+    const map = {
+        'Last day': 'за день',
+        'Last week': 'за неделю',
+        'Last month': 'за месяц',
+        'Last quarter': 'за квартал',
+        'Last year': 'за год',
+        Today: 'сегодня',
+        'This week': 'за эту неделю',
+        'This month': 'за этот месяц',
+        'This year': 'за этот год',
+        'previous calendar week': 'за прошлую неделю',
+        'previous calendar month': 'за прошлый месяц',
+        'previous calendar year': 'за прошлый год',
+    };
+    return map[tr] ?? tr;
+}
 function detectDarkMode(theme) {
     const bg = theme
         ?.colorBgContainer;
@@ -100,6 +122,11 @@ export default function transformProps(chartProps) {
     const headerText = formData.header_text ??
         formData.headerText ??
         'Скорость роста потерь';
+    const userSubtitle = formData.subtitle_text ??
+        formData.subtitleText;
+    const timeRange = formData.time_range ??
+        formData.timeRange;
+    const subtitleText = (userSubtitle?.trim() || formatTimeRangeRu(timeRange));
     const defaultHorizon = (formData.default_horizon ??
         formData.defaultHorizon) ?? '4w';
     const defaultMetric = (formData.default_metric ??
@@ -127,6 +154,7 @@ export default function transformProps(chartProps) {
         width,
         height,
         headerText,
+        subtitleText,
         defaultHorizon,
         defaultMetric,
         showCumulativeView,

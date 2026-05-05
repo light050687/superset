@@ -213,4 +213,32 @@ export function formatRussianDeltaAbs(value) {
     // formatRussianSmart already handles negative sign as '−'
     return value > 0 ? `${sign}${formatted}` : formatted;
 }
+/**
+ * Канонический fmtRub (DS 2.0): авто-переключение единицы для рублёвых сумм.
+ *  - <10k       → "1 234 ₽"
+ *  - <1M        → "1 234 тыс ₽"
+ *  - <1B        → "1,23 млн ₽"
+ *  - <1T        → "1,23 млрд ₽"
+ *  - иначе      → "1,23 трлн ₽"
+ *
+ * Базовая единица входа — рубли. До запятой не более 3 цифр.
+ */
+export function fmtRub(v, decimals = 2) {
+    if (v == null || !Number.isFinite(v))
+        return '—';
+    const abs = Math.abs(v);
+    if (abs >= 1000000000000) {
+        return `${ruNumber(v / 1000000000000, decimals)} трлн ₽`;
+    }
+    if (abs >= 1000000000) {
+        return `${ruNumber(v / 1000000000, decimals)} млрд ₽`;
+    }
+    if (abs >= 1000000) {
+        return `${ruNumber(v / 1000000, decimals)} млн ₽`;
+    }
+    if (abs >= 10000) {
+        return `${ruNumber(v / 1000, 0)} тыс ₽`;
+    }
+    return `${ruNumber(v, 0)} ₽`;
+}
 //# sourceMappingURL=formatRussian.js.map

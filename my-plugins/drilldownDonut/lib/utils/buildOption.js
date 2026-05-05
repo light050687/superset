@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCurrentItems = getCurrentItems;
 exports.applyChildShades = applyChildShades;
+exports.computeHero = computeHero;
 exports.buildOption = buildOption;
 const themeTokens_1 = require("../themeTokens");
 const toRgba_1 = require("./toRgba");
@@ -42,37 +43,38 @@ function applyChildShades(category) {
         ch.color = (0, toRgba_1.toRgba)(category.color, 1 - (i / Math.max(1, n)) * 0.55);
     });
 }
+function computeHero(state) {
+    const items = getCurrentItems(state);
+    const visible = items.filter((i) => !i.hidden);
+    const totalRub = visible.reduce((s, i) => s + i.rub, 0);
+    const dec = typeof state.rubDecimals === 'number' ? state.rubDecimals : 2;
+    const selected = state.selectedIdx != null ? items[state.selectedIdx] : undefined;
+    if (selected && !selected.hidden) {
+        return {
+            value: state.unit === 'rub'
+                ? (0, formatRussian_1.fmtRub)(selected.rub, dec)
+                : (0, formatRussian_1.fmtPctOfRev)(selected.rub, state.totalRevenue, totalRub),
+            label: state.unit === 'pct'
+                ? `${selected.name.toUpperCase()} · ОТ ОБОРОТА`
+                : selected.name.toUpperCase(),
+        };
+    }
+    const base = state.level === 'drilled'
+        ? state.categories.find((c) => c.id === state.drilledId)?.name.toUpperCase() ?? 'ВСЕГО'
+        : 'ВСЕГО';
+    return {
+        value: state.unit === 'rub'
+            ? (0, formatRussian_1.fmtRub)(totalRub, dec)
+            : (0, formatRussian_1.fmtPctOfRev)(totalRub, state.totalRevenue, totalRub),
+        label: state.unit === 'pct' ? `${base} · ОТ ОБОРОТА` : base,
+    };
+}
 function buildOption(args) {
     const { state, tokens: t } = args;
     const items = getCurrentItems(state);
     // Итоги видимых
     const visible = items.filter((i) => !i.hidden);
     const totalRub = visible.reduce((s, i) => s + i.rub, 0);
-    // Hero-число
-    let heroValue;
-    let heroLabel;
-    const selected = state.selectedIdx != null ? items[state.selectedIdx] : undefined;
-    if (selected && !selected.hidden) {
-        heroValue =
-            state.unit === 'rub'
-                ? (0, formatRussian_1.fmtRub)(selected.rub)
-                : (0, formatRussian_1.fmtPctOfRev)(selected.rub, state.totalRevenue, totalRub);
-        heroLabel =
-            state.unit === 'pct'
-                ? `${selected.name.toUpperCase()} · ОТ ОБОРОТА`
-                : selected.name.toUpperCase();
-    }
-    else {
-        heroValue =
-            state.unit === 'rub'
-                ? (0, formatRussian_1.fmtRub)(totalRub)
-                : (0, formatRussian_1.fmtPctOfRev)(totalRub, state.totalRevenue, totalRub);
-        const base = state.level === 'drilled'
-            ? state.categories.find((c) => c.id === state.drilledId)?.name.toUpperCase() ?? 'ВСЕГО'
-            : 'ВСЕГО';
-        heroLabel = state.unit === 'pct' ? `${base} · ОТ ОБОРОТА` : base;
-    }
-    // Данные серии
     const pieData = items.map((it) => {
         const isDimmed = state.selectedIdx != null && state.selectedIdx !== it.origIdx && !it.hidden;
         return {
@@ -92,45 +94,18 @@ function buildOption(args) {
     });
     const showOuterLabels = state.unit === 'pct' && state.showOuterLabelsPct;
     return {
+        // Defaults для pie: animationType='expansion' (init из центра),
+        // animationTypeUpdate='transition' (плавный морф сегментов при drill).
+        // Длительности — медленнее для лучшей визуальности (юзер требование).
         animation: true,
-        animationDuration: 450,
+        animationDuration: 1200,
         animationEasing: 'cubicOut',
-        animationDurationUpdate: 400,
+        animationDurationUpdate: 1500,
         animationEasingUpdate: 'cubicInOut',
-        graphic: {
-            elements: [
-                {
-                    type: 'text',
-                    left: 'center',
-                    top: 'middle',
-                    z: 10,
-                    style: {
-                        text: `{v|${heroValue}}\n{l|${heroLabel}}`,
-                        textAlign: 'center',
-                        textVerticalAlign: 'middle',
-                        rich: {
-                            v: {
-                                fill: t.ink,
-                                fontFamily: themeTokens_1.FONTS.text,
-                                fontSize: 24,
-                                fontWeight: 800,
-                                lineHeight: 28,
-                                align: 'center',
-                            },
-                            l: {
-                                fill: t.g500,
-                                fontFamily: themeTokens_1.FONTS.mono,
-                                fontSize: 9,
-                                fontWeight: 600,
-                                lineHeight: 14,
-                                align: 'center',
-                                padding: [4, 0, 0, 0],
-                            },
-                        },
-                    },
-                },
-            ],
-        },
+        // graphic убран — hero-число рендерится HTML overlay'ем поверх canvas
+        // (см. StructureDonut.tsx) с CSS-переменными --fs-hero/--fs-meta как
+        // в KPI scorecard. Это даёт fluid sizing через Container Queries вместо
+        // hardcoded fontSize.
         tooltip: {
             trigger: 'item',
             backgroundColor: t.ink,
@@ -168,6 +143,18 @@ function buildOption(args) {
                 avoidLabelOverlap: true,
                 startAngle: 90,
                 padAngle: state.padAngle,
+                // animationTypeUpdate:'transition' — smooth морф сегментов при
+                // drill (без дублей которые даёт 'expansion'). Verified Chrome
+                // MCP: с full option (как и возвращает buildOption) renders
+                // 58/60 visible pixels. animationType:'expansion' init только.
+                // Длительности на series-level (pie ignores root, issue #20193).
+                animation: true,
+                animationType: 'expansion',
+                animationTypeUpdate: 'transition',
+                animationDuration: 1000,
+                animationEasing: 'cubicOut',
+                animationDurationUpdate: 1000,
+                animationEasingUpdate: 'cubicInOut',
                 itemStyle: { borderRadius: state.borderRadius },
                 label: {
                     show: showOuterLabels,
@@ -195,10 +182,8 @@ function buildOption(args) {
                 emphasis: {
                     scale: true,
                     scaleSize: 6,
-                    itemStyle: {
-                        shadowBlur: 16,
-                        shadowColor: 'rgba(0,0,0,0.3)',
-                    },
+                    /* DS 2.0: тени убраны (юзер требование). При наведении только
+                       scale-эффект, без shadowBlur/shadowColor. */
                     label: { show: showOuterLabels },
                 },
                 data: pieData,

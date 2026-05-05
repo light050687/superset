@@ -53,20 +53,29 @@ export default {
   },
   parameters: {
     backgrounds: {
-      default: 'light',
+      default: 'design-system',
       values: [
-        { name: 'light', value: '#F3F3F3' },
-        { name: 'dark', value: '#0F1114' },
+        // Источник правды — CSS-переменные DS v2.0 (--bg light/dark
+        // переключается через :root в head_custom_extra.html / темизацию).
+        { name: 'design-system', value: 'var(--bg)' },
       ],
     },
   },
+  decorators: [
+    (Story: React.ComponentType) => (
+      <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 const Template = (args: Omit<ParetoCardProps, 'theme'>) => (
   <div
     style={{
       padding: 32,
-      background: args.isDarkMode ? '#0F1114' : '#F3F3F3',
+      // Фон уезжает в DS v2.0 через `--bg` (см. decorator выше);
+      // wrapper нужен только для padding'a.
       minHeight: '100vh',
     }}
   >

@@ -38,7 +38,7 @@ const BulletBar = ({ value, target, scaleMax, direction, }) => {
         ]
         : bandsLess;
     const bands = direction === 'less_is_better' ? bandsLess : bandsMore;
-    return (_jsxs(BChart, { role: "img", "aria-label": target != null ? `Значение ${value}, цель ${target}` : `Значение ${value}`, children: [bands.map((b, i) => (_jsx(BBand, { bg: b.kind, style: { width: `${b.w}%` }, "aria-hidden": "true" }, i))), _jsx(BBar, { widthPct: barWidth }), targetLeft != null ? _jsx(BTarget, { leftPct: targetLeft }) : null] }));
+    return (_jsxs(BChart, { role: "img", "aria-label": target != null ? `Значение ${value}, цель ${target}` : `Значение ${value}`, children: [bands.map((b, i) => (_jsx(BBand, { bg: b.kind, widthPct: b.w, "aria-hidden": "true" }, i))), _jsx(BBar, { widthPct: barWidth }), targetLeft != null ? _jsx(BTarget, { leftPct: targetLeft }) : null] }));
 };
 export default React.memo(BulletBar);
 //# sourceMappingURL=BulletBar.js.map

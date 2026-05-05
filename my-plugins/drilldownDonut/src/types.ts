@@ -140,6 +140,7 @@ export interface StructureDonutProps {
   padAngle: number;
   borderRadius: number;
   showOuterLabelsPct: boolean;
+  rubDecimals: number; // 0..3, контроль знаков после запятой в hero-числе
 
   isDarkMode: boolean;
   theme: typeof supersetTheme;
@@ -163,4 +164,5 @@ export interface BuildOptionState {
   padAngle: number;
   borderRadius: number;
   showOuterLabelsPct: boolean;
+  rubDecimals?: number;
 }

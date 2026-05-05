@@ -13,6 +13,7 @@ import {
   Card,
   CardHead,
   CardTitle,
+  SkeletonText,
   ToggleGroup,
   ToggleButton,
   DataContainer,
@@ -41,14 +42,16 @@ import DetailModal from './DetailModal';
  * Easing: cubic-bezier(.4,0,.2,1) ≈ easeOutQuart.
  * ────────────────────────────────────────────────────────────────── */
 
-const COUNTER_DELAY_MS = 250;
+const COUNTER_DELAY_MS = 350;
 
 function easeOutQuart(t: number): number {
   return 1 - (1 - t) ** 4;
 }
 
 function counterDuration(target: number): number {
-  return Math.min(1200, 700 + target * 30);
+  // Замедленная версия: пользователь попросил визуально мягче — DS 2.0
+  // hard-cap всё ещё 0.9s; для маленьких чисел минимум 500мс.
+  return Math.min(900, 500 + target * 20);
 }
 
 function parseHeroInt(
@@ -248,13 +251,26 @@ const KpiCardMemo = React.memo(function KpiCardInner({
   const [hasAnimated, setHasAnimated] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
+
   // ── Hide Superset dashboard chart wrapper (title, background, shadow) ──
+  // NOTE: Этот эффект СНАЧАЛА жил здесь как per-instance DOM manipulation
+  // (inject <style>, переместить ⋮ через ref). После того как universal
+  // CSS-reset был добавлен в DashboardBuilder.tsx (для всех ext-* плагинов
+  // через :has(div[data-test-viz-type^='ext-'])), эта инжекция стала
+  // дублировать работу — оба правила пытались позиционировать .header-controls,
+  // что приводило к двум видимым «троеточиям» на разных позициях.
+  // Оставляем только cleanup для уже existing __kpiDotsCleanup рефов
+  // (старые DOM listeners из прошлых mount'ов), без новой DOM-манипуляции.
   // Keep the three-dot menu (⋮) accessible but hide title text and wrapper chrome
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
 
-    // Inject global CSS once for all KPI Card instances
+    // Inject global CSS once for all KPI Card instances.
+    // RESTORED: Юзер хочет dot-menu СНАРУЖИ Card (top:6 right:-6),
+    // как было до коммита dee3b0d. Universal CSS в DashboardBuilder.tsx
+    // теперь exclude'ит ext-kpi-card из dot-menu правил, поэтому здесь
+    // injected style снова рулит позиционированием для KPI индивидуально.
     const STYLE_ID = 'kpi-card-superset-wrapper-reset';
     if (!document.getElementById(STYLE_ID)) {
       const style = document.createElement('style');
@@ -447,7 +463,9 @@ const KpiCardMemo = React.memo(function KpiCardInner({
 
   // Disable entrance animations after initial render completes
   useEffect(() => {
-    const timer = window.setTimeout(() => setHasAnimated(true), 1200);
+    /* 1700ms покрывает весь каскад: kpi-card-in 0.85s + delta-pill delay
+       0.95s + duration 0.6s = ~1.55s. Плюс buffer 150мс. */
+    const timer = window.setTimeout(() => setHasAnimated(true), 1700);
     return () => clearTimeout(timer);
   }, []);
 
@@ -470,14 +488,39 @@ const KpiCardMemo = React.memo(function KpiCardInner({
       >
         <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_CSS }} />
         <Card className={CARD_CLASS}>
+          {/* IDENTICAL DOM TREE с loaded state: те же CardTitle / HeroValue /
+              Subtitle / ComparisonRow components с placeholder text внутри
+              SkeletonText. Браузер reserves РЕАЛЬНУЮ font-size + line-height
+              для каждого text node → размер skeleton = 1:1 с loaded card,
+              без хардкодов и независимо от outerH. */}
           <CardHead>
-            <SkeletonBlock w="120px" h={14} />
+            <CardTitle>
+              <SkeletonText>{'      '}</SkeletonText>
+            </CardTitle>
           </CardHead>
-          <SkeletonWrap>
-            <SkeletonBlock w="180px" h={36} />
-            <SkeletonBlock w="100px" h={12} />
-            <SkeletonBlock w="260px" h={14} />
-          </SkeletonWrap>
+          <DataContainer>
+            <DataLayer>
+              <HeroValue>
+                <SkeletonText>{'—————'}</SkeletonText>
+              </HeroValue>
+              <Subtitle>
+                <SkeletonText>{'——————————'}</SkeletonText>
+              </Subtitle>
+              <ComparisonSection skipAnimation>
+                <ComparisonItem>
+                  <ComparisonLabel>
+                    <SkeletonText>{'———'}</SkeletonText>
+                  </ComparisonLabel>
+                  <ComparisonValue>
+                    <SkeletonText>{'—————'}</SkeletonText>
+                  </ComparisonValue>
+                  <DeltaPill status="neutral" skipAnimation>
+                    <SkeletonText>{'————'}</SkeletonText>
+                  </DeltaPill>
+                </ComparisonItem>
+              </ComparisonSection>
+            </DataLayer>
+          </DataContainer>
         </Card>
       </KpiCardRoot>
     );

@@ -1,4 +1,5 @@
 import { styled } from '@superset-ui/core';
+import { keyframes } from '@emotion/react';
 import { LIGHT_TOKENS as L, DARK_TOKENS as D, FONTS } from './themeTokens';
 
 /*
@@ -12,6 +13,13 @@ import { LIGHT_TOKENS as L, DARK_TOKENS as D, FONTS } from './themeTokens';
 const EASE = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 export const CARD_CLASS = 'wo-ts-card';
+
+// DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
+// race-condition-free относительно <style dangerouslySetInnerHTML> (см. donut).
+const cardInKf = keyframes`
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 
 /* ── Keyframes injected via <style> in WriteoffsTimeseries.tsx ── */
 
@@ -33,7 +41,7 @@ export const KEYFRAMES_CSS = `
   from { background-position: 200% 0; }
   to { background-position: -200% 0; }
 }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: never-match) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
@@ -74,6 +82,7 @@ export const Root = styled.div<{ width: number; height: number }>`
   --c-amber-b: ${L.cAmberBg};
   --f: ${FONTS.text};
   --m: ${FONTS.mono};
+  --sh: 0 1px 3px rgba(15, 17, 20, 0.06);
 
   &[data-theme='dark'] {
     --bg: ${D.bg};
@@ -103,10 +112,14 @@ export const Root = styled.div<{ width: number; height: number }>`
     --c-tangerine-b: ${D.cTangerineBg};
     --c-fuchsia-b: ${D.cFuchsiaBg};
     --c-amber-b: ${D.cAmberBg};
+    --sh: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
 
   width: 100%;
   height: 100%;
+  /* DS v2.0: container query для fluid типографики */
+  container-type: inline-size;
+  container-name: mts;
   box-sizing: border-box;
   font-family: var(--f);
   -webkit-font-smoothing: antialiased;
@@ -134,7 +147,8 @@ export const Card = styled.div`
   display: flex;
   flex-direction: column;
   transition: border-color 0.25s ${EASE};
-  animation: wo-card-in 0.3s ${EASE} both;
+  /* Эмоция keyframes() — race-condition-free относительно plain CSS keyframes. */
+  animation: ${cardInKf} 0.6s ${EASE} both;
 
   &:hover {
     border-color: var(--g300);
@@ -158,13 +172,19 @@ export const TitleWrap = styled.div`
 `;
 
 export const Title = styled.div`
+  /* DS 2.0 §02 «Заголовок секции»: 1-в-1 с scorecard CardTitle и
+     drilldownDonut HeaderText. Manrope sans 17px / 700 / 0.05em UPPER,
+     height 23.75px, display:inline-block (ширина = только текст). */
   font-family: var(--f);
-  font-size: 12px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--ink);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  line-height: 1.2;
+  line-height: 1.3;
+  height: 23.75px;
+  display: inline-block;
+  position: relative;
 `;
 
 export const Breadcrumb = styled.div`
@@ -172,8 +192,8 @@ export const Breadcrumb = styled.div`
   align-items: center;
   gap: 6px;
   font-family: var(--m);
-  font-size: 9px;
-  color: var(--g500);
+  font-size: var(--fs-micro);
+  color: var(--g600);
   letter-spacing: 0.03em;
   min-height: 16px;
 `;
@@ -184,13 +204,17 @@ export const BreadcrumbBack = styled.button`
   background: var(--g100);
   color: var(--g600);
   cursor: pointer;
-  width: 18px;
-  height: 18px;
+  /* DS 2.0: ◂ back-button — крупный (18px/700/22px), читается с дистанции. */
+  font-size: 18px;
+  font-weight: 700;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  padding: 0 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: 6px;
   line-height: 1;
   transition: all 0.15s ${EASE};
 
@@ -213,29 +237,33 @@ export const Controls = styled.div`
 `;
 
 export const IconButton = styled.button<{ active?: boolean }>`
+  /* Trigger показывает текущее выбранное значение → визуально это
+     selected-state (синий), как у unit-toggle button.on. При открытом
+     меню добавляется border-bottom отделяющий trigger от options
+     (через DropdownPanel[data-open="true"] селектор ниже). */
+  box-sizing: border-box;
   appearance: none;
-  border: 1px solid ${({ active }) => (active ? 'var(--c-sky)' : 'var(--g200)')};
-  background: ${({ active }) => (active ? 'var(--c-sky-b)' : 'var(--s)')};
-  color: ${({ active }) => (active ? 'var(--c-sky)' : 'var(--g600)')};
+  border: none;
+  background: ${({ active }) => (active ? 'var(--c-sky)' : 'transparent')};
+  color: ${({ active }) => (active ? 'var(--s)' : 'var(--g500)')};
   cursor: pointer;
-  width: 28px;
+  width: 100%;
   height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
-  font-size: 12px;
+  padding: 0;
+  font-size: var(--fs-meta);
   line-height: 1;
   transition: all 0.15s ${EASE};
 
   &:hover:not(:disabled) {
-    border-color: var(--g300);
-    color: var(--ink);
+    color: ${({ active }) => (active ? 'var(--s)' : 'var(--ink)')};
   }
 
   &:focus-visible {
     outline: 2px solid var(--c-sky);
-    outline-offset: 1px;
+    outline-offset: -2px;
   }
 
   &:disabled {
@@ -250,24 +278,37 @@ export const IconButton = styled.button<{ active?: boolean }>`
 `;
 
 export const UnitToggleGroup = styled.div`
+  /* 1-в-1 с donut UnitToggle и scorecard ToggleGroup:
+     box-sizing: border-box, height 30px, padding 2px, gap 2px,
+     bg --g100, border --g200. Унифицированный «бейдж» для всех ext-*. */
+  box-sizing: border-box;
   display: inline-flex;
+  gap: 2px;
+  background: var(--g100);
   border: 1px solid var(--g200);
   border-radius: 6px;
-  overflow: hidden;
-  background: var(--s);
+  padding: 2px;
+  height: 30px;
 `;
 
 export const UnitButton = styled.button<{ active?: boolean }>`
+  /* 1-в-1 с donut UnitToggle button: height 24px (= 30 - 2*1 border -
+     2*2 padding), padding 0 11, min-width 28, font mono fs-micro 600. */
+  box-sizing: border-box;
   appearance: none;
   border: none;
-  background: ${({ active }) => (active ? 'var(--c-sky)' : 'var(--s)')};
+  background: ${({ active }) => (active ? 'var(--c-sky)' : 'transparent')};
   color: ${({ active }) => (active ? 'var(--s)' : 'var(--g500)')};
   cursor: pointer;
-  padding: 4px 10px;
+  padding: 0 11px;
+  height: 24px;
+  min-width: 28px;
   font-family: var(--m);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  border-radius: 6px;
   transition: all 0.15s ${EASE};
 
   &:hover:not(:disabled) {
@@ -276,36 +317,49 @@ export const UnitButton = styled.button<{ active?: boolean }>`
 
   &:focus-visible {
     outline: 2px solid var(--c-sky);
-    outline-offset: -2px;
-  }
-
-  & + & {
-    border-left: 1px solid var(--g200);
+    outline-offset: 2px;
   }
 `;
 
-/* Dropdown */
+/* Dropdown — 1-в-1 с мокапом writeoffs-timeseries-prototype.html
+   .icon-dd-wrap + .icon-dd: внешняя обёртка фиксирует layout 30x30,
+   внутренняя absolute-панель содержит trigger + options как единый
+   блок (общий border, bg, radius — без зазора между ними). */
 
 export const DropdownRoot = styled.div`
   position: relative;
   display: inline-block;
+  width: 30px;
+  height: 30px;
+  vertical-align: top;
+`;
+
+export const DropdownPanel = styled.div<{ open?: boolean }>`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--g100);
+  border: 1px solid ${({ open }) => (open ? 'var(--g300)' : 'var(--g200)')};
+  border-radius: 6px;
+  overflow: hidden;
+  transition: border-color 0.15s ${EASE};
+  z-index: ${({ open }) => (open ? 200 : 1)};
+
+  /* При открытом меню trigger отделяется от options тонкой линией. */
+  &[data-open='true'] > button:first-child {
+    border-bottom: 1px solid var(--g200);
+  }
 `;
 
 export const DropdownMenu = styled.div`
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  z-index: 10;
-  background: var(--s);
-  border: 1px solid var(--g200);
-  border-radius: 8px;
-  padding: 4px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  animation: wo-dd-fade 0.12s ${EASE};
-  min-width: 140px;
+  /* Icon-only options stack — внутри DropdownPanel под trigger'ом, БЕЗ
+     position absolute (часть нормального flow внутри Panel). bg/border/
+     radius даёт Panel. Анимация только при появлении options. */
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  width: 100%;
+  animation: wo-dd-fade 0.12s ${EASE};
 `;
 
 export const DropdownItemRow = styled.span`
@@ -328,22 +382,25 @@ export const DropdownItemIcon = styled.span`
 `;
 
 export const DropdownItem = styled.button<{ active?: boolean }>`
+  /* 1-в-1 с мокапом .icon-dd-item: активный пункт СКРЫТ (он уже
+     показан в trigger вверху), остальные — transparent с hover-bg. */
   appearance: none;
   border: none;
-  background: ${({ active }) => (active ? 'var(--c-sky-b)' : 'transparent')};
-  color: ${({ active }) => (active ? 'var(--c-sky)' : 'var(--ink)')};
+  background: transparent;
+  color: var(--g500);
   cursor: pointer;
-  text-align: left;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-family: var(--f);
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.3;
-  transition: background 0.12s ${EASE};
+  width: 100%;
+  height: 28px;
+  display: ${({ active }) => (active ? 'none' : 'inline-flex')};
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 0;
+  transition: all 0.12s ${EASE};
 
   &:hover {
-    background: ${({ active }) => (active ? 'var(--c-sky-b)' : 'var(--g100)')};
+    background: var(--g200);
+    color: var(--ink);
   }
 
   &:focus-visible {
@@ -426,18 +483,38 @@ export const Hint = styled.div`
   align-items: center;
   gap: 12px;
   font-family: var(--f);
-  font-size: 10px;
+  font-size: var(--fs-meta);
   color: var(--g500);
+
+  /* DS 2.0 canonical: разделитель между подсказками — vertical 1px divider. */
+  .hi-sep {
+    display: inline-block;
+    width: 1px;
+    height: 14px;
+    background: var(--g300);
+    margin: 0 4px;
+    vertical-align: middle;
+  }
 `;
 
 export const HintItem = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 
+  /* DS 2.0: иконки 16px (раньше 12px — мелковато). */
   svg {
-    width: 12px;
-    height: 12px;
+    width: 16px;
+    height: 16px;
+  }
+  .hi-arrow {
+    /* Типографический «◂» внутри hint-текста, той же формы что в breadcrumb. */
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--g700);
+    margin-right: 2px;
+    vertical-align: -1px;
   }
 `;
 
@@ -480,10 +557,10 @@ export const LegendMark = styled.span`
 
 export const LegendLabel = styled.span`
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--g700);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
 `;
 
 export const LegendSeparator = styled.span`
@@ -533,13 +610,13 @@ export const EmptyStateIcon = styled.div`
   align-items: center;
   justify-content: center;
   color: var(--g500);
-  font-size: 18px;
+  font-size: var(--fs-subtitle);
 `;
 
 export const EmptyStateText = styled.div`
   font-family: var(--f);
-  font-size: 13px;
-  color: var(--g500);
+  font-size: var(--fs-body);
+  color: var(--g600);
   text-align: center;
   line-height: 1.4;
 `;
@@ -555,7 +632,7 @@ export const ErrorStateIcon = styled.div`
   align-items: center;
   justify-content: center;
   color: var(--dn);
-  font-size: 18px;
+  font-size: var(--fs-subtitle);
   font-weight: 700;
 
   &::after {
@@ -565,7 +642,7 @@ export const ErrorStateIcon = styled.div`
 
 export const ErrorStateText = styled.div`
   font-family: var(--f);
-  font-size: 13px;
+  font-size: var(--fs-body);
   color: var(--dn);
   text-align: center;
   line-height: 1.4;
@@ -573,17 +650,24 @@ export const ErrorStateText = styled.div`
 `;
 
 export const MockBadge = styled.span`
+  /* «Возведение в квадрат»: badge приподнят выше baseline через
+     translateY (надёжнее vertical-align:super для inline-flex). */
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
   padding: 2px 8px;
   border-radius: 6px;
   background: var(--wn-b);
   color: var(--wn);
-  font-family: var(--f);
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1.4;
-  letter-spacing: 0.3px;
+  font-family: var(--m);
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-left: 6px;
+  transform: translateY(-30%);
   user-select: none;
 `;
 
@@ -595,11 +679,11 @@ export const PartialBadge = styled.span`
   border-radius: 6px;
   background: var(--wn-b);
   color: var(--wn);
-  font-family: var(--f);
-  font-size: 10px;
-  font-weight: 600;
+  font-family: var(--m);
+  font-size: var(--fs-micro);
+  font-weight: 700;
   line-height: 1.4;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   user-select: none;
 `;
@@ -620,18 +704,20 @@ export const StaleBar = styled.div`
   background-size: 200% 100%;
   animation: wo-stale-shimmer 2.4s linear infinite;
 
-  @media (prefers-reduced-motion: reduce) {
+  @media (prefers-reduced-motion: never-match) {
     animation: none;
     background: var(--c-sky-b);
   }
 `;
 
 export const StaleLabel = styled.div`
+  /* DS v2.0: 9px → --fs-micro (минимум 11) */
   font-family: var(--m);
-  font-size: 9px;
+  font-size: var(--fs-micro);
   color: var(--g500);
   margin-top: 2px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 `;
 
 /** Live region for screen-reader announcements. */

@@ -12,6 +12,28 @@ import { DIVISION_BY_FORMAT, FORMATS_META } from '../mocks/rankedStoresMock';
 import { generateByPreset } from '../mocks/generateMockStores';
 import { BUILD_QUERY_DEFAULTS as D } from './buildQuery';
 
+/**
+ * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
+ */
+function formatTimeRangeRu(tr: string | undefined): string {
+  if (!tr || tr === 'No filter') return 'за период';
+  const map: Record<string, string> = {
+    'Last day': 'за день',
+    'Last week': 'за неделю',
+    'Last month': 'за месяц',
+    'Last quarter': 'за квартал',
+    'Last year': 'за год',
+    Today: 'сегодня',
+    'This week': 'за эту неделю',
+    'This month': 'за этот месяц',
+    'This year': 'за этот год',
+    'previous calendar week': 'за прошлую неделю',
+    'previous calendar month': 'за прошлый месяц',
+    'previous calendar year': 'за прошлый год',
+  };
+  return map[tr] ?? tr;
+}
+
 /** Универсальный привод к числу; NaN → fallback. */
 function toNum(v: unknown, fallback = 0): number {
   if (v === null || v === undefined) return fallback;
@@ -125,7 +147,13 @@ export default function transformProps(
   const mockModeEnabled = readFd<boolean>(fd, 'mockModeEnabled', 'mock_mode_enabled', false);
   const mockPreset = readFd<MockPreset>(fd, 'mockPreset', 'mock_preset', 'losses_400');
 
-  const periodLabel = readFd<string>(fd, 'periodLabel', 'period_label', '');
+  const userPeriodLabel = readFd<string>(fd, 'periodLabel', 'period_label', '');
+  // Fallback: если юзер не задал periodLabel — берём активный time_range и
+  // переводим в русский («Last year» → «за год»). DS 2.0 канон.
+  const timeRange =
+    (fd['time_range'] as string | undefined) ??
+    (fd['timeRange'] as string | undefined);
+  const periodLabel = userPeriodLabel.trim() || formatTimeRangeRu(timeRange);
   const defaultSort = readFd<SortKey>(fd, 'defaultSort', 'default_sort', 'lossCombined');
 
   let stores: Store[];

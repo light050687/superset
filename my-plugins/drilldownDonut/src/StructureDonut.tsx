@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -15,9 +16,6 @@ import {
 import { CanvasRenderer } from 'echarts/renderers';
 import { LabelLayout } from 'echarts/features';
 
-// Регистрация нужных ECharts-компонентов (идемпотентно —
-// host Superset уже делает use(...) со всеми компонентами, но
-// для standalone Storybook нужно продублировать).
 use([
   PieChart,
   CanvasRenderer,
@@ -26,7 +24,13 @@ use([
   LegendComponent,
   LabelLayout,
 ]);
-import { Global, css } from '@emotion/react';
+
+// (Removed `import { Global, css } from '@emotion/react'` —
+//  заменили <Global styles={css`…`}/> на <style dangerouslySetInnerHTML/>
+//  чтобы keyframes гарантированно были в DOM до первого animation-frame
+//  Card. emotion's <Global> вставляет правила в свой managed stylesheet
+//  ПОСЛЕ React commit — animation-name к этому моменту уже не находил
+//  @keyframes и просто не запускалась.)
 import {
   CategoryNode,
   Level,
@@ -45,8 +49,12 @@ import {
   ErrorOverlay,
   Footer,
   HeaderText,
+  HeroLabel,
+  HeroOverlay,
+  HeroValue,
   Hint,
   KEYFRAMES_CSS,
+  MockBadge,
   Legend,
   LegendChip,
   PartialChip,
@@ -58,6 +66,7 @@ import {
 } from './styles';
 import {
   buildOption,
+  computeHero,
   DisplayItem,
   getCurrentItems,
 } from './utils/buildOption';
@@ -134,7 +143,9 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
     padAngle,
     borderRadius,
     showOuterLabelsPct,
+    rubDecimals,
     isDarkMode,
+    mockModeEnabled,
   } = props;
 
   // ── Локальное состояние ──
@@ -143,6 +154,11 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
   const [drilledId, setDrilledId] = useState<string | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
+
+  /* Card mount animation теперь через emotion keyframes helper в
+     styles.ts (см. cardInKf). Это canonical solution от emotion:
+     keyframes гарантированно injected в stylesheet ДО commit'а Card.
+     React-driven cardMounted+RAF подход больше не нужен. */
 
   // Сброс состояния при полной замене данных (другая выборка, другие категории)
   const categoriesKey = useMemo(
@@ -163,27 +179,75 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
   const chartDivRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<EChartsType | null>(null);
 
+  /* resizeFromDom — мерим actual DOM container и явно передаём
+     width/height в ECharts. props.width/height приходят от Chart.jsx
+     и НЕ учитывают Card chrome (header + footer + padding внутри Card),
+     поэтому canvas получался больше визуально доступного ChartWrap →
+     центр donut'а смещался относительно видимой области.
+     Используем clientWidth/clientHeight (= padded content area), а не
+     getBoundingClientRect (включает border + padding). */
+  const resizeFromDom = (): void => {
+    const el = chartDivRef.current;
+    const inst = chartRef.current;
+    if (!el || !inst) return;
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    if (w > 0 && h > 0) {
+      inst.resize({ width: w, height: h });
+    }
+  };
+
+  // init useEffect: создаёт chart instance + ResizeObserver на ChartCanvas
+  // для синхронизации canvas с DOM на каждое изменение размера
+  // (window resize, row stretch, drag handle).
   useEffect(() => {
     const el = chartDivRef.current;
     if (!el) return;
-    const instance = init(el);
+    const instance = init(el, null, { renderer: 'canvas' });
     chartRef.current = instance;
-
+    /* Initial resize: defer через RAF чтобы flex layout завершился. */
+    requestAnimationFrame(() => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (w > 0 && h > 0) {
+        instance.resize({ width: w, height: h });
+      }
+    });
+    /* ResizeObserver — следим за изменением размера контейнера
+       (row stretch, drag handle, window resize, post-data flex re-layout).
+       Debounce через RAF — против drill-down animation jitter
+       (memory note: без RO drill анимация была интактной, но canvas
+       не перерисовался при изменении размера ChartWrap'а через flex). */
+    let debounceId: number | undefined;
     const ro = new ResizeObserver(() => {
-      instance.resize();
+      if (debounceId !== undefined) cancelAnimationFrame(debounceId);
+      debounceId = requestAnimationFrame(() => {
+        const inst = chartRef.current;
+        const elNow = chartDivRef.current;
+        if (!inst || !elNow) return;
+        const w = elNow.clientWidth;
+        const h = elNow.clientHeight;
+        if (w > 0 && h > 0) {
+          inst.resize({ width: w, height: h });
+        }
+      });
     });
     ro.observe(el);
-
     return () => {
+      if (debounceId !== undefined) cancelAnimationFrame(debounceId);
       ro.disconnect();
       instance.dispose();
       chartRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Resize при изменении контейнера (width/height от Superset)
-  useEffect(() => {
-    chartRef.current?.resize();
+  /* useLayoutEffect — re-resize при смене props.width/height (drag-resize
+     в edit mode, fullscreen toggle). RO покрывает большинство случаев,
+     но useLayoutEffect — fallback гарантия. */
+  useLayoutEffect(() => {
+    resizeFromDom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [width, height]);
 
   // ── ECharts click handlers ──
@@ -192,10 +256,31 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
     if (!chart) return;
 
     const onClick = (params: unknown): void => {
-      const p = params as { componentType?: string; seriesType?: string; data?: { _idx?: number } };
+      const p = params as {
+        componentType?: string;
+        seriesType?: string;
+        data?: { _idx?: number; _item?: { id?: string } };
+        event?: { event?: MouseEvent };
+      };
       if (p.componentType !== 'series' || p.seriesType !== 'pie') return;
       const idx = p.data?._idx;
       if (idx == null) return;
+      // Ctrl/Cmd + Click — drill down (на root level и если есть children).
+      // Обычный click — toggle selection.
+      const native = p.event?.event;
+      const isCtrl = !!native && (native.ctrlKey || native.metaKey);
+      if (isCtrl) {
+        const id = p.data?._item?.id;
+        if (id != null && level === 'root') {
+          const parent = categories.find((c) => c.id === id);
+          if (parent && parent.children.length > 0) {
+            setLevel('drilled');
+            setDrilledId(id);
+            setSelectedIdx(null);
+            return;
+          }
+        }
+      }
       setSelectedIdx((prev) => (prev === idx ? null : idx));
     };
 
@@ -213,7 +298,7 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
       chart.off('click', onClick);
       zr.off('click', onZrClick);
     };
-  }, []);
+  }, [level, categories]);
 
   // ── setOption при изменении любого state/prop ──
   useEffect(() => {
@@ -233,9 +318,13 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
         padAngle,
         borderRadius,
         showOuterLabelsPct,
+        rubDecimals,
       },
       tokens,
     });
+    // 1:1 с Superset host: setOption(opt, true). Без drill detection,
+    // без chart.clear, без CSS hacks. ResizeObserver удалён → animation
+    // не прерывается layout shifts при React re-render во время drill.
     chart.setOption(option, true);
   }, [
     categories,
@@ -249,6 +338,7 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
     padAngle,
     borderRadius,
     showOuterLabelsPct,
+    rubDecimals,
     tokens,
     dataState,
   ]);
@@ -345,33 +435,13 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
     }
     const sel = currentItems[selectedIdx];
     if (!sel) return <span className="bc-cur">Все категории · {subtitleText}</span>;
-    const canDrill = hasSubcategories && level === 'root';
-    const parent = categories.find((c) => c.id === sel.id);
-    const hasChildren = !!parent && parent.children.length > 0;
+    /* Кнопка «→ вглубь» удалена — drill теперь через Ctrl/Cmd + Click на
+       сегменте donut'а. Кнопка ◂ тоже убрана — клик в любое пустое
+       место donut'а уже снимает selection. */
     return (
       <>
         <span className="bc-cur">Выбрано:</span>
         <span className="bc-sel">{sel.name}</span>
-        {canDrill && hasChildren && (
-          <button
-            type="button"
-            className="bc-fwd"
-            onClick={() => drillDown(sel.id)}
-            aria-label="Раскрыть подкатегории"
-            title="Вглубь"
-          >
-            → вглубь
-          </button>
-        )}
-        <button
-          type="button"
-          className="bc-back"
-          onClick={clearSelection}
-          aria-label="Снять выделение"
-          title="Снять (Esc)"
-        >
-          ◂
-        </button>
       </>
     );
   }, [
@@ -379,32 +449,37 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
     drilledId,
     selectedIdx,
     currentItems,
-    hasSubcategories,
     categories,
     subtitleText,
-    drillDown,
     drillUp,
-    clearSelection,
   ]);
 
   // ── Hint rendering ──
   const hintContent = useMemo(() => {
     if (level === 'drilled') {
+      // Drilled: «◂ или Esc — назад» (стрелка в breadcrumb тоже работает).
+      // Символ ◂ обёрнут в .hi-arrow — крупнее остального текста (18px).
       return (
         <span className="hi">
           <IconBack />
-          <span>Esc — назад</span>
+          <span>
+            <span className="hi-arrow" aria-hidden="true">◂</span> или Esc — назад
+          </span>
         </span>
       );
     }
     if (selectedIdx != null) {
+      // Selected (на root): подсказка про Ctrl+Click для drill'а.
+      // Между хинтами — вертикальный разделитель .hi-sep (не SVG).
       return (
         <>
           {hasSubcategories && (
-            <span className="hi">
-              <IconDrill />
-              <span>→ вглубь — подкатегории</span>
-            </span>
+            <>
+              <span className="hi">
+                <span>Ctrl+Click — вглубь</span>
+              </span>
+              <span className="hi-sep" aria-hidden="true" />
+            </>
           )}
           <span className="hi">
             <IconBack />
@@ -413,16 +488,58 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
         </>
       );
     }
+    // Root, ничего не выбрано: дополнительно про Ctrl+Click.
     return (
-      <span className="hi">
-        <IconClick />
-        <span>клик — выбрать категорию</span>
-      </span>
+      <>
+        <span className="hi">
+          <IconClick />
+          <span>клик — выбрать категорию</span>
+        </span>
+        {hasSubcategories && (
+          <>
+            <span className="hi-sep" aria-hidden="true" />
+            <span className="hi">
+              <span>Ctrl+Click — вглубь</span>
+            </span>
+          </>
+        )}
+      </>
     );
   }, [level, selectedIdx, hasSubcategories]);
 
   const showChart =
     dataState === 'populated' || dataState === 'partial' || dataState === 'stale';
+
+  /* Loading state — отдельный return со своим Card.
+     При переходе loading → loaded React unmount'ит этот Card и
+     mount'ит loaded Card в main return ниже. Animation cardInKf
+     запускается на mount loaded Card → юзер видит её РОВНО когда
+     данные пришли (а не во время скрытого loading state).
+     Это 1:1 с подходом scorecard KpiCard.tsx где для каждого
+     dataState (loading/error/empty/populated) свой return с своим
+     Card — каждое появление контента сопровождается animation. */
+  if (dataState === 'loading') {
+    return (
+      <StructureDonutRoot
+        data-theme={isDarkMode ? 'dark' : 'light'}
+        width={width}
+        height={height}
+      >
+        <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_CSS }} />
+        <Card role="region" aria-labelledby="sd-title-loading" aria-busy="true">
+          <CardHead>
+            <Title>
+              <HeaderText id="sd-title-loading">
+                {headerText}
+                {mockModeEnabled && <MockBadge>ТЕСТ</MockBadge>}
+              </HeaderText>
+            </Title>
+          </CardHead>
+          <SkeletonOverlay role="status" aria-label="Загрузка" />
+        </Card>
+      </StructureDonutRoot>
+    );
+  }
 
   return (
     <StructureDonutRoot
@@ -430,11 +547,17 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
       width={width}
       height={height}
     >
-      <Global styles={css`${KEYFRAMES_CSS}`} />
+      {/* XSS-safe: KEYFRAMES_CSS — compile-time константа. Содержит
+          skeleton-pulse и fade-in для overlay'ев. Card-in animation
+          через emotion keyframes helper (см. styles.ts cardInKf). */}
+      <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_CSS }} />
       <Card role="region" aria-labelledby="sd-title">
         <CardHead>
           <Title>
-            <HeaderText id="sd-title">{headerText}</HeaderText>
+            <HeaderText id="sd-title">
+              {headerText}
+              {mockModeEnabled && <MockBadge>ТЕСТ</MockBadge>}
+            </HeaderText>
             <Breadcrumb>{breadcrumbContent}</Breadcrumb>
             {dataState === 'partial' && (
               <PartialChip role="status" aria-live="polite">
@@ -473,7 +596,7 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
           </Controls>
         </CardHead>
 
-        {dataState === 'loading' && <SkeletonOverlay role="status" aria-label="Загрузка" />}
+        {/* loading state обрабатывается отдельным early-return выше */}
         {dataState === 'empty' && (
           <EmptyOverlay role="status">Нет данных за выбранный период</EmptyOverlay>
         )}
@@ -493,6 +616,34 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
                 categories.reduce((s, c) => s + c.rub, 0),
               )} по ${categories.length} категориям`}
             />
+            {/* HeroOverlay — HTML overlay поверх canvas с CSS Container
+                Queries (--fs-hero/--fs-meta), масштабирование 1-в-1 как
+                в KPI scorecard. Заменил ECharts graphic.text который имел
+                hardcoded fontSize:24. */}
+            <HeroOverlay aria-hidden="true">
+              {(() => {
+                const h = computeHero({
+                  categories,
+                  hasSubcategories,
+                  totalRevenue,
+                  unit,
+                  level,
+                  drilledId,
+                  selectedIdx,
+                  hidden,
+                  padAngle,
+                  borderRadius,
+                  showOuterLabelsPct,
+                  rubDecimals,
+                });
+                return (
+                  <>
+                    <HeroValue>{h.value}</HeroValue>
+                    <HeroLabel>{h.label}</HeroLabel>
+                  </>
+                );
+              })()}
+            </HeroOverlay>
           </ChartWrap>
         )}
 

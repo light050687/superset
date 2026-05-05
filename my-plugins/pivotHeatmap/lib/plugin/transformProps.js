@@ -114,6 +114,29 @@ function buildMockProps(props, thresholds, fd, overrides = {}) {
 function buildEmptySlice() {
     return { fact: 0, plan: 0, ratio: null, revenue: 0, pct: null };
 }
+/**
+ * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
+ * Если raw — не пресет (например конкретный диапазон) — возвращаем как есть.
+ */
+function formatTimeRangeRu(tr) {
+    if (!tr || tr === 'No filter')
+        return 'за период';
+    const map = {
+        'Last day': 'за день',
+        'Last week': 'за неделю',
+        'Last month': 'за месяц',
+        'Last quarter': 'за квартал',
+        'Last year': 'за год',
+        Today: 'сегодня',
+        'This week': 'за эту неделю',
+        'This month': 'за этот месяц',
+        'This year': 'за этот год',
+        'previous calendar week': 'за прошлую неделю',
+        'previous calendar month': 'за прошлый месяц',
+        'previous calendar year': 'за прошлый год',
+    };
+    return map[tr] ?? tr;
+}
 function transformProps(chartProps) {
     const props = chartProps;
     const { width, height, formData, queriesData, hooks } = props;
@@ -155,6 +178,20 @@ function transformProps(chartProps) {
     let errorMessage;
     if (rawData.length === 0) {
         dataState = 'empty';
+    }
+    else {
+        /* DS 2.0 §06 «6 состояний»:
+           - stale: данные пришли из кеша (queriesData[0].is_cached === true)
+           - partial: некоторые фильтры отвергнуты бэкендом (rejected_filters
+             не пуст). Приоритет partial > stale (юзеру важнее знать что
+             фильтр не применился, чем что данные из кеша). */
+        const q0 = queriesData?.[0];
+        if (q0?.rejected_filters && q0.rejected_filters.length > 0) {
+            dataState = 'partial';
+        }
+        else if (q0?.is_cached) {
+            dataState = 'stale';
+        }
     }
     const reshape = (0, pivotReshape_1.reshapePivot)({
         data: rawData,
@@ -209,7 +246,8 @@ function transformProps(chartProps) {
         showTotalsDefault: fd.showTotals ?? false,
         headerText: fd.headerText ?? 'Heatmap Pivot',
         headerSubtitle: fd.headerSubtitle ??
-            `${rowAxisCol || 'Строки'} × ${colAxisCol || 'Колонки'}`,
+            formatTimeRangeRu(fdRec.time_range ??
+                fdRec.timeRange),
         emitFilter,
         setDataMask,
         drillQueryParams,

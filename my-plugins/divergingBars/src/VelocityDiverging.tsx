@@ -8,8 +8,10 @@ import React, {
 import { createPortal } from 'react-dom';
 import { t } from '@superset-ui/core';
 import {
+  BarCell,
   KEYFRAMES_CSS,
   ROOT_CLASS,
+  SkeletonBlock,
   TooltipRoot,
   VelocityRoot,
 } from './styles';
@@ -248,6 +250,7 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
   width,
   height,
   headerText,
+  subtitleText,
   dataState,
   partialWarning,
   errorMessage,
@@ -650,12 +653,12 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
     return (
       <VelocityRoot {...rootProps}>
         <div className="vd-card" aria-busy="true" aria-live="polite">
-          <div className="vd-skeleton" style={{ height: 18, width: '40%' }} />
-          <div className="vd-skeleton" style={{ height: 58, width: '100%' }} />
-          <div className="vd-skeleton" style={{ height: 42, width: '100%' }} />
-          <div className="vd-skeleton" style={{ height: 42, width: '100%' }} />
-          <div className="vd-skeleton" style={{ height: 42, width: '100%' }} />
-          <div className="vd-skeleton" style={{ height: 42, width: '100%' }} />
+          <SkeletonBlock variant="title" />
+          <SkeletonBlock variant="header" />
+          <SkeletonBlock variant="row" />
+          <SkeletonBlock variant="row" />
+          <SkeletonBlock variant="row" />
+          <SkeletonBlock variant="row" />
         </div>
       </VelocityRoot>
     );
@@ -696,6 +699,12 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
             <div className="vd-title-block">
               <h2 className="vd-title">{headerText}</h2>
               <div className="vd-sub">
+                {subtitleText && (
+                  <>
+                    <span>{subtitleText}</span>
+                    <span className="vd-dot" aria-hidden="true" />
+                  </>
+                )}
                 <span aria-live="polite">
                   {summary.storesCount} {t('из')} {inputStores.length} {t('магазинов')}
                 </span>
@@ -1251,7 +1260,7 @@ const TableRow: React.FC<RowProps> = ({
         {fv(prev)}
         <span className="vd-sub-text">{t('пред.')}</span>
       </div>
-      <div role="cell" style={{ position: 'relative' }}>
+      <BarCell role="cell">
         <div className="vd-bar-wrap">
           <div className="vd-bar-bg">
             <div className="vd-bar-bg-left" />
@@ -1268,7 +1277,7 @@ const TableRow: React.FC<RowProps> = ({
             }}
           />
         </div>
-      </div>
+      </BarCell>
       <div className="vd-period-cell" role="cell">
         {fv(curr)}
         <span className="vd-sub-text">{t('текущ.')}</span>

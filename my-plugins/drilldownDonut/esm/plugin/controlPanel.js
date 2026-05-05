@@ -200,6 +200,23 @@ const config = {
                         },
                     },
                 ],
+                [
+                    {
+                        name: 'rub_decimals',
+                        config: {
+                            type: 'SliderControl',
+                            label: t('Знаков после запятой'),
+                            description: t('Сколько цифр показывать после запятой в hero-числе ' +
+                                '(₽). Примеры: 0 → "8 млрд ₽", 1 → "8,2 млрд ₽", ' +
+                                '2 → "8,23 млрд ₽", 3 → "8,230 млрд ₽".'),
+                            min: 0,
+                            max: 3,
+                            step: 1,
+                            default: 2,
+                            renderTrigger: true,
+                        },
+                    },
+                ],
             ],
         },
         // ── 5. Цвета категорий ──

@@ -14,6 +14,28 @@ function asNumberOrNull(raw) {
     const n = Number(raw);
     return Number.isFinite(n) ? n : null;
 }
+/**
+ * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
+ */
+function formatTimeRangeRu(tr) {
+    if (!tr || tr === 'No filter')
+        return 'за период';
+    const map = {
+        'Last day': 'за день',
+        'Last week': 'за неделю',
+        'Last month': 'за месяц',
+        'Last quarter': 'за квартал',
+        'Last year': 'за год',
+        Today: 'сегодня',
+        'This week': 'за эту неделю',
+        'This month': 'за этот месяц',
+        'This year': 'за этот год',
+        'previous calendar week': 'за прошлую неделю',
+        'previous calendar month': 'за прошлый месяц',
+        'previous calendar year': 'за прошлый год',
+    };
+    return map[tr] ?? tr;
+}
 function getFirstGroupbyCol(formData) {
     const g = formData.groupby;
     if (Array.isArray(g)) {
@@ -115,7 +137,14 @@ function transformProps(chartProps) {
     const topNVisible = Math.max(3, Math.min(15, formData.topNVisible ?? 5));
     const invertDeltaGood = formData.invertDeltaGood ?? true;
     const headerText = formData.headerText ?? 'Рейтинг';
-    const headerSubtitlePrefix = formData.headerSubtitlePrefix ?? 'Топ по сумме';
+    // Если headerSubtitlePrefix не задан явно — берём активный time_range и
+    // переводим в русский («Last year» → «за год»). DS 2.0 канон.
+    const userSubtitle = formData.headerSubtitlePrefix;
+    const fdRec = formData;
+    const headerSubtitlePrefix = userSubtitle?.trim() ||
+        formatTimeRangeRu(fdRec['time_range'] ??
+            fdRec['timeRange']) ||
+        'Топ по сумме';
     const showSparkline = formData.showSparkline ?? true;
     const showTotalInHeader = formData.showTotalInHeader ?? true;
     const showGhostPrevBar = formData.showGhostPrevBar ?? true;
@@ -226,12 +255,26 @@ function transformProps(chartProps) {
         .filter((r) => r !== null);
     const rows = computeShareAndDelta(rawMappedRows);
     const totalSum = rows.reduce((s, r) => s + r.value, 0);
-    let dataState = 'populated';
+    /* DS 2.0 §06 «Состояния»: empty / partial / stale / populated.
+       - empty: нет строк
+       - partial: меньше строк чем requested topN ИЛИ бэкенд отверг фильтры
+       - stale: данные пришли из кеша (приоритет ниже partial)
+       - populated: всё хорошо.
+       'loading' и 'error' приходят отдельно через chartStatus prop. */
+    let dataState;
     if (rows.length === 0) {
         dataState = 'empty';
     }
-    else if (rows.length < topNVisible) {
+    else if (rows.length < topNVisible ||
+        (primary?.rejected_filters
+            ?.length ?? 0) > 0) {
         dataState = 'partial';
+    }
+    else if (primary?.is_cached) {
+        dataState = 'stale';
+    }
+    else {
+        dataState = 'populated';
     }
     // ── Build drill query params ─────────────────────────────────────────────
     const drillQueryParams = enableDrillModal

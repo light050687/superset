@@ -26,6 +26,11 @@ export function formatRussianSmart(
   const sign = value < 0 ? '\u2212' : '';
   const sfx = suffix ? ` ${suffix}` : '';
 
+  if (abs >= 1_000_000_000_000) {
+    const v = abs / 1_000_000_000_000;
+    const d = decimals >= 0 ? decimals : abs >= 10_000_000_000_000 ? 1 : 2;
+    return `${sign}${ruNumber(v, d)} трлн${sfx}`;
+  }
   if (abs >= 1_000_000_000) {
     const v = abs / 1_000_000_000;
     const d = decimals >= 0 ? decimals : abs >= 10_000_000_000 ? 1 : 2;
@@ -111,4 +116,50 @@ export function makeFormatters(cfg: FormatterConfig): {
   const deltaPP = (n: number) => formatDeltaPP(n, decimals, unitLabel);
   const integer = (n: number) => ruNumber(Math.trunc(n), 0);
   return { value, deltaPP, integer };
+}
+
+/**
+ * Канонический fmtRub (DS 2.0): авто-переключение единицы для рублёвых сумм.
+ * Базовая единица входа — рубли. До запятой ≤3 цифр.
+ *
+ *  - <10k       → "1 234 ₽"
+ *  - <1M        → "1 234 тыс ₽"
+ *  - <1B        → "1,23 млн ₽"
+ *  - <1T        → "1,23 млрд ₽"
+ *  - иначе      → "1,23 трлн ₽"
+ */
+export function fmtRub(
+  v: number | null | undefined,
+  decimals = 2,
+): string {
+  if (v == null || !Number.isFinite(v)) return '—';
+  const abs = Math.abs(v);
+  if (abs >= 1_000_000_000_000) {
+    return `${ruNumber(v / 1_000_000_000_000, decimals)} трлн ₽`;
+  }
+  if (abs >= 1_000_000_000) {
+    return `${ruNumber(v / 1_000_000_000, decimals)} млрд ₽`;
+  }
+  if (abs >= 1_000_000) {
+    return `${ruNumber(v / 1_000_000, decimals)} млн ₽`;
+  }
+  if (abs >= 10_000) {
+    return `${ruNumber(v / 1_000, 0)} тыс ₽`;
+  }
+  return `${ruNumber(v, 0)} ₽`;
+}
+
+/** Процент в форме «12,4%». */
+export function fmtPct(
+  v: number | null | undefined,
+  decimals = 1,
+): string {
+  if (v == null || !Number.isFinite(v)) return '—';
+  return `${ruNumber(v, decimals)}%`;
+}
+
+/** Целое количество шт: «1 234 шт». */
+export function fmtCnt(v: number | null | undefined): string {
+  if (v == null || !Number.isFinite(v)) return '—';
+  return `${ruNumber(Math.round(v), 0)} шт`;
 }

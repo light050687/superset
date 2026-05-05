@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { styled } from '@superset-ui/core';
 import {
   StorePoint,
   QuadrantDef,
@@ -8,6 +9,59 @@ import {
 import { getQuadrant, storeBadness, Thresholds } from './utils/quadrants';
 import { ModalBg, Modal, StoreRow, SearchWrap, SearchInput, EmptyBlock } from './styles';
 import { useFocusTrap } from './utils/useFocusTrap';
+
+/* === Локальные styled-обёртки (миграция inline style → Emotion, P-011) === */
+
+/** Контейнер для поиска поверх списка квадранта. */
+const SearchContainer = styled.div`
+  margin-bottom: 10px;
+`;
+
+/** Заголовочная строка таблицы объектов квадранта (#, имя, X, бар X, Y, бар Y). */
+const StoreListHeader = styled.div`
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 60px minmax(120px, 180px) 60px minmax(120px, 180px);
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  font-family: var(--m);
+  /* DS v2.0 P0: 8.5px → --fs-nano (10) UPPER */
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--g500);
+  border-bottom: 1px solid var(--g200);
+  margin-bottom: 6px;
+`;
+
+/** Колонка-ячейка с центрированием. */
+const HeaderCellCenter = styled.span`
+  text-align: center;
+`;
+
+/** Колонка-ячейка с выравниванием вправо. */
+const HeaderCellRight = styled.span`
+  text-align: right;
+`;
+
+/** Подпись «факт vs план» — приглушённая, по центру. */
+const HeaderCellMuted = styled.span`
+  text-align: center;
+  opacity: 0.7;
+`;
+
+/** Колонка-обёртка для строк объектов в квадранте. */
+const StoreList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+/** Обёртка SearchWrap, занимающая всю ширину секции. */
+const FullWidthSearchWrap = styled(SearchWrap)`
+  width: 100%;
+`;
 
 interface Props {
   quadrantKey: QuadrantKey;
@@ -153,8 +207,8 @@ const QuadrantDrillModal: React.FC<Props> = ({
                 : `${inQuadrant.length} всего · показано ${filtered.length}`}
             </span>
           </div>
-          <div style={{ marginBottom: 10 }}>
-            <SearchWrap className={q.length > 0 ? 'has-value' : ''} style={{ width: '100%' }}>
+          <SearchContainer>
+            <FullWidthSearchWrap className={q.length > 0 ? 'has-value' : ''}>
               <svg
                 className="search-icon"
                 viewBox="0 0 14 14"
@@ -186,40 +240,24 @@ const QuadrantDrillModal: React.FC<Props> = ({
                   <line x1="8" y1="2" x2="2" y2="8" />
                 </svg>
               </button>
-            </SearchWrap>
-          </div>
+            </FullWidthSearchWrap>
+          </SearchContainer>
 
           {filtered.length === 0 ? (
             <EmptyBlock>
               Ничего не найдено{q.trim() ? ` по запросу «${q}»` : ''}
             </EmptyBlock>
           ) : (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '24px minmax(0,1fr) 60px minmax(120px, 180px) 60px minmax(120px, 180px)',
-                alignItems: 'center',
-                gap: 10,
-                padding: '6px 12px',
-                fontFamily: 'var(--m)',
-                fontSize: 8.5,
-                fontWeight: 700,
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-                color: 'var(--g500)',
-                borderBottom: '1px solid var(--g200)',
-                marginBottom: 6,
-              }}
-            >
-              <span style={{ textAlign: 'center' }}>#</span>
+            <StoreListHeader>
+              <HeaderCellCenter>#</HeaderCellCenter>
               <span>Объект</span>
-              <span style={{ textAlign: 'right' }}>{xShort}</span>
-              <span style={{ textAlign: 'center', opacity: 0.7 }}>факт vs план</span>
-              <span style={{ textAlign: 'right' }}>{yShort}</span>
-              <span style={{ textAlign: 'center', opacity: 0.7 }}>факт vs план</span>
-            </div>
+              <HeaderCellRight>{xShort}</HeaderCellRight>
+              <HeaderCellMuted>факт vs план</HeaderCellMuted>
+              <HeaderCellRight>{yShort}</HeaderCellRight>
+              <HeaderCellMuted>факт vs план</HeaderCellMuted>
+            </StoreListHeader>
           )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <StoreList>
             {filtered.map((s, i) => {
               const dx = s.planX && s.planX !== 0 ? (s.x - s.planX) / s.planX : 0;
               const dy = s.planY && s.planY !== 0 ? (s.y - s.planY) / s.planY : 0;
@@ -251,8 +289,8 @@ const QuadrantDrillModal: React.FC<Props> = ({
                   <div className={`cell-v ${dxCls}`}>{formatX(s.x)}</div>
                   <div className="mini-bullet">
                     <div
-                      className="mini-bar"
-                      style={{ width: `${xBarPct}%`, background: 'var(--c-tangerine)' }}
+                      className="mini-bar mini-bar--x"
+                      style={{ width: `${xBarPct}%` }}
                     />
                     {s.planX != null && (
                       <div className="mini-target" style={{ left: `calc(${xTargetPct}% - 1px)` }} />
@@ -261,8 +299,8 @@ const QuadrantDrillModal: React.FC<Props> = ({
                   <div className={`cell-v ${dyCls}`}>{formatY(s.y)}</div>
                   <div className="mini-bullet">
                     <div
-                      className="mini-bar"
-                      style={{ width: `${yBarPct}%`, background: 'var(--c-sky)' }}
+                      className="mini-bar mini-bar--y"
+                      style={{ width: `${yBarPct}%` }}
                     />
                     {s.planY != null && (
                       <div className="mini-target" style={{ left: `calc(${yTargetPct}% - 1px)` }} />
@@ -271,7 +309,7 @@ const QuadrantDrillModal: React.FC<Props> = ({
                 </StoreRow>
               );
             })}
-          </div>
+          </StoreList>
         </div>
       </Modal>
     </ModalBg>

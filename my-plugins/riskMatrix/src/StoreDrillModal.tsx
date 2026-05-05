@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { styled } from '@superset-ui/core';
 import { StorePoint, QuadrantDef, QuadrantKey, DetailQueryParams, FormatValueFn } from './types';
 import { getQuadrant, storeBadness } from './utils/quadrants';
 import { Thresholds } from './utils/quadrants';
@@ -14,6 +15,252 @@ import {
 import { ModalBg, Modal, BulletRow, Skeleton, EmptyBlock } from './styles';
 import { formatRussianDeltaAbsEx } from './utils/formatRussian';
 import { useFocusTrap } from './utils/useFocusTrap';
+
+/* === Локальные styled-обёртки (миграция inline style → Emotion, P-011) === */
+
+/** ModalBg для store-модали: поверх quadrant-модали (z-index выше). */
+const StoreModalBg = styled(ModalBg)`
+  z-index: 1100;
+`;
+
+/** Значение «Сумма потерь» — красным акцентом. */
+const LossValue = styled.div`
+  color: var(--dn);
+`;
+
+/** Inline EmptyBlock для секции с ошибкой загрузки. */
+const ErrorEmpty = styled(EmptyBlock)`
+  color: var(--dn);
+`;
+
+/** Skeleton фиксированной высоты под спарклайн trend. */
+const TrendSkeleton = styled(Skeleton)`
+  height: 90px;
+`;
+
+/** Skeleton под список причин/SKU. */
+const ListSkeleton = styled(Skeleton)`
+  height: 80px;
+`;
+
+/** Контейнер trend-спарклайна: серый бэкграунд + рамка. */
+const TrendBox = styled.div`
+  background: var(--g50);
+  border: 1px solid var(--g200);
+  border-radius: 10px;
+  padding: 12px 14px;
+  min-height: 120px;
+`;
+
+/** Контейнер «Позиция среди формата» с padding/border. */
+const RankBox = styled.div`
+  background: var(--g50);
+  border: 1px solid var(--g200);
+  border-radius: 10px;
+  padding: 14px 16px;
+`;
+
+/** Большой номер ранга. */
+const RankNumber = styled.div`
+  /* DS v2.0 fluid: --fs-hero (28-56) для большого номера ранга */
+  font-family: var(--f);
+  font-size: var(--fs-hero);
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+`;
+
+/** Подпись «из N» рядом с номером ранга. */
+const RankTotal = styled.span`
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  color: var(--g500);
+  margin-left: 4px;
+`;
+
+/** Подпись «Место в формате …». */
+const RankCaption = styled.div`
+  font-family: var(--m);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--g500);
+  margin-top: 6px;
+`;
+
+/** Полоса-индикатор позиции (контейнер). */
+const RankTrack = styled.div`
+  height: 6px;
+  background: var(--g200);
+  border-radius: 2px;
+  margin-top: 10px;
+  position: relative;
+`;
+
+/** Цветной градиент-фон поверх трека (плохо → хорошо). */
+const RankGradient = styled.div`
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--dn) 0%,
+    var(--wn) 50%,
+    var(--up) 100%
+  );
+  opacity: 0.3;
+  border-radius: 2px;
+`;
+
+/** Маркер позиции (только left позиция — динамическая, остальное static). */
+const RankMarker = styled.div`
+  position: absolute;
+  top: -3px;
+  width: 2.5px;
+  height: 12px;
+  background: var(--ink);
+  border-radius: 1px;
+`;
+
+/** Подписи «Худшие/Лучшие» под полосой ранга. */
+const RankLegend = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-family: var(--m);
+  /* DS v2.0 P0: 8.5px → --fs-nano (10) UPPER */
+  font-size: var(--fs-nano);
+  color: var(--g500);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+`;
+
+/** Колонка-обёртка списка причин. */
+const CauseListWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+/** Строка причины: # | имя | бар | значение. */
+const CauseListRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 1fr) 80px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--g50);
+  border: 1px solid var(--g200);
+  border-radius: 7px;
+`;
+
+/** Имя причины — обрезается с многоточием. */
+const CauseName = styled.div`
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+/** Дорожка для бара причины. */
+const CauseTrack = styled.div`
+  height: 6px;
+  background: var(--g200);
+  border-radius: 2px;
+  position: relative;
+`;
+
+/** Заполнитель бара причины (width — динамический, в inline). */
+const CauseFill = styled.div`
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--c-sky);
+  border-radius: 2px;
+`;
+
+/** Значение причины — справа. */
+const CauseValue = styled.div`
+  font-family: var(--m);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+`;
+
+/** Колонка-обёртка списка SKU. */
+const SkuListWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+`;
+
+/** Строка SKU: # | имя | бар | значение. */
+const SkuListRow = styled.div`
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) minmax(120px, 1fr) 80px;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 12px;
+  background: var(--g50);
+  border: 1px solid var(--g200);
+  border-radius: 7px;
+`;
+
+/** Номер позиции SKU. */
+const SkuRank = styled.div`
+  font-family: var(--m);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  color: var(--g500);
+  text-align: center;
+`;
+
+/** Имя SKU. */
+const SkuName = styled.div`
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+/** Дорожка для бара SKU. */
+const SkuTrack = styled.div`
+  height: 5px;
+  background: var(--g200);
+  border-radius: 2px;
+  position: relative;
+`;
+
+/** Заполнитель бара SKU. */
+const SkuFill = styled.div`
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--dn);
+  border-radius: 2px;
+`;
+
+/** Значение SKU — справа. */
+const SkuValue = styled.div`
+  font-family: var(--m);
+  font-size: var(--fs-meta);
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+`;
+
 
 interface Props {
   storeId: string;
@@ -179,7 +426,7 @@ const StoreDrillModal: React.FC<Props> = ({
   const trapRef = useFocusTrap<HTMLDivElement>(true);
 
   return (
-    <ModalBg data-open="true" onClick={onBgClick} style={{ zIndex: 1100 }}>
+    <StoreModalBg data-open="true" onClick={onBgClick}>
       <Modal role="dialog" aria-modal="true" aria-labelledby="sr-store-title" ref={trapRef}>
         <div className="m-head">
           <div className="m-status" style={{ background: qColor }} />
@@ -226,9 +473,9 @@ const StoreDrillModal: React.FC<Props> = ({
           {store.sumLoss != null && (
             <div className="m-stat">
               <div className="m-stat-l">Сумма потерь</div>
-              <div className="m-stat-v" style={{ color: 'var(--dn)' }}>
+              <LossValue className="m-stat-v">
                 {formatLoss(store.sumLoss)}
-              </div>
+              </LossValue>
             </div>
           )}
         </div>
@@ -269,18 +516,10 @@ const StoreDrillModal: React.FC<Props> = ({
                 </span>
               )}
             </div>
-            <div
-              style={{
-                background: 'var(--g50)',
-                border: '1px solid var(--g200)',
-                borderRadius: 10,
-                padding: '12px 14px',
-                minHeight: 120,
-              }}
-            >
-              {trend.loading && <Skeleton style={{ height: 90 }} />}
+            <TrendBox>
+              {trend.loading && <TrendSkeleton />}
               {!trend.loading && trend.error && (
-                <EmptyBlock style={{ color: 'var(--dn)' }}>Ошибка: {trend.error}</EmptyBlock>
+                <ErrorEmpty>Ошибка: {trend.error}</ErrorEmpty>
               )}
               {!trend.loading && !trend.error && trend.data && trend.data.length > 0 && (
                 <TrendSpark data={trend.data} color="var(--c-tangerine)" />
@@ -288,99 +527,32 @@ const StoreDrillModal: React.FC<Props> = ({
               {!trend.loading && !trend.error && trend.data && trend.data.length === 0 && (
                 <EmptyBlock>Нет данных за период</EmptyBlock>
               )}
-            </div>
+            </TrendBox>
           </div>
 
           <div className="m-section">
             <div className="m-section-l">
               <span>Позиция среди формата</span>
             </div>
-            <div
-              style={{
-                background: 'var(--g50)',
-                border: '1px solid var(--g200)',
-                borderRadius: 10,
-                padding: '14px 16px',
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: 'var(--f)',
-                  fontSize: 26,
-                  fontWeight: 800,
-                  color: 'var(--ink)',
-                  letterSpacing: '-0.02em',
-                  lineHeight: 1,
-                }}
-              >
+            <RankBox>
+              <RankNumber>
                 #{rank.rank}
-                <span
-                  style={{ fontSize: 11, fontWeight: 600, color: 'var(--g500)', marginLeft: 4 }}
-                >
-                  из {rank.total}
-                </span>
-              </div>
-              <div
-                style={{
-                  fontFamily: 'var(--m)',
-                  fontSize: 9,
-                  fontWeight: 700,
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  color: 'var(--g500)',
-                  marginTop: 6,
-                }}
-              >
+                <RankTotal>из {rank.total}</RankTotal>
+              </RankNumber>
+              <RankCaption>
                 Место в формате «{store.formatName}»
-              </div>
-              <div
-                style={{
-                  height: 6,
-                  background: 'var(--g200)',
-                  borderRadius: 2,
-                  marginTop: 10,
-                  position: 'relative',
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    height: '100%',
-                    width: '100%',
-                    background:
-                      'linear-gradient(90deg, var(--dn) 0%, var(--wn) 50%, var(--up) 100%)',
-                    opacity: 0.3,
-                    borderRadius: 2,
-                  }}
+              </RankCaption>
+              <RankTrack>
+                <RankGradient />
+                <RankMarker
+                  style={{ left: `calc(${100 - rankPct}% - 1.25px)` }}
                 />
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: -3,
-                    width: 2.5,
-                    height: 12,
-                    background: 'var(--ink)',
-                    borderRadius: 1,
-                    left: `calc(${100 - rankPct}% - 1.25px)`,
-                  }}
-                />
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginTop: 4,
-                  fontFamily: 'var(--m)',
-                  fontSize: 8.5,
-                  color: 'var(--g500)',
-                }}
-              >
+              </RankTrack>
+              <RankLegend>
                 <span>Худшие</span>
                 <span>Лучшие</span>
-              </div>
-            </div>
+              </RankLegend>
+            </RankBox>
           </div>
         </div>
 
@@ -389,9 +561,9 @@ const StoreDrillModal: React.FC<Props> = ({
             <div className="m-section-l">
               <span>Топ причины</span>
             </div>
-            {causes.loading && <Skeleton style={{ height: 80 }} />}
+            {causes.loading && <ListSkeleton />}
             {!causes.loading && causes.error && (
-              <EmptyBlock style={{ color: 'var(--dn)' }}>Ошибка: {causes.error}</EmptyBlock>
+              <ErrorEmpty>Ошибка: {causes.error}</ErrorEmpty>
             )}
             {!causes.loading && !causes.error && causes.data && causes.data.length === 0 && (
               <EmptyBlock>Нет данных о причинах</EmptyBlock>
@@ -407,9 +579,9 @@ const StoreDrillModal: React.FC<Props> = ({
             <div className="m-section-l">
               <span>Топ SKU</span>
             </div>
-            {skus.loading && <Skeleton style={{ height: 80 }} />}
+            {skus.loading && <ListSkeleton />}
             {!skus.loading && skus.error && (
-              <EmptyBlock style={{ color: 'var(--dn)' }}>Ошибка: {skus.error}</EmptyBlock>
+              <ErrorEmpty>Ошибка: {skus.error}</ErrorEmpty>
             )}
             {!skus.loading && !skus.error && skus.data && skus.data.length === 0 && (
               <EmptyBlock>Нет данных о SKU</EmptyBlock>
@@ -420,7 +592,7 @@ const StoreDrillModal: React.FC<Props> = ({
           </div>
         )}
       </Modal>
-    </ModalBg>
+    </StoreModalBg>
   );
 };
 
@@ -447,7 +619,7 @@ const ModalBullet: React.FC<ModalBulletProps> = ({ label, val, plan, color, form
     <BulletRow>
       <div className="m-br-label">{label}</div>
       <div className="m-br-chart">
-        <div className="m-br-band m-br-band-1" style={{ width: '100%' }} />
+        <div className="m-br-band m-br-band-1" />
         <div className="m-br-band m-br-band-2" style={{ width: `${targetPct}%` }} />
         <div className="m-br-band m-br-band-3" style={{ width: `${targetPct * 0.8}%` }} />
         <div className="m-br-bar" style={{ width: `${barPct}%`, background: color }} />
@@ -533,128 +705,41 @@ const CauseList: React.FC<{ rows: CauseRow[]; formatter: FormatValueFn }> = ({
 }) => {
   const max = Math.max(...rows.map((r) => r.value), 1);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <CauseListWrap>
       {rows.map((r, i) => {
         const pct = (r.value / max) * 100;
         return (
-          <div
-            key={i}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0,1fr) minmax(140px, 1fr) 80px',
-              alignItems: 'center',
-              gap: 12,
-              padding: '8px 12px',
-              background: 'var(--g50)',
-              border: '1px solid var(--g200)',
-              borderRadius: 7,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 11.5,
-                fontWeight: 600,
-                color: 'var(--ink)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {r.name}
-            </div>
-            <div style={{ height: 6, background: 'var(--g200)', borderRadius: 2, position: 'relative' }}>
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  height: '100%',
-                  width: `${pct}%`,
-                  background: 'var(--c-sky)',
-                  borderRadius: 2,
-                }}
-              />
-            </div>
-            <div
-              style={{
-                fontFamily: 'var(--m)',
-                fontSize: 11,
-                fontWeight: 700,
-                textAlign: 'right',
-              }}
-            >
-              {formatter(r.value)}
-            </div>
-          </div>
+          <CauseListRow key={i}>
+            <CauseName>{r.name}</CauseName>
+            <CauseTrack>
+              <CauseFill style={{ width: `${pct}%` }} />
+            </CauseTrack>
+            <CauseValue>{formatter(r.value)}</CauseValue>
+          </CauseListRow>
         );
       })}
-    </div>
+    </CauseListWrap>
   );
 };
 
 const SkuList: React.FC<{ rows: SkuRow[]; formatter: FormatValueFn }> = ({ rows, formatter }) => {
   const max = Math.max(...rows.map((r) => r.value), 1);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+    <SkuListWrap>
       {rows.map((r, i) => {
         const pct = (r.value / max) * 100;
         return (
-          <div
-            key={i}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '22px minmax(0,1fr) minmax(120px, 1fr) 80px',
-              alignItems: 'center',
-              gap: 12,
-              padding: '7px 12px',
-              background: 'var(--g50)',
-              border: '1px solid var(--g200)',
-              borderRadius: 7,
-            }}
-          >
-            <div
-              style={{
-                fontFamily: 'var(--m)',
-                fontSize: 9,
-                fontWeight: 700,
-                color: 'var(--g500)',
-                textAlign: 'center',
-              }}
-            >
-              {String(i + 1).padStart(2, '0')}
-            </div>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: 'var(--ink)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {r.name}
-            </div>
-            <div style={{ height: 5, background: 'var(--g200)', borderRadius: 2, position: 'relative' }}>
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  height: '100%',
-                  width: `${pct}%`,
-                  background: 'var(--dn)',
-                  borderRadius: 2,
-                }}
-              />
-            </div>
-            <div style={{ fontFamily: 'var(--m)', fontSize: 10.5, fontWeight: 700, textAlign: 'right' }}>
-              {formatter(r.value)}
-            </div>
-          </div>
+          <SkuListRow key={i}>
+            <SkuRank>{String(i + 1).padStart(2, '0')}</SkuRank>
+            <SkuName>{r.name}</SkuName>
+            <SkuTrack>
+              <SkuFill style={{ width: `${pct}%` }} />
+            </SkuTrack>
+            <SkuValue>{formatter(r.value)}</SkuValue>
+          </SkuListRow>
         );
       })}
-    </div>
+    </SkuListWrap>
   );
 };
 

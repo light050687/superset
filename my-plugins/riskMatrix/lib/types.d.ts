@@ -187,6 +187,9 @@ export interface ScatterRiskProps {
     detailQueryParams: DetailQueryParams;
     /** Подсказка клавиш */
     shortcutsHint: string;
+    /** DS 2.0 §06 «Состояния»: empty / partial / stale / populated.
+        'loading' и 'error' приходят отдельно через Superset chartStatus. */
+    dataState: 'empty' | 'partial' | 'stale' | 'populated';
 }
 /** Shape для setDataMask (совместим с Superset API) */
 export interface DataMaskPayload {

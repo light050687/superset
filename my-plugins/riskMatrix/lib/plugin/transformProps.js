@@ -15,6 +15,28 @@ function toNumber(v) {
     const n = typeof v === 'number' ? v : Number(v);
     return Number.isFinite(n) ? n : NaN;
 }
+/**
+ * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
+ */
+function formatTimeRangeRu(tr) {
+    if (!tr || tr === 'No filter')
+        return 'за период';
+    const map = {
+        'Last day': 'за день',
+        'Last week': 'за неделю',
+        'Last month': 'за месяц',
+        'Last quarter': 'за квартал',
+        'Last year': 'за год',
+        Today: 'сегодня',
+        'This week': 'за эту неделю',
+        'This month': 'за этот месяц',
+        'This year': 'за этот год',
+        'previous calendar week': 'за прошлую неделю',
+        'previous calendar month': 'за прошлый месяц',
+        'previous calendar year': 'за прошлый год',
+    };
+    return map[tr] ?? tr;
+}
 function getColumnValue(row, col) {
     if (!col)
         return undefined;
@@ -318,9 +340,29 @@ function transformProps(chartProps) {
         baseHaving,
         timeRange: formData.time_range,
     };
+    /* DS 2.0 §06 «Состояния»: empty / partial / stale / populated.
+       - empty: нет stores
+       - partial: бэкенд отверг часть фильтров (rejected_filters > 0)
+       - stale: данные пришли из кеша
+       - populated: всё хорошо. */
+    const q0 = queriesData?.[0];
+    let dataState;
+    if (stores.length === 0) {
+        dataState = 'empty';
+    }
+    else if (q0?.rejected_filters && q0.rejected_filters.length > 0) {
+        dataState = 'partial';
+    }
+    else if (q0?.is_cached) {
+        dataState = 'stale';
+    }
+    else {
+        dataState = 'populated';
+    }
     return {
         width,
         height,
+        dataState,
         stores,
         formats,
         thresholdX,
@@ -330,7 +372,9 @@ function transformProps(chartProps) {
         enableQuadrantAnnotations: formData.enableQuadrantAnnotations ?? true,
         enableWorstStar: formData.enableWorstStar ?? true,
         title: formData.title || 'Матрица рисков',
-        subtitle: formData.subtitle || '',
+        subtitle: formData.subtitle?.trim() ||
+            formatTimeRangeRu(formData.time_range ??
+                formData.timeRange),
         xLabel,
         yLabel,
         xUnit,

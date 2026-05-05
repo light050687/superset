@@ -48,6 +48,8 @@ import {
   Breadcrumbs,
   BreadcrumbBack,
   BreadcrumbCurrent,
+  BreadcrumbDot,
+  BreadcrumbPlus,
   BreadcrumbSel,
   Card,
   Cell,
@@ -71,6 +73,8 @@ import {
   Tooltip,
   Unit,
   UnitButton,
+  PartialBadge,
+  StaleBar,
 } from './styles';
 import { DrillModal } from './DrillModal';
 import { CompareModal } from './CompareModal';
@@ -640,24 +644,32 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
   }
 
   // ── Render ──
+  const isPartial = dataState === 'partial';
+  const isStale = dataState === 'stale';
   return (
     <Root data-theme={theme} className={ROOT_CLASS} width={width} height={height}>
       <style>{KEYFRAMES_CSS}</style>
-      <Card>
+      <Card style={{ position: 'relative' }}>
+        {isStale && <StaleBar aria-hidden="true" />}
         <Header>
           <TitleBlock>
-            <Title>{headerText}</Title>
+            <Title>
+              {headerText}
+              {isPartial && (
+                <PartialBadge title="Часть данных недоступна">Частично</PartialBadge>
+              )}
+            </Title>
             <Breadcrumbs role="navigation" aria-label="Контекст фильтров">
               <BreadcrumbCurrent>{headerSubtitle}</BreadcrumbCurrent>
               {breadcrumbChips.length > 0 && (
                 <>
-                  <span style={{ color: 'var(--g300)' }}>·</span>
+                  <BreadcrumbDot>·</BreadcrumbDot>
                   <BreadcrumbCurrent>Фильтр:</BreadcrumbCurrent>
                   {breadcrumbChips.map((chip, i) => (
                     <span key={chip}>
                       <BreadcrumbSel>{chip}</BreadcrumbSel>
                       {i < breadcrumbChips.length - 1 && (
-                        <span style={{ color: 'var(--g300)', margin: '0 4px' }}>+</span>
+                        <BreadcrumbPlus>+</BreadcrumbPlus>
                       )}
                     </span>
                   ))}
@@ -863,7 +875,9 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
           </Scale>
           <HintBar>
             <span className="hi">клик — фильтр</span>
+            <span className="hi-sep" aria-hidden="true" />
             <span className="hi">Ctrl+клик — разложение</span>
+            <span className="hi-sep" aria-hidden="true" />
             <span className="hi">⇧ клик — сравнить</span>
           </HintBar>
         </Footer>

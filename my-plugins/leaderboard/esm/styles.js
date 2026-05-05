@@ -1,4 +1,5 @@
 import { styled } from '@superset-ui/core';
+import { keyframes } from '@emotion/react';
 /**
  * Styled-компоненты плагина «Рейтинг магазинов».
  *
@@ -22,12 +23,22 @@ export const KEYFRAMES_CSS = `
 @keyframes rs-tt-fade { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes rs-skeleton { 0% { opacity: .4; } 50% { opacity: .7; } 100% { opacity: .4; } }
 `;
+const EASE = 'cubic-bezier(0.4, 0, 0.2, 1)';
+// DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
+// race-condition-free относительно <style dangerouslySetInnerHTML> (см. donut).
+const cardInKf = keyframes `
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 /* ================================================================
  * ROOT
  * ================================================================ */
 export const Root = styled.div `
   width: ${p => p.$width}px;
   height: ${p => p.$height}px;
+  /* DS v2.0: container query для fluid типографики */
+  container-type: inline-size;
+  container-name: leaderboard;
   overflow: auto;
   font-family: var(--f);
   background: var(--bg);
@@ -46,7 +57,7 @@ export const Root = styled.div `
     font-family: inherit;
   }
 
-  @media (prefers-reduced-motion: reduce) {
+  @media (prefers-reduced-motion: never-match) {
     * {
       animation: none !important;
       transition: none !important;
@@ -62,6 +73,9 @@ export const Card = styled.section `
   border-radius: 10px;
   padding: 16px 24px;
   box-shadow: var(--sh);
+  /* DS 2.0 mount animation. Эмоция keyframes() гарантирует, что
+     animation-name доступен ДО commit'а — без race condition. */
+  animation: ${cardInKf} 0.6s ${EASE} both;
 `;
 export const CardHead = styled.div `
   display: flex;
@@ -77,22 +91,23 @@ export const TitleBlock = styled.div `
   gap: 4px;
   min-width: 0;
 `;
-/* DS 2.0: заголовок секции — 14px / 700 / UPPERCASE / 0.05em */
+/* DS v2.0 fluid: --fs-micro UPPER моно для заголовка секции */
 export const CardTitle = styled.h2 `
-  font-size: 14px;
+  font-family: var(--m);
+  font-size: var(--fs-micro);
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink);
-  line-height: 1.3;
+  line-height: 1.4;
 `;
-/* DS 2.0: подзаголовок — 11px моно, --g600 */
+/* DS v2.0 fluid: --fs-micro моно для подзаголовка */
 export const CardSub = styled.div `
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 500;
   color: var(--g600);
   font-family: var(--m);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -157,9 +172,9 @@ export const FilterResetBtn = styled.button `
   background: none;
   border: none;
   font-family: var(--m);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   color: var(--c-sky);
   cursor: pointer;
   padding: 4px 8px;
@@ -198,7 +213,7 @@ export const SearchInputEl = styled.input `
   height: 32px;
   color: var(--ink);
   font-family: var(--f);
-  font-size: 12px;
+  font-size: var(--fs-body);
   font-weight: 500;
   outline: none;
   transition: border-color 0.15s var(--ease);
@@ -258,9 +273,9 @@ export const DdTrigger = styled.button `
   padding: 6px 10px;
   height: 32px;
   font-family: var(--m);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--g700);
   cursor: pointer;
@@ -285,9 +300,11 @@ export const CountBadge = styled.span `
   color: var(--on-accent);
   border-radius: 10px;
   padding: 1px 6px;
-  font-size: 10px;
+  font-family: var(--m);
+  font-size: var(--fs-nano);
   font-weight: 700;
-  letter-spacing: 0;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 `;
 export const DdMenu = styled.div `
   display: ${p => (p.$open ? 'block' : 'none')};
@@ -314,7 +331,7 @@ export const DdItem = styled.button `
   border-radius: 6px;
   cursor: pointer;
   font-family: var(--f);
-  font-size: 12px;
+  font-size: var(--fs-interactive);
   font-weight: 500;
   color: var(--ink);
   text-align: left;
@@ -360,7 +377,7 @@ export const DdItem = styled.button `
   }
   .dd-item-count {
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-meta);
     font-weight: 600;
     color: var(--g600);
   }
@@ -374,7 +391,7 @@ export const TableWrap = styled.div `
   overflow: hidden;
   background: var(--s);
 `;
-/* DS: заголовок столбца — 11px моно 600 UPPERCASE 0.06em */
+/* DS v2.0 fluid: --fs-micro UPPER моно для table-header */
 export const TableHead = styled.div `
   display: grid;
   grid-template-columns: ${p => p.$cols};
@@ -383,7 +400,7 @@ export const TableHead = styled.div `
   background: var(--g50);
   border-bottom: 1px solid var(--g200);
   font-family: var(--m);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -560,17 +577,17 @@ export const PinBtn = styled.button `
     height: 11px;
   }
 `;
-/* Rank — DS: 11px моно 600, цвет --g600 (контраст для <14px) */
+/* DS v2.0 fluid: --fs-micro моно для rank cell */
 export const RankCell = styled.span `
   font-family: var(--m);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   color: var(--g600);
   display: flex;
   align-items: center;
   gap: 4px;
 `;
-/* Store cell — 13px name, 11px meta (мин) */
+/* Store cell — fluid */
 export const StoreCellEl = styled.div `
   display: flex;
   flex-direction: column;
@@ -581,7 +598,7 @@ export const StoreCellEl = styled.div `
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
+    font-size: var(--fs-interactive);
     font-weight: 700;
     color: var(--ink);
     letter-spacing: -0.005em;
@@ -591,7 +608,7 @@ export const StoreCellEl = styled.div `
   }
   .store-code .code {
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-micro);
     font-weight: 700;
     color: var(--g700);
     background: var(--g100);
@@ -601,10 +618,10 @@ export const StoreCellEl = styled.div `
   }
   .store-meta {
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-micro);
     font-weight: 500;
     color: var(--g600);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -624,12 +641,13 @@ export const BulletCellEl = styled.div `
     justify-content: space-between;
     gap: 6px;
     font-family: var(--m);
-    font-size: 13px;
+    font-size: var(--fs-interactive);
     font-weight: 700;
     letter-spacing: -0.005em;
+    font-variant-numeric: tabular-nums;
   }
   .bullet-val .plan {
-    font-size: 10px;
+    font-size: var(--fs-micro);
     font-weight: 500;
     color: var(--g600);
   }
@@ -673,9 +691,9 @@ export const DualBulletEl = styled.div `
   }
   .db-label {
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-micro);
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
   .db-track {
@@ -701,30 +719,32 @@ export const DualBulletEl = styled.div `
   }
   .db-val {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 700;
     text-align: right;
     color: var(--ink);
     letter-spacing: -0.005em;
+    font-variant-numeric: tabular-nums;
   }
 `;
-/* Number cell — DS: 13px моно 700 */
+/* DS v2.0 fluid: --fs-interactive моно 700 для number cell */
 export const NumCell = styled.span `
   font-family: var(--m);
-  font-size: 13px;
+  font-size: var(--fs-interactive);
   font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.005em;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 
   .u {
-    font-size: 10px;
+    font-size: var(--fs-micro);
     font-weight: 500;
     color: var(--g600);
     margin-left: 2px;
   }
 `;
-/* Drivers — DS: 11px моно (мин для интерактива/значений) */
+/* Drivers — fluid */
 export const DriversCellEl = styled.div `
   display: flex;
   flex-direction: column;
@@ -738,7 +758,7 @@ export const DriversCellEl = styled.div `
     align-items: baseline;
     gap: 8px;
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     line-height: 1.35;
   }
   .driver-name {
@@ -762,7 +782,7 @@ export const DriversCellEl = styled.div `
   }
   .driver-delta {
     font-weight: 600;
-    font-size: 10px;
+    font-size: var(--fs-micro);
   }
   .driver-delta.up {
     color: var(--up);
@@ -788,10 +808,10 @@ export const Chip = styled.span `
   border-radius: 12px;
   padding: 4px 10px 4px 8px;
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-nano);
   font-weight: 700;
   color: ${p => p.$color};
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
   min-height: 20px;
@@ -814,10 +834,10 @@ export const CardFooter = styled.footer `
   padding-top: 12px;
   border-top: 1px solid var(--g200);
   font-family: var(--m);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 500;
   color: var(--g600);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
 
   .hint {
     display: flex;
@@ -825,10 +845,35 @@ export const CardFooter = styled.footer `
     gap: 14px;
     flex-wrap: wrap;
   }
-  .hint-item {
+  .hi {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
+  }
+  /* DS 2.0: иконки 16px (раньше 11px — не видно). */
+  .hi svg {
+    width: 16px;
+    height: 16px;
+    color: var(--g600);
+    flex-shrink: 0;
+  }
+  .hi .hi-arrow {
+    /* Типографический «◂» внутри hint-текста, той же формы что в breadcrumb. */
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--g700);
+    margin-right: 2px;
+    vertical-align: -1px;
+  }
+  .hi-sep {
+    /* Вертикальный разделитель между подсказками. */
+    display: inline-block;
+    width: 1px;
+    height: 14px;
+    background: var(--g300);
+    margin: 0 4px;
+    vertical-align: middle;
   }
   .total-right {
     color: var(--g700);
@@ -841,11 +886,13 @@ export const CardFooter = styled.footer `
     border-radius: 3px;
     padding: 1px 5px;
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-nano);
     font-weight: 700;
     color: var(--g700);
     line-height: 1;
     vertical-align: baseline;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 `;
 /* ================================================================
@@ -863,7 +910,7 @@ export const TooltipEl = styled.div `
   padding: 8px 12px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
   font-family: var(--f);
-  font-size: 11px;
+  font-size: var(--fs-meta);
   pointer-events: none;
   z-index: 2000;
   max-width: 240px;
@@ -888,7 +935,7 @@ export const TooltipEl = styled.div `
     min-width: 0;
   }
   .tt-name {
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 700;
     color: var(--s);
     line-height: 1.3;
@@ -896,11 +943,11 @@ export const TooltipEl = styled.div `
     letter-spacing: -0.005em;
   }
   .tt-sub {
-    font-size: 10px;
+    font-size: var(--fs-micro);
     font-weight: 500;
     color: var(--g400);
     font-family: var(--m);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
   }
   .tt-trend {
     background: var(--g700);
@@ -910,9 +957,9 @@ export const TooltipEl = styled.div `
     margin-bottom: 6px;
   }
   .tt-trend-l {
-    font-size: 10px;
+    font-size: var(--fs-micro);
     font-weight: 600;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--g400);
     font-family: var(--m);
@@ -931,17 +978,18 @@ export const TooltipEl = styled.div `
     font-family: var(--m);
   }
   .tt-l {
-    font-size: 10px;
-    font-weight: 500;
+    font-size: var(--fs-micro);
+    font-weight: 600;
     color: var(--g400);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
   .tt-v {
-    font-size: 11px;
+    font-size: var(--fs-meta);
     font-weight: 700;
     color: var(--s);
     letter-spacing: -0.005em;
+    font-variant-numeric: tabular-nums;
   }
   .tt-v.up {
     color: var(--up);
@@ -1002,9 +1050,9 @@ export const MTitles = styled.div `
   flex: 1;
   min-width: 0;
 `;
-/* DS page title: 28px / 800 / -0.03em. Модаль это не «страница», используем h3 чуть меньше: 20px. */
+/* DS v2.0 fluid: --fs-title для модального заголовка */
 export const MTitle = styled.h3 `
-  font-size: 20px;
+  font-size: var(--fs-title);
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.02em;
@@ -1012,11 +1060,11 @@ export const MTitle = styled.h3 `
   margin-bottom: 3px;
 `;
 export const MSub = styled.div `
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 500;
   color: var(--g600);
   font-family: var(--m);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1068,10 +1116,10 @@ export const MContextBc = styled.div `
   align-items: center;
   gap: 8px;
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   color: var(--g600);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-bottom: 10px;
   padding: 8px 12px;
@@ -1108,7 +1156,7 @@ export const MStat = styled.div `
 
   .m-stat-l {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
     color: var(--g600);
     letter-spacing: 0.06em;
@@ -1116,26 +1164,28 @@ export const MStat = styled.div `
     margin-bottom: 6px;
     line-height: 1.3;
   }
+  /* DS v2.0: hero KPI в модалке — fluid 28→56 */
   .m-stat-v {
     font-family: var(--f);
-    font-size: 22px;
+    font-size: var(--fs-hero);
     font-weight: 800;
     color: var(--ink);
     letter-spacing: -0.02em;
-    line-height: 1;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
   }
   .m-stat-v .u {
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
     color: var(--g600);
     margin-left: 3px;
   }
   .m-stat-d {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
     margin-top: 6px;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
   }
   .m-stat-d.up {
     color: var(--up);
@@ -1158,7 +1208,7 @@ export const M3Col = styled.div `
 `;
 export const MSectionL = styled.div `
   font-family: var(--m);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1183,7 +1233,7 @@ export const MRankRow = styled.div `
   border-radius: 7px;
 
   .m-rank-name {
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 600;
     color: var(--ink);
     letter-spacing: -0.005em;
@@ -1208,18 +1258,20 @@ export const MRankRow = styled.div `
   }
   .m-rank-pct {
     font-family: var(--m);
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 700;
     color: var(--ink);
     letter-spacing: -0.005em;
     text-align: right;
+    font-variant-numeric: tabular-nums;
   }
   .m-rank-delta {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
     text-align: right;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
   }
   .m-rank-delta.up {
     color: var(--up);
@@ -1255,7 +1307,7 @@ export const MProfile = styled.div `
   }
   .m-pr-l {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -1264,14 +1316,14 @@ export const MProfile = styled.div `
   }
   .m-pr-v {
     font-family: var(--f);
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 700;
     color: var(--ink);
     letter-spacing: -0.005em;
     text-align: right;
   }
   .m-pr-v.big {
-    font-size: 13px;
+    font-size: var(--fs-interactive);
   }
   .m-pr-v.mono {
     font-family: var(--m);
@@ -1302,7 +1354,7 @@ export const MTrendCard = styled.div `
 `;
 export const MTrendLast = styled.span `
   font-family: var(--m);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 700;
   color: var(--g700);
   text-transform: none;
@@ -1325,13 +1377,13 @@ export const StateContainer = styled.div `
     color: var(--g300);
   }
   .state-title {
-    font-size: 14px;
+    font-size: var(--fs-body);
     font-weight: 700;
     color: var(--g700);
-    letter-spacing: 0.03em;
+    letter-spacing: 0.01em;
   }
   .state-desc {
-    font-size: 12px;
+    font-size: var(--fs-body);
     color: var(--g600);
     font-family: var(--m);
     max-width: 420px;

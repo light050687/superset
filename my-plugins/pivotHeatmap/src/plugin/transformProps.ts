@@ -23,7 +23,15 @@ interface ChartPropsLike {
   width: number;
   height: number;
   formData: HeatmapPivotFormData;
-  queriesData: Array<{ data?: Record<string, unknown>[] } | undefined>;
+  queriesData: Array<
+    | {
+        data?: Record<string, unknown>[];
+        is_cached?: boolean;
+        applied_filters?: Array<unknown>;
+        rejected_filters?: Array<unknown>;
+      }
+    | undefined
+  >;
   hooks?: Record<string, unknown>;
   datasource?: { id?: number; type?: string };
 }
@@ -153,6 +161,29 @@ function buildEmptySlice(): TotalsSlice {
   return { fact: 0, plan: 0, ratio: null, revenue: 0, pct: null };
 }
 
+/**
+ * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
+ * Если raw — не пресет (например конкретный диапазон) — возвращаем как есть.
+ */
+function formatTimeRangeRu(tr: string | undefined): string {
+  if (!tr || tr === 'No filter') return 'за период';
+  const map: Record<string, string> = {
+    'Last day': 'за день',
+    'Last week': 'за неделю',
+    'Last month': 'за месяц',
+    'Last quarter': 'за квартал',
+    'Last year': 'за год',
+    Today: 'сегодня',
+    'This week': 'за эту неделю',
+    'This month': 'за этот месяц',
+    'This year': 'за этот год',
+    'previous calendar week': 'за прошлую неделю',
+    'previous calendar month': 'за прошлый месяц',
+    'previous calendar year': 'за прошлый год',
+  };
+  return map[tr] ?? tr;
+}
+
 export default function transformProps(
   chartProps: ChartProps,
 ): HeatmapPivotProps {
@@ -213,6 +244,18 @@ export default function transformProps(
 
   if (rawData.length === 0) {
     dataState = 'empty';
+  } else {
+    /* DS 2.0 §06 «6 состояний»:
+       - stale: данные пришли из кеша (queriesData[0].is_cached === true)
+       - partial: некоторые фильтры отвергнуты бэкендом (rejected_filters
+         не пуст). Приоритет partial > stale (юзеру важнее знать что
+         фильтр не применился, чем что данные из кеша). */
+    const q0 = queriesData?.[0];
+    if (q0?.rejected_filters && q0.rejected_filters.length > 0) {
+      dataState = 'partial';
+    } else if (q0?.is_cached) {
+      dataState = 'stale';
+    }
   }
 
   const reshape = reshapePivot({
@@ -282,7 +325,10 @@ export default function transformProps(
     headerText: fd.headerText ?? 'Heatmap Pivot',
     headerSubtitle:
       fd.headerSubtitle ??
-      `${rowAxisCol || 'Строки'} × ${colAxisCol || 'Колонки'}`,
+      formatTimeRangeRu(
+        (fdRec.time_range as string | undefined) ??
+          (fdRec.timeRange as string | undefined),
+      ),
     emitFilter,
     setDataMask,
     drillQueryParams,

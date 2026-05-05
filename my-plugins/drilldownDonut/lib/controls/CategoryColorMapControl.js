@@ -25,6 +25,10 @@ const SwatchRow = core_1.styled.span `
   align-items: center;
   gap: 8px;
 `;
+const AccentLabel = core_1.styled.span `
+  font-family: var(--m);
+  font-size: var(--fs-micro);
+`;
 const Swatch = core_1.styled.span `
   display: inline-block;
   width: 10px;
@@ -36,7 +40,7 @@ const Swatch = core_1.styled.span `
 `;
 const HelpText = core_1.styled.div `
   font-family: 'Manrope', system-ui, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: ${({ tone, theme }) => {
     const dark = (0, isDarkTheme_1.isDarkTheme)(theme?.colorBgContainer);
     const tokens = dark ? themeTokens_1.DARK_TOKENS : themeTokens_1.LIGHT_TOKENS;
@@ -81,7 +85,7 @@ function CategoryColorMapControl(props) {
     }, [rows, onChange]);
     const accentOptions = (0, react_1.useMemo)(() => types_1.ACCENT_PALETTE.map((a) => ({
         value: a,
-        label: ((0, jsx_runtime_1.jsxs)(SwatchRow, { children: [(0, jsx_runtime_1.jsx)(Swatch, { color: tokens[a] }), (0, jsx_runtime_1.jsx)("span", { style: { fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }, children: a })] })),
+        label: ((0, jsx_runtime_1.jsxs)(SwatchRow, { children: [(0, jsx_runtime_1.jsx)(Swatch, { color: tokens[a] }), (0, jsx_runtime_1.jsx)(AccentLabel, { children: a })] })),
     })), [tokens]);
     const hasDuplicates = duplicateNames.size > 0;
     return ((0, jsx_runtime_1.jsxs)(Wrap, { children: [rows.length === 0 && ((0, jsx_runtime_1.jsx)(HelpText, { tone: "muted", children: "\u041D\u0435\u0442 \u043F\u0435\u0440\u0435\u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0439 \u2014 \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0438 \u043F\u043E\u043B\u0443\u0447\u0430\u0442 \u0446\u0432\u0435\u0442\u0430 \u0438\u0437 \u0430\u0432\u0442\u043E\u043F\u0430\u043B\u0438\u0442\u0440\u044B \u043F\u043E \u043F\u043E\u0440\u044F\u0434\u043A\u0443." })), rows.map((row, idx) => {

@@ -130,6 +130,18 @@ const config = {
                 ],
                 [
                     {
+                        name: 'subtitle_text',
+                        config: {
+                            type: 'TextControl',
+                            label: (0, core_1.t)('Подзаголовок'),
+                            description: (0, core_1.t)('Если пусто — берётся активный диапазон времени (Last year → «за год»).'),
+                            default: '',
+                            renderTrigger: true,
+                        },
+                    },
+                ],
+                [
+                    {
                         name: 'metric_label',
                         config: {
                             type: 'TextControl',

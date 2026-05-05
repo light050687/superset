@@ -18,6 +18,7 @@ import { fetchBreakdown } from './utils/drillApi';
 import { buildMockCells } from './mocks/lossesPreset';
 import {
   DrillBars,
+  DrillHelperText,
   DrillSectionTitle,
   DrillSummary,
   Modal,
@@ -265,13 +266,13 @@ export function DrillModal(props: DrillModalProps): JSX.Element | null {
           )}
 
           <DrillSectionTitle>Разложение по категориям</DrillSectionTitle>
-          {loading && <div style={{ color: 'var(--g500)', fontSize: 12 }}>Загрузка…</div>}
+          {loading && <DrillHelperText>Загрузка…</DrillHelperText>}
           {!loading && breakdown.length === 0 && (
-            <div style={{ color: 'var(--g500)', fontSize: 12 }}>
+            <DrillHelperText>
               {drillQueryParams?.breakdownCol
                 ? 'Нет данных по детализации'
                 : 'Укажите «Измерение детализации» в настройках чарта'}
-            </div>
+            </DrillHelperText>
           )}
           {!loading && breakdown.length > 0 && (
             <DrillBars>

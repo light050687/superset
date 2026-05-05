@@ -15,6 +15,16 @@ export interface FormattedParts {
     number: string;
     unit: string;
 }
+/**
+ * Канонический fmtRub (DS 2.0): авто-переключение единицы для рублёвых сумм.
+ * Базовая единица входа — МИЛЛИОНЫ рублей (как в исходных данных rankedBars).
+ * До запятой ≤3 цифр всегда (когда выходит за 999 — поднимается на следующую).
+ *
+ *  - <1 млн     → "X тыс ₽"
+ *  - <1 000     → "X,Y млн ₽"
+ *  - <1 000 000 → "X,YZ млрд ₽"
+ *  - иначе      → "X,YZ трлн ₽"
+ */
 export declare function fmtRub(value: number, decimals?: number, suffix?: string): FormattedParts;
 export declare function fmtPct(value: number, decimals?: number): FormattedParts;
 /**

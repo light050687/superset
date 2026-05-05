@@ -20,9 +20,43 @@ export const fmtDelta = (v, unit = 'п.п.') => {
     const sign = v > 0 ? '+' : v < 0 ? MINUS : '';
     return `${sign}${nf2(Math.abs(v))}${NBSP}${unit}`;
 };
-/** "1 234 ₽" — целое с символом рубля после. */
-export const fmtRub = (v) => `${nf0(v)}${NBSP}₽`;
-/** "12 млн ₽" — млн с короткой подписью. */
+/**
+ * Канонический fmtRub (DS 2.0): авто-переключение единицы для рублёвых сумм.
+ * Базовая единица входа — рубли. До запятой ≤3 цифр.
+ *
+ *  - <10k       → "1 234 ₽"
+ *  - <1M        → "1 234 тыс ₽"
+ *  - <1B        → "1,23 млн ₽"
+ *  - <1T        → "1,23 млрд ₽"
+ *  - иначе      → "1,23 трлн ₽"
+ */
+export const fmtRub = (v, decimals = 2) => {
+    if (!Number.isFinite(v))
+        return '—';
+    const abs = Math.abs(v);
+    if (abs >= 1000000000000) {
+        return `${nfDec(decimals)(v / 1000000000000)}${NBSP}трлн${NBSP}₽`;
+    }
+    if (abs >= 1000000000) {
+        return `${nfDec(decimals)(v / 1000000000)}${NBSP}млрд${NBSP}₽`;
+    }
+    if (abs >= 1000000) {
+        return `${nfDec(decimals)(v / 1000000)}${NBSP}млн${NBSP}₽`;
+    }
+    if (abs >= 10000) {
+        return `${nf0(v / 1000)}${NBSP}тыс${NBSP}₽`;
+    }
+    return `${nf0(v)}${NBSP}₽`;
+};
+const nfDec = (d) => {
+    const fmt = nfCached({
+        minimumFractionDigits: d,
+        maximumFractionDigits: d,
+    });
+    return (v) => fixSpaces(fmt.format(v));
+};
+/** "12 млн ₽" — статичная форма с предзаданной единицей "млн". Используется
+ *  там, где значение УЖЕ в млн ₽ (не нужен auto-unit). */
 export const fmtMln = (v) => `${nf0(v)}${NBSP}млн${NBSP}₽`;
 /** "DD.MM.YYYY" — российская дата. */
 export const fmtDate = (d) => {

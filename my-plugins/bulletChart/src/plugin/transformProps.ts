@@ -29,6 +29,28 @@ function isThemeDark(theme: unknown): boolean {
   return (r * 299 + g * 587 + b * 114) / 1000 < 128;
 }
 
+/**
+ * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
+ */
+function formatTimeRangeRu(tr: string | undefined): string {
+  if (!tr || tr === 'No filter') return 'за период';
+  const map: Record<string, string> = {
+    'Last day': 'за день',
+    'Last week': 'за неделю',
+    'Last month': 'за месяц',
+    'Last quarter': 'за квартал',
+    'Last year': 'за год',
+    Today: 'сегодня',
+    'This week': 'за эту неделю',
+    'This month': 'за этот месяц',
+    'This year': 'за этот год',
+    'previous calendar week': 'за прошлую неделю',
+    'previous calendar month': 'за прошлый месяц',
+    'previous calendar year': 'за прошлый год',
+  };
+  return map[tr] ?? tr;
+}
+
 // ═══════════════════════════════════════
 // Main transform
 // ═══════════════════════════════════════
@@ -63,7 +85,16 @@ export default function transformProps(chartProps: ChartProps): BulletChartProps
   const sparklinePoints = Number(formData.sparklinePoints) || 8;
 
   const headerText = formData.headerText || '';
-  const subheaderText = formData.subheaderText ?? 'Факт vs план vs ПГ';
+  // DS 2.0: subheader fallback на локализованный time_range («Last year» → «за год»).
+  const userSubheader = formData.subheaderText as string | undefined;
+  const fdRecAll = formData as unknown as Record<string, unknown>;
+  const subheaderText =
+    userSubheader?.trim() ||
+    formatTimeRangeRu(
+      (fdRecAll['time_range'] as string | undefined) ??
+        (fdRecAll['timeRange'] as string | undefined),
+    ) ||
+    'Факт vs план vs ПГ';
 
   const formatters = makeFormatters({
     decimals,
@@ -234,8 +265,24 @@ export default function transformProps(chartProps: ChartProps): BulletChartProps
         }
       : undefined;
 
-  const dataState: DataState =
-    !mainData.length || rows.length === 0 ? 'empty' : 'populated';
+  /* DS 2.0 §06 «Состояния»: empty / partial / stale / populated.
+     - partial: бэкенд отверг часть фильтров (rejected_filters > 0)
+     - stale: данные пришли из кеша (is_cached)
+     - partial > stale по приоритету (юзеру важнее знать про фильтр).
+     'loading' и 'error' приходят отдельно через chartStatus prop. */
+  const q0 = queriesData?.[0] as
+    | { is_cached?: boolean; rejected_filters?: Array<unknown> }
+    | undefined;
+  let dataState: DataState;
+  if (!mainData.length || rows.length === 0) {
+    dataState = 'empty';
+  } else if (q0?.rejected_filters && q0.rejected_filters.length > 0) {
+    dataState = 'partial';
+  } else if (q0?.is_cached) {
+    dataState = 'stale';
+  } else {
+    dataState = 'populated';
+  }
 
   return {
     width,

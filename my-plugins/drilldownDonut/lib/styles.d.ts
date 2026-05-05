@@ -1,5 +1,5 @@
 export declare const CARD_CLASS = "structure-donut-card";
-export declare const KEYFRAMES_CSS = "\n@keyframes sd-skeleton-pulse{\n  0%{opacity:.12}\n  50%{opacity:.22}\n  100%{opacity:.12}\n}\n@keyframes sd-fade-in{\n  from{opacity:0}\n  to{opacity:1}\n}\n@keyframes sd-card-in{\n  from{opacity:0}\n  to{opacity:1}\n}\n";
+export declare const KEYFRAMES_CSS = "\n@keyframes sd-skeleton-pulse{\n  0%{opacity:.12}\n  50%{opacity:.22}\n  100%{opacity:.12}\n}\n@keyframes sd-fade-in{\n  from{opacity:0}\n  to{opacity:1}\n}\n@keyframes sd-card-in{\n  /* DS 2.0: \u043F\u0435\u0440\u0432\u043E\u0435 \u043F\u043E\u044F\u0432\u043B\u0435\u043D\u0438\u0435 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0438 \u2014 fade + slight rise (4px),\n     0.45s \u2014 \u0437\u0430\u043C\u0435\u0442\u043D\u043E, \u043D\u043E \u043D\u0435 \u0440\u0430\u0437\u0434\u0440\u0430\u0436\u0430\u0435\u0442. \u0420\u0430\u043D\u044C\u0448\u0435 \u0431\u044B\u043B\u043E 0.2s opacity-only \u2014\n     \u044E\u0437\u0435\u0440 \u043D\u0435 \u0432\u0438\u0434\u0435\u043B \u0430\u043D\u0438\u043C\u0430\u0446\u0438\u044E \u0432\u043E\u043E\u0431\u0449\u0435. */\n  from{opacity:0;transform:translateY(6px)}\n  to{opacity:1;transform:translateY(0)}\n}\n";
 export declare const StructureDonutRoot: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
@@ -19,6 +19,10 @@ export declare const Title: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const MockBadge: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, {}>;
 export declare const HeaderText: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
@@ -40,6 +44,18 @@ export declare const ChartWrap: import("@emotion/styled").StyledComponent<{
     as?: React.ElementType;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
 export declare const ChartCanvas: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const HeroOverlay: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const HeroValue: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const HeroLabel: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;

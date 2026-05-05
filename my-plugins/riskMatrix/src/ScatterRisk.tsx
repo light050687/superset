@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { styled } from '@superset-ui/core';
 import {
   ScatterRiskProps,
   StorePoint,
@@ -26,7 +27,44 @@ import {
   Tooltip,
   EmptyBlock,
   KEYFRAMES_CSS,
+  PartialBadge,
+  StaleBar,
 } from './styles';
+
+/* === Локальные styled-обёртки (миграция inline style → Emotion, P-011) === */
+
+/** Overlay поверх ChartArea, когда нет данных. */
+const EmptyOverlay = styled(EmptyBlock)`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--s);
+  z-index: 20;
+`;
+
+/** Заголовок пустого состояния («Нет данных»). */
+const EmptyTitle = styled.div`
+  font-size: var(--fs-interactive);
+  font-weight: 700;
+  color: var(--g700);
+`;
+
+/** Подсказка пустого состояния (рекомендация по настройке). */
+const EmptyHint = styled.div`
+  font-size: var(--fs-meta);
+  color: var(--g500);
+`;
+
+/** SVG-overlay для lasso-выбора: кладётся абсолютно поверх ChartArea. */
+const LassoSvg = styled.svg`
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+`;
 import ToolbarBar from './Toolbar';
 import LegendList from './Legend';
 import { getQuadrant, getQuadrantStats, getWorstN } from './utils/quadrants';
@@ -116,6 +154,7 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
     drillEnabled,
     detailQueryParams,
     shortcutsHint,
+    dataState,
   } = props;
 
   // ── State ──
@@ -871,12 +910,35 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
 
   const themeMode: 'light' | 'dark' = isDarkMode ? 'dark' : 'light';
 
+  // DS 2.0 canonical: loading имеет свой раздельный return со своим CardRoot.
+  // При переходе loading → loaded React unmount'ит loading-CardRoot и mount'ит
+  // новый → cardInKf animation запускается ровно когда юзер видит контент.
+  if (dataState === 'loading') {
+    return (
+      <CardRoot data-theme={themeMode} role="region" aria-busy="true">
+        <style>{KEYFRAMES_CSS}</style>
+        <CardHead>
+          <TitleBlock>
+            <CardTitle>{title}</CardTitle>
+          </TitleBlock>
+        </CardHead>
+        <div role="status" aria-label="Загрузка" style={{ flex: 1 }} />
+      </CardRoot>
+    );
+  }
+
   return (
     <CardRoot data-theme={themeMode} role="region" aria-labelledby="sr-card-title">
       <style>{KEYFRAMES_CSS}</style>
+      {dataState === 'stale' && <StaleBar aria-hidden="true" />}
       <CardHead>
         <TitleBlock>
-          <CardTitle id="sr-card-title">{title}</CardTitle>
+          <CardTitle id="sr-card-title">
+            {title}
+            {dataState === 'partial' && (
+              <PartialBadge title="Часть данных недоступна">Частично</PartialBadge>
+            )}
+          </CardTitle>
           <CardSubtitle>
             {subtitle && <span>{subtitle}</span>}
             {subtitle && <span className="dot" />}
@@ -913,28 +975,12 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
         onMouseLeave={handleMouseLeave}
       >
         {stores.length === 0 && (
-          <EmptyBlock
-            style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexDirection: 'column',
-              gap: 8,
-              background: 'var(--s)',
-              zIndex: 20,
-            }}
-            role="status"
-            aria-live="polite"
-          >
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--g700)' }}>
-              Нет данных
-            </div>
-            <div style={{ fontSize: 10, color: 'var(--g500)' }}>
+          <EmptyOverlay role="status" aria-live="polite">
+            <EmptyTitle>Нет данных</EmptyTitle>
+            <EmptyHint>
               Проверьте метрики X/Y и измерение магазина в настройках
-            </div>
-          </EmptyBlock>
+            </EmptyHint>
+          </EmptyOverlay>
         )}
         <ChartSvg
           ref={svgRef}
@@ -957,11 +1003,7 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
             />
           )}
           {selectMode === 'lasso' && selectionPath.length > 1 && (
-            <svg
-              width="100%"
-              height="100%"
-              style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
-            >
+            <LassoSvg width="100%" height="100%">
               <path
                 className="selection-lasso"
                 d={
@@ -970,7 +1012,7 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
                     .join(' ') + ' Z'
                 }
               />
-            </svg>
+            </LassoSvg>
           )}
         </SelectionOverlay>
 
@@ -1027,25 +1069,28 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
             const [keyPart, descPart] = part.split(/\s+[—-]\s+/);
             const keys = (keyPart ?? part).split('+').map((k) => k.trim()).filter(Boolean);
             return (
-              <div className="hint-item" key={i}>
-                {keys.map((k, ki) => (
-                  <React.Fragment key={ki}>
-                    {ki > 0 && <span>+</span>}
-                    <kbd>{k}</kbd>
-                  </React.Fragment>
-                ))}
-                {descPart && <span>— {descPart}</span>}
-              </div>
+              <React.Fragment key={i}>
+                {i > 0 && <span className="hi-sep" aria-hidden="true" />}
+                <span className="hi">
+                  {keys.map((k, ki) => (
+                    <React.Fragment key={ki}>
+                      {ki > 0 && <span>+</span>}
+                      <kbd>{k}</kbd>
+                    </React.Fragment>
+                  ))}
+                  {descPart && <span>— {descPart}</span>}
+                </span>
+              </React.Fragment>
             );
           })}
         </div>
         <div className="hint">
-          <div className="hint-item">
-            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="6" cy="6" r="4" />
+          <span className="hi">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="8" cy="8" r="5" />
             </svg>
             <span>размер = {sizeUnit}</span>
-          </div>
+          </span>
         </div>
       </Footer>
 

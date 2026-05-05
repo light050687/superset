@@ -73,7 +73,7 @@ const BulletBar = ({ value, target, scaleMax, direction, }) => {
         ]
         : bandsLess;
     const bands = direction === 'less_is_better' ? bandsLess : bandsMore;
-    return ((0, jsx_runtime_1.jsxs)(styles_1.BChart, { role: "img", "aria-label": target != null ? `Значение ${value}, цель ${target}` : `Значение ${value}`, children: [bands.map((b, i) => ((0, jsx_runtime_1.jsx)(styles_1.BBand, { bg: b.kind, style: { width: `${b.w}%` }, "aria-hidden": "true" }, i))), (0, jsx_runtime_1.jsx)(styles_1.BBar, { widthPct: barWidth }), targetLeft != null ? (0, jsx_runtime_1.jsx)(styles_1.BTarget, { leftPct: targetLeft }) : null] }));
+    return ((0, jsx_runtime_1.jsxs)(styles_1.BChart, { role: "img", "aria-label": target != null ? `Значение ${value}, цель ${target}` : `Значение ${value}`, children: [bands.map((b, i) => ((0, jsx_runtime_1.jsx)(styles_1.BBand, { bg: b.kind, widthPct: b.w, "aria-hidden": "true" }, i))), (0, jsx_runtime_1.jsx)(styles_1.BBar, { widthPct: barWidth }), targetLeft != null ? (0, jsx_runtime_1.jsx)(styles_1.BTarget, { leftPct: targetLeft }) : null] }));
 };
 exports.default = React.memo(BulletBar);
 //# sourceMappingURL=BulletBar.js.map

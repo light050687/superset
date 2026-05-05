@@ -3,11 +3,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DotSeparator = exports.AllModalIcon = exports.InlineError = exports.InlineEmpty = exports.InlineSkeleton = exports.TopBarFill = exports.ModalHeadIcon = exports.EmptyState = exports.AllFooter = exports.SortPills = exports.AllToolbar = exports.TopRow = exports.TopList = exports.TrendBox = exports.ModalSection = exports.StatBox = exports.ModalSummaryGrid = exports.ModalHead = exports.ModalBox = exports.ModalBackdrop = exports.SkeletonRow = exports.StateWrap = exports.UnitToggleEl = exports.IconDropdownItem = exports.IconDropdownTrigger = exports.IconDropdown = exports.IconDropdownWrap = exports.CardFooter = exports.Share = exports.Delta = exports.Value = exports.SparkBox = exports.BarFill = exports.BarPrev = exports.BarTrack = exports.Bar = exports.RankNameS = exports.RankNameL = exports.RankName = exports.RankBadge = exports.RankIcon = exports.RankRowEl = exports.RankList = exports.Controls = exports.CardSub = exports.CardTitle = exports.TitleBlock = exports.CardHead = exports.CardRoot = exports.THEME_VARS_CSS = void 0;
-exports.TooltipBox = void 0;
+exports.AllModalIcon = exports.InlineError = exports.InlineEmpty = exports.InlineSkeleton = exports.TopBarFill = exports.ModalHeadIcon = exports.EmptyState = exports.AllFooter = exports.SortPills = exports.AllToolbar = exports.TopRow = exports.TopList = exports.TrendBox = exports.ModalSection = exports.StatBox = exports.ModalSummaryGrid = exports.ModalHead = exports.ModalBox = exports.ModalBackdrop = exports.SkeletonRow = exports.StateWrap = exports.UnitToggleEl = exports.IconDropdownItem = exports.IconDropdownTrigger = exports.IconDropdown = exports.IconDropdownWrap = exports.CardFooter = exports.Share = exports.Delta = exports.Value = exports.SparkBox = exports.BarFill = exports.BarPrev = exports.BarTrack = exports.Bar = exports.RankNameS = exports.RankNameL = exports.RankName = exports.RankBadge = exports.RankIcon = exports.RankRowEl = exports.RankList = exports.Controls = exports.CardSub = exports.CardTitle = exports.TitleBlock = exports.CardHead = exports.StaleBar = exports.CardRoot = exports.THEME_VARS_CSS = void 0;
+exports.TooltipBox = exports.DotSeparator = void 0;
 const styled_1 = __importDefault(require("@emotion/styled"));
 const react_1 = require("@emotion/react");
 const themeTokens_1 = require("./themeTokens");
+// DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
+// race-condition-free относительно <style dangerouslySetInnerHTML> (см. donut).
+const cardInKf = (0, react_1.keyframes) `
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 const L = themeTokens_1.LIGHT_TOKENS;
 const D = themeTokens_1.DARK_TOKENS;
 /**
@@ -88,17 +94,50 @@ exports.THEME_VARS_CSS = `
 exports.CardRoot = styled_1.default.div `
   ${exports.THEME_VARS_CSS}
 
+  position: relative;
   width: 100%;
   height: 100%;
+  /* DS v2.0: container query для fluid типографики */
+  container-type: inline-size;
+  container-name: ranked;
   overflow: auto;
   padding: 18px 22px 16px;
   background: var(--s);
   border: 1px solid var(--g200);
-  border-radius: 14px;
+  border-radius: 10px;
   box-shadow: var(--sh);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  /* DS 2.0 mount animation. Эмоция keyframes() — race-condition-free. */
+  animation: ${cardInKf} 0.6s ${themeTokens_1.EASE} both;
+`;
+/* DS 2.0 §06 — Stale bar: тонкая sky-полоса сверху Card. */
+exports.StaleBar = styled_1.default.div `
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--c-sky) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: rb-stale-slide 1.6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+
+  @keyframes rb-stale-slide {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
 `;
 exports.CardHead = styled_1.default.div `
   display: flex;
@@ -114,18 +153,19 @@ exports.TitleBlock = styled_1.default.div `
   min-width: 0;
 `;
 exports.CardTitle = styled_1.default.div `
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-family: var(--m);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink);
 `;
 exports.CardSub = styled_1.default.div `
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--g500);
   font-family: var(--m);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -146,9 +186,9 @@ exports.CardSub = styled_1.default.div `
     background: var(--wn-bg);
     padding: 2px 8px;
     border-radius: 999px;
-    font-size: 9px;
+    font-size: var(--fs-nano);
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 `;
@@ -181,7 +221,7 @@ exports.RankRowEl = styled_1.default.div `
   align-items: center;
   gap: 14px;
   padding: 11px 10px;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s var(--ease);
   position: relative;
@@ -238,7 +278,7 @@ exports.RankRowEl = styled_1.default.div `
 exports.RankIcon = styled_1.default.div `
   width: 32px;
   height: 32px;
-  border-radius: 9px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -264,7 +304,7 @@ exports.RankBadge = styled_1.default.span `
   height: 14px;
   border-radius: 50%;
   font-family: var(--m);
-  font-size: 8px;
+  font-size: var(--fs-nano);
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -278,7 +318,7 @@ exports.RankName = styled_1.default.div `
   min-width: 0;
 `;
 exports.RankNameL = styled_1.default.div `
-  font-size: 12.5px;
+  font-size: var(--fs-meta);
   font-weight: 600;
   color: var(--ink);
   overflow: hidden;
@@ -287,7 +327,7 @@ exports.RankNameL = styled_1.default.div `
   letter-spacing: -0.005em;
 `;
 exports.RankNameS = styled_1.default.div `
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   font-weight: 500;
   color: var(--g500);
   font-family: var(--m);
@@ -307,7 +347,7 @@ exports.BarTrack = styled_1.default.div `
   width: 100%;
   height: 8px;
   background: var(--g100);
-  border-radius: 5px;
+  border-radius: 6px;
   position: relative;
   overflow: visible;
 `;
@@ -318,7 +358,7 @@ exports.BarPrev = styled_1.default.div `
   transform: translateY(-50%);
   width: ${({ $widthPct }) => Math.max(0, Math.min(100, $widthPct))}%;
   height: 14px;
-  border-radius: 4px;
+  border-radius: 6px;
   border: 1px dashed var(--cat-color);
   background: transparent;
   opacity: 0.45;
@@ -331,7 +371,7 @@ exports.BarFill = styled_1.default.div `
   width: ${({ $widthPct }) => Math.max(0, Math.min(100, $widthPct))}%;
   height: 8px;
   background: var(--cat-color);
-  border-radius: 5px;
+  border-radius: 6px;
   transition: width 0.4s var(--ease);
 
   &::after {
@@ -342,7 +382,7 @@ exports.BarFill = styled_1.default.div `
     width: 2px;
     height: 12px;
     background: var(--cat-color);
-    border-radius: 1px;
+    border-radius: 6px;
   }
 `;
 // ─── Spark & values ──────────────────────────────────────────────────────────
@@ -358,23 +398,25 @@ exports.SparkBox = styled_1.default.div `
   }
 `;
 exports.Value = styled_1.default.div `
+  /* DS v2.0 P0: ranked KPI value 12px → --fs-subtitle (16-20) */
   font-family: var(--m);
-  font-size: 12px;
+  font-size: var(--fs-subtitle);
   font-weight: 700;
   color: var(--ink);
   text-align: right;
   letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
 
   .u {
     font-weight: 500;
     color: var(--g500);
-    font-size: 10px;
+    font-size: var(--fs-meta);
     margin-left: 2px;
   }
 `;
 exports.Delta = styled_1.default.div `
   font-family: var(--m);
-  font-size: 10.5px;
+  font-size: var(--fs-meta);
   font-weight: 600;
   text-align: right;
   display: flex;
@@ -382,6 +424,7 @@ exports.Delta = styled_1.default.div `
   justify-content: flex-end;
   gap: 3px;
   letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
   color: ${({ $status }) => $status === 'up'
     ? 'var(--up)'
     : $status === 'dn'
@@ -396,16 +439,17 @@ exports.Delta = styled_1.default.div `
 `;
 exports.Share = styled_1.default.div `
   font-family: var(--m);
-  font-size: 11.5px;
+  font-size: var(--fs-micro);
   font-weight: 700;
   color: var(--g700);
   text-align: right;
   letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
 
   .u {
     font-weight: 500;
     color: var(--g500);
-    font-size: 9px;
+    font-size: var(--fs-micro);
   }
 `;
 // ─── Footer ─────────────────────────────────────────────────────────────────
@@ -417,19 +461,20 @@ exports.CardFooter = styled_1.default.div `
   padding-top: 12px;
   border-top: 1px solid var(--g200);
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--g500);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
 
   .hint {
     display: flex;
     align-items: center;
     gap: 6px;
 
+    /* DS 2.0: иконки 16px (раньше 11px — мелковато). */
     svg {
-      width: 11px;
-      height: 11px;
+      width: 16px;
+      height: 16px;
       color: var(--g500);
       flex-shrink: 0;
     }
@@ -438,10 +483,10 @@ exports.CardFooter = styled_1.default.div `
       display: inline-block;
       background: var(--g100);
       border: 1px solid var(--g300);
-      border-radius: 3px;
+      border-radius: 6px;
       padding: 1px 5px;
       font-family: var(--m);
-      font-size: 9px;
+      font-size: var(--fs-micro);
       font-weight: 700;
       color: var(--g700);
       line-height: 1;
@@ -455,9 +500,9 @@ exports.CardFooter = styled_1.default.div `
     color: var(--c-sky);
     cursor: pointer;
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-meta);
     font-weight: 600;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.01em;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -469,7 +514,7 @@ exports.CardFooter = styled_1.default.div `
     &:focus-visible {
       outline: 2px solid var(--c-sky);
       outline-offset: 2px;
-      border-radius: 3px;
+      border-radius: 6px;
     }
   }
 `;
@@ -488,7 +533,7 @@ exports.IconDropdown = styled_1.default.div `
   background: var(--g100);
   border: 1px solid
     ${({ $open }) => ($open ? 'var(--g300)' : 'var(--g200)')};
-  border-radius: 7px;
+  border-radius: 6px;
   overflow: hidden;
   transition: border-color 0.15s var(--ease);
   z-index: ${({ $open }) => ($open ? 200 : 'auto')};
@@ -510,9 +555,9 @@ exports.IconDropdownTrigger = styled_1.default.button `
   color: var(--g500);
   cursor: pointer;
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   transition: color 0.12s var(--ease);
 
   &:hover {
@@ -521,7 +566,7 @@ exports.IconDropdownTrigger = styled_1.default.button `
   &:focus-visible {
     outline: 2px solid var(--c-sky);
     outline-offset: 1px;
-    border-radius: 5px;
+    border-radius: 6px;
   }
 `;
 exports.IconDropdownItem = styled_1.default.button `
@@ -536,9 +581,9 @@ exports.IconDropdownItem = styled_1.default.button `
   color: var(--g500);
   cursor: pointer;
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   transition: all 0.12s var(--ease);
 
   &:hover {
@@ -558,19 +603,19 @@ exports.UnitToggleEl = styled_1.default.div `
   display: inline-flex;
   background: var(--g100);
   border: 1px solid var(--g200);
-  border-radius: 7px;
+  border-radius: 6px;
   padding: 3px;
   gap: 2px;
 
   button {
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-meta);
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.01em;
     background: transparent;
     border: none;
     padding: 4px 10px;
-    border-radius: 5px;
+    border-radius: 6px;
     color: var(--g500);
     cursor: pointer;
     min-width: 24px;
@@ -600,7 +645,7 @@ exports.StateWrap = styled_1.default.div `
   text-align: center;
   color: var(--g500);
   font-family: var(--m);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   gap: 10px;
   flex: 1;
 `;
@@ -622,14 +667,14 @@ exports.SkeletonRow = styled_1.default.div `
 
   & > span {
     background: var(--g100);
-    border-radius: 5px;
+    border-radius: 6px;
     height: 16px;
     animation: rb-skel 1.4s infinite var(--ease);
   }
   & > span.icon {
     width: 32px;
     height: 32px;
-    border-radius: 9px;
+    border-radius: 6px;
   }
 `;
 // ─── Modal ─────────────────────────────────────────────────────────────────
@@ -688,7 +733,7 @@ exports.ModalHead = styled_1.default.div `
   .m-icon {
     width: 44px;
     height: 44px;
-    border-radius: 11px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -706,7 +751,7 @@ exports.ModalHead = styled_1.default.div `
   }
 
   .m-title {
-    font-size: 16px;
+    font-size: var(--fs-title);
     font-weight: 700;
     color: var(--ink);
     letter-spacing: -0.01em;
@@ -715,17 +760,17 @@ exports.ModalHead = styled_1.default.div `
   }
 
   .m-sub {
-    font-size: 10px;
+    font-size: var(--fs-meta);
     font-weight: 500;
     color: var(--g500);
     font-family: var(--m);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
   }
 
   .m-close {
     background: transparent;
     border: 1px solid var(--g300);
-    border-radius: 7px;
+    border-radius: 6px;
     width: 30px;
     height: 30px;
     display: flex;
@@ -768,7 +813,7 @@ exports.StatBox = styled_1.default.div `
   padding: 12px 14px;
 
   .l {
-    font-size: 9px;
+    font-size: var(--fs-micro);
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -777,21 +822,23 @@ exports.StatBox = styled_1.default.div `
     margin-bottom: 6px;
   }
   .v {
-    font-size: 18px;
+    /* DS v2.0: hero KPI в модалке — fluid 28→56 */
+    font-size: var(--fs-hero);
     font-weight: 800;
     color: var(--ink);
     font-family: var(--f);
     letter-spacing: -0.02em;
     line-height: 1.1;
+    font-variant-numeric: tabular-nums;
   }
   .v .u {
     font-weight: 500;
     color: var(--g500);
-    font-size: 11px;
+    font-size: var(--fs-meta);
     margin-left: 2px;
   }
   .d {
-    font-size: 9.5px;
+    font-size: var(--fs-meta);
     font-weight: 600;
     font-family: var(--m);
     margin-top: 4px;
@@ -816,7 +863,7 @@ exports.ModalSection = styled_1.default.div `
   }
 
   .l {
-    font-size: 9px;
+    font-size: var(--fs-micro);
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -838,18 +885,18 @@ exports.TrendBox = styled_1.default.div `
     margin-bottom: 8px;
   }
   .head .l {
-    font-size: 10px;
+    font-size: var(--fs-meta);
     font-weight: 600;
     color: var(--g600);
     font-family: var(--m);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
   }
   .head .r {
-    font-size: 9px;
+    font-size: var(--fs-micro);
     font-weight: 500;
     color: var(--g500);
     font-family: var(--m);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
   }
 
   svg {
@@ -871,19 +918,19 @@ exports.TopRow = styled_1.default.div `
   align-items: center;
   gap: 12px;
   padding: 7px 12px;
-  border-radius: 7px;
+  border-radius: 6px;
   background: var(--g50);
   border: 1px solid var(--g200);
 
   .rank {
     font-family: var(--m);
-    font-size: 9px;
+    font-size: var(--fs-micro);
     font-weight: 700;
     color: var(--g500);
     text-align: center;
   }
   .name {
-    font-size: 11.5px;
+    font-size: var(--fs-meta);
     font-weight: 600;
     color: var(--ink);
     overflow: hidden;
@@ -893,7 +940,7 @@ exports.TopRow = styled_1.default.div `
   .bar {
     height: 6px;
     background: var(--g200);
-    border-radius: 3px;
+    border-radius: 6px;
     position: relative;
     overflow: hidden;
   }
@@ -903,15 +950,16 @@ exports.TopRow = styled_1.default.div `
     top: 0;
     height: 100%;
     background: var(--cat-color);
-    border-radius: 3px;
+    border-radius: 6px;
   }
   .val {
     font-family: var(--m);
-    font-size: 10.5px;
+    font-size: var(--fs-meta);
     font-weight: 700;
     color: var(--ink);
     text-align: right;
     letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
   }
 `;
 // ─── All-items modal toolbar ────────────────────────────────────────────────
@@ -943,11 +991,11 @@ exports.AllToolbar = styled_1.default.div `
     width: 100%;
     background: var(--g50);
     border: 1px solid var(--g200);
-    border-radius: 8px;
+    border-radius: 6px;
     padding: 8px 12px 8px 32px;
     color: var(--ink);
     font-family: var(--f);
-    font-size: 12px;
+    font-size: var(--fs-body);
     font-weight: 500;
     outline: none;
     transition: border-color 0.15s var(--ease);
@@ -968,19 +1016,19 @@ exports.SortPills = styled_1.default.div `
   gap: 4px;
   background: var(--g100);
   border: 1px solid var(--g200);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 3px;
 
   button {
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-meta);
     font-weight: 600;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     background: transparent;
     border: none;
     color: var(--g500);
     padding: 6px 10px;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
     transition: 0.12s;
 
@@ -1010,10 +1058,10 @@ exports.AllFooter = styled_1.default.div `
   align-items: center;
   justify-content: space-between;
   font-family: var(--m);
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--g500);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
 
   .total-strong {
     color: var(--g700);
@@ -1025,13 +1073,13 @@ exports.EmptyState = styled_1.default.div `
   text-align: center;
   color: var(--g500);
   font-family: var(--m);
-  font-size: 11px;
+  font-size: var(--fs-micro);
 `;
 // ─── Drill-modal head icon — category-colored background ──────────────────
 exports.ModalHeadIcon = styled_1.default.div `
   width: 44px;
   height: 44px;
-  border-radius: 11px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1046,13 +1094,13 @@ exports.TopBarFill = styled_1.default.div `
   height: 100%;
   width: ${({ $widthPct }) => Math.max(0, Math.min(100, $widthPct))}%;
   background: var(--cat-color);
-  border-radius: 3px;
+  border-radius: 6px;
 `;
 // ─── Drill-modal in-section helpers (replace inline style usages) ──────────
 exports.InlineSkeleton = styled_1.default.div `
   width: 100%;
   height: ${({ $height }) => $height}px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--g100);
 
   @keyframes rb-skel {
@@ -1071,19 +1119,19 @@ exports.InlineEmpty = styled_1.default.div `
   text-align: center;
   color: var(--g500);
   font-family: var(--m);
-  font-size: 11px;
+  font-size: var(--fs-micro);
 `;
 exports.InlineError = styled_1.default.div `
   padding: 18px;
   text-align: center;
   color: var(--dn);
   font-family: var(--m);
-  font-size: 11px;
+  font-size: var(--fs-micro);
 `;
 exports.AllModalIcon = styled_1.default.div `
   width: 44px;
   height: 44px;
-  border-radius: 11px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1110,7 +1158,7 @@ exports.TooltipBox = styled_1.default.div `
   padding: 12px 14px 10px;
   box-shadow: var(--sh-lg);
   font-family: var(--f);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: var(--ink);
   pointer-events: none;
   z-index: 500;
@@ -1142,7 +1190,7 @@ exports.TooltipBox = styled_1.default.div `
   .tt-icon {
     width: 24px;
     height: 24px;
-    border-radius: 7px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1159,7 +1207,7 @@ exports.TooltipBox = styled_1.default.div `
     min-width: 0;
   }
   .tt-name {
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 700;
     color: var(--ink);
     line-height: 1.25;
@@ -1167,11 +1215,11 @@ exports.TooltipBox = styled_1.default.div `
     letter-spacing: -0.005em;
   }
   .tt-sub {
-    font-size: 9px;
+    font-size: var(--fs-micro);
     font-weight: 500;
     color: var(--g500);
     font-family: var(--m);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
   }
 
   .tt-rows {
@@ -1187,17 +1235,18 @@ exports.TooltipBox = styled_1.default.div `
     font-family: var(--m);
   }
   .tt-l {
-    font-size: 9.5px;
-    font-weight: 500;
+    font-size: var(--fs-micro);
+    font-weight: 600;
     color: var(--g500);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
   .tt-v {
-    font-size: 11px;
+    font-size: var(--fs-meta);
     font-weight: 700;
     color: var(--ink);
     letter-spacing: -0.005em;
+    font-variant-numeric: tabular-nums;
   }
   .tt-v.up {
     color: var(--up);
@@ -1214,10 +1263,10 @@ exports.TooltipBox = styled_1.default.div `
     padding-top: 9px;
     border-top: 1px solid var(--g200);
     font-family: var(--m);
-    font-size: 9px;
+    font-size: var(--fs-micro);
     font-weight: 500;
     color: var(--g500);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -1226,10 +1275,10 @@ exports.TooltipBox = styled_1.default.div `
       display: inline-block;
       background: var(--g200);
       border: 1px solid var(--g300);
-      border-radius: 3px;
+      border-radius: 6px;
       padding: 1px 4px;
       font-family: var(--m);
-      font-size: 8px;
+      font-size: var(--fs-nano);
       font-weight: 700;
       color: var(--g700);
       line-height: 1;

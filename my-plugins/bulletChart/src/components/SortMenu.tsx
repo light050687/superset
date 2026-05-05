@@ -44,8 +44,8 @@ const SORT_ICONS: Record<SortBy, React.ReactNode> = {
     <svg viewBox="0 0 16 14" width="16" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 4 L5 2 L7 4" />
       <line x1="5" y1="2" x2="5" y2="12" />
-      <text x="9" y="7" fontFamily="monospace" fontSize="5">А</text>
-      <text x="9" y="12" fontFamily="monospace" fontSize="5">Я</text>
+      <text x="9" y="7" fontFamily="'JetBrains Mono', monospace" fontSize="5">А</text>
+      <text x="9" y="12" fontFamily="'JetBrains Mono', monospace" fontSize="5">Я</text>
     </svg>
   ),
 };

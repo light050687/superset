@@ -11,12 +11,15 @@
 /**
  * Tooltip/main value formatter for RUB scale.
  *
- * Values are assumed to come in millions of rubles (as in the mockup).
- * Anything >= 1 млн → "X,X млн ₽"
- * Below 1 (e.g. 0.5 млн = 500 тыс) → "X тыс ₽"
- * Null → "—"
+ * Канонический fmtRub (DS 2.0): входное значение интерпретируется как
+ * МИЛЛИОНЫ рублей (как в исходных данных). Расширено auto-unit до трлн:
+ *  - value < 0.001       → "—"
+ *  - value <  1          → "X тыс ₽"
+ *  - value <  1 000      → "X,X млн ₽"
+ *  - value <  1 000 000  → "X,XX млрд ₽"
+ *  - иначе               → "X,XX трлн ₽"
  */
-export declare function fmtRub(value: number | null): string;
+export declare function fmtRub(value: number | null, decimals?: number): string;
 /** Short axis formatter for RUB — "62,5 млн" (no currency sign to keep axis thin) */
 export declare function fmtRubAxis(value: number | null): string;
 /** Percent formatter (1 fraction digit) — "104,3%" */

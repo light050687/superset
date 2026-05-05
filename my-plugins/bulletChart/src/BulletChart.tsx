@@ -6,9 +6,12 @@ import {
   CardSub,
   CardTitle,
   Controls,
+  ErrorCaption,
   FilterPill,
+  FootDot,
   FootHint,
   FootLegend,
+  HintCaption,
   Kbd,
   KEYFRAMES_CSS,
   LegendBand,
@@ -21,6 +24,8 @@ import {
   Skeleton,
   StateOverlay,
   TitleBlock,
+  PartialBadge,
+  StaleBar,
 } from './styles';
 import BulletRow from './components/BulletRow';
 import SortMenu from './components/SortMenu';
@@ -90,12 +95,8 @@ class BulletErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         <StateOverlay role="alert">
-          <span style={{ color: 'var(--dn)' }}>
-            Ошибка отрисовки bullet-чарта
-          </span>
-          <span style={{ fontSize: 10, color: 'var(--g500)' }}>
-            {this.state.message}
-          </span>
+          <ErrorCaption>Ошибка отрисовки bullet-чарта</ErrorCaption>
+          <HintCaption>{this.state.message}</HintCaption>
         </StateOverlay>
       );
     }
@@ -195,19 +196,56 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
   const closeModal = React.useCallback(() => setModalRow(null), []);
 
   // ── Render ──
+  // DS 2.0 canonical: loading имеет свой раздельный return со своим Card.
+  // При переходе loading → loaded React unmount'ит loading-Card и mount'ит
+  // новый → cardInKf animation запускается ровно когда юзер видит контент.
+  if (dataState === 'loading') {
+    return (
+      <Root
+        ref={rootRef}
+        className={ROOT_CLASS}
+        isDarkMode={isDarkMode}
+        widthPx={width}
+        heightPx={height}
+        data-theme={isDarkMode ? 'dark' : 'light'}
+      >
+        <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_CSS }} />
+        <Card role="region" aria-label={headerText} aria-busy="true">
+          <CardHead>
+            <TitleBlock>
+              <CardTitle>{headerText}</CardTitle>
+            </TitleBlock>
+          </CardHead>
+          <StateOverlay aria-busy="true">
+            <Skeleton widthPct={100} />
+            <Skeleton widthPct={95} />
+            <Skeleton widthPct={90} />
+          </StateOverlay>
+        </Card>
+      </Root>
+    );
+  }
+
   return (
     <Root
       ref={rootRef}
       className={ROOT_CLASS}
       isDarkMode={isDarkMode}
-      style={{ width, height }}
+      widthPx={width}
+      heightPx={height}
       data-theme={isDarkMode ? 'dark' : 'light'}
     >
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_CSS }} />
       <Card role="region" aria-label={headerText}>
+        {dataState === 'stale' && <StaleBar aria-hidden="true" />}
         <CardHead>
           <TitleBlock>
-            <CardTitle>{headerText}</CardTitle>
+            <CardTitle>
+              {headerText}
+              {dataState === 'partial' && (
+                <PartialBadge title="Часть данных недоступна">Частично</PartialBadge>
+              )}
+            </CardTitle>
             <CardSub>
               {subheaderText ? <span>{subheaderText}</span> : null}
               {totalStores != null ? (
@@ -255,24 +293,22 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
 
         {dataState === 'loading' ? (
           <StateOverlay aria-busy="true">
-            <Skeleton style={{ width: '100%' }} />
-            <Skeleton style={{ width: '95%' }} />
-            <Skeleton style={{ width: '90%' }} />
+            <Skeleton widthPct={100} />
+            <Skeleton widthPct={95} />
+            <Skeleton widthPct={90} />
           </StateOverlay>
         ) : null}
 
         {dataState === 'error' ? (
           <StateOverlay role="alert">
-            <span style={{ color: 'var(--dn)' }}>Ошибка загрузки данных</span>
+            <ErrorCaption>Ошибка загрузки данных</ErrorCaption>
           </StateOverlay>
         ) : null}
 
         {dataState === 'empty' ? (
           <StateOverlay>
             <span>Нет данных для отображения</span>
-            <span style={{ fontSize: 10, color: 'var(--g500)' }}>
-              Настройте измерение и метрику факта
-            </span>
+            <HintCaption>Настройте измерение и метрику факта</HintCaption>
           </StateOverlay>
         ) : null}
 
@@ -317,7 +353,7 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
               <span>фильтр</span>
               {enableDetailModal ? (
                 <>
-                  <span style={{ color: 'var(--g500)' }}>·</span>
+                  <FootDot>·</FootDot>
                   <Kbd>Ctrl</Kbd>
                   <span>+</span>
                   <Kbd>Click</Kbd>

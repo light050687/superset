@@ -10,16 +10,19 @@ function FooterHintsInner({ shown, total }: Props) {
   return (
     <CardFooter>
       <div className="hint">
-        <span className="hint-item">
+        <span className="hi">
           <kbd>Click</kbd> — кросс-фильтр
         </span>
-        <span className="hint-item">
+        <span className="hi-sep" aria-hidden="true" />
+        <span className="hi">
           <kbd>Shift</kbd>+<kbd>Click</kbd> — диапазон
         </span>
-        <span className="hint-item">
+        <span className="hi-sep" aria-hidden="true" />
+        <span className="hi">
           <kbd>Ctrl</kbd>+<kbd>Click</kbd> — детализация
         </span>
-        <span className="hint-item">
+        <span className="hi-sep" aria-hidden="true" />
+        <span className="hi">
           <kbd>Esc</kbd> — закрыть
         </span>
       </div>

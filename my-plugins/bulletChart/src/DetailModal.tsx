@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import {
+  DetailErrorBlock,
   ModalBg,
   ModalBox,
   ModalCloseBtn,
@@ -243,9 +244,9 @@ const DetailModal: React.FC<DetailModalProps> = ({
           </ModalSectionL>
 
           {error ? (
-            <div style={{ color: 'var(--dn)', fontSize: 12, padding: '12px 0' }}>
+            <DetailErrorBlock>
               Ошибка: {error}
-            </div>
+            </DetailErrorBlock>
           ) : null}
 
           {!error ? (

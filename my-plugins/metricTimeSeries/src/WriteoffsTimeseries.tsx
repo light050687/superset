@@ -30,9 +30,9 @@ import {
   UnitToggleGroup,
   UnitButton,
   DropdownRoot,
+  DropdownPanel,
   DropdownMenu,
   DropdownItem,
-  DropdownItemRow,
   DropdownItemIcon,
   ChartWrap,
   ChartInner,
@@ -59,6 +59,7 @@ import {
   StaleBar,
   SrLive,
   KEYFRAMES_CSS,
+  CARD_CLASS,
 } from './styles';
 import { ruMonthShort } from './utils/dateHelpers';
 
@@ -182,38 +183,38 @@ function Dropdown<T extends string>({
 
   return (
     <DropdownRoot ref={rootRef}>
-      <IconButton
-        type="button"
-        active={open}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={ariaLabel}
-        onClick={() => setOpen(o => !o)}
-      >
-        {active.icon}
-      </IconButton>
-      {open && (
-        <DropdownMenu role="listbox" aria-label={ariaLabel}>
-          {options.map(opt => (
-            <DropdownItem
-              key={opt.value}
-              type="button"
-              active={opt.value === value}
-              role="option"
-              aria-selected={opt.value === value}
-              onClick={() => {
-                onChange(opt.value);
-                setOpen(false);
-              }}
-            >
-              <DropdownItemRow>
+      <DropdownPanel open={open} data-open={open}>
+        <IconButton
+          type="button"
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-label={ariaLabel}
+          onClick={() => setOpen(o => !o)}
+        >
+          {active.icon}
+        </IconButton>
+        {open && (
+          <DropdownMenu role="listbox" aria-label={ariaLabel}>
+            {options.map(opt => (
+              <DropdownItem
+                key={opt.value}
+                type="button"
+                active={opt.value === value}
+                role="option"
+                aria-selected={opt.value === value}
+                aria-label={opt.label}
+                title={opt.label}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+              >
                 <DropdownItemIcon>{opt.icon}</DropdownItemIcon>
-                <span>{opt.label}</span>
-              </DropdownItemRow>
-            </DropdownItem>
-          ))}
-        </DropdownMenu>
-      )}
+              </DropdownItem>
+            ))}
+          </DropdownMenu>
+        )}
+      </DropdownPanel>
     </DropdownRoot>
   );
 }
@@ -272,6 +273,7 @@ const GhostBarMark = ({ color }: { color: string }) => (
 function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
   const {
     headerText,
+    subtitleText,
     dataState,
     errorMessage,
     timePoints,
@@ -515,6 +517,7 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
         width={props.width}
         height={props.height}
         data-theme={isDarkMode ? 'dark' : 'light'}
+        className={CARD_CLASS}
       >
         <style>{KEYFRAMES_CSS}</style>
         <Card>
@@ -534,6 +537,7 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
         width={props.width}
         height={props.height}
         data-theme={isDarkMode ? 'dark' : 'light'}
+        className={CARD_CLASS}
       >
         <style>{KEYFRAMES_CSS}</style>
         <Card>
@@ -552,6 +556,7 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
         width={props.width}
         height={props.height}
         data-theme={isDarkMode ? 'dark' : 'light'}
+        className={CARD_CLASS}
       >
         <style>{KEYFRAMES_CSS}</style>
         <SrLive aria-live="polite">Нет данных</SrLive>
@@ -585,6 +590,7 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
       width={props.width}
       height={props.height}
       data-theme={isDarkMode ? 'dark' : 'light'}
+        className={CARD_CLASS}
       role="figure"
       aria-label={headerText}
     >
@@ -601,7 +607,7 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
               {mockModeEnabled && (
                 <>
                   {' '}
-                  <MockBadge>MOCK</MockBadge>
+                  <MockBadge>ТЕСТ</MockBadge>
                 </>
               )}
               {isPartial && (
@@ -623,6 +629,7 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
                 </BreadcrumbBack>
               )}
               <span>
+                {subtitleText && `${subtitleText} · `}
                 {hierarchyText} · {rangeText}
               </span>
             </Breadcrumb>
@@ -713,15 +720,20 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
             {!isFullRange ? (
               <HintItem>
                 <IconBack />
-                <span>Esc — назад</span>
+                <span>
+                  <span className="hi-arrow" aria-hidden="true">◂</span> Esc — назад
+                </span>
               </HintItem>
             ) : (
               <>
                 {gran === 'month' && enableDrillDown && (
-                  <HintItem>
-                    <IconClick />
-                    <span>клик — месяц</span>
-                  </HintItem>
+                  <>
+                    <HintItem>
+                      <IconClick />
+                      <span>клик — месяц</span>
+                    </HintItem>
+                    <span className="hi-sep" aria-hidden="true" />
+                  </>
                 )}
                 <HintItem>
                   <IconBrush />

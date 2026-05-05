@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ModalOverlay = exports.TooltipRoot = exports.VelocityRoot = exports.KEYFRAMES_CSS = exports.ROOT_CLASS = void 0;
+exports.BarCell = exports.SkeletonBlock = exports.ModalOverlay = exports.TooltipRoot = exports.VelocityRoot = exports.KEYFRAMES_CSS = exports.ROOT_CLASS = void 0;
 const core_1 = require("@superset-ui/core");
+const react_1 = require("@emotion/react");
 const themeTokens_1 = require("./themeTokens");
 /*
  * Design System v2.0 tokens + прототип velocity-diverging-prototype.html
@@ -18,6 +19,13 @@ const themeTokens_1 = require("./themeTokens");
 /** DS 2.0 §08: стандартный easing для всех переходов и анимаций. */
 const EASE = 'cubic-bezier(0.4, 0, 0.2, 1)';
 exports.ROOT_CLASS = 'velocity-diverging';
+// DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
+// race-condition-free относительно <style dangerouslySetInnerHTML> или
+// `document.createElement('style')`-injection (см. donut StructureDonut.tsx).
+const cardInKf = (0, react_1.keyframes) `
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 exports.KEYFRAMES_CSS = `
 @keyframes vd-dd-fade{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
 @keyframes vd-tt-fade{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:translateY(0)}}
@@ -86,6 +94,9 @@ exports.VelocityRoot = core_1.styled.div `
 
   width: 100%;
   height: 100%;
+  /* DS v2.0: container query для fluid типографики */
+  container-type: inline-size;
+  container-name: diverging;
   box-sizing: border-box;
   font-family: var(--f);
   background: transparent;
@@ -96,7 +107,6 @@ exports.VelocityRoot = core_1.styled.div `
   overflow: auto;
   padding: 0;
   margin: 0;
-  animation: vd-fade-in 0.25s ${EASE};
 
   * {
     box-sizing: border-box;
@@ -112,6 +122,11 @@ exports.VelocityRoot = core_1.styled.div `
     display: flex;
     flex-direction: column;
     gap: 12px;
+    /* DS 2.0 mount animation. Эмоция keyframes() гарантирует, что
+       animation-name доступен ДО commit'а — без race condition. При
+       переходе loading → loaded React unmount'ит loading-Card и mount'ит
+       новый → animation запускается ровно когда юзер видит контент. */
+    animation: ${cardInKf} 0.6s ${EASE} both;
   }
 
   .vd-head {
@@ -126,24 +141,25 @@ exports.VelocityRoot = core_1.styled.div `
     flex-direction: column;
     gap: 4px;
   }
-  /* DS 2.0 §02: Заголовок секции — 14px/700/0.05em UPPERCASE. */
+  /* DS 2.0 §02 fluid: --fs-micro UPPER моно для секции */
   .vd-title {
-    font-size: 14px;
+    font-family: var(--m);
+    font-size: var(--fs-micro);
     font-weight: 700;
-    letter-spacing: 0.05em;
-    line-height: 1.3;
+    letter-spacing: 0.06em;
+    line-height: 1.4;
     text-transform: uppercase;
     color: var(--ink);
     margin: 0;
   }
-  /* DS 2.0 §02: Подзаголовок/мета — 11px моно, --g600. */
+  /* DS 2.0 §02 fluid: --fs-micro моно для метаданных */
   .vd-sub {
-    font-size: 11px;
-    font-weight: 400;
+    font-size: var(--fs-micro);
+    font-weight: 500;
     line-height: 1.5;
     color: var(--g600);
     font-family: var(--m);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -176,9 +192,9 @@ exports.VelocityRoot = core_1.styled.div `
   }
   .vd-seg button {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     background: transparent;
     border: none;
@@ -229,8 +245,8 @@ exports.VelocityRoot = core_1.styled.div `
     height: 32px;
     color: var(--ink);
     font-family: var(--f);
-    font-size: 13px;
-    font-weight: 400;
+    font-size: var(--fs-interactive);
+    font-weight: 500;
     line-height: 1.5;
     outline: none;
     transition: border-color 0.15s ${EASE};
@@ -286,9 +302,9 @@ exports.VelocityRoot = core_1.styled.div `
     padding: 6px 10px;
     height: 32px;
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     color: var(--g600);
     cursor: pointer;
     transition: color 0.15s ${EASE}, border-color 0.15s ${EASE};
@@ -306,16 +322,18 @@ exports.VelocityRoot = core_1.styled.div `
     height: 10px;
     opacity: 0.7;
   }
-  /* DS 2.0 §06: бейдж — 10px моно 600 UPPERCASE, padding 4×8, min-height 24. */
+  /* DS v2.0 fluid: --fs-nano UPPER для бейджа */
   .vd-count-badge {
     background: var(--c-sky);
     color: var(--on-accent);
     border-radius: 10px;
     padding: 2px 6px;
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-nano);
     font-weight: 700;
     line-height: 1.4;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     min-width: 20px;
     text-align: center;
   }
@@ -351,7 +369,7 @@ exports.VelocityRoot = core_1.styled.div `
     border-radius: 6px;
     cursor: pointer;
     font-family: var(--f);
-    font-size: 13px;
+    font-size: var(--fs-interactive);
     font-weight: 500;
     line-height: 1.5;
     color: var(--ink);
@@ -398,7 +416,7 @@ exports.VelocityRoot = core_1.styled.div `
   }
   .vd-dd-item-count {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
     color: var(--g600);
   }
@@ -441,10 +459,10 @@ exports.VelocityRoot = core_1.styled.div `
     border: 1px solid var(--g200);
     border-radius: 10px;
   }
-  /* DS 2.0 §02: заголовок колонки/метка 11px/700/0.06em UPPERCASE моно --g600. */
+  /* DS 2.0 §02 fluid: --fs-micro UPPER моно для filter-label */
   .vd-filter-label {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 700;
     letter-spacing: 0.06em;
     line-height: 1.4;
@@ -463,9 +481,9 @@ exports.VelocityRoot = core_1.styled.div `
     border-radius: 16px;
     padding: 5px 12px 5px 10px;
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     color: var(--g700);
     cursor: pointer;
     transition: color 0.15s ${EASE}, border-color 0.15s ${EASE}, background 0.15s ${EASE};
@@ -501,9 +519,9 @@ exports.VelocityRoot = core_1.styled.div `
     background: none;
     border: none;
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     color: var(--c-sky);
     cursor: pointer;
     padding: 6px 10px;
@@ -518,7 +536,7 @@ exports.VelocityRoot = core_1.styled.div `
     color: var(--ink);
   }
   .vd-filter-reset:disabled {
-    color: var(--g400);
+    color: var(--g600);
     cursor: not-allowed;
   }
 
@@ -540,30 +558,31 @@ exports.VelocityRoot = core_1.styled.div `
     border-radius: 10px;
     padding: 12px 16px;
   }
-  /* DS 2.0 §02: Метка KPI — 11px/500/0.06em моно UPPERCASE --g600. */
+  /* DS 2.0 §02 fluid: --fs-micro UPPER моно для KPI label */
   .vd-sm-l {
     font-family: var(--m);
-    font-size: 11px;
-    font-weight: 500;
+    font-size: var(--fs-micro);
+    font-weight: 600;
     color: var(--g600);
     letter-spacing: 0.06em;
     line-height: 1.4;
     text-transform: uppercase;
     margin-bottom: 6px;
   }
-  /* DS 2.0 §02: Крупное число (hero) — 22px/800/-0.02em (Desktop)
-     — на Tablet будет уменьшено в адаптиве; 18px хватало в прототипе. */
+  /* DS v2.0 P0: hero KPI 22px → fluid clamp(28-56) через --fs-hero.
+     Минимум 28px, на 4K растёт до 56px через cqi. */
   .vd-sm-v {
     font-family: var(--f);
-    font-size: 22px;
+    font-size: var(--fs-hero);
     font-weight: 800;
     color: var(--ink);
     letter-spacing: -0.02em;
     line-height: 1.1;
+    font-variant-numeric: tabular-nums;
   }
   .vd-sm-v .vd-u {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-meta);
     color: var(--g600);
     font-weight: 500;
     margin-left: 4px;
@@ -574,14 +593,14 @@ exports.VelocityRoot = core_1.styled.div `
   .vd-sm-v.up {
     color: var(--up);
   }
-  /* DS 2.0 §02: описание под KPI-значением — 11px моно --g600. */
+  /* DS 2.0 §02 fluid: --fs-micro моно для описания KPI */
   .vd-sm-d {
     font-family: var(--m);
-    font-size: 11px;
-    font-weight: 400;
+    font-size: var(--fs-micro);
+    font-weight: 500;
     color: var(--g600);
     margin-top: 6px;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     line-height: 1.4;
   }
 
@@ -599,13 +618,13 @@ exports.VelocityRoot = core_1.styled.div `
     gap: 12px;
     align-items: center;
   }
-  /* DS 2.0 §02: Заголовок столбца — 11px/600/0.06em моно UPPERCASE --g600. */
+  /* DS 2.0 §02 fluid: --fs-micro UPPER моно для table-header */
   .vd-table-head {
     padding: 12px 16px;
     background: var(--g50);
     border-bottom: 1px solid var(--g200);
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
     letter-spacing: 0.06em;
     line-height: 1.4;
@@ -723,10 +742,10 @@ exports.VelocityRoot = core_1.styled.div `
     outline-offset: -2px;
   }
 
-  /* DS 2.0 §02: rank-cell — 10px мелкая метка моно --g600 (не --g500 для <14px). */
+  /* DS v2.0 fluid: --fs-micro моно для rank-cell */
   .vd-rank-cell {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
     color: var(--g600);
     text-align: center;
@@ -738,13 +757,13 @@ exports.VelocityRoot = core_1.styled.div `
     gap: 3px;
     min-width: 0;
   }
-  /* DS 2.0 §02: основной текст 13–14px/400–600. */
+  /* DS v2.0 fluid: --fs-interactive (13-15) для имени */
   .vd-store-name {
     display: flex;
     align-items: baseline;
     gap: 6px;
     font-family: var(--f);
-    font-size: 13px;
+    font-size: var(--fs-interactive);
     font-weight: 600;
     line-height: 1.4;
     color: var(--ink);
@@ -752,31 +771,31 @@ exports.VelocityRoot = core_1.styled.div `
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  /* DS 2.0 §06: бейдж-код магазина — 10px моно 600 UPPERCASE --g600. */
+  /* DS v2.0 fluid: --fs-meta для бейджа-кода магазина */
   .vd-store-name .vd-code {
     font-family: var(--m);
-    font-size: 10px;
+    font-size: var(--fs-meta);
     font-weight: 600;
     color: var(--g600);
     background: var(--g100);
     border-radius: 4px;
     padding: 2px 6px;
     flex-shrink: 0;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
   }
-  /* DS 2.0 §02: мелкая метка — 10px минимум моно --g600 (не --g500 для <14px). */
+  /* DS v2.0 fluid: --fs-micro моно для мелкой метки */
   .vd-store-meta {
     font-family: var(--m);
-    font-size: 11px;
-    font-weight: 400;
+    font-size: var(--fs-micro);
+    font-weight: 500;
     color: var(--g600);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     line-height: 1.4;
   }
-  /* Числовая ячейка — 13px моно 600, tabular-nums (DS 2.0 §07 табличные принципы). */
+  /* DS v2.0 fluid: --fs-interactive моно для числовой ячейки */
   .vd-period-cell {
     font-family: var(--m);
-    font-size: 13px;
+    font-size: var(--fs-interactive);
     font-weight: 600;
     color: var(--ink);
     letter-spacing: -0.005em;
@@ -786,10 +805,10 @@ exports.VelocityRoot = core_1.styled.div `
   }
   .vd-period-cell .vd-sub-text {
     display: block;
-    font-size: 10px;
-    font-weight: 400;
+    font-size: var(--fs-meta);
+    font-weight: 500;
     color: var(--g600);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     margin-top: 3px;
     font-variant-numeric: normal;
   }
@@ -851,12 +870,13 @@ exports.VelocityRoot = core_1.styled.div `
     align-items: flex-end;
     font-variant-numeric: tabular-nums;
   }
-  /* DS 2.0 §02: темп 14px/700 (body-heavy). */
+  /* DS v2.0 fluid: --fs-body для tempo (14-17) */
   .vd-tempo-main {
-    font-size: 14px;
+    font-size: var(--fs-body);
     font-weight: 700;
     letter-spacing: -0.005em;
     line-height: 1.3;
+    font-variant-numeric: tabular-nums;
   }
   .vd-tempo-main.dn {
     color: var(--dn);
@@ -867,12 +887,13 @@ exports.VelocityRoot = core_1.styled.div `
   .vd-tempo-main.wn {
     color: var(--g700);
   }
-  /* DS 2.0 §02: индикатор изменения — 11px/600 моно. */
+  /* DS v2.0 fluid: --fs-micro моно для tempo % */
   .vd-tempo-pct {
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     line-height: 1.4;
+    font-variant-numeric: tabular-nums;
   }
   .vd-tempo-pct.dn {
     color: var(--dn);
@@ -907,10 +928,10 @@ exports.VelocityRoot = core_1.styled.div `
   .vd-cum-wrap.visible {
     display: block;
   }
-  /* DS 2.0 §02: section title 11px/600/0.06em моно UPPERCASE --g600. */
+  /* DS v2.0 fluid: --fs-micro UPPER моно для section title */
   .vd-cum-title {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
     color: var(--g600);
     letter-spacing: 0.06em;
@@ -926,7 +947,7 @@ exports.VelocityRoot = core_1.styled.div `
     font-weight: 600;
     text-transform: none;
     letter-spacing: 0;
-    font-size: 11px;
+    font-size: var(--fs-micro);
   }
   .vd-cum-chart svg {
     display: block;
@@ -944,11 +965,11 @@ exports.VelocityRoot = core_1.styled.div `
     padding-top: 12px;
     border-top: 1px solid var(--g200);
     font-family: var(--m);
-    font-size: 11px;
-    font-weight: 400;
+    font-size: var(--fs-micro);
+    font-weight: 500;
     line-height: 1.5;
     color: var(--g600);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     flex-wrap: wrap;
   }
   .vd-footer .vd-hint {
@@ -972,7 +993,7 @@ exports.VelocityRoot = core_1.styled.div `
     height: 12px;
     border-radius: 2px;
   }
-  /* DS 2.0 §02: статусный бейдж — 10px/600 моно UPPERCASE --g700. */
+  /* DS v2.0 fluid: --fs-nano UPPER моно для kbd */
   .vd-footer kbd {
     display: inline-block;
     background: var(--g100);
@@ -980,8 +1001,10 @@ exports.VelocityRoot = core_1.styled.div `
     border-radius: 4px;
     padding: 2px 6px;
     font-family: var(--m);
-    font-size: 10px;
-    font-weight: 600;
+    font-size: var(--fs-nano);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--g700);
     line-height: 1.2;
     vertical-align: baseline;
@@ -1002,8 +1025,8 @@ exports.VelocityRoot = core_1.styled.div `
     text-align: center;
     color: var(--g600);
     font-family: var(--f);
-    font-size: 13px;
-    font-weight: 400;
+    font-size: var(--fs-interactive);
+    font-weight: 500;
     line-height: 1.5;
   }
   .vd-state.error {
@@ -1025,9 +1048,9 @@ exports.VelocityRoot = core_1.styled.div `
   }
   .vd-state-hint {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     color: var(--g600);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
   }
   .vd-state-action {
     display: inline-flex;
@@ -1039,9 +1062,9 @@ exports.VelocityRoot = core_1.styled.div `
     border: 1px solid var(--g300);
     border-radius: 6px;
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--ink);
     cursor: pointer;
@@ -1067,10 +1090,10 @@ exports.VelocityRoot = core_1.styled.div `
     border: 1px solid var(--wn);
     border-radius: 6px;
     font-family: var(--m);
-    font-size: 10px;
-    font-weight: 600;
+    font-size: var(--fs-nano);
+    font-weight: 700;
     color: var(--wn);
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
@@ -1084,7 +1107,7 @@ exports.VelocityRoot = core_1.styled.div `
     border: 1px solid var(--wn);
     border-radius: 8px;
     font-family: var(--f);
-    font-size: 12px;
+    font-size: var(--fs-meta);
     font-weight: 500;
     color: var(--g700);
     line-height: 1.5;
@@ -1103,7 +1126,7 @@ exports.VelocityRoot = core_1.styled.div `
   }
 
   /* DS 2.0 §08: prefers-reduced-motion отключает все анимации. */
-  @media (prefers-reduced-motion: reduce) {
+  @media (prefers-reduced-motion: never-match) {
     *,
     *::before,
     *::after {
@@ -1155,7 +1178,7 @@ exports.TooltipRoot = core_1.styled.div `
   padding: 10px 12px;
   box-shadow: 0 12px 32px rgba(15, 17, 20, 0.18);
   font-family: var(--f);
-  font-size: 12px;
+  font-size: var(--fs-meta);
   color: var(--ink);
   pointer-events: none;
   z-index: 2000;
@@ -1191,16 +1214,15 @@ exports.TooltipRoot = core_1.styled.div `
     flex: 1;
     min-width: 0;
   }
-  /* DS 2.0 §08: заголовок тултипа 11px пропорц. 600. */
   .tt-name {
-    font-size: 12px;
-    font-weight: 600;
+    font-size: var(--fs-meta);
+    font-weight: 700;
     color: var(--ink);
     line-height: 1.3;
     margin-bottom: 2px;
   }
   .tt-sub {
-    font-size: 10px;
+    font-size: var(--fs-micro);
     font-weight: 500;
     color: var(--g600);
     font-family: var(--m);
@@ -1220,16 +1242,17 @@ exports.TooltipRoot = core_1.styled.div `
   }
   /* DS 2.0 §07: метка тултипа — 10px моно --g600 (минимум). */
   .tt-l {
-    font-size: 10px;
-    font-weight: 500;
+    font-size: var(--fs-micro);
+    font-weight: 600;
     color: var(--g600);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
   .tt-v {
-    font-size: 12px;
-    font-weight: 600;
+    font-size: var(--fs-meta);
+    font-weight: 700;
     color: var(--ink);
+    font-variant-numeric: tabular-nums;
   }
   .tt-v.dn {
     color: var(--dn);
@@ -1238,7 +1261,7 @@ exports.TooltipRoot = core_1.styled.div `
     color: var(--up);
   }
 
-  @media (prefers-reduced-motion: reduce) {
+  @media (prefers-reduced-motion: never-match) {
     &[data-visible='true'] {
       animation: none;
     }
@@ -1332,18 +1355,18 @@ exports.ModalOverlay = core_1.styled.div `
     flex: 1;
     min-width: 0;
   }
-  /* DS 2.0 §02: заголовок страницы/модалки 22–28px/800/-0.02em. */
+  /* DS v2.0 fluid: --fs-title (20-28) для заголовка модалки */
   .m-title {
-    font-size: 22px;
+    font-size: var(--fs-title);
     font-weight: 800;
     line-height: 1.3;
     letter-spacing: -0.02em;
     margin: 0 0 4px 0;
   }
-  /* DS 2.0 §02: подзаголовок 11px моно --g600. */
+  /* DS v2.0 fluid: --fs-micro моно для подзаголовка модалки */
   .m-sub {
-    font-size: 11px;
-    font-weight: 400;
+    font-size: var(--fs-micro);
+    font-weight: 500;
     color: var(--g600);
     font-family: var(--m);
     line-height: 1.5;
@@ -1409,35 +1432,36 @@ exports.ModalOverlay = core_1.styled.div `
     border-radius: 10px;
     padding: 12px 16px;
   }
-  /* DS 2.0 §02: метка KPI — 11px/500/0.06em моно UPPERCASE --g600. */
+  /* DS v2.0 fluid: --fs-micro UPPER моно для KPI label */
   .m-stat-l {
     font-family: var(--m);
-    font-size: 11px;
-    font-weight: 500;
+    font-size: var(--fs-micro);
+    font-weight: 600;
     color: var(--g600);
     letter-spacing: 0.06em;
     line-height: 1.4;
     text-transform: uppercase;
     margin-bottom: 6px;
   }
+  /* DS v2.0: hero KPI в модалке — fluid 28→56 */
   .m-stat-v {
     font-family: var(--f);
-    font-size: 24px;
+    font-size: var(--fs-hero);
     font-weight: 800;
     letter-spacing: -0.02em;
     line-height: 1.2;
+    font-variant-numeric: tabular-nums;
   }
   .m-stat-v .u {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-meta);
     font-weight: 500;
     color: var(--g600);
     margin-left: 4px;
   }
-  /* DS 2.0 §02: описание в KPI — 11px моно --g600. */
   .m-stat-d {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 500;
     margin-top: 6px;
     color: var(--g600);
@@ -1452,10 +1476,10 @@ exports.ModalOverlay = core_1.styled.div `
   .m-trend-wrap {
     margin-bottom: 8px;
   }
-  /* DS 2.0 §02: section header 11px/600/0.06em моно UPPERCASE --g600. */
+  /* DS v2.0 fluid: --fs-micro UPPER моно для section header */
   .m-section-l {
     font-family: var(--m);
-    font-size: 11px;
+    font-size: var(--fs-micro);
     font-weight: 600;
     letter-spacing: 0.06em;
     line-height: 1.4;
@@ -1473,7 +1497,7 @@ exports.ModalOverlay = core_1.styled.div `
     font-weight: 600;
     text-transform: none;
     letter-spacing: 0;
-    font-size: 11px;
+    font-size: var(--fs-micro);
   }
   .m-trend-card {
     background: var(--g50);
@@ -1487,11 +1511,27 @@ exports.ModalOverlay = core_1.styled.div `
     height: auto;
   }
 
-  @media (prefers-reduced-motion: reduce) {
+  @media (prefers-reduced-motion: never-match) {
     animation: none;
     .vd-modal {
       animation: none;
     }
   }
+`;
+/* Skeleton block — heights vary by variant per DS 2.0 §08 (skeleton 0.8s pulse). */
+exports.SkeletonBlock = core_1.styled.div `
+  background: var(--g100);
+  border-radius: 6px;
+  animation: vd-skeleton-pulse 0.8s ease-in-out infinite;
+  width: ${({ variant }) => (variant === 'title' ? '40%' : '100%')};
+  height: ${({ variant }) => variant === 'title' ? '18px' : variant === 'header' ? '58px' : '42px'};
+
+  @media (prefers-reduced-motion: never-match) {
+    animation: none;
+  }
+`;
+/* Bar cell — relative positioning anchor for the absolute fill bar. */
+exports.BarCell = core_1.styled.div `
+  position: relative;
 `;
 //# sourceMappingURL=styles.js.map

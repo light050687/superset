@@ -25,6 +25,29 @@ function toFiniteNumber(value, fallback = null) {
     const n = Number(value);
     return Number.isFinite(n) ? n : fallback;
 }
+/**
+ * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
+ * Если пользователь явно задал subtitleText в FormData — приоритет за ним.
+ */
+const formatTimeRangeRu = (tr) => {
+    if (!tr || tr === 'No filter')
+        return 'за период';
+    const map = {
+        'Last day': 'за день',
+        'Last week': 'за неделю',
+        'Last month': 'за месяц',
+        'Last quarter': 'за квартал',
+        'Last year': 'за год',
+        Today: 'сегодня',
+        'This week': 'за эту неделю',
+        'This month': 'за этот месяц',
+        'This year': 'за этот год',
+        'previous calendar week': 'за прошлую неделю',
+        'previous calendar month': 'за прошлый месяц',
+        'previous calendar year': 'за прошлый год',
+    };
+    return map[tr] ?? tr;
+};
 function transformProps(chartProps) {
     const { width, height, formData: fd, queriesData, theme } = chartProps;
     const formData = fd;
@@ -33,6 +56,8 @@ function transformProps(chartProps) {
         ? formData.dimension[0]
         : formData.dimension;
     const isDarkMode = detectDarkMode(theme);
+    const timeRange = formData.time_range;
+    const subtitleText = formData.subtitleText?.trim() || formatTimeRangeRu(timeRange);
     // ── Mock mode — early return ──
     if (formData.mockModeEnabled) {
         const preset = (0, presets_1.getParetoPreset)(formData.mockPreset, formData.mockCustomJson);
@@ -41,6 +66,7 @@ function transformProps(chartProps) {
             height,
             items: preset.items,
             headerText: formData.headerText || preset.headerText,
+            subtitleText,
             metricLabel: formData.metricLabel || preset.metricLabel,
             metricUnit: formData.metricUnit || preset.metricUnit,
             metricGenitive: formData.metricGenitive || preset.metricGenitive,
@@ -62,6 +88,7 @@ function transformProps(chartProps) {
             height,
             items: [],
             headerText: formData.headerText || 'Парето',
+            subtitleText,
             metricLabel: formData.metricLabel || 'Значение',
             metricUnit: formData.metricUnit || '',
             metricGenitive: formData.metricGenitive || 'всего',
@@ -104,6 +131,7 @@ function transformProps(chartProps) {
         height,
         items,
         headerText: formData.headerText || formData.metricLabel || 'Парето',
+        subtitleText,
         metricLabel: formData.metricLabel || metricValueLabel,
         metricUnit: formData.metricUnit || '',
         metricGenitive: formData.metricGenitive || 'всего',

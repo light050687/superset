@@ -6,6 +6,28 @@ const storeEnrichment_1 = require("../mocks/storeEnrichment");
 const rankedStoresMock_1 = require("../mocks/rankedStoresMock");
 const generateMockStores_1 = require("../mocks/generateMockStores");
 const buildQuery_1 = require("./buildQuery");
+/**
+ * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
+ */
+function formatTimeRangeRu(tr) {
+    if (!tr || tr === 'No filter')
+        return 'за период';
+    const map = {
+        'Last day': 'за день',
+        'Last week': 'за неделю',
+        'Last month': 'за месяц',
+        'Last quarter': 'за квартал',
+        'Last year': 'за год',
+        Today: 'сегодня',
+        'This week': 'за эту неделю',
+        'This month': 'за этот месяц',
+        'This year': 'за этот год',
+        'previous calendar week': 'за прошлую неделю',
+        'previous calendar month': 'за прошлый месяц',
+        'previous calendar year': 'за прошлый год',
+    };
+    return map[tr] ?? tr;
+}
 /** Универсальный привод к числу; NaN → fallback. */
 function toNum(v, fallback = 0) {
     if (v === null || v === undefined)
@@ -87,7 +109,12 @@ function transformProps(chartProps) {
     /* ── Режим проектирования: возвращаем моки ── */
     const mockModeEnabled = readFd(fd, 'mockModeEnabled', 'mock_mode_enabled', false);
     const mockPreset = readFd(fd, 'mockPreset', 'mock_preset', 'losses_400');
-    const periodLabel = readFd(fd, 'periodLabel', 'period_label', '');
+    const userPeriodLabel = readFd(fd, 'periodLabel', 'period_label', '');
+    // Fallback: если юзер не задал periodLabel — берём активный time_range и
+    // переводим в русский («Last year» → «за год»). DS 2.0 канон.
+    const timeRange = fd['time_range'] ??
+        fd['timeRange'];
+    const periodLabel = userPeriodLabel.trim() || formatTimeRangeRu(timeRange);
     const defaultSort = readFd(fd, 'defaultSort', 'default_sort', 'lossCombined');
     let stores;
     if (mockModeEnabled) {

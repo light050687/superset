@@ -106,13 +106,7 @@ function DeltaCell({ delta, status, }) {
 }
 function GroupRowView({ group, expanded, isLoadingChildren, onToggle, enableComp1, enableComp2, showDelta1 = true, showDelta2 = true, }) {
     const { summary } = group;
-    return ((0, jsx_runtime_1.jsxs)(styles_1.GroupRow, { onClick: onToggle, children: [(0, jsx_runtime_1.jsxs)("td", { children: [isLoadingChildren ? ((0, jsx_runtime_1.jsx)("span", { style: {
-                            display: 'inline-block', width: 10, height: 10, marginRight: 6,
-                            border: '1.5px solid var(--g200, #e5e5e5)',
-                            borderTopColor: 'var(--c-sky, #3B8BD9)',
-                            borderRadius: '50%',
-                            animation: 'kpi-spin 0.7s linear infinite',
-                        }, "aria-label": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430" })) : ((0, jsx_runtime_1.jsx)(styles_1.Chevron, { expanded: expanded, "aria-hidden": "true", children: "\u25B6" })), group.name] }), (0, jsx_runtime_1.jsx)("td", { className: "r", children: summary.value }), enableComp1 && (0, jsx_runtime_1.jsx)("td", { className: "r", children: summary.comp1Value ?? '' }), enableComp1 && showDelta1 && ((0, jsx_runtime_1.jsx)(DeltaCell, { delta: summary.comp1Delta, status: summary.comp1Status })), enableComp2 && (0, jsx_runtime_1.jsx)("td", { className: "r", children: summary.comp2Value ?? '' }), enableComp2 && showDelta2 && ((0, jsx_runtime_1.jsx)(DeltaCell, { delta: summary.comp2Delta, status: summary.comp2Status }))] }));
+    return ((0, jsx_runtime_1.jsxs)(styles_1.GroupRow, { onClick: onToggle, children: [(0, jsx_runtime_1.jsxs)("td", { children: [isLoadingChildren ? ((0, jsx_runtime_1.jsx)(styles_1.InlineSpinnerSmall, { "aria-label": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430" })) : ((0, jsx_runtime_1.jsx)(styles_1.Chevron, { expanded: expanded, "aria-hidden": "true", children: "\u25B6" })), group.name] }), (0, jsx_runtime_1.jsx)("td", { className: "r", children: summary.value }), enableComp1 && (0, jsx_runtime_1.jsx)("td", { className: "r", children: summary.comp1Value ?? '' }), enableComp1 && showDelta1 && ((0, jsx_runtime_1.jsx)(DeltaCell, { delta: summary.comp1Delta, status: summary.comp1Status })), enableComp2 && (0, jsx_runtime_1.jsx)("td", { className: "r", children: summary.comp2Value ?? '' }), enableComp2 && showDelta2 && ((0, jsx_runtime_1.jsx)(DeltaCell, { delta: summary.comp2Delta, status: summary.comp2Status }))] }));
 }
 function ChildRowView({ row, enableComp1, enableComp2, showDelta1 = true, showDelta2 = true, }) {
     return ((0, jsx_runtime_1.jsxs)(styles_1.ChildRow, { children: [(0, jsx_runtime_1.jsx)("td", { children: row.name }), (0, jsx_runtime_1.jsx)("td", { className: "r", children: row.value }), enableComp1 && (0, jsx_runtime_1.jsx)("td", { className: "r", children: row.comp1Value ?? '' }), enableComp1 && showDelta1 && ((0, jsx_runtime_1.jsx)(DeltaCell, { delta: row.comp1Delta, status: row.comp1Status })), enableComp2 && (0, jsx_runtime_1.jsx)("td", { className: "r", children: row.comp2Value ?? '' }), enableComp2 && showDelta2 && ((0, jsx_runtime_1.jsx)(DeltaCell, { delta: row.comp2Delta, status: row.comp2Status }))] }));
@@ -585,72 +579,66 @@ function DetailModalInner({ isOpen, onClose, title, headerValue, queryParams, ac
     const deltaWidth = colCount <= 4 ? '15%' : '10%';
     /* ── Render guard ── */
     const isHidden = !isOpen && !isClosing;
-    return ((0, jsx_runtime_1.jsx)(styles_1.Overlay, { closing: isClosing, onClick: handleOverlayClick, style: isHidden ? { visibility: 'hidden', pointerEvents: 'none', opacity: 0 } : undefined, children: (0, jsx_runtime_1.jsxs)(styles_1.Modal, { ref: modalRef, closing: isClosing, role: "dialog", "aria-modal": "true", "aria-label": `${title} — детализация`, onClick: e => e.stopPropagation(), onKeyDown: handleKeyDown, children: [(0, jsx_runtime_1.jsxs)(styles_1.ModalHead, { children: [(0, jsx_runtime_1.jsx)(styles_1.ModalTitle, { children: title }), (0, jsx_runtime_1.jsx)(styles_1.ModalValue, { children: headerValue }), (0, jsx_runtime_1.jsx)(styles_1.CloseButton, { ref: closeRef, onClick: handleClose, "aria-label": "\u0417\u0430\u043A\u0440\u044B\u0442\u044C", children: "\u00D7" })] }), (0, jsx_runtime_1.jsxs)(styles_1.ModalToolbar, { children: [(0, jsx_runtime_1.jsxs)(styles_1.SearchBox, { children: [(0, jsx_runtime_1.jsxs)(styles_1.ExactMatchLabel, { title: "\u0422\u043E\u0447\u043D\u043E\u0435 \u0441\u043E\u0432\u043F\u0430\u0434\u0435\u043D\u0438\u0435", children: [(0, jsx_runtime_1.jsx)("input", { type: "checkbox", checked: exactMatch, onChange: e => setExactMatch(e.target.checked) }), "\u0422\u043E\u0447\u043D\u043E"] }), (0, jsx_runtime_1.jsx)(MagnifyIcon, {}), (0, jsx_runtime_1.jsx)(styles_1.SearchInput, { type: "text", placeholder: "\u041F\u043E\u0438\u0441\u043A...", "aria-label": "\u041F\u043E\u0438\u0441\u043A", value: searchQuery, onChange: e => setSearchQuery(e.target.value) }), (0, jsx_runtime_1.jsxs)(styles_1.SearchScopeToggle, { children: [(0, jsx_runtime_1.jsx)(styles_1.SearchScopeButton, { active: searchScope === 'group', onClick: () => setSearchScope('group'), "aria-label": `Поиск по ${groupLabel}`, children: groupLabel }), (0, jsx_runtime_1.jsx)(styles_1.SearchScopeButton, { active: searchScope === 'child', onClick: () => setSearchScope('child'), "aria-label": `Поиск по ${childLabel}`, children: childLabel })] })] }), (0, jsx_runtime_1.jsxs)(styles_1.FlipButton, { onClick: flipHierarchy, "aria-label": "\u0421\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u0435\u0440\u0430\u0440\u0445\u0438\u044E", children: [(0, jsx_runtime_1.jsx)(styles_1.FlipIcon, { flipped: !isPrimary, "aria-hidden": "true", children: "\u21C5" }), (0, jsx_runtime_1.jsx)(styles_1.FlipLabel, { children: isPrimary
-                                        ? `${hierarchyLabelPrimary}\u00A0→\u00A0${hierarchyLabelSecondary}`
-                                        : `${hierarchyLabelSecondary}\u00A0→\u00A0${hierarchyLabelPrimary}` })] }), (0, jsx_runtime_1.jsxs)(styles_1.ResultsCount, { children: [groupLabel, ": ", totalCount != null ? totalCount : `${groups.length}${hasNextPage ? '+' : ''}`] })] }), (0, jsx_runtime_1.jsx)(styles_1.TableWrap, { children: (0, jsx_runtime_1.jsxs)(styles_1.DetailTable, { children: [(0, jsx_runtime_1.jsx)(styles_1.THead, { children: (0, jsx_runtime_1.jsxs)(styles_1.THRow, { children: [(0, jsx_runtime_1.jsxs)("th", { style: { width: nameWidth, cursor: 'pointer' }, onClick: () => handleSort('name'), children: [groupLabel, sortIcon('name')] }), (0, jsx_runtime_1.jsxs)("th", { className: "r", style: { width: valWidth, cursor: 'pointer' }, onClick: () => handleSort('value'), children: [colFact, sortIcon('value')] }), enableComp1 && ((0, jsx_runtime_1.jsxs)("th", { className: "r", style: { width: valWidth, cursor: 'pointer' }, onClick: () => handleSort('comp1Value'), children: [comp1Header, sortIcon('comp1Value')] })), enableComp1 && showDelta1 && ((0, jsx_runtime_1.jsxs)("th", { className: "r", style: { width: deltaWidth, cursor: 'pointer' }, onClick: () => handleSort('comp1Delta'), children: [delta1Header, sortIcon('comp1Delta')] })), enableComp2 && ((0, jsx_runtime_1.jsxs)("th", { className: "r", style: { width: valWidth, cursor: 'pointer' }, onClick: () => handleSort('comp2Value'), children: [comp2Header, sortIcon('comp2Value')] })), enableComp2 && showDelta2 && ((0, jsx_runtime_1.jsxs)("th", { className: "r", style: { width: deltaWidth, cursor: 'pointer' }, onClick: () => handleSort('comp2Delta'), children: [delta2Header, sortIcon('comp2Delta')] }))] }) }), isRefreshing && (0, jsx_runtime_1.jsx)(styles_1.RefreshBar, {}), (0, jsx_runtime_1.jsx)("tbody", { style: {
-                                    opacity: isRefreshing ? 0.45 : 1,
-                                    transition: 'opacity 0.15s ease',
-                                    pointerEvents: isRefreshing ? 'none' : 'auto',
-                                }, children: isInitialLoading ? ((0, jsx_runtime_1.jsx)(styles_1.EmptyRow, { children: (0, jsx_runtime_1.jsxs)("td", { colSpan: colCount, children: [(0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }, children: [(0, jsx_runtime_1.jsx)("span", { style: {
-                                                            display: 'inline-block', width: 16, height: 16,
-                                                            border: '2px solid var(--g200, #e5e5e5)',
-                                                            borderTopColor: 'var(--c-sky, #3B8BD9)',
-                                                            borderRadius: '50%',
-                                                            animation: 'kpi-spin 0.7s linear infinite',
-                                                        } }), "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430\u2026"] }), (0, jsx_runtime_1.jsx)("style", { children: `@keyframes kpi-spin{to{transform:rotate(360deg)}}` })] }) })) : fetchError ? ((0, jsx_runtime_1.jsx)(styles_1.EmptyRow, { children: (0, jsx_runtime_1.jsx)("td", { colSpan: colCount, children: (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, color: 'var(--dn, #DC2626)' }, children: [(0, jsx_runtime_1.jsx)("span", { children: fetchError }), (0, jsx_runtime_1.jsx)("button", { type: "button", onClick: () => { setFetchError(null); setCurrentPage(p => p); }, style: { padding: '4px 12px', borderRadius: 6, border: '1px solid var(--g300)', background: 'var(--s)', cursor: 'pointer', fontSize: 12 }, children: "\u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u044C" })] }) }) })) : groups.length === 0 ? ((0, jsx_runtime_1.jsx)(styles_1.EmptyRow, { children: (0, jsx_runtime_1.jsx)("td", { colSpan: colCount, children: debouncedSearch ? 'Ничего не найдено' : 'Нет данных' }) })) : (groups.flatMap(group => {
-                                    const isExpanded = expandedGroups.has(group.name);
-                                    const children = expandedChildren.get(group.name) ?? [];
-                                    const isChildLoading = loadingChildren.has(group.name);
-                                    return [
-                                        (0, jsx_runtime_1.jsx)(GroupRowView, { group: group, expanded: isExpanded, isLoadingChildren: isChildLoading, onToggle: () => fetchChildren(group.name), enableComp1: enableComp1, enableComp2: enableComp2, showDelta1: showDelta1, showDelta2: showDelta2 }, `g-${group.name}`),
-                                        ...(isExpanded
-                                            ? children.map(child => ((0, jsx_runtime_1.jsx)(ChildRowView, { row: child, enableComp1: enableComp1, enableComp2: enableComp2, showDelta1: showDelta1, showDelta2: showDelta2 }, `c-${group.name}-${child.name}`)))
-                                            : []),
-                                    ];
-                                })) })] }) }), (() => {
-                    const effectivePageSize = topN > 0 ? Math.min(pageSize, topN) : pageSize;
-                    const totalPages = totalCount != null ? Math.ceil(totalCount / effectivePageSize) : null;
-                    if (totalPages == null || totalPages <= 1)
-                        return null;
-                    const getPageNumbers = (current0, total) => {
-                        if (total <= 7)
-                            return Array.from({ length: total }, (_, i) => i + 1);
-                        const pages = new Set();
-                        pages.add(1);
-                        pages.add(total);
-                        pages.add(total - 1);
-                        pages.add(total - 2);
-                        const cur1 = current0 + 1;
-                        pages.add(cur1);
-                        if (cur1 > 1)
-                            pages.add(cur1 - 1);
-                        if (cur1 < total)
-                            pages.add(cur1 + 1);
-                        const sorted = [...pages].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
-                        const result = [];
-                        for (let i = 0; i < sorted.length; i++) {
-                            if (i > 0 && sorted[i] - sorted[i - 1] > 1)
-                                result.push('...');
-                            result.push(sorted[i]);
-                        }
-                        return result;
-                    };
-                    return ((0, jsx_runtime_1.jsxs)(styles_1.PaginationWrap, { style: {
-                            opacity: isRefreshing ? 0.5 : 1,
-                            pointerEvents: isRefreshing ? 'none' : 'auto',
-                            transition: 'opacity 0.15s ease',
-                        }, children: [getPageNumbers(currentPage, totalPages).map((item, idx) => item === '...'
-                                ? (0, jsx_runtime_1.jsx)(styles_1.PageEllipsis, { children: "\u2026" }, `e${idx}`)
-                                : (0, jsx_runtime_1.jsx)(styles_1.PageBtn, { type: "button", isActive: item === currentPage + 1, "aria-label": `Страница ${item}`, "aria-current": item === currentPage + 1 ? 'page' : undefined, onClick: () => setCurrentPage(item - 1), disabled: isRefreshing, children: item }, item)), totalPages > 7 && ((0, jsx_runtime_1.jsx)(styles_1.PageInput, { type: "number", min: 1, max: totalPages, placeholder: "\u2116", "aria-label": "\u041F\u0435\u0440\u0435\u0439\u0442\u0438 \u043D\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443", disabled: isRefreshing, onKeyDown: (e) => {
-                                    if (e.key === 'Enter') {
-                                        const val = parseInt(e.target.value, 10);
-                                        if (val >= 1 && val <= totalPages) {
-                                            setCurrentPage(val - 1);
-                                            e.target.value = '';
+    return ((0, jsx_runtime_1.jsxs)(styles_1.Overlay, { closing: isClosing, onClick: handleOverlayClick, style: isHidden ? { visibility: 'hidden', pointerEvents: 'none', opacity: 0 } : undefined, children: [(0, jsx_runtime_1.jsx)("style", { dangerouslySetInnerHTML: { __html: styles_1.KEYFRAMES_CSS } }), (0, jsx_runtime_1.jsxs)(styles_1.Modal, { ref: modalRef, closing: isClosing, role: "dialog", "aria-modal": "true", "aria-label": `${title} — детализация`, onClick: e => e.stopPropagation(), onKeyDown: handleKeyDown, children: [(0, jsx_runtime_1.jsxs)(styles_1.ModalHead, { children: [(0, jsx_runtime_1.jsx)(styles_1.ModalTitle, { children: title }), (0, jsx_runtime_1.jsx)(styles_1.ModalValue, { children: headerValue }), (0, jsx_runtime_1.jsx)(styles_1.CloseButton, { ref: closeRef, onClick: handleClose, "aria-label": "\u0417\u0430\u043A\u0440\u044B\u0442\u044C", children: "\u00D7" })] }), (0, jsx_runtime_1.jsxs)(styles_1.ModalToolbar, { children: [(0, jsx_runtime_1.jsxs)(styles_1.SearchBox, { children: [(0, jsx_runtime_1.jsxs)(styles_1.ExactMatchLabel, { title: "\u0422\u043E\u0447\u043D\u043E\u0435 \u0441\u043E\u0432\u043F\u0430\u0434\u0435\u043D\u0438\u0435", children: [(0, jsx_runtime_1.jsx)("input", { type: "checkbox", checked: exactMatch, onChange: e => setExactMatch(e.target.checked) }), "\u0422\u043E\u0447\u043D\u043E"] }), (0, jsx_runtime_1.jsx)(MagnifyIcon, {}), (0, jsx_runtime_1.jsx)(styles_1.SearchInput, { type: "text", placeholder: "\u041F\u043E\u0438\u0441\u043A...", "aria-label": "\u041F\u043E\u0438\u0441\u043A", value: searchQuery, onChange: e => setSearchQuery(e.target.value) }), (0, jsx_runtime_1.jsxs)(styles_1.SearchScopeToggle, { children: [(0, jsx_runtime_1.jsx)(styles_1.SearchScopeButton, { active: searchScope === 'group', onClick: () => setSearchScope('group'), "aria-label": `Поиск по ${groupLabel}`, children: groupLabel }), (0, jsx_runtime_1.jsx)(styles_1.SearchScopeButton, { active: searchScope === 'child', onClick: () => setSearchScope('child'), "aria-label": `Поиск по ${childLabel}`, children: childLabel })] })] }), (0, jsx_runtime_1.jsxs)(styles_1.FlipButton, { onClick: flipHierarchy, "aria-label": "\u0421\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u0435\u0440\u0430\u0440\u0445\u0438\u044E", children: [(0, jsx_runtime_1.jsx)(styles_1.FlipIcon, { flipped: !isPrimary, "aria-hidden": "true", children: "\u21C5" }), (0, jsx_runtime_1.jsx)(styles_1.FlipLabel, { children: isPrimary
+                                            ? `${hierarchyLabelPrimary}\u00A0→\u00A0${hierarchyLabelSecondary}`
+                                            : `${hierarchyLabelSecondary}\u00A0→\u00A0${hierarchyLabelPrimary}` })] }), (0, jsx_runtime_1.jsxs)(styles_1.ResultsCount, { children: [groupLabel, ": ", totalCount != null ? totalCount : `${groups.length}${hasNextPage ? '+' : ''}`] })] }), (0, jsx_runtime_1.jsx)(styles_1.TableWrap, { children: (0, jsx_runtime_1.jsxs)(styles_1.DetailTable, { children: [(0, jsx_runtime_1.jsx)(styles_1.THead, { children: (0, jsx_runtime_1.jsxs)(styles_1.THRow, { children: [(0, jsx_runtime_1.jsxs)(styles_1.SortableTh, { widthPx: nameWidth, onClick: () => handleSort('name'), children: [groupLabel, sortIcon('name')] }), (0, jsx_runtime_1.jsxs)(styles_1.SortableTh, { className: "r", widthPx: valWidth, onClick: () => handleSort('value'), children: [colFact, sortIcon('value')] }), enableComp1 && ((0, jsx_runtime_1.jsxs)(styles_1.SortableTh, { className: "r", widthPx: valWidth, onClick: () => handleSort('comp1Value'), children: [comp1Header, sortIcon('comp1Value')] })), enableComp1 && showDelta1 && ((0, jsx_runtime_1.jsxs)(styles_1.SortableTh, { className: "r", widthPx: deltaWidth, onClick: () => handleSort('comp1Delta'), children: [delta1Header, sortIcon('comp1Delta')] })), enableComp2 && ((0, jsx_runtime_1.jsxs)(styles_1.SortableTh, { className: "r", widthPx: valWidth, onClick: () => handleSort('comp2Value'), children: [comp2Header, sortIcon('comp2Value')] })), enableComp2 && showDelta2 && ((0, jsx_runtime_1.jsxs)(styles_1.SortableTh, { className: "r", widthPx: deltaWidth, onClick: () => handleSort('comp2Delta'), children: [delta2Header, sortIcon('comp2Delta')] }))] }) }), isRefreshing && (0, jsx_runtime_1.jsx)(styles_1.RefreshBar, {}), (0, jsx_runtime_1.jsx)("tbody", { style: {
+                                        opacity: isRefreshing ? 0.45 : 1,
+                                        transition: 'opacity 0.15s ease',
+                                        pointerEvents: isRefreshing ? 'none' : 'auto',
+                                    }, children: isInitialLoading ? ((0, jsx_runtime_1.jsx)(styles_1.EmptyRow, { children: (0, jsx_runtime_1.jsx)("td", { colSpan: colCount, children: (0, jsx_runtime_1.jsxs)(styles_1.LoaderRowInner, { children: [(0, jsx_runtime_1.jsx)(styles_1.InlineSpinnerLarge, {}), "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430\u2026"] }) }) })) : fetchError ? ((0, jsx_runtime_1.jsx)(styles_1.EmptyRow, { children: (0, jsx_runtime_1.jsx)("td", { colSpan: colCount, children: (0, jsx_runtime_1.jsxs)(styles_1.ErrorRowInner, { children: [(0, jsx_runtime_1.jsx)("span", { children: fetchError }), (0, jsx_runtime_1.jsx)(styles_1.RetryButton, { type: "button", onClick: () => { setFetchError(null); setCurrentPage(p => p); }, children: "\u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u044C" })] }) }) })) : groups.length === 0 ? ((0, jsx_runtime_1.jsx)(styles_1.EmptyRow, { children: (0, jsx_runtime_1.jsx)("td", { colSpan: colCount, children: debouncedSearch ? 'Ничего не найдено' : 'Нет данных' }) })) : (groups.flatMap(group => {
+                                        const isExpanded = expandedGroups.has(group.name);
+                                        const children = expandedChildren.get(group.name) ?? [];
+                                        const isChildLoading = loadingChildren.has(group.name);
+                                        return [
+                                            (0, jsx_runtime_1.jsx)(GroupRowView, { group: group, expanded: isExpanded, isLoadingChildren: isChildLoading, onToggle: () => fetchChildren(group.name), enableComp1: enableComp1, enableComp2: enableComp2, showDelta1: showDelta1, showDelta2: showDelta2 }, `g-${group.name}`),
+                                            ...(isExpanded
+                                                ? children.map(child => ((0, jsx_runtime_1.jsx)(ChildRowView, { row: child, enableComp1: enableComp1, enableComp2: enableComp2, showDelta1: showDelta1, showDelta2: showDelta2 }, `c-${group.name}-${child.name}`)))
+                                                : []),
+                                        ];
+                                    })) })] }) }), (() => {
+                        const effectivePageSize = topN > 0 ? Math.min(pageSize, topN) : pageSize;
+                        const totalPages = totalCount != null ? Math.ceil(totalCount / effectivePageSize) : null;
+                        if (totalPages == null || totalPages <= 1)
+                            return null;
+                        const getPageNumbers = (current0, total) => {
+                            if (total <= 7)
+                                return Array.from({ length: total }, (_, i) => i + 1);
+                            const pages = new Set();
+                            pages.add(1);
+                            pages.add(total);
+                            pages.add(total - 1);
+                            pages.add(total - 2);
+                            const cur1 = current0 + 1;
+                            pages.add(cur1);
+                            if (cur1 > 1)
+                                pages.add(cur1 - 1);
+                            if (cur1 < total)
+                                pages.add(cur1 + 1);
+                            const sorted = [...pages].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+                            const result = [];
+                            for (let i = 0; i < sorted.length; i++) {
+                                if (i > 0 && sorted[i] - sorted[i - 1] > 1)
+                                    result.push('...');
+                                result.push(sorted[i]);
+                            }
+                            return result;
+                        };
+                        return ((0, jsx_runtime_1.jsxs)(styles_1.PaginationWrap, { style: {
+                                opacity: isRefreshing ? 0.5 : 1,
+                                pointerEvents: isRefreshing ? 'none' : 'auto',
+                                transition: 'opacity 0.15s ease',
+                            }, children: [getPageNumbers(currentPage, totalPages).map((item, idx) => item === '...'
+                                    ? (0, jsx_runtime_1.jsx)(styles_1.PageEllipsis, { children: "\u2026" }, `e${idx}`)
+                                    : (0, jsx_runtime_1.jsx)(styles_1.PageBtn, { type: "button", isActive: item === currentPage + 1, "aria-label": `Страница ${item}`, "aria-current": item === currentPage + 1 ? 'page' : undefined, onClick: () => setCurrentPage(item - 1), disabled: isRefreshing, children: item }, item)), totalPages > 7 && ((0, jsx_runtime_1.jsx)(styles_1.PageInput, { type: "number", min: 1, max: totalPages, placeholder: "\u2116", "aria-label": "\u041F\u0435\u0440\u0435\u0439\u0442\u0438 \u043D\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443", disabled: isRefreshing, onKeyDown: (e) => {
+                                        if (e.key === 'Enter') {
+                                            const val = parseInt(e.target.value, 10);
+                                            if (val >= 1 && val <= totalPages) {
+                                                setCurrentPage(val - 1);
+                                                e.target.value = '';
+                                            }
                                         }
-                                    }
-                                } }))] }));
-                })(), (0, jsx_runtime_1.jsxs)(styles_1.ModalFoot, { children: [(0, jsx_runtime_1.jsxs)(styles_1.FooterHint, { children: ["\u25B6 \u0440\u0430\u0441\u043A\u0440\u044B\u0442\u044C \u0434\u0435\u0442\u0430\u043B\u0438\u0437\u0430\u0446\u0438\u044E\u2002\u00B7\u2002", (0, jsx_runtime_1.jsxs)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "1", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", style: { verticalAlign: 'middle' }, children: [(0, jsx_runtime_1.jsx)("path", { d: "M2 2h8.5L13 4.5V14H2V2z" }), (0, jsx_runtime_1.jsx)("path", { d: "M4 2v4h6V2" }), (0, jsx_runtime_1.jsx)("path", { d: "M9 3v2" }), (0, jsx_runtime_1.jsx)("path", { d: "M4 9h6v5H4z" })] }), " \u044D\u043A\u0441\u043F\u043E\u0440\u0442          "] }), (0, jsx_runtime_1.jsx)(styles_1.ExportButton, { onClick: handleExport, "aria-label": "\u042D\u043A\u0441\u043F\u043E\u0440\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u0432 CSV", title: "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043A\u0430\u043A CSV", disabled: isExporting, children: (0, jsx_runtime_1.jsxs)("svg", { width: "14", height: "14", viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "1", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", children: [(0, jsx_runtime_1.jsx)("path", { d: "M2 2h8.5L13 4.5V14H2V2z" }), (0, jsx_runtime_1.jsx)("path", { d: "M4 2v4h6V2" }), (0, jsx_runtime_1.jsx)("path", { d: "M9 3v2" }), (0, jsx_runtime_1.jsx)("path", { d: "M4 9h6v5H4z" })] }) })] })] }) }));
+                                    } }))] }));
+                    })(), (0, jsx_runtime_1.jsxs)(styles_1.ModalFoot, { children: [(0, jsx_runtime_1.jsxs)(styles_1.FooterHint, { children: ["\u25B6 \u0440\u0430\u0441\u043A\u0440\u044B\u0442\u044C \u0434\u0435\u0442\u0430\u043B\u0438\u0437\u0430\u0446\u0438\u044E\u2002\u00B7\u2002", (0, jsx_runtime_1.jsxs)(styles_1.FooterHintIcon, { width: "12", height: "12", viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "1", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", children: [(0, jsx_runtime_1.jsx)("path", { d: "M2 2h8.5L13 4.5V14H2V2z" }), (0, jsx_runtime_1.jsx)("path", { d: "M4 2v4h6V2" }), (0, jsx_runtime_1.jsx)("path", { d: "M9 3v2" }), (0, jsx_runtime_1.jsx)("path", { d: "M4 9h6v5H4z" })] }), " \u044D\u043A\u0441\u043F\u043E\u0440\u0442          "] }), (0, jsx_runtime_1.jsx)(styles_1.ExportButton, { onClick: handleExport, "aria-label": "\u042D\u043A\u0441\u043F\u043E\u0440\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u0432 CSV", title: "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043A\u0430\u043A CSV", disabled: isExporting, children: (0, jsx_runtime_1.jsxs)("svg", { width: "14", height: "14", viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "1", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", children: [(0, jsx_runtime_1.jsx)("path", { d: "M2 2h8.5L13 4.5V14H2V2z" }), (0, jsx_runtime_1.jsx)("path", { d: "M4 2v4h6V2" }), (0, jsx_runtime_1.jsx)("path", { d: "M9 3v2" }), (0, jsx_runtime_1.jsx)("path", { d: "M4 9h6v5H4z" })] }) })] })] })] }));
 }
 // React.memo: block ALL re-renders when modal is closed (toggle perf).
 // When opening: isOpen changes false→true → allows re-render with fresh props.

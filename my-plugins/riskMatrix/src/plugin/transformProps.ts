@@ -37,6 +37,28 @@ function toNumber(v: unknown): number {
   return Number.isFinite(n) ? n : NaN;
 }
 
+/**
+ * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
+ */
+function formatTimeRangeRu(tr: string | undefined): string {
+  if (!tr || tr === 'No filter') return 'за период';
+  const map: Record<string, string> = {
+    'Last day': 'за день',
+    'Last week': 'за неделю',
+    'Last month': 'за месяц',
+    'Last quarter': 'за квартал',
+    'Last year': 'за год',
+    Today: 'сегодня',
+    'This week': 'за эту неделю',
+    'This month': 'за этот месяц',
+    'This year': 'за этот год',
+    'previous calendar week': 'за прошлую неделю',
+    'previous calendar month': 'за прошлый месяц',
+    'previous calendar year': 'за прошлый год',
+  };
+  return map[tr] ?? tr;
+}
+
 function getColumnValue(row: Record<string, unknown>, col?: string): string | undefined {
   if (!col) return undefined;
   const v = row[col];
@@ -423,9 +445,29 @@ export default function transformProps(chartProps: ChartProps): ScatterRiskProps
     timeRange: formData.time_range as string | undefined,
   };
 
+  /* DS 2.0 §06 «Состояния»: empty / partial / stale / populated.
+     - empty: нет stores
+     - partial: бэкенд отверг часть фильтров (rejected_filters > 0)
+     - stale: данные пришли из кеша
+     - populated: всё хорошо. */
+  const q0 = queriesData?.[0] as
+    | { is_cached?: boolean; rejected_filters?: Array<unknown> }
+    | undefined;
+  let dataState: ScatterRiskProps['dataState'];
+  if (stores.length === 0) {
+    dataState = 'empty';
+  } else if (q0?.rejected_filters && q0.rejected_filters.length > 0) {
+    dataState = 'partial';
+  } else if (q0?.is_cached) {
+    dataState = 'stale';
+  } else {
+    dataState = 'populated';
+  }
+
   return {
     width,
     height,
+    dataState,
     stores,
     formats,
     thresholdX,
@@ -435,7 +477,12 @@ export default function transformProps(chartProps: ChartProps): ScatterRiskProps
     enableQuadrantAnnotations: (formData.enableQuadrantAnnotations as boolean | undefined) ?? true,
     enableWorstStar: (formData.enableWorstStar as boolean | undefined) ?? true,
     title: (formData.title as string | undefined) || 'Матрица рисков',
-    subtitle: (formData.subtitle as string | undefined) || '',
+    subtitle:
+      (formData.subtitle as string | undefined)?.trim() ||
+      formatTimeRangeRu(
+        (formData.time_range as string | undefined) ??
+          (formData.timeRange as string | undefined),
+      ),
     xLabel,
     yLabel,
     xUnit,

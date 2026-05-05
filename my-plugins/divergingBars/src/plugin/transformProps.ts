@@ -24,6 +24,28 @@ type VelocityChartProps = ChartProps<VelocityDivergingFormData> & {
   }>;
 };
 
+/**
+ * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
+ */
+function formatTimeRangeRu(tr: string | undefined): string {
+  if (!tr || tr === 'No filter') return 'за период';
+  const map: Record<string, string> = {
+    'Last day': 'за день',
+    'Last week': 'за неделю',
+    'Last month': 'за месяц',
+    'Last quarter': 'за квартал',
+    'Last year': 'за год',
+    Today: 'сегодня',
+    'This week': 'за эту неделю',
+    'This month': 'за этот месяц',
+    'This year': 'за этот год',
+    'previous calendar week': 'за прошлую неделю',
+    'previous calendar month': 'за прошлый месяц',
+    'previous calendar year': 'за прошлый год',
+  };
+  return map[tr] ?? tr;
+}
+
 function detectDarkMode(theme: unknown): boolean {
   const bg = (theme as { colorBgContainer?: string } | undefined)
     ?.colorBgContainer;
@@ -146,6 +168,14 @@ export default function transformProps(
     (formData as unknown as { headerText?: string }).headerText ??
     'Скорость роста потерь';
 
+  const userSubtitle =
+    (formData.subtitle_text as string | undefined) ??
+    (formData as unknown as { subtitleText?: string }).subtitleText;
+  const timeRange =
+    (formData as unknown as { time_range?: string; timeRange?: string }).time_range ??
+    (formData as unknown as { timeRange?: string }).timeRange;
+  const subtitleText = (userSubtitle?.trim() || formatTimeRangeRu(timeRange));
+
   const defaultHorizon: Horizon =
     ((formData.default_horizon ??
       (formData as unknown as { defaultHorizon?: Horizon }).defaultHorizon) as Horizon) ?? '4w';
@@ -184,6 +214,7 @@ export default function transformProps(
     width,
     height,
     headerText,
+    subtitleText,
     defaultHorizon,
     defaultMetric,
     showCumulativeView,

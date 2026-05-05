@@ -65,6 +65,7 @@ export interface PartialWarning {
 export interface VelocityDivergingFormData extends QueryFormData {
   viz_type: 'ext-velocity-diverging';
   header_text?: string;
+  subtitle_text?: string;
   default_horizon?: Horizon;
   default_metric?: MetricMode;
   show_cumulative_view?: boolean;
@@ -88,6 +89,7 @@ export interface VelocityDivergingProps {
   width: number;
   height: number;
   headerText: string;
+  subtitleText: string;
   dataState: DataState;
   partialWarning?: PartialWarning;
   errorMessage?: string;

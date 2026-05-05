@@ -8,11 +8,34 @@ const nf = (decimals) => new Intl.NumberFormat('ru-RU', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
 });
+/**
+ * Канонический fmtRub (DS 2.0): авто-переключение единицы для рублёвых сумм.
+ * Базовая единица входа — МИЛЛИОНЫ рублей (как в исходных данных rankedBars).
+ * До запятой ≤3 цифр всегда (когда выходит за 999 — поднимается на следующую).
+ *
+ *  - <1 млн     → "X тыс ₽"
+ *  - <1 000     → "X,Y млн ₽"
+ *  - <1 000 000 → "X,YZ млрд ₽"
+ *  - иначе      → "X,YZ трлн ₽"
+ */
 export function fmtRub(value, decimals = 1, suffix = 'млн ₽') {
     if (!Number.isFinite(value)) {
         return { number: '—', unit: '' };
     }
-    if (Math.abs(value) >= 1) {
+    const abs = Math.abs(value);
+    if (abs >= 1000000) {
+        return {
+            number: nf(decimals + 1).format(value / 1000000),
+            unit: ' трлн ₽',
+        };
+    }
+    if (abs >= 1000) {
+        return {
+            number: nf(decimals + 1).format(value / 1000),
+            unit: ' млрд ₽',
+        };
+    }
+    if (abs >= 1) {
         return { number: nf(decimals).format(value), unit: ` ${suffix}` };
     }
     const inThousands = value * 1000;

@@ -480,7 +480,13 @@ export default function RankedStoresChart(
   );
 
   return (
-    <Root ref={rootRef} $width={width} $height={height} style={cssVars}>
+    <Root
+      ref={rootRef}
+      $width={width}
+      $height={height}
+      style={cssVars}
+      className="leaderboard-card"
+    >
       <Global styles={css(KEYFRAMES_CSS)} />
       <Wrap>
         <Card>

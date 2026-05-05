@@ -22,6 +22,16 @@ export declare function getCurrentItems(state: Pick<BuildOptionState, 'categorie
  * Вызывается из transformProps после того, как родительские цвета уже резолвлены.
  */
 export declare function applyChildShades(category: CategoryNode): void;
+/**
+ * Hero-text для центра donut (рендерится HTML overlay'ем поверх canvas,
+ * НЕ через ECharts graphic — позволяет использовать CSS Container Queries
+ * --fs-hero (clamp 28-56px) как в KPI scorecard, вместо hardcoded fontSize.
+ */
+export interface HeroText {
+    value: string;
+    label: string;
+}
+export declare function computeHero(state: BuildOptionState): HeroText;
 export declare function buildOption(args: {
     state: BuildOptionState;
     tokens: Tokens;

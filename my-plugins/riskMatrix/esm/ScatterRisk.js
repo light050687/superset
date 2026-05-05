@@ -1,6 +1,37 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import React, { useCallback, useEffect, useMemo, useRef, useState, } from 'react';
-import { CardRoot, CardHead, TitleBlock, CardTitle, CardSubtitle, Controls, ChartArea, ChartSvg, SelectionOverlay, QuadAnnot, Legend as LegendRoot, Footer, Tooltip, EmptyBlock, KEYFRAMES_CSS, } from './styles';
+import { styled } from '@superset-ui/core';
+import { CardRoot, CardHead, TitleBlock, CardTitle, CardSubtitle, Controls, ChartArea, ChartSvg, SelectionOverlay, QuadAnnot, Legend as LegendRoot, Footer, Tooltip, EmptyBlock, KEYFRAMES_CSS, PartialBadge, StaleBar, } from './styles';
+/* === Локальные styled-обёртки (миграция inline style → Emotion, P-011) === */
+/** Overlay поверх ChartArea, когда нет данных. */
+const EmptyOverlay = styled(EmptyBlock) `
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--s);
+  z-index: 20;
+`;
+/** Заголовок пустого состояния («Нет данных»). */
+const EmptyTitle = styled.div `
+  font-size: var(--fs-interactive);
+  font-weight: 700;
+  color: var(--g700);
+`;
+/** Подсказка пустого состояния (рекомендация по настройке). */
+const EmptyHint = styled.div `
+  font-size: var(--fs-meta);
+  color: var(--g500);
+`;
+/** SVG-overlay для lasso-выбора: кладётся абсолютно поверх ChartArea. */
+const LassoSvg = styled.svg `
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+`;
 import ToolbarBar from './Toolbar';
 import LegendList from './Legend';
 import { getQuadrant, getQuadrantStats, getWorstN } from './utils/quadrants';
@@ -24,7 +55,7 @@ function resolveFormatColor(map, format, hostEl) {
     return 'currentColor';
 }
 const ScatterRisk = (props) => {
-    const { width, height, stores, formats, thresholdX, thresholdY, hasThresholds, quadrants, enableQuadrantAnnotations, enableWorstStar, title, subtitle, xLabel, yLabel, xUnit, yUnit, sizeUnit, formatX, formatY, formatSize, formatLoss, formatCount, xShort, yShort, isDarkMode, setDataMask, filterState, storeColumn, drillEnabled, detailQueryParams, shortcutsHint, } = props;
+    const { width, height, stores, formats, thresholdX, thresholdY, hasThresholds, quadrants, enableQuadrantAnnotations, enableWorstStar, title, subtitle, xLabel, yLabel, xUnit, yUnit, sizeUnit, formatX, formatY, formatSize, formatLoss, formatCount, xShort, yShort, isDarkMode, setDataMask, filterState, storeColumn, drillEnabled, detailQueryParams, shortcutsHint, dataState, } = props;
     // ── State ──
     const [hiddenFormats, setHiddenFormats] = useState(new Set());
     const [activeFilters, setActiveFilters] = useState(() => {
@@ -705,22 +736,18 @@ const ScatterRisk = (props) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hasThresholds, enableQuadrantAnnotations, width, height, viewDomain, autoDomain]);
     const themeMode = isDarkMode ? 'dark' : 'light';
-    return (_jsxs(CardRoot, { "data-theme": themeMode, role: "region", "aria-labelledby": "sr-card-title", children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsxs(CardHead, { children: [_jsxs(TitleBlock, { children: [_jsx(CardTitle, { id: "sr-card-title", children: title }), _jsxs(CardSubtitle, { children: [subtitle && _jsx("span", { children: subtitle }), subtitle && _jsx("span", { className: "dot" }), _jsxs("span", { className: "strong", children: [formatCount(stores.length), " \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u0432"] }), activeFilters.size > 0 && (_jsxs(_Fragment, { children: [_jsx("span", { className: "dot" }), _jsxs("span", { children: [formatCount(activeFilters.size), " \u0432\u044B\u0431\u0440\u0430\u043D\u043E"] })] }))] })] }), _jsx(Controls, { children: _jsx(ToolbarBar, { selectMode: selectMode, hasFilters: activeFilters.size > 0, onAction: onSelectAction, onReset: onReset, onClear: onClearFilters, searchQuery: searchQuery, onSearchChange: setSearchQuery, searchMatchesCount: searchMatches.length, onSearchSelect: onSearchSelect }) })] }), _jsxs(ChartArea, { ref: chartAreaRef, className: [selectMode ? 'mode-select' : '', panActive ? 'panning' : ''].join(' ').trim(), onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseLeave, children: [stores.length === 0 && (_jsxs(EmptyBlock, { style: {
-                            position: 'absolute',
-                            inset: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexDirection: 'column',
-                            gap: 8,
-                            background: 'var(--s)',
-                            zIndex: 20,
-                        }, role: "status", "aria-live": "polite", children: [_jsx("div", { style: { fontSize: 13, fontWeight: 700, color: 'var(--g700)' }, children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445" }), _jsx("div", { style: { fontSize: 10, color: 'var(--g500)' }, children: "\u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043C\u0435\u0442\u0440\u0438\u043A\u0438 X/Y \u0438 \u0438\u0437\u043C\u0435\u0440\u0435\u043D\u0438\u0435 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u0430 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445" })] })), _jsx(ChartSvg, { ref: svgRef, onClick: handleSvgClick, onDoubleClick: handleSvgDoubleClick, onMouseMove: handleSvgMouseMove, onMouseLeave: handleSvgMouseLeave, onKeyDown: handleSvgKeyDown }), _jsxs(SelectionOverlay, { children: [selectMode === 'rect' && selectionStart && selectionPath.length > 0 && (_jsx("div", { className: "selection-rect", style: {
+    // DS 2.0 canonical: loading имеет свой раздельный return со своим CardRoot.
+    // При переходе loading → loaded React unmount'ит loading-CardRoot и mount'ит
+    // новый → cardInKf animation запускается ровно когда юзер видит контент.
+    if (dataState === 'loading') {
+        return (_jsxs(CardRoot, { "data-theme": themeMode, role: "region", "aria-busy": "true", children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsx(CardHead, { children: _jsx(TitleBlock, { children: _jsx(CardTitle, { children: title }) }) }), _jsx("div", { role: "status", "aria-label": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430", style: { flex: 1 } })] }));
+    }
+    return (_jsxs(CardRoot, { "data-theme": themeMode, role: "region", "aria-labelledby": "sr-card-title", children: [_jsx("style", { children: KEYFRAMES_CSS }), dataState === 'stale' && _jsx(StaleBar, { "aria-hidden": "true" }), _jsxs(CardHead, { children: [_jsxs(TitleBlock, { children: [_jsxs(CardTitle, { id: "sr-card-title", children: [title, dataState === 'partial' && (_jsx(PartialBadge, { title: "\u0427\u0430\u0441\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0445 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430", children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u043E" }))] }), _jsxs(CardSubtitle, { children: [subtitle && _jsx("span", { children: subtitle }), subtitle && _jsx("span", { className: "dot" }), _jsxs("span", { className: "strong", children: [formatCount(stores.length), " \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u0432"] }), activeFilters.size > 0 && (_jsxs(_Fragment, { children: [_jsx("span", { className: "dot" }), _jsxs("span", { children: [formatCount(activeFilters.size), " \u0432\u044B\u0431\u0440\u0430\u043D\u043E"] })] }))] })] }), _jsx(Controls, { children: _jsx(ToolbarBar, { selectMode: selectMode, hasFilters: activeFilters.size > 0, onAction: onSelectAction, onReset: onReset, onClear: onClearFilters, searchQuery: searchQuery, onSearchChange: setSearchQuery, searchMatchesCount: searchMatches.length, onSearchSelect: onSearchSelect }) })] }), _jsxs(ChartArea, { ref: chartAreaRef, className: [selectMode ? 'mode-select' : '', panActive ? 'panning' : ''].join(' ').trim(), onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseLeave, children: [stores.length === 0 && (_jsxs(EmptyOverlay, { role: "status", "aria-live": "polite", children: [_jsx(EmptyTitle, { children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445" }), _jsx(EmptyHint, { children: "\u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043C\u0435\u0442\u0440\u0438\u043A\u0438 X/Y \u0438 \u0438\u0437\u043C\u0435\u0440\u0435\u043D\u0438\u0435 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u0430 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445" })] })), _jsx(ChartSvg, { ref: svgRef, onClick: handleSvgClick, onDoubleClick: handleSvgDoubleClick, onMouseMove: handleSvgMouseMove, onMouseLeave: handleSvgMouseLeave, onKeyDown: handleSvgKeyDown }), _jsxs(SelectionOverlay, { children: [selectMode === 'rect' && selectionStart && selectionPath.length > 0 && (_jsx("div", { className: "selection-rect", style: {
                                     left: Math.min(selectionStart.x, selectionPath[selectionPath.length - 1].x),
                                     top: Math.min(selectionStart.y, selectionPath[selectionPath.length - 1].y),
                                     width: Math.abs(selectionPath[selectionPath.length - 1].x - selectionStart.x),
                                     height: Math.abs(selectionPath[selectionPath.length - 1].y - selectionStart.y),
-                                } })), selectMode === 'lasso' && selectionPath.length > 1 && (_jsx("svg", { width: "100%", height: "100%", style: { position: 'absolute', inset: 0, pointerEvents: 'none' }, children: _jsx("path", { className: "selection-lasso", d: selectionPath
+                                } })), selectMode === 'lasso' && selectionPath.length > 1 && (_jsx(LassoSvg, { width: "100%", height: "100%", children: _jsx("path", { className: "selection-lasso", d: selectionPath
                                         .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(0)} ${p.y.toFixed(0)}`)
                                         .join(' ') + ' Z' }) }))] }), quadrantStats &&
                         enableQuadrantAnnotations &&
@@ -753,8 +780,8 @@ const ScatterRisk = (props) => {
                             // Делим по тире: левая часть — клавиши (в <kbd>), правая — описание.
                             const [keyPart, descPart] = part.split(/\s+[—-]\s+/);
                             const keys = (keyPart ?? part).split('+').map((k) => k.trim()).filter(Boolean);
-                            return (_jsxs("div", { className: "hint-item", children: [keys.map((k, ki) => (_jsxs(React.Fragment, { children: [ki > 0 && _jsx("span", { children: "+" }), _jsx("kbd", { children: k })] }, ki))), descPart && _jsxs("span", { children: ["\u2014 ", descPart] })] }, i));
-                        }) }), _jsx("div", { className: "hint", children: _jsxs("div", { className: "hint-item", children: [_jsx("svg", { viewBox: "0 0 12 12", fill: "none", stroke: "currentColor", strokeWidth: "1.5", children: _jsx("circle", { cx: "6", cy: "6", r: "4" }) }), _jsxs("span", { children: ["\u0440\u0430\u0437\u043C\u0435\u0440 = ", sizeUnit] })] }) })] }), _jsx(Tooltip, { ref: tooltipRef, role: "tooltip", "aria-hidden": "true" }), drillEnabled && drillStoreId && (_jsx(StoreDrillModal, { storeId: drillStoreId, stores: stores, quadrants: quadrants, thresholds: thresholds, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatSize: formatSize, formatLoss: formatLoss, xShort: xShort, yShort: yShort, sizeUnit: sizeUnit, detailQueryParams: detailQueryParams, onClose: () => setDrillStoreId(null) })), drillEnabled && drillQuadrant && (_jsx(QuadrantDrillModal, { quadrantKey: drillQuadrant, quadrants: quadrants, thresholds: thresholds, stores: visibleStores, allStoresTotal: stores.length, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatLoss: formatLoss, formatCount: formatCount, xShort: xShort, yShort: yShort, onClose: () => setDrillQuadrant(null), onOpenStore: (id) => setDrillStoreId(id) }))] }));
+                            return (_jsxs(React.Fragment, { children: [i > 0 && _jsx("span", { className: "hi-sep", "aria-hidden": "true" }), _jsxs("span", { className: "hi", children: [keys.map((k, ki) => (_jsxs(React.Fragment, { children: [ki > 0 && _jsx("span", { children: "+" }), _jsx("kbd", { children: k })] }, ki))), descPart && _jsxs("span", { children: ["\u2014 ", descPart] })] })] }, i));
+                        }) }), _jsx("div", { className: "hint", children: _jsxs("span", { className: "hi", children: [_jsx("svg", { viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "1.5", children: _jsx("circle", { cx: "8", cy: "8", r: "5" }) }), _jsxs("span", { children: ["\u0440\u0430\u0437\u043C\u0435\u0440 = ", sizeUnit] })] }) })] }), _jsx(Tooltip, { ref: tooltipRef, role: "tooltip", "aria-hidden": "true" }), drillEnabled && drillStoreId && (_jsx(StoreDrillModal, { storeId: drillStoreId, stores: stores, quadrants: quadrants, thresholds: thresholds, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatSize: formatSize, formatLoss: formatLoss, xShort: xShort, yShort: yShort, sizeUnit: sizeUnit, detailQueryParams: detailQueryParams, onClose: () => setDrillStoreId(null) })), drillEnabled && drillQuadrant && (_jsx(QuadrantDrillModal, { quadrantKey: drillQuadrant, quadrants: quadrants, thresholds: thresholds, stores: visibleStores, allStoresTotal: stores.length, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatLoss: formatLoss, formatCount: formatCount, xShort: xShort, yShort: yShort, onClose: () => setDrillQuadrant(null), onOpenStore: (id) => setDrillStoreId(id) }))] }));
 };
 export default ScatterRisk;
 //# sourceMappingURL=ScatterRisk.js.map

@@ -44,6 +44,12 @@ export default function transformProps(chartProps) {
     const padAngle = typeof fd.padAngle === 'number' ? fd.padAngle : 1.5;
     const borderRadius = typeof fd.borderRadius === 'number' ? fd.borderRadius : 2;
     const showOuterLabelsPct = fd.showOuterLabelsPct !== false; // default true
+    // rub_decimals — сколько знаков после запятой в hero-числе (controlPanel slider 0-3)
+    const fdRubDecimals = fd.rubDecimals
+        ?? fd.rub_decimals;
+    const rubDecimals = typeof fdRubDecimals === 'number' && fdRubDecimals >= 0 && fdRubDecimals <= 3
+        ? fdRubDecimals
+        : 2;
     const mockModeEnabled = fd.mock_mode_enabled ?? fd.mockModeEnabled ?? false;
     // Color overrides из controlPanel (CategoryColorMapControl)
     const colorMap = Array.isArray(fd.colorMap)
@@ -67,6 +73,7 @@ export default function transformProps(chartProps) {
             padAngle,
             borderRadius,
             showOuterLabelsPct,
+            rubDecimals,
             isDarkMode,
             theme,
             mockModeEnabled: true,
@@ -92,6 +99,7 @@ export default function transformProps(chartProps) {
             padAngle,
             borderRadius,
             showOuterLabelsPct,
+            rubDecimals,
             isDarkMode,
             theme,
             mockModeEnabled: false,
@@ -110,6 +118,7 @@ export default function transformProps(chartProps) {
             padAngle,
             borderRadius,
             showOuterLabelsPct,
+            rubDecimals,
             isDarkMode,
             theme,
             mockModeEnabled: false,

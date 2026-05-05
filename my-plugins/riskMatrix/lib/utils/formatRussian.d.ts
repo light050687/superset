@@ -64,4 +64,15 @@ export declare function formatDeltaByFormat(diff: number, ref: number, fmt: stri
  */
 export declare function formatRussianDeltaAbsEx(value: number, decimals?: number, suffix?: string): string;
 export declare function formatRussianDeltaAbs(value: number): string;
+/**
+ * Канонический fmtRub (DS 2.0): авто-переключение единицы для рублёвых сумм.
+ * Базовая единица входа — рубли. До запятой ≤3 цифр.
+ *
+ *  - <10k       → "1 234 ₽"
+ *  - <1M        → "1 234 тыс ₽"
+ *  - <1B        → "1,23 млн ₽"
+ *  - <1T        → "1,23 млрд ₽"
+ *  - иначе      → "1,23 трлн ₽"
+ */
+export declare function fmtRub(v: number | null | undefined, decimals?: number): string;
 //# sourceMappingURL=formatRussian.d.ts.map
