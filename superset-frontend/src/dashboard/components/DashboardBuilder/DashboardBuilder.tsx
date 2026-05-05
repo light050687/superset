@@ -380,6 +380,17 @@ const StyledDashboardContent = styled.div<{
           pointer-events: none !important;
         }
 
+        /* Скрываем slice_name title (.header-title) для всех ext-*
+           плагинов — у них собственный заголовок внутри Card. Раньше с
+           overflow:visible на SliceHeader выше slice_name выглядывал
+           поверх Card в edit-mode (видно как «График» / slice_name
+           призрачно в левом верхнем углу). */
+        & div[data-test-viz-type^='ext-'].chart-slice > div:first-child .header-title,
+        & div[data-test-viz-type^='ext-'].chart-slice > div:first-child .editable-title {
+          display: none !important;
+          visibility: hidden !important;
+        }
+
         & div[data-test-viz-type^='ext-'].chart-slice {
           position: relative !important;
           overflow: visible !important;
@@ -399,8 +410,10 @@ const StyledDashboardContent = styled.div<{
           > div:first-child
           .header-controls {
           position: absolute !important;
-          top: 8px !important;
-          right: 12px !important;
+          /* Внутри Card: top:16px = Card padding-top (16) + центр UnitToggle.
+             Right:4px = ближе к правой границе Card. */
+          top: 16px !important;
+          right: 4px !important;
           z-index: 100 !important;
           height: auto !important;
           overflow: visible !important;
@@ -427,6 +440,29 @@ const StyledDashboardContent = styled.div<{
         & div[data-test-viz-type^='ext-'] .chart-container > div {
           width: 100% !important;
           height: 100% !important;
+        }
+
+        /* Card-fit: визуал плагина (chart-holder и его дети) заполняет
+           всю высоту resizable-container. Без этого props.height приходит
+           как gridHeight (вычисленный по heightMultipleResolved), а
+           resizable-container может быть выше — в edit-mode видна
+           пустота под Card до синей пунктирной рамки. */
+        & .dashboard-component-chart-holder {
+          height: 100% !important;
+          min-height: 100% !important;
+          display: flex !important;
+          flex-direction: column !important;
+        }
+        & .dashboard-component-chart-holder > .chart-slice,
+        & .dashboard-component-chart-holder > .dashboard-chart {
+          flex: 1 1 auto !important;
+          height: 100% !important;
+          min-height: 0 !important;
+        }
+        & .dashboard-component-chart-holder .slice_container,
+        & .dashboard-component-chart-holder .chart-container {
+          height: 100% !important;
+          min-height: 0 !important;
         }
       }
 
