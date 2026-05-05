@@ -448,10 +448,12 @@ const StyledDashboardContent = styled.div<{
            (=.chart-slice), и в edit-mode визуал короче синей
            пунктирной рамки на CHART_MARGIN(32) + headerHeight(22) = 54px.
 
-           !important перебивают inline style="height:566px" от React
-           и inline style="width:Npx;height:Npx;" с ext-* root. */
+           ВАЖНО: только height:100% (НЕ min-height:100%). Inline minHeight
+           на холдере = outerH (baseline) — нельзя перебивать, иначе в
+           view mode без row.height holder коллапсирует в 0 (нет row stretch
+           до прихода данных). !important перебивает inline style="height"
+           от React. */
         height: 100% !important;
-        min-height: 100% !important;
         display: flex !important;
         flex-direction: column !important;
 
