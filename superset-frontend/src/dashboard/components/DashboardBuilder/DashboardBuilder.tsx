@@ -480,6 +480,21 @@ const StyledDashboardContent = styled.div<{
           width: 100% !important;
           height: 100% !important;
         }
+
+        /* superset-legacy-chart-{vizType} конвертит viz_type-дефисы в
+           подчёркивания и оборачивает плагин: <div class="ext_<viztype>">.
+           Эта обёртка по умолчанию display:block и сжимается до контента
+           (~chartHeight-headerHeight). Чтобы визуал === resizable-frame
+           1:1, форсим height:100% на этих обёртках и на их детях
+           (Root плагина), а также на Card второго уровня (header + ChartWrap +
+           footer). Селектор bounded внутри slice_container — не заденет
+           дашбордные обёртки. */
+        & .slice_container [class^='ext_'],
+        & .slice_container [class^='ext_'] > * {
+          width: 100% !important;
+          height: 100% !important;
+          min-height: 0 !important;
+        }
       }
 
       // transitionable traits to show filter relevance

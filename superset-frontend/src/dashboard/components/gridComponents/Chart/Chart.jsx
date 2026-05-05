@@ -232,7 +232,14 @@ const Chart = props => {
       const computedHeight = getComputedStyle(
         headerRef.current,
       ).getPropertyValue('height');
-      const height = parseInt(computedHeight, 10) || DEFAULT_HEADER_HEIGHT;
+      /* parseInt вернёт 0 для "0px" → falsy → fallback на DEFAULT.
+         Для ext-* плагинов SliceHeader коллапсирован CSS (height:0),
+         и Chart.jsx вычитал бы 22px впустую. NaN-проверка отделяет
+         "у элемента нет высоты" от "у элемента высота 0". */
+      const parsedHeight = parseInt(computedHeight, 10);
+      const height = Number.isNaN(parsedHeight)
+        ? DEFAULT_HEADER_HEIGHT
+        : parsedHeight;
       return height + marginBottom;
     }
     return DEFAULT_HEADER_HEIGHT;

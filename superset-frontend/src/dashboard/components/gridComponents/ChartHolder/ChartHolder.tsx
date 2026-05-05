@@ -413,10 +413,20 @@ const ChartHolder = ({
   }, [vizType, resizeConfig.heightStep, resizeConfig.heightGutter]);
 
   const { chartWidth, chartHeight, outerH } = useMemo(() => {
+    /* Для ext-* плагинов wrapper.padding=0 (DashboardBuilder.tsx
+       reset для всех ext-* в `&:has(div[data-test-viz-type^='ext-'])`),
+       поэтому Chart должен получить FULL outer без CHART_MARGIN —
+       иначе визуал на 32px меньше синей рамки ResizableContainer и
+       юзер видит зазор в edit-mode. Standard charts (table, bar,
+       big_number и т.п.) рендерятся в wrapper с padding:32px →
+       CHART_MARGIN компенсирует, поведение не меняется. */
+    const isExt = typeof vizType === 'string' && vizType.startsWith('ext-');
+    const chartMargin = isExt ? 0 : CHART_MARGIN;
+
     let width = 0;
     let height = 0;
 
-    /* gridWidth/Height = inner-area size (outer container − CHART_MARGIN).
+    /* gridWidth/Height = inner-area size (outer container − chartMargin).
        Используем resizeConfig как единый источник истины: outer =
        (widthStep + gutterWidth) * widthMultiple - gutterWidth.
        Это гарантирует совпадение outer container size (Resizable) и
@@ -430,8 +440,8 @@ const ChartHolder = ({
       (resizeConfig.heightStep + heightGutter) *
         resizeConfig.heightMultipleResolved -
       heightGutter;
-    const gridWidth = Math.floor(outerW - CHART_MARGIN);
-    const gridHeight = Math.floor(outerH - CHART_MARGIN);
+    const gridWidth = Math.floor(outerW - chartMargin);
+    const gridHeight = Math.floor(outerH - chartMargin);
     /*
        Responsive-mode: только когда измеренная ширина МЕНЬШЕ расчётной
        (viewport не помещает grid — нужно сжать чарт). Расширение через
@@ -444,18 +454,18 @@ const ChartHolder = ({
     const isResponsive =
       !editMode &&
       measuredWidth > 0 &&
-      measuredWidth + GRID_BASE_UNIT < gridWidth + CHART_MARGIN;
+      measuredWidth + GRID_BASE_UNIT < gridWidth + chartMargin;
 
     if (isFullSize) {
-      width = window.innerWidth - CHART_MARGIN;
-      height = window.innerHeight - CHART_MARGIN;
+      width = window.innerWidth - chartMargin;
+      height = window.innerHeight - chartMargin;
     } else if (isResponsive) {
       // Responsive: CSS overrides changed container size, use measured values
-      width = measuredWidth - CHART_MARGIN;
+      width = measuredWidth - chartMargin;
       // Use measured height if container was stretched by flex (align-items: stretch)
       height =
-        measuredHeight > 0 && measuredHeight > gridHeight + CHART_MARGIN
-          ? measuredHeight - CHART_MARGIN
+        measuredHeight > 0 && measuredHeight > gridHeight + chartMargin
+          ? measuredHeight - chartMargin
           : gridHeight;
     } else {
       width = gridWidth;
@@ -482,6 +492,7 @@ const ChartHolder = ({
     isFullSize,
     measuredWidth,
     measuredHeight,
+    vizType,
   ]);
 
   /* Wrap onResizeStop. ResizableContainer вернёт {width, height} в
