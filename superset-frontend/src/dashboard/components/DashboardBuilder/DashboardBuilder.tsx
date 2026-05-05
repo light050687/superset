@@ -442,27 +442,43 @@ const StyledDashboardContent = styled.div<{
           height: 100% !important;
         }
 
-        /* Card-fit: визуал плагина (chart-holder и его дети) заполняет
-           всю высоту resizable-container. Без этого props.height приходит
-           как gridHeight (вычисленный по heightMultipleResolved), а
-           resizable-container может быть выше — в edit-mode видна
-           пустота под Card до синей пунктирной рамки. */
-        & .dashboard-component-chart-holder {
-          height: 100% !important;
-          min-height: 100% !important;
-          display: flex !important;
-          flex-direction: column !important;
-        }
-        & .dashboard-component-chart-holder > .chart-slice,
-        & .dashboard-component-chart-holder > .dashboard-chart {
+        /* Card-fit: визуал ext-* плагина заполняет всю высоту
+           ResizableContainer. Без этого Chart.jsx передаёт inline
+           height = chartHeight - headerHeight в SliceContainer
+           (=.chart-slice), и в edit-mode визуал короче синей
+           пунктирной рамки на CHART_MARGIN(32) + headerHeight(22) = 54px.
+
+           !important перебивают inline style="height:566px" от React
+           и inline style="width:Npx;height:Npx;" с ext-* root. */
+        height: 100% !important;
+        min-height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+
+        /* SliceContainer (.chart-slice) с inline height={chartHeight-22}
+           — перетягиваем на 100% контейнера через flex grow. */
+        & > .chart-slice {
           flex: 1 1 auto !important;
           height: 100% !important;
+          max-height: none !important;
           min-height: 0 !important;
         }
-        & .dashboard-component-chart-holder .slice_container,
-        & .dashboard-component-chart-holder .chart-container {
+
+        /* Промежуточные обёртки внутри chart-slice — все height:100%. */
+        & .dashboard-chart,
+        & .chart-container,
+        & .slice_container,
+        & .slice_container > div {
           height: 100% !important;
           min-height: 0 !important;
+        }
+
+        /* ext-* plugin Root обычно имеет inline width/height в px через
+           styled-component props (StructureDonutRoot и аналоги).
+           Перетираем на 100% чтобы визуал ровно === ResizableContainer. */
+        & div[data-test-viz-type^='ext-'] > * {
+          width: 100% !important;
+          height: 100% !important;
         }
       }
 
