@@ -30,6 +30,19 @@
  *   Chart.componentDidMount → runQuery → priority hook → isInView=false
  *   (ещё нет IO data) → skip → never fires (race condition).
  *
+ * STICKY VISIBILITY (для render — НЕ для priority):
+ *   isVisible() возвращает true для любого chart, который КОГДА-ЛИБО был
+ *   intersecting (everSeenRef). Это потому, что Chart.tsx использует
+ *   isInView как условие рендера — `isInView ? <ChartRenderer/> :
+ *   <Loading/>`. Без sticky уже отрисованный chart при scroll'е назад
+ *   заменяется на спиннер → визуально «пропадает». Sticky гарантирует:
+ *   первый раз увидел → остался отрендеренным навсегда.
+ *
+ *   getPriority() остаётся НЕ-sticky (visibleIdsRef.current напрямую) —
+ *   chartFetchQueue должна приоритизировать фактический текущий viewport,
+ *   а не historical sightings. Sticky в priority дал бы ложно-высокий
+ *   ранг чартам, которые юзер давно проскроллил мимо.
+ *
  * rootMargin '200px 0px' — preload 200px до пересечения viewport'а
  * (чарт начинает грузиться, когда подходит на 200px к видимой области —
  * убирает «blank panel» feel при scroll).
@@ -70,6 +83,7 @@ export function ViewportPriorityProvider({
   enabled = true,
 }: ViewportPriorityProviderProps) {
   const visibleIdsRef = useRef<Set<number>>(new Set());
+  const everSeenRef = useRef<Set<number>>(new Set()); // sticky: для render-decisions
   const positionRef = useRef<Map<number, number>>(new Map()); // chartId → top Y px (relative to document)
   const initialReceivedRef = useRef<boolean>(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -98,9 +112,11 @@ export function ViewportPriorityProvider({
           if (entry.isIntersecting) {
             if (!visibleIdsRef.current.has(id)) {
               visibleIdsRef.current.add(id);
+              everSeenRef.current.add(id); // sticky для render
               changed = true;
             }
           } else if (visibleIdsRef.current.delete(id)) {
+            // priority поменялся (visible→not), но render не должен mount/unmount
             changed = true;
           }
         });
@@ -117,6 +133,7 @@ export function ViewportPriorityProvider({
       obs.disconnect();
       observerRef.current = null;
       visibleIdsRef.current.clear();
+      everSeenRef.current.clear();
       positionRef.current.clear();
       initialReceivedRef.current = false;
     };
@@ -135,7 +152,11 @@ export function ViewportPriorityProvider({
       // Initial state: до первого IO callback все visible — иначе
       // controller'у нечего fire'нуть до первого scroll'а (race condition).
       if (!initialReceivedRef.current) return true;
-      return visibleIdsRef.current.has(chartId);
+      // Sticky: once-seen-stays-seen (для render). См. STICKY VISIBILITY
+      // в file header — Chart.tsx использует isInView как условие
+      // рендера, поэтому без sticky уже отрисованный chart исчезает на
+      // обратном scroll'е.
+      return everSeenRef.current.has(chartId);
     },
     [enabled],
   );
@@ -143,12 +164,14 @@ export function ViewportPriorityProvider({
     (chartId: number) => {
       if (!enabled) return 0;
       const top = positionRef.current.get(chartId) ?? 0;
-      const visible = isVisible(chartId);
+      // Priority НЕ-sticky — отражает фактический текущий viewport, чтобы
+      // chartFetchQueue приоритизировала видимые сейчас, а не historical.
+      const currentlyVisible = visibleIdsRef.current.has(chartId);
       // visible: -top (отрицательное, sorted top-down → меньше = раньше)
       // off-screen: 1000 + top (большое значение, в конец очереди)
-      return visible ? -top : 1000 + top;
+      return currentlyVisible ? -top : 1000 + top;
     },
-    [enabled, isVisible],
+    [enabled],
   );
 
   const value = useMemo<ChartViewportContextValue>(
