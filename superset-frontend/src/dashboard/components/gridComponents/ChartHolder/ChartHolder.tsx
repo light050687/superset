@@ -240,11 +240,19 @@ const ChartHolder = ({
   const { state: gridGuides } = useGridGuides();
 
   /* metaOuter — outer pixel size исходя из ТЕКУЩЕГО состояния meta.
-     Инвариант для render. Для sub-mode формула:
-       outer = subStep * widthSub  (= cellW + colGap, без -colGap в конце)
-     Это даёт canvas-right = cell-right edge (с учётом padding 16),
-     то есть chart визуально занимает целое количество cell+gap'ов и
-     правый край canvas совпадает с правой стенкой cell. */
+     Инвариант для render.
+
+     Для sub-mode используется col-anchored формула: правый край
+     K-го sub-cell вычисляется относительно начала dashboard-колонки
+     `col`, в которую этот sub-cell попадает. subCellW остаётся float
+     (без Math.round), чтобы за 12 dashboard-колонок не накапливать
+     sub-pixel drift — иначе snap карточки и cells overlay
+     рассинхронизируются на ~3-4px (см. DashboardGuides.tsx).
+
+     Для default columnGap == GRID_GUTTER_SIZE col-anchored math
+     эквивалентен линейной (subCellW+colGap)*K - colGap, но при
+     custom columnGap col-anchored остаётся точным (cells выровнены
+     с реальными dashboard-колонками независимо от gap'ов). */
   const metaOuter = useMemo(() => {
     const meta = component.meta as any;
     if (meta.freePxWidth != null && meta.freePxHeight != null) {
@@ -254,17 +262,20 @@ const ChartHolder = ({
       const sub = meta.subdivisionsUsed;
       const colGap = gridGuides.columnGap;
       const rowGap = gridGuides.rowGap;
-      const subCellW = Math.max(
+      const subCellWFloat = Math.max(
         1,
-        Math.round((columnWidth - (sub - 1) * colGap) / sub),
+        (columnWidth - (sub - 1) * colGap) / sub,
       );
-      /* Симметричная OLD formula:
-         w: outer = K*subStepX - colGap (outer right = cell K-1 right)
-         h: outer = K*subStepY - rowGap (outer bottom = cell K-1 bottom) */
-      const w = (subCellW + colGap) * meta.widthSub - colGap;
+      const K = meta.widthSub as number;
+      const col = Math.ceil(K / sub) - 1;
+      const s = (K - 1) % sub;
+      const w =
+        col * (columnWidth + GRID_GUTTER_SIZE) +
+        s * (subCellWFloat + colGap) +
+        subCellWFloat;
       const h =
         meta.heightSub != null
-          ? (subCellW + rowGap) * meta.heightSub - rowGap
+          ? (subCellWFloat + rowGap) * meta.heightSub - rowGap
           : component.meta.height * GRID_BASE_UNIT;
       return { w, h };
     }
@@ -336,17 +347,16 @@ const ChartHolder = ({
       const sub = effectiveSub;
       const colGap = gridGuides.columnGap;
       const rowGap = gridGuides.rowGap;
+      /* widthStep для re-resizable — integer (re-resizable плохо
+         работает с float grid/snap значениями: при float step delta
+         округляется некорректно и chart resize становится unstable).
+         metaOuter и snap-positions всё равно используют float
+         формулу через col-anchored math (см. metaOuter и
+         ResizableContainer.snapPositions). */
       const subCellWidth = Math.max(
         1,
         Math.round((columnWidth - (sub - 1) * colGap) / sub),
       );
-      /* Симметричная OLD formula обе оси (outer на cell K-1 right/bottom):
-           horizontal: widthStep=cellW, gutterWidth=colGap
-                     → outer = K*subStepX - colGap
-           vertical:   heightStep=cellH, heightGutter=rowGap
-                     → outer = K*subStepY - rowGap
-         Snap через snap-array prop + snapGap в ResizableContainer для
-         плавного drag. Cells в DashboardGuides на тех же позициях. */
       const subStepX = subCellWidth + colGap;
       const subStepY = subCellWidth + rowGap;
       const startSubW = Math.max(1, Math.round((metaOuter.w + colGap) / subStepX));
@@ -427,19 +437,13 @@ const ChartHolder = ({
     let height = 0;
 
     /* gridWidth/Height = inner-area size (outer container − chartMargin).
-       Используем resizeConfig как единый источник истины: outer =
-       (widthStep + gutterWidth) * widthMultiple - gutterWidth.
-       Это гарантирует совпадение outer container size (Resizable) и
-       inner chart size (Chart prop) во всех режимах. */
-    const outerW =
-      (resizeConfig.widthStep + resizeConfig.gutterWidth) *
-        resizeConfig.widthMultiple -
-      resizeConfig.gutterWidth;
-    const heightGutter = resizeConfig.heightGutter ?? 0;
-    const outerH =
-      (resizeConfig.heightStep + heightGutter) *
-        resizeConfig.heightMultipleResolved -
-      heightGutter;
+       Используем metaOuter (col-anchored) как единый источник истины
+       для outer pixel size: правый край карточки совпадает pixel-в-pixel
+       с правым краем cells overlay в DashboardGuides при non-integer
+       columnWidth. Math.round обязателен — тот же что cells overlay
+       (Math.round(rightFloat)) для pixel-perfect alignment. */
+    const outerW = Math.round(metaOuter.w);
+    const outerH = Math.round(metaOuter.h);
     const gridWidth = Math.floor(outerW - chartMargin);
     const gridHeight = Math.floor(outerH - chartMargin);
     /*
@@ -475,19 +479,14 @@ const ChartHolder = ({
     return {
       chartWidth: width,
       chartHeight: height,
-      /* outerH = full grid cell height = (heightStep + heightGutter) ×
-         heightMultipleResolved - heightGutter. Computed value (НЕ
-         хардкод). Та же formula что re-resizable использует для inline
-         height. Используется как minHeight на chart-holder в loading
-         state — гарантирует место для plugin-internal skeleton до mount
-         плагина (race window). После mount плагин рендерит свой
-         SkeletonBlock внутри chart-holder с правильным padding =
-         exact 1:1 match с loaded card (best-practice react-loading-
-         skeleton: same DOM tree → same size). */
+      /* outerH = metaOuter.h (col-anchored). Используется как minHeight
+         на chart-holder в loading state — гарантирует место для
+         plugin-internal skeleton до mount плагина. */
       outerH,
     };
   }, [
     resizeConfig,
+    metaOuter,
     editMode,
     isFullSize,
     measuredWidth,
@@ -613,6 +612,12 @@ const ChartHolder = ({
         heightStep={resizeConfig.heightStep}
         heightGutter={resizeConfig.heightGutter ?? 0}
         heightMultiple={resizeConfig.heightMultipleResolved}
+        /* Math.round обязателен — DashboardGuides рендерит cells с
+           правым краем = Math.round(rightFloat). Без round'а size в
+           re-resizable = float, CSS subpixel renderer даёт расхождение
+           0-1px между правым краем карточки и правым краем cell. */
+        outerWidthOverride={Math.round(metaOuter.w)}
+        outerHeightOverride={Math.round(metaOuter.h)}
         minWidthMultiple={resizeConfig.minWidthMultiple}
         minHeightMultiple={
           vizMinHeightMultiple ??

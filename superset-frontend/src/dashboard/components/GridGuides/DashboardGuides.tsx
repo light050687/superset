@@ -104,19 +104,26 @@ export const DashboardGuides: FC<DashboardGuidesProps> = ({
 
   if (!columnsActive && !showGrid) return null;
 
-  /* Total cells per row = 12 × subdivisions. */
-  const sub = Math.max(1, subdivisions);
-  const totalCols = GRID_COLUMN_COUNT * sub;
+  /* Cells привязаны к началу каждой dashboard-колонки, а не к
+     continuous subStepX через 12*sub штук подряд. Это устраняет
+     sub-pixel drift: при non-integer columnWidth (типичный случай —
+     viewport не делится без остатка на 12) Math.round усекал часть
+     px, и за 12 dashboard-колонок накапливалось до ~4px смещения
+     между cells overlay и реальными границами карточек.
 
-  /* cellW из columnWidth prop (тот же source что ChartHolder.subCellWidth)
-     с Math.round чтобы получить integer pixels — ChartHolder использует
-     ту же rounded формулу, чтобы snap позиции и cell позиции совпадали
-     pixel-в-pixel без sub-pixel drift. */
-  const cellW = columnWidth > 0
-    ? Math.max(1, Math.round((columnWidth - (sub - 1) * columnGap) / sub))
-    : DEFAULT_CELL_HEIGHT_FALLBACK;
-  const cellH = cellW; // squares
-  const subStepX = cellW + columnGap;
+     Теперь:
+       - subCellW = float (без округления здесь);
+       - colLeft = col × (columnWidth + GRID_GUTTER_SIZE) — точная
+         позиция dashboard-колонки;
+       - cells внутри колонки распределяются от colLeft, ошибка
+         округления накапливается только внутри одной колонки
+         (max sub-1 cells, ~0.5px), не через все 48. */
+  const sub = Math.max(1, subdivisions);
+  const colStepX = columnWidth + GRID_GUTTER_SIZE;
+  const subSpan = columnWidth - (sub - 1) * columnGap;
+  const subCellWFloat =
+    columnWidth > 0 ? Math.max(1, subSpan / sub) : DEFAULT_CELL_HEIGHT_FALLBACK;
+  const cellH = Math.max(1, Math.round(subCellWFloat));
   const subStepY = cellH + rowGap;
 
   /* Сколько рядов рендерить: чтобы покрыть containerHeight + запас. */
@@ -125,20 +132,18 @@ export const DashboardGuides: FC<DashboardGuidesProps> = ({
     Math.ceil((containerHeight + rowGap) / subStepY) + 2,
   );
 
-  /* Cell positions точно совпадают с ChartHolder snap:
-       Cell at (col, row): left = col*subStepX, top = row*subStepY.
-     Cell K-1 right edge = K*subStepX - colGap.
-     Cell K-1 bottom edge = K*subStepY - rowGap.
-     Это тот же math что ChartHolder.metaOuter использует. */
   const cells: { left: number; top: number; w: number; h: number }[] = [];
   for (let row = 0; row < rowsCount; row += 1) {
-    for (let col = 0; col < totalCols; col += 1) {
-      cells.push({
-        left: col * subStepX,
-        top: row * subStepY,
-        w: cellW,
-        h: cellH,
-      });
+    const top = row * subStepY;
+    for (let col = 0; col < GRID_COLUMN_COUNT; col += 1) {
+      const colLeft = col * colStepX;
+      for (let s = 0; s < sub; s += 1) {
+        const leftFloat = colLeft + s * (subCellWFloat + columnGap);
+        const rightFloat = leftFloat + subCellWFloat;
+        const left = Math.round(leftFloat);
+        const w = Math.max(1, Math.round(rightFloat) - left);
+        cells.push({ left, top, w, h: cellH });
+      }
     }
   }
 

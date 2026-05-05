@@ -51,6 +51,14 @@ export interface ResizableContainerProps {
    *  gutterWidth) — schema layout meta не меняется. ChartHolder этот
    *  prop НЕ передаёт, у него свой effectiveMode pipeline. */
   gridSnapColumnBase?: number;
+  /** Точный outer width (px), переопределяющий линейную формулу
+   *  `(widthStep + gutterWidth) * widthMultiple - gutterWidth`.
+   *  Используется когда consumer (ChartHolder col-anchored metaOuter)
+   *  знает точный размер с учётом sub-pixel: позволяет правому краю
+   *  карточки совпасть pixel-в-pixel с правым краем cells overlay при
+   *  non-integer columnWidth. Аналог для height. */
+  outerWidthOverride?: number;
+  outerHeightOverride?: number;
   widthStep?: number;
   heightStep?: number;
   widthMultiple: number;
@@ -180,6 +188,8 @@ export default function ResizableContainer({
   widthStep = GRID_BASE_UNIT,
   heightStep = GRID_BASE_UNIT,
   gridSnapColumnBase,
+  outerWidthOverride,
+  outerHeightOverride,
   minWidthMultiple = 1,
   maxWidthMultiple = proxyToInfinity,
   minHeightMultiple = 1,
@@ -222,43 +232,53 @@ export default function ResizableContainer({
 
        (A) gridSnapColumnBase задан (col-mode consumer: Column,
        Markdown, DynamicComponent). Производим sub-cell snap из
-       columnWidth + sub:
-         subCellW = round((columnWidth - (sub-1)*colGap) / sub)
-         subStepX = subCellW + colGap
-         subStepY = subCellW + rowGap
-       Save (onResizeStop math) ПО-прежнему round'ит к col-units
-       через passed widthStep+gutterWidth.
+       columnWidth + sub.
 
        (B) gridSnapColumnBase не задан (ChartHolder с уже sub-настроенным
-       widthStep/gutterWidth). Используем passed step напрямую. */
-    let stepX: number;
+       widthStep/gutterWidth). Восстанавливаем columnWidth обратно из
+       passed widthStep × sub + (sub-1) × gutterWidth, чтобы
+       использовать одну col-anchored формулу для обеих веток.
+
+       Snap-x вычисляется как правый край K-го sub-cell с привязкой к
+       началу dashboard-колонки col = ceil(K/sub) - 1. subCellW float —
+       без накопительного drift через 12 dashboard-колонок. Финальная
+       round только на готовом px-значении (1 раз на K). */
+    let baseColumnWidth: number;
+    let baseColGap: number;
     let stepY: number;
-    let gapX: number;
     let gapY: number;
     if (gridSnapColumnBase != null && gridSnapColumnBase > 0) {
-      const colGap = gridGuides.columnGap;
-      const rowGap = gridGuides.rowGap;
+      baseColumnWidth = gridSnapColumnBase;
+      baseColGap = gridGuides.columnGap;
       const subCellW = Math.max(
         1,
-        Math.round((gridSnapColumnBase - (sub - 1) * colGap) / sub),
+        (gridSnapColumnBase - (sub - 1) * baseColGap) / sub,
       );
-      stepX = subCellW + colGap;
-      stepY = subCellW + rowGap;
-      gapX = colGap;
-      gapY = rowGap;
+      stepY = subCellW + gridGuides.rowGap;
+      gapY = gridGuides.rowGap;
     } else {
-      stepX = widthStep + gutterWidth;
+      baseColumnWidth = widthStep * sub + (sub - 1) * gutterWidth;
+      baseColGap = gutterWidth;
       stepY = heightStep + heightGutter;
-      gapX = gutterWidth;
       gapY = heightGutter;
     }
+
+    const subCellWFloat = Math.max(
+      1,
+      (baseColumnWidth - (sub - 1) * baseColGap) / sub,
+    );
+    const colStepX = baseColumnWidth + GRID_GUTTER_SIZE;
 
     const xs: number[] = [];
     const ys: number[] = [];
     const maxCount = 200;
     for (let k = 1; k <= maxCount; k += 1) {
-      xs.push(k * stepX - gapX); // OLD: K*subStepX - gap
-      ys.push(k * stepY - gapY); // OLD: K*subStepY - gap
+      const col = Math.ceil(k / sub) - 1;
+      const s = (k - 1) % sub;
+      const right =
+        col * colStepX + s * (subCellWFloat + baseColGap) + subCellWFloat;
+      xs.push(Math.round(right));
+      ys.push(Math.round(k * stepY - gapY));
     }
     return { x: xs, y: ys };
   }, [
@@ -362,18 +382,22 @@ export default function ResizableContainer({
   const size = useMemo(
     () => ({
       width: adjustableWidth
-        ? (widthStep + gutterWidth) * widthMultiple - gutterWidth
+        ? outerWidthOverride ??
+          (widthStep + gutterWidth) * widthMultiple - gutterWidth
         : (staticWidthMultiple && staticWidthMultiple * widthStep) ||
           staticWidth ||
           undefined,
       height: adjustableHeight
-        ? (heightStep + heightGutter) * heightMultiple - heightGutter
+        ? outerHeightOverride ??
+          (heightStep + heightGutter) * heightMultiple - heightGutter
         : (staticHeightMultiple && staticHeightMultiple * heightStep) ||
           staticHeight ||
           undefined,
     }),
     [
       adjustableWidth,
+      outerWidthOverride,
+      outerHeightOverride,
       widthStep,
       gutterWidth,
       widthMultiple,

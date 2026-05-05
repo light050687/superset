@@ -236,10 +236,13 @@ const DashboardContentWrapper = styled.div`
         &:after {
           content: '';
           position: absolute;
-          width: 100%;
-          height: 100%;
-          top: 0;
-          left: 0;
+          /* inset:0 + border-box: pseudo right/bottom edge точно совпадает
+             с chart-holder edges. Default content-box давал width=100% +
+             border=1px → визуально :after на 2px шире → пунктирная рамка
+             выходила за правый край карточки и расходилась с DashboardGuides
+             cells overlay. */
+          inset: 0;
+          box-sizing: border-box;
           z-index: 1;
           pointer-events: none;
           border: 1px solid transparent;
