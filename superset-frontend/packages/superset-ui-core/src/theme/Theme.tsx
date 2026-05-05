@@ -100,6 +100,7 @@ export class Theme {
     fontSizeHeading4: 18,
     fontSizeHeading5: 16,
     lineHeight: 1.5,
+    fontWeightLight: 300,
     fontWeightNormal: 400,
     fontWeightStrong: 500,
   };
