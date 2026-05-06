@@ -38,6 +38,20 @@ function formatValue(cell, unit, suffix, decimals, auto) {
         return (0, formatRussian_1.formatRussianSmartEx)(cell.value, decimals, suffix);
     return `${cell.value.toFixed(decimals)}${suffix ? ` ${suffix}` : ''}`;
 }
+/**
+ * Truncate long axis label to N chars, suffixing «…».
+ * Returns the original string when maxChars <= 0 or label fits.
+ * Single ellipsis char (…) keeps width tight inside cell.
+ */
+function truncateLabel(label, maxChars) {
+    if (!Number.isFinite(maxChars) || maxChars <= 0)
+        return label;
+    if (label.length <= maxChars)
+        return label;
+    if (maxChars <= 1)
+        return '…';
+    return `${label.slice(0, maxChars - 1).trimEnd()}…`;
+}
 function formatTotals(slice, unit, suffix, decimals, auto) {
     if (!slice)
         return '—';
@@ -66,7 +80,49 @@ const INITIAL_PROFILE = {
     rows: [],
 };
 function HeatmapPivot(props) {
-    const { width, height, rows: rowsRaw, cols, cells, rowTotals, colTotals, grandTotal, thresholds, defaultUnit, unitSuffix, decimals, autoFormatRussian, showTotalsDefault, headerText, headerSubtitle, emitFilter, setDataMask, drillQueryParams, mockMode, dataState, errorMessage, } = props;
+    const { width, height, rows: rowsRaw, cols: colsBase, cells: cellsBase, rowTotals: rowTotalsBase, colTotals: colTotalsBase, grandTotal: grandTotalBase, thresholds, defaultUnit, unitSuffix, decimals, autoFormatRussian, showTotalsDefault, headerText, headerSubtitle, emitFilter, setDataMask, drillQueryParams, mockMode, dataState, errorMessage, colAxisOptions, colLabelMaxChars, rowLabelMaxChars, } = props;
+    // ── Axis switcher (mock-mode only) ──
+    const [axisKey, setAxisKey] = (0, react_1.useState)(() => colAxisOptions?.[0]?.key ?? 'division');
+    // Sync axisKey when options arrive/change
+    (0, react_1.useEffect)(() => {
+        if (colAxisOptions && colAxisOptions.length > 0) {
+            const exists = colAxisOptions.some((o) => o.key === axisKey);
+            if (!exists)
+                setAxisKey(colAxisOptions[0].key);
+        }
+    }, [colAxisOptions, axisKey]);
+    const activeAxis = (0, react_1.useMemo)(() => colAxisOptions?.find((o) => o.key === axisKey) ?? null, [colAxisOptions, axisKey]);
+    // When axisKey changes, swap dataset slice. In non-mock mode use props directly.
+    const cols = activeAxis ? activeAxis.cols : colsBase;
+    const cells = activeAxis ? activeAxis.cells : cellsBase;
+    const rowTotals = activeAxis ? activeAxis.rowTotals : rowTotalsBase;
+    const colTotals = activeAxis ? activeAxis.colTotals : colTotalsBase;
+    const grandTotal = activeAxis ? activeAxis.grandTotal : grandTotalBase;
+    // Dropdown open state
+    const [axisOpen, setAxisOpen] = (0, react_1.useState)(false);
+    const axisRootRef = (0, react_1.useRef)(null);
+    (0, react_1.useEffect)(() => {
+        if (!axisOpen)
+            return undefined;
+        const onDown = (e) => {
+            if (!axisRootRef.current)
+                return;
+            if (!axisRootRef.current.contains(e.target))
+                setAxisOpen(false);
+        };
+        const onKey = (e) => {
+            if (e.key === 'Escape') {
+                setAxisOpen(false);
+                e.stopPropagation();
+            }
+        };
+        document.addEventListener('mousedown', onDown);
+        document.addEventListener('keydown', onKey, true);
+        return () => {
+            document.removeEventListener('mousedown', onDown);
+            document.removeEventListener('keydown', onKey, true);
+        };
+    }, [axisOpen]);
     const rowAxisColName = drillQueryParams?.rowAxisCol ?? '';
     const colAxisColName = drillQueryParams?.colAxisCol ?? '';
     // ── Local state ──
@@ -443,18 +499,21 @@ function HeatmapPivot(props) {
     // ── Early returns for non-populated states ──
     if (dataState === 'loading') {
         /* DS 2.0 §08: aria-busy="true" + skeleton */
-        return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { "data-theme": theme, className: styles_1.ROOT_CLASS, width: width, height: height, "aria-busy": "true", "aria-live": "polite", children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsxs)(styles_1.Card, { children: [(0, jsx_runtime_1.jsx)(styles_1.Header, { children: (0, jsx_runtime_1.jsx)(styles_1.TitleBlock, { children: (0, jsx_runtime_1.jsx)(styles_1.Title, { children: headerText }) }) }), (0, jsx_runtime_1.jsxs)(styles_1.SkeletonGrid, { children: [(0, jsx_runtime_1.jsx)("div", { className: "sk hdr" }), (0, jsx_runtime_1.jsx)("div", { className: "sk hdr" }), (0, jsx_runtime_1.jsx)("div", { className: "sk hdr" }), (0, jsx_runtime_1.jsx)("div", { className: "sk hdr" }), (0, jsx_runtime_1.jsx)("div", { className: "sk hdr" }), (0, jsx_runtime_1.jsx)("div", { className: "sk hdr" }), Array.from({ length: 25 }).map((_, i) => (0, jsx_runtime_1.jsx)("div", { className: "sk" }, i))] })] })] }));
+        return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { "data-theme": theme, className: styles_1.ROOT_CLASS, width: width, height: height, "aria-busy": "true", "aria-live": "polite", children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsxs)(styles_1.Card, { children: [(0, jsx_runtime_1.jsx)(styles_1.Header, { children: (0, jsx_runtime_1.jsx)(styles_1.TitleBlock, { children: (0, jsx_runtime_1.jsxs)(styles_1.Title, { children: [headerText, mockMode && (0, jsx_runtime_1.jsx)(styles_1.MockBadge, { children: "\u0422\u0415\u0421\u0422" })] }) }) }), (0, jsx_runtime_1.jsxs)(styles_1.SkeletonGrid, { children: [(0, jsx_runtime_1.jsx)("div", { className: "sk hdr" }), (0, jsx_runtime_1.jsx)("div", { className: "sk hdr" }), (0, jsx_runtime_1.jsx)("div", { className: "sk hdr" }), (0, jsx_runtime_1.jsx)("div", { className: "sk hdr" }), (0, jsx_runtime_1.jsx)("div", { className: "sk hdr" }), (0, jsx_runtime_1.jsx)("div", { className: "sk hdr" }), Array.from({ length: 25 }).map((_, i) => (0, jsx_runtime_1.jsx)("div", { className: "sk" }, i))] })] })] }));
     }
     if (dataState === 'error') {
         return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { "data-theme": theme, className: styles_1.ROOT_CLASS, width: width, height: height, children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsx)(styles_1.Card, { children: (0, jsx_runtime_1.jsx)(styles_1.StateOverlay, { role: "alert", children: errorMessage ?? 'Произошла ошибка при загрузке данных' }) })] }));
     }
     if (dataState === 'empty' && cells.size === 0) {
-        return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { "data-theme": theme, className: styles_1.ROOT_CLASS, width: width, height: height, children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsxs)(styles_1.Card, { children: [(0, jsx_runtime_1.jsx)(styles_1.Header, { children: (0, jsx_runtime_1.jsx)(styles_1.TitleBlock, { children: (0, jsx_runtime_1.jsx)(styles_1.Title, { children: headerText }) }) }), (0, jsx_runtime_1.jsx)(styles_1.StateOverlay, { children: errorMessage ?? 'Нет данных за выбранный период' })] })] }));
+        return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { "data-theme": theme, className: styles_1.ROOT_CLASS, width: width, height: height, children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsxs)(styles_1.Card, { children: [(0, jsx_runtime_1.jsx)(styles_1.Header, { children: (0, jsx_runtime_1.jsx)(styles_1.TitleBlock, { children: (0, jsx_runtime_1.jsxs)(styles_1.Title, { children: [headerText, mockMode && (0, jsx_runtime_1.jsx)(styles_1.MockBadge, { children: "\u0422\u0415\u0421\u0422" })] }) }) }), (0, jsx_runtime_1.jsx)(styles_1.StateOverlay, { children: errorMessage ?? 'Нет данных за выбранный период' })] })] }));
     }
     // ── Render ──
     const isPartial = dataState === 'partial';
     const isStale = dataState === 'stale';
-    return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { "data-theme": theme, className: styles_1.ROOT_CLASS, width: width, height: height, children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsxs)(styles_1.Card, { style: { position: 'relative' }, children: [isStale && (0, jsx_runtime_1.jsx)(styles_1.StaleBar, { "aria-hidden": "true" }), (0, jsx_runtime_1.jsxs)(styles_1.Header, { children: [(0, jsx_runtime_1.jsxs)(styles_1.TitleBlock, { children: [(0, jsx_runtime_1.jsxs)(styles_1.Title, { children: [headerText, isPartial && ((0, jsx_runtime_1.jsx)(styles_1.PartialBadge, { title: "\u0427\u0430\u0441\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0445 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430", children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u043E" }))] }), (0, jsx_runtime_1.jsxs)(styles_1.Breadcrumbs, { role: "navigation", "aria-label": "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u0444\u0438\u043B\u044C\u0442\u0440\u043E\u0432", children: [(0, jsx_runtime_1.jsx)(styles_1.BreadcrumbCurrent, { children: headerSubtitle }), breadcrumbChips.length > 0 && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)(styles_1.BreadcrumbDot, { children: "\u00B7" }), (0, jsx_runtime_1.jsx)(styles_1.BreadcrumbCurrent, { children: "\u0424\u0438\u043B\u044C\u0442\u0440:" }), breadcrumbChips.map((chip, i) => ((0, jsx_runtime_1.jsxs)("span", { children: [(0, jsx_runtime_1.jsx)(styles_1.BreadcrumbSel, { children: chip }), i < breadcrumbChips.length - 1 && ((0, jsx_runtime_1.jsx)(styles_1.BreadcrumbPlus, { children: "+" }))] }, chip))), (0, jsx_runtime_1.jsx)(styles_1.BreadcrumbBack, { type: "button", onClick: clearAllFilters, "aria-label": "\u0421\u043D\u044F\u0442\u044C \u0432\u0441\u0435 \u0444\u0438\u043B\u044C\u0442\u0440\u044B", title: "\u0421\u043D\u044F\u0442\u044C (Esc)", children: "\u00D7" })] }))] })] }), (0, jsx_runtime_1.jsxs)(styles_1.Controls, { children: [(0, jsx_runtime_1.jsxs)(styles_1.Unit, { role: "tablist", "aria-label": "\u0415\u0434\u0438\u043D\u0438\u0446\u044B \u0438\u0437\u043C\u0435\u0440\u0435\u043D\u0438\u044F", children: [(0, jsx_runtime_1.jsx)(styles_1.UnitButton, { type: "button", on: unit === 'abs', onClick: () => setUnit('abs'), "aria-pressed": unit === 'abs', title: "\u0410\u0431\u0441\u043E\u043B\u044E\u0442\u043D\u043E\u0435 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435", children: unitSuffix.includes('₽') ? '₽' : 'Σ' }), (0, jsx_runtime_1.jsx)(styles_1.UnitButton, { type: "button", on: unit === 'pct', onClick: () => setUnit('pct'), "aria-pressed": unit === 'pct', title: "\u041F\u0440\u043E\u0446\u0435\u043D\u0442", children: "%" })] }), (0, jsx_runtime_1.jsxs)(styles_1.Chip, { type: "button", on: showTotals, onClick: () => setShowTotals((v) => !v), "aria-pressed": showTotals, title: "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0441\u0442\u0440\u043E\u043A\u0443 \u0438 \u043A\u043E\u043B\u043E\u043D\u043A\u0443 \u0438\u0442\u043E\u0433\u043E\u0432", children: [(0, jsx_runtime_1.jsx)("span", { className: "sigma", children: "\u03A3" }), (0, jsx_runtime_1.jsx)("span", { children: "\u0418\u0442\u043E\u0433\u0438" })] })] })] }), (0, jsx_runtime_1.jsx)(styles_1.PivotWrap, { children: (0, jsx_runtime_1.jsxs)(styles_1.Pivot, { role: "grid", "aria-label": headerText, children: [(0, jsx_runtime_1.jsx)("thead", { children: (0, jsx_runtime_1.jsxs)("tr", { children: [(0, jsx_runtime_1.jsx)("th", { className: "corner", scope: "col", "aria-label": "\u0424\u043E\u0440\u043C\u0430\u0442" }), cols.map((col) => {
+    return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { "data-theme": theme, className: styles_1.ROOT_CLASS, width: width, height: height, children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsxs)(styles_1.Card, { style: { position: 'relative' }, children: [isStale && (0, jsx_runtime_1.jsx)(styles_1.StaleBar, { "aria-hidden": "true" }), (0, jsx_runtime_1.jsxs)(styles_1.Header, { children: [(0, jsx_runtime_1.jsxs)(styles_1.TitleBlock, { children: [(0, jsx_runtime_1.jsxs)(styles_1.Title, { children: [headerText, mockMode && (0, jsx_runtime_1.jsx)(styles_1.MockBadge, { children: "\u0422\u0415\u0421\u0422" })] }), isPartial && ((0, jsx_runtime_1.jsx)(styles_1.PartialBadge, { title: "\u0427\u0430\u0441\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0445 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430", children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u043E" })), (0, jsx_runtime_1.jsxs)(styles_1.Breadcrumbs, { role: "navigation", "aria-label": "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u0444\u0438\u043B\u044C\u0442\u0440\u043E\u0432", children: [(0, jsx_runtime_1.jsx)(styles_1.BreadcrumbCurrent, { children: headerSubtitle }), breadcrumbChips.length > 0 && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)(styles_1.BreadcrumbDot, { children: "\u00B7" }), (0, jsx_runtime_1.jsx)(styles_1.BreadcrumbCurrent, { children: "\u0424\u0438\u043B\u044C\u0442\u0440:" }), breadcrumbChips.map((chip, i) => ((0, jsx_runtime_1.jsxs)("span", { children: [(0, jsx_runtime_1.jsx)(styles_1.BreadcrumbSel, { children: chip }), i < breadcrumbChips.length - 1 && ((0, jsx_runtime_1.jsx)(styles_1.BreadcrumbPlus, { children: "+" }))] }, chip))), (0, jsx_runtime_1.jsx)(styles_1.BreadcrumbBack, { type: "button", onClick: clearAllFilters, "aria-label": "\u0421\u043D\u044F\u0442\u044C \u0432\u0441\u0435 \u0444\u0438\u043B\u044C\u0442\u0440\u044B", title: "\u0421\u043D\u044F\u0442\u044C (Esc)", children: "\u00D7" })] }))] })] }), (0, jsx_runtime_1.jsxs)(styles_1.Controls, { children: [colAxisOptions && colAxisOptions.length > 1 && activeAxis && ((0, jsx_runtime_1.jsxs)(styles_1.AxisDropdownRoot, { ref: axisRootRef, children: [(0, jsx_runtime_1.jsx)(styles_1.AxisDropdownGhost, { "aria-hidden": "true", children: colAxisOptions.reduce((longest, o) => (o.label.length > longest.length ? o.label : longest), '') }), (0, jsx_runtime_1.jsxs)(styles_1.AxisDropdownPanel, { open: axisOpen, "data-open": axisOpen, children: [(0, jsx_runtime_1.jsx)(styles_1.AxisDropdownTrigger, { type: "button", "aria-haspopup": "listbox", "aria-expanded": axisOpen, "aria-label": "\u0413\u0440\u0443\u043F\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u043A\u043E\u043B\u043E\u043D\u043E\u043A", onClick: () => setAxisOpen((v) => !v), children: activeAxis.label }), axisOpen && ((0, jsx_runtime_1.jsx)(styles_1.AxisDropdownMenu, { role: "listbox", "aria-label": "\u0413\u0440\u0443\u043F\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u043A\u043E\u043B\u043E\u043D\u043E\u043A", children: colAxisOptions.map((opt) => ((0, jsx_runtime_1.jsx)(styles_1.AxisDropdownItem, { type: "button", role: "option", active: opt.key === axisKey, "aria-selected": opt.key === axisKey, onClick: () => {
+                                                                setAxisKey(opt.key);
+                                                                setAxisOpen(false);
+                                                            }, children: opt.label }, opt.key))) }))] })] })), (0, jsx_runtime_1.jsxs)(styles_1.Unit, { role: "tablist", "aria-label": "\u0415\u0434\u0438\u043D\u0438\u0446\u044B \u0438\u0437\u043C\u0435\u0440\u0435\u043D\u0438\u044F", children: [(0, jsx_runtime_1.jsx)(styles_1.UnitButton, { type: "button", on: unit === 'abs', onClick: () => setUnit('abs'), "aria-pressed": unit === 'abs', title: "\u0410\u0431\u0441\u043E\u043B\u044E\u0442\u043D\u043E\u0435 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435", children: unitSuffix.includes('₽') ? '₽' : 'Σ' }), (0, jsx_runtime_1.jsx)(styles_1.UnitButton, { type: "button", on: unit === 'pct', onClick: () => setUnit('pct'), "aria-pressed": unit === 'pct', title: "\u041F\u0440\u043E\u0446\u0435\u043D\u0442", children: "%" })] }), (0, jsx_runtime_1.jsx)(styles_1.Chip, { type: "button", on: showTotals, onClick: () => setShowTotals((v) => !v), "aria-pressed": showTotals, "aria-label": "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0441\u0442\u0440\u043E\u043A\u0443 \u0438 \u043A\u043E\u043B\u043E\u043D\u043A\u0443 \u0438\u0442\u043E\u0433\u043E\u0432", title: "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0441\u0442\u0440\u043E\u043A\u0443 \u0438 \u043A\u043E\u043B\u043E\u043D\u043A\u0443 \u0438\u0442\u043E\u0433\u043E\u0432", children: (0, jsx_runtime_1.jsx)("span", { className: "sigma", "aria-hidden": "true", children: "\u03A3" }) })] })] }), (0, jsx_runtime_1.jsx)(styles_1.PivotWrap, { children: (0, jsx_runtime_1.jsxs)(styles_1.Pivot, { role: "grid", "aria-label": headerText, children: [(0, jsx_runtime_1.jsx)("thead", { children: (0, jsx_runtime_1.jsxs)("tr", { children: [(0, jsx_runtime_1.jsx)("th", { className: "corner", scope: "col", "aria-label": "\u0424\u043E\u0440\u043C\u0430\u0442" }), cols.map((col) => {
                                                 const sorted = col.id === sortColId;
                                                 const arrow = sorted ? (sortDir === 'desc' ? '▾' : '▴') : '';
                                                 const className = [
@@ -462,10 +521,20 @@ function HeatmapPivot(props) {
                                                     col.id === colFilter ? 'filtered' : '',
                                                     col.id === hoverCol && !showTotals ? 'col-hl' : '',
                                                 ].filter(Boolean).join(' ');
-                                                return ((0, jsx_runtime_1.jsxs)("th", { scope: "col", className: className, onClick: (e) => onColHeaderClick(e, col), onDoubleClick: (e) => onColHeaderDblClick(e, col), onMouseEnter: (e) => onColHeaderEnter(e, col), onMouseLeave: onHeaderLeave, onMouseMove: onHeaderMove, tabIndex: 0, title: "\u041A\u043B\u0438\u043A \u2014 \u0441\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u043A\u0430 \u00B7 \u0434\u0432. \u043A\u043B\u0438\u043A \u2014 \u0444\u0438\u043B\u044C\u0442\u0440 \u00B7 \u21E7 \u043A\u043B\u0438\u043A \u2014 \u0441\u0440\u0430\u0432\u043D\u0438\u0442\u044C", children: [col.name, arrow && (0, jsx_runtime_1.jsx)("span", { className: "sort-arrow", children: arrow })] }, col.id));
-                                            }), showTotals && ((0, jsx_runtime_1.jsx)("th", { className: "totals-col", scope: "col", "aria-label": "\u0418\u0442\u043E\u0433\u043E", children: "\u03A3" }))] }) }), (0, jsx_runtime_1.jsxs)("tbody", { children: [rows.map((row) => {
+                                                const shortLabel = truncateLabel(col.name, colLabelMaxChars);
+                                                const wasTruncated = shortLabel !== col.name;
+                                                return ((0, jsx_runtime_1.jsxs)("th", { scope: "col", className: className, onClick: (e) => onColHeaderClick(e, col), onDoubleClick: (e) => onColHeaderDblClick(e, col), onMouseEnter: (e) => onColHeaderEnter(e, col), onMouseLeave: onHeaderLeave, onMouseMove: onHeaderMove, tabIndex: 0, title: wasTruncated
+                                                        ? `${col.name} — клик: сортировка, дв. клик: фильтр, ⇧ клик: сравнить`
+                                                        : 'Клик — сортировка · дв. клик — фильтр · ⇧ клик — сравнить', "aria-label": col.name, children: [shortLabel, arrow && (0, jsx_runtime_1.jsx)("span", { className: "sort-arrow", children: arrow })] }, col.id));
+                                            }), showTotals && ((0, jsx_runtime_1.jsx)("th", { className: "totals-col", scope: "col", "aria-label": "\u0418\u0442\u043E\u0433\u043E", children: "\u0418\u0442\u043E\u0433\u043E" }))] }) }), (0, jsx_runtime_1.jsxs)("tbody", { children: [rows.map((row) => {
                                             const rowHl = hoverRow === row.id;
-                                            return ((0, jsx_runtime_1.jsxs)("tr", { className: rowHl ? 'row-hl' : '', children: [(0, jsx_runtime_1.jsx)("th", { scope: "row", className: row.id === rowFilter ? 'filtered' : '', onClick: (e) => onRowHeaderClick(e, row), onMouseEnter: (e) => onRowHeaderEnter(e, row), onMouseLeave: onHeaderLeave, onMouseMove: onHeaderMove, tabIndex: 0, title: "\u041A\u043B\u0438\u043A \u2014 \u0444\u0438\u043B\u044C\u0442\u0440 \u00B7 \u21E7 \u2014 \u0441\u0440\u0430\u0432\u043D\u0438\u0442\u044C", children: row.name }), cols.map((col) => {
+                                            return ((0, jsx_runtime_1.jsxs)("tr", { className: rowHl ? 'row-hl' : '', children: [(() => {
+                                                        const shortRowLabel = truncateLabel(row.name, rowLabelMaxChars);
+                                                        const rowTruncated = shortRowLabel !== row.name;
+                                                        return ((0, jsx_runtime_1.jsx)("th", { scope: "row", className: row.id === rowFilter ? 'filtered' : '', onClick: (e) => onRowHeaderClick(e, row), onMouseEnter: (e) => onRowHeaderEnter(e, row), onMouseLeave: onHeaderLeave, onMouseMove: onHeaderMove, tabIndex: 0, title: rowTruncated
+                                                                ? `${row.name} — клик: фильтр, ⇧: сравнить`
+                                                                : 'Клик — фильтр · ⇧ — сравнить', "aria-label": row.name, children: shortRowLabel }));
+                                                    })(), cols.map((col) => {
                                                         const cell = cells.get(`${row.id}|${col.id}`);
                                                         const st = (0, thresholds_1.cellStatus)(cell, thresholds);
                                                         const isCellFiltered = cellFilter
@@ -497,7 +566,7 @@ function HeatmapPivot(props) {
                                                         const rtSt = (0, thresholds_1.totalsStatus)(rowTotals.get(row.id), thresholds);
                                                         return ((0, jsx_runtime_1.jsx)("td", { className: "totals-col", children: (0, jsx_runtime_1.jsxs)(styles_1.Cell, { className: rtSt, "aria-label": `Итого по строке: ${thresholds_1.STATUS_LABEL[rtSt]}`, children: [(0, jsx_runtime_1.jsx)(StatusIcon, { status: rtSt }), formatTotals(rowTotals.get(row.id), unit, unitSuffix, decimals, autoFormatRussian)] }) }));
                                                     })()] }, row.id));
-                                        }), showTotals && ((0, jsx_runtime_1.jsxs)("tr", { className: "totals-row", children: [(0, jsx_runtime_1.jsx)("th", { scope: "row", children: "\u03A3" }), cols.map((col) => {
+                                        }), showTotals && ((0, jsx_runtime_1.jsxs)("tr", { className: "totals-row", children: [(0, jsx_runtime_1.jsx)("th", { scope: "row", children: "\u0418\u0442\u043E\u0433\u043E" }), cols.map((col) => {
                                                     const ctSt = (0, thresholds_1.totalsStatus)(colTotals.get(col.id), thresholds);
                                                     return ((0, jsx_runtime_1.jsx)("td", { children: (0, jsx_runtime_1.jsxs)(styles_1.Cell, { className: ctSt, "aria-label": `Итого по колонке ${col.name}: ${thresholds_1.STATUS_LABEL[ctSt]}`, children: [(0, jsx_runtime_1.jsx)(StatusIcon, { status: ctSt }), formatTotals(colTotals.get(col.id), unit, unitSuffix, decimals, autoFormatRussian)] }) }, col.id));
                                                 }), (() => {

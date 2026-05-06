@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StaleBar = exports.PartialBadge = exports.DrillHelperText = exports.SkeletonGrid = exports.StateOverlay = exports.CmpTable = exports.DrillBars = exports.DrillSectionTitle = exports.DrillSummary = exports.ModalBody = exports.ModalClose = exports.ModalTitle = exports.ModalHead = exports.Modal = exports.ModalBackdrop = exports.ModalRoot = exports.ColProfile = exports.Tooltip = exports.HintBar = exports.ScaleItem = exports.Scale = exports.Footer = exports.Cell = exports.Pivot = exports.PivotWrap = exports.Chip = exports.UnitButton = exports.Unit = exports.Controls = exports.BreadcrumbBack = exports.BreadcrumbSel = exports.BreadcrumbPlus = exports.BreadcrumbDot = exports.BreadcrumbCurrent = exports.Breadcrumbs = exports.Title = exports.TitleBlock = exports.Header = exports.Card = exports.Root = exports.KEYFRAMES_CSS = exports.ROOT_CLASS = void 0;
+exports.StaleBar = exports.PartialBadge = exports.DrillHelperText = exports.SkeletonGrid = exports.StateOverlay = exports.CmpTable = exports.DrillBars = exports.DrillSectionTitle = exports.DrillSummary = exports.ModalBody = exports.ModalClose = exports.ModalTitle = exports.ModalHead = exports.Modal = exports.ModalBackdrop = exports.ModalRoot = exports.ColProfile = exports.Tooltip = exports.HintBar = exports.ScaleItem = exports.Scale = exports.Footer = exports.Cell = exports.Pivot = exports.PivotWrap = exports.AxisDropdownItem = exports.AxisDropdownMenu = exports.AxisDropdownTrigger = exports.AxisDropdownPanel = exports.AxisDropdownGhost = exports.AxisDropdownRoot = exports.Chip = exports.UnitButton = exports.Unit = exports.Controls = exports.BreadcrumbBack = exports.BreadcrumbSel = exports.BreadcrumbPlus = exports.BreadcrumbDot = exports.BreadcrumbCurrent = exports.Breadcrumbs = exports.MockBadge = exports.Title = exports.TitleBlock = exports.Header = exports.Card = exports.Root = exports.KEYFRAMES_CSS = exports.ROOT_CLASS = void 0;
 const core_1 = require("@superset-ui/core");
 const react_1 = require("@emotion/react");
 const themeTokens_1 = require("./themeTokens");
@@ -37,7 +37,7 @@ exports.KEYFRAMES_CSS = `
   0%{background-position:200% 0}
   100%{background-position:-200% 0}
 }
-@media (prefers-reduced-motion: never-match) {
+@media (prefers-reduced-motion: reduce) {
   .heatmap-pivot *, .heatmap-pivot *::before, .heatmap-pivot *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
@@ -171,14 +171,37 @@ exports.TitleBlock = core_1.styled.div `
   flex: 1;
 `;
 exports.Title = core_1.styled.div `
-  /* DS 2.0 §02 fluid: --fs-micro (11-13) UPPER моно для секции */
-  font-family: var(--m);
-  font-size: var(--fs-micro);
-  line-height: 1.4;
+  /* DS 2.0 §02: «Заголовок секции» — единый стандарт со scorecard CardTitle */
+  font-family: var(--f);
+  font-size: var(--fs-body);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
+  line-height: 1.3;
   text-transform: uppercase;
   color: var(--ink);
+`;
+/* DS 2.0 «Статусный бейдж ТЕСТ» — 1:1 со scorecard MockBadge.
+   Mono nano UPPER warning-цвет, superscript-effect (top:-2px). */
+exports.MockBadge = core_1.styled.span `
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--wn-b);
+  color: var(--wn);
+  font-family: var(--m);
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-left: 6px;
+  vertical-align: super;
+  position: relative;
+  top: -2px;
+  user-select: none;
 `;
 exports.Breadcrumbs = core_1.styled.div `
   /* DS 2.0 §02 fluid: --fs-micro для breadcrumb (≥11) */
@@ -243,51 +266,38 @@ exports.Controls = core_1.styled.div `
   flex-shrink: 0;
 `;
 exports.Unit = core_1.styled.div `
-  /* DS 2.0 §02: touch target 40×40 desktop / 44×44 tablet / 48×48 mobile */
+  /* 1:1 с scorecard ToggleGroup / donut UnitToggle — единый размер на всех ext-* */
+  box-sizing: border-box;
   display: flex;
   gap: 2px;
   background: var(--g100);
   border: 1px solid var(--g200);
-  border-radius: 7px;
+  border-radius: 6px;
   padding: 2px;
-  min-height: 32px;
-
-  @media (max-width: 1024px) {
-    min-height: 44px;
-  }
-  @media (max-width: 428px) {
-    min-height: 48px;
-  }
+  height: 30px;
+  flex-shrink: 0;
 `;
 exports.UnitButton = core_1.styled.button `
-  /* DS 2.0 §02 fluid: --fs-micro для интерактивных UNIT-кнопок */
+  /* 1:1 с scorecard ToggleButton — JetBrains Mono UPPER, height 24px, br 6px */
+  box-sizing: border-box;
   border: none;
   background: ${({ on }) => (on ? 'var(--c-sky)' : 'transparent')};
-  color: ${({ on }) => (on ? 'var(--s)' : 'var(--g600)')};
-  font-family: var(--f);
+  font-family: var(--m);
   font-size: var(--fs-micro);
   font-weight: 600;
-  padding: 6px 13px;
-  border-radius: 5px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: ${({ on }) => (on ? 'var(--s)' : 'var(--g500)')};
+  padding: 0 11px;
+  height: 24px;
+  min-width: 28px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ${EASE};
-  min-height: 28px;
-  min-width: 40px;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  box-shadow: ${({ on }) => (on ? 'var(--sh)' : 'none')};
-
-  @media (max-width: 1024px) {
-    min-height: 40px;
-    min-width: 44px;
-  }
-  @media (max-width: 428px) {
-    min-height: 44px;
-    min-width: 48px;
-  }
+  line-height: 1;
 
   &:hover {
-    color: ${({ on }) => (on ? '#fff' : 'var(--ink)')};
+    color: ${({ on }) => (on ? 'var(--s)' : 'var(--ink)')};
   }
   &:focus-visible {
     outline: 2px solid var(--c-sky);
@@ -295,32 +305,29 @@ exports.UnitButton = core_1.styled.button `
   }
 `;
 exports.Chip = core_1.styled.button `
-  /* DS 2.0 §02 fluid: --fs-micro для chip */
+  /* Σ-chip: standalone-кнопка с такой же геометрией, как scorecard ToggleGroup
+     (height 30px, border-radius 6px). Содержимое — только Σ. */
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
   background: ${({ on }) => (on ? 'var(--c-sky)' : 'var(--g100)')};
   border: 1px solid ${({ on }) => (on ? 'var(--c-sky)' : 'var(--g200)')};
-  border-radius: 7px;
-  font-family: var(--f);
+  border-radius: 6px;
+  font-family: var(--m);
   font-size: var(--fs-micro);
-  font-weight: 600;
-  color: ${({ on }) => (on ? 'var(--s)' : 'var(--g600)')};
-  padding: 6px 12px;
-  min-height: 32px;
+  font-weight: 700;
+  color: ${({ on }) => (on ? 'var(--s)' : 'var(--g500)')};
+  padding: 0 11px;
+  height: 30px;
+  min-width: 32px;
   cursor: pointer;
   transition: all 0.15s ${EASE};
-  letter-spacing: 0.01em;
-
-  @media (max-width: 1024px) {
-    min-height: 44px;
-  }
-  @media (max-width: 428px) {
-    min-height: 48px;
-  }
+  letter-spacing: 0.02em;
+  line-height: 1;
 
   &:hover {
-    color: ${({ on }) => (on ? '#fff' : 'var(--ink)')};
+    color: ${({ on }) => (on ? 'var(--s)' : 'var(--ink)')};
     border-color: ${({ on }) => (on ? 'var(--c-sky)' : 'var(--g300)')};
   }
   &:focus-visible {
@@ -330,9 +337,117 @@ exports.Chip = core_1.styled.button `
 
   .sigma {
     font-family: var(--m);
-    font-size: var(--fs-interactive);
+    font-size: 14px;
     font-weight: 700;
     line-height: 1;
+  }
+`;
+/* ── Axis Dropdown (collapsible group selector — like metricTimeSeries) ── */
+exports.AxisDropdownRoot = core_1.styled.div `
+  position: relative;
+  display: inline-block;
+  height: 30px;
+  flex-shrink: 0;
+`;
+/** Невидимый «ghost» — занимает место по самой длинной опции, чтобы Root
+ *  имел стабильную ширину независимо от выбранного label. */
+exports.AxisDropdownGhost = core_1.styled.span `
+  visibility: hidden;
+  pointer-events: none;
+  display: block;
+  font-family: var(--m);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0 11px;
+  height: 30px;
+  line-height: 30px;
+  white-space: nowrap;
+  /* +2px на ширину border (1px×2) панели сверху */
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 6px;
+`;
+exports.AxisDropdownPanel = core_1.styled.div `
+  box-sizing: border-box;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--g100);
+  border: 1px solid ${({ open }) => (open ? 'var(--g300)' : 'var(--g200)')};
+  border-radius: 6px;
+  overflow: hidden;
+  transition: border-color 0.15s ${EASE};
+  z-index: ${({ open }) => (open ? 200 : 1)};
+
+  &[data-open='true'] > button:first-of-type {
+    border-bottom: 1px solid var(--g200);
+  }
+`;
+exports.AxisDropdownTrigger = core_1.styled.button `
+  /* Активная опция: без bg/стрелочки, текст по центру panel-ширины.
+     padding-top: 2px компенсирует оптический сдвиг кириллицы вверх (Mono-cap-height). */
+  box-sizing: border-box;
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--m);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 2px 11px 0;
+  height: 28px;
+  width: 100%;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+`;
+exports.AxisDropdownMenu = core_1.styled.div `
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  animation: hp-fade-in 0.12s ${EASE};
+`;
+exports.AxisDropdownItem = core_1.styled.button `
+  /* Активный пункт скрыт (он уже показан в trigger). hover — только смена цвета,
+     без bg-подсветки (по требованию UX — лишняя визуальная нагрузка). */
+  box-sizing: border-box;
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--g500);
+  font-family: var(--m);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-align: center;
+  cursor: pointer;
+  width: 100%;
+  height: 28px;
+  display: ${({ active }) => (active ? 'none' : 'flex')};
+  align-items: center;
+  justify-content: center;
+  padding: 2px 11px 0;
+  border-radius: 0;
+  line-height: 1;
+  transition: color 0.12s ${EASE};
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--ink);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--c-sky);
+    outline-offset: -2px;
   }
 `;
 /* ── Pivot table ── */
@@ -341,6 +456,28 @@ exports.PivotWrap = core_1.styled.div `
   overflow: auto;
   flex: 1;
   min-height: 0;
+
+  /* DS 2.0: thin scrollbar (Firefox + WebKit), цвета через токены, авто-смена темы */
+  scrollbar-width: thin;
+  scrollbar-color: var(--g300) transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--g300);
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--g400);
+  }
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 `;
 exports.Pivot = core_1.styled.table `
   border-collapse: separate;
@@ -349,14 +486,14 @@ exports.Pivot = core_1.styled.table `
   font-variant-numeric: tabular-nums;
 
   thead th {
-    /* DS 2.0 §02 fluid: --fs-micro UPPER моно для column-header */
+    /* DS 2.0 §02: column-header Manrope UPPER (кириллица читаемее, чем Mono) */
     position: sticky;
     top: 0;
     z-index: 3;
     background: var(--s);
-    font-family: var(--m);
+    font-family: var(--f);
     font-size: var(--fs-micro);
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--g700);
@@ -526,20 +663,11 @@ exports.Cell = core_1.styled.div `
     height: 52px;
   }
 
-  /* Status-icon: SVG-позиция в правом верхнем углу */
+  /* Status-icon скрыт по требованию UX — статус считывается только цветом
+     (фон + текст). Узлы оставлены в DOM ради aria-label с расшифровкой. */
   .status-icon {
-    position: absolute;
-    top: 4px;
-    right: 5px;
-    width: 8px;
-    height: 8px;
-    pointer-events: none;
-    opacity: 0.8;
+    display: none;
   }
-  &.ok .status-icon { color: var(--up); }
-  &.wn .status-icon { color: var(--wn); }
-  &.dn .status-icon { color: var(--dn); }
-  &.nd .status-icon { display: none; }
 
   &.ok {
     background: var(--up-b);
@@ -897,6 +1025,28 @@ exports.ModalBody = core_1.styled.div `
   padding: 18px 22px 20px;
   overflow-y: auto;
   flex: 1;
+
+  /* DS 2.0: thin scrollbar consistent with PivotWrap */
+  scrollbar-width: thin;
+  scrollbar-color: var(--g300) transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--g300);
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--g400);
+  }
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 `;
 /* ── Drill modal specifics ── */
 exports.DrillSummary = core_1.styled.div `
@@ -1159,7 +1309,8 @@ exports.DrillHelperText = core_1.styled.div `
 `;
 /* DS 2.0 §06 «Состояния» — Partial badge: показывает что данные не
    полные (часть фильтров отвергнута). UPPER mono nano warning-цвет. */
-exports.PartialBadge = core_1.styled.span `
+exports.PartialBadge = core_1.styled.div `
+  /* 1:1 со scorecard PartialBadge — margin-left: auto + flex-push */
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1173,9 +1324,7 @@ exports.PartialBadge = core_1.styled.span `
   line-height: 1.3;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-left: 8px;
-  vertical-align: middle;
-  user-select: none;
+  margin-left: auto;
 `;
 /* DS 2.0 §06 «Состояния» — Stale bar: тонкая sky-полоса сверху Card,
    show'ит что данные пришли из кеша (могут быть устаревшие). Slide

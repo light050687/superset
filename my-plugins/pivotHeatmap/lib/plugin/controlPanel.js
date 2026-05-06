@@ -250,6 +250,30 @@ const config = {
                 ],
                 [
                     {
+                        name: 'col_label_max_chars',
+                        config: {
+                            type: 'TextControl',
+                            label: (0, core_1.t)('Макс. длина названия колонки'),
+                            description: (0, core_1.t)('Длинные названия обрезаются до N символов и завершаются «…». Полное имя видно по hover. 0 или отрицательное — без ограничения.'),
+                            default: 18,
+                            isInt: true,
+                            renderTrigger: true,
+                        },
+                    },
+                    {
+                        name: 'row_label_max_chars',
+                        config: {
+                            type: 'TextControl',
+                            label: (0, core_1.t)('Макс. длина названия строки'),
+                            description: (0, core_1.t)('Аналогично для шапок строк (форматов магазинов и т.п.). 0 — без ограничения.'),
+                            default: 24,
+                            isInt: true,
+                            renderTrigger: true,
+                        },
+                    },
+                ],
+                [
+                    {
                         name: 'emit_filter',
                         config: {
                             type: 'CheckboxControl',

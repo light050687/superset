@@ -1,5 +1,5 @@
 export declare const ROOT_CLASS = "heatmap-pivot";
-export declare const KEYFRAMES_CSS = "\n@keyframes hp-fade-in { from{opacity:0} to{opacity:1} }\n@keyframes hp-modal-in {\n  from{opacity:0;transform:translateY(10px) scale(.98)}\n  to{opacity:1;transform:translateY(0) scale(1)}\n}\n@keyframes hp-skeleton-pulse {\n  0%{opacity:.4} 50%{opacity:.7} 100%{opacity:.4}\n}\n@keyframes hp-stale-slide {\n  0%{background-position:200% 0}\n  100%{background-position:-200% 0}\n}\n@media (prefers-reduced-motion: never-match) {\n  .heatmap-pivot *, .heatmap-pivot *::before, .heatmap-pivot *::after {\n    animation-duration: 0.001ms !important;\n    animation-iteration-count: 1 !important;\n    transition-duration: 0.001ms !important;\n    scroll-behavior: auto !important;\n  }\n}\n@media print {\n  /* DS 2.0 \u00A714: \u0444\u043E\u043D\u044B \u2192 \u0431\u0435\u043B\u044B\u0439, \u0441\u043A\u0440\u044B\u0442\u044C \u0442\u0443\u043B\u0442\u0438\u043F\u044B/\u0442\u043E\u0433\u043B\u044B/\u043A\u043E\u043D\u0442\u0440\u043E\u043B\u044B, page-break-inside:avoid */\n  .heatmap-pivot {\n    background: #fff !important;\n    color: #000 !important;\n    box-shadow: none !important;\n    page-break-inside: avoid;\n  }\n  .heatmap-pivot button,\n  .heatmap-pivot [role='tooltip'],\n  .heatmap-pivot [aria-hidden='true'] {\n    display: none !important;\n  }\n  .heatmap-pivot .ok,\n  .heatmap-pivot .wn,\n  .heatmap-pivot .dn {\n    background: #fff !important;\n    border: 1px solid #999 !important;\n  }\n  .heatmap-pivot td,\n  .heatmap-pivot th {\n    color: #000 !important;\n    background: #fff !important;\n  }\n}\n";
+export declare const KEYFRAMES_CSS = "\n@keyframes hp-fade-in { from{opacity:0} to{opacity:1} }\n@keyframes hp-modal-in {\n  from{opacity:0;transform:translateY(10px) scale(.98)}\n  to{opacity:1;transform:translateY(0) scale(1)}\n}\n@keyframes hp-skeleton-pulse {\n  0%{opacity:.4} 50%{opacity:.7} 100%{opacity:.4}\n}\n@keyframes hp-stale-slide {\n  0%{background-position:200% 0}\n  100%{background-position:-200% 0}\n}\n@media (prefers-reduced-motion: reduce) {\n  .heatmap-pivot *, .heatmap-pivot *::before, .heatmap-pivot *::after {\n    animation-duration: 0.001ms !important;\n    animation-iteration-count: 1 !important;\n    transition-duration: 0.001ms !important;\n    scroll-behavior: auto !important;\n  }\n}\n@media print {\n  /* DS 2.0 \u00A714: \u0444\u043E\u043D\u044B \u2192 \u0431\u0435\u043B\u044B\u0439, \u0441\u043A\u0440\u044B\u0442\u044C \u0442\u0443\u043B\u0442\u0438\u043F\u044B/\u0442\u043E\u0433\u043B\u044B/\u043A\u043E\u043D\u0442\u0440\u043E\u043B\u044B, page-break-inside:avoid */\n  .heatmap-pivot {\n    background: #fff !important;\n    color: #000 !important;\n    box-shadow: none !important;\n    page-break-inside: avoid;\n  }\n  .heatmap-pivot button,\n  .heatmap-pivot [role='tooltip'],\n  .heatmap-pivot [aria-hidden='true'] {\n    display: none !important;\n  }\n  .heatmap-pivot .ok,\n  .heatmap-pivot .wn,\n  .heatmap-pivot .dn {\n    background: #fff !important;\n    border: 1px solid #999 !important;\n  }\n  .heatmap-pivot td,\n  .heatmap-pivot th {\n    color: #000 !important;\n    background: #fff !important;\n  }\n}\n";
 export declare const Root: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
@@ -23,6 +23,10 @@ export declare const Title: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const MockBadge: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, {}>;
 export declare const Breadcrumbs: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
@@ -66,6 +70,36 @@ export declare const Chip: import("@emotion/styled").StyledComponent<{
     as?: React.ElementType;
 } & {
     on?: boolean;
+}, import("react").DetailedHTMLProps<import("react").ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, {}>;
+export declare const AxisDropdownRoot: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+/** Невидимый «ghost» — занимает место по самой длинной опции, чтобы Root
+ *  имел стабильную ширину независимо от выбранного label. */
+export declare const AxisDropdownGhost: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, {}>;
+export declare const AxisDropdownPanel: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+} & {
+    open?: boolean;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const AxisDropdownTrigger: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, {}>;
+export declare const AxisDropdownMenu: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const AxisDropdownItem: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+} & {
+    active?: boolean;
 }, import("react").DetailedHTMLProps<import("react").ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, {}>;
 export declare const PivotWrap: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
@@ -162,7 +196,7 @@ export declare const DrillHelperText: import("@emotion/styled").StyledComponent<
 export declare const PartialBadge: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
-}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, {}>;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
 export declare const StaleBar: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;

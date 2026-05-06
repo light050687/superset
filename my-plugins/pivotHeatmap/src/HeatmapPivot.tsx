@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   AxisItem,
   CellData,
@@ -45,6 +45,12 @@ import {
   formatRussianSmartEx,
 } from './utils/formatRussian';
 import {
+  AxisDropdownGhost,
+  AxisDropdownItem,
+  AxisDropdownMenu,
+  AxisDropdownPanel,
+  AxisDropdownRoot,
+  AxisDropdownTrigger,
   Breadcrumbs,
   BreadcrumbBack,
   BreadcrumbCurrent,
@@ -60,6 +66,7 @@ import {
   Header,
   HintBar,
   KEYFRAMES_CSS,
+  MockBadge,
   Pivot,
   PivotWrap,
   ROOT_CLASS,
@@ -95,6 +102,18 @@ function formatValue(
   }
   if (auto) return formatRussianSmartEx(cell.value, decimals, suffix);
   return `${cell.value.toFixed(decimals)}${suffix ? ` ${suffix}` : ''}`;
+}
+
+/**
+ * Truncate long axis label to N chars, suffixing «…».
+ * Returns the original string when maxChars <= 0 or label fits.
+ * Single ellipsis char (…) keeps width tight inside cell.
+ */
+function truncateLabel(label: string, maxChars: number): string {
+  if (!Number.isFinite(maxChars) || maxChars <= 0) return label;
+  if (label.length <= maxChars) return label;
+  if (maxChars <= 1) return '…';
+  return `${label.slice(0, maxChars - 1).trimEnd()}…`;
 }
 
 function formatTotals(
@@ -152,11 +171,11 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
     width,
     height,
     rows: rowsRaw,
-    cols,
-    cells,
-    rowTotals,
-    colTotals,
-    grandTotal,
+    cols: colsBase,
+    cells: cellsBase,
+    rowTotals: rowTotalsBase,
+    colTotals: colTotalsBase,
+    grandTotal: grandTotalBase,
     thresholds,
     defaultUnit,
     unitSuffix,
@@ -171,7 +190,57 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
     mockMode,
     dataState,
     errorMessage,
+    colAxisOptions,
+    colLabelMaxChars,
+    rowLabelMaxChars,
   } = props;
+
+  // ── Axis switcher (mock-mode only) ──
+  const [axisKey, setAxisKey] = useState<string>(
+    () => colAxisOptions?.[0]?.key ?? 'division',
+  );
+  // Sync axisKey when options arrive/change
+  useEffect(() => {
+    if (colAxisOptions && colAxisOptions.length > 0) {
+      const exists = colAxisOptions.some((o) => o.key === axisKey);
+      if (!exists) setAxisKey(colAxisOptions[0].key);
+    }
+  }, [colAxisOptions, axisKey]);
+
+  const activeAxis = useMemo(
+    () => colAxisOptions?.find((o) => o.key === axisKey) ?? null,
+    [colAxisOptions, axisKey],
+  );
+
+  // When axisKey changes, swap dataset slice. In non-mock mode use props directly.
+  const cols: AxisItem[] = activeAxis ? activeAxis.cols : colsBase;
+  const cells = activeAxis ? activeAxis.cells : cellsBase;
+  const rowTotals = activeAxis ? activeAxis.rowTotals : rowTotalsBase;
+  const colTotals = activeAxis ? activeAxis.colTotals : colTotalsBase;
+  const grandTotal = activeAxis ? activeAxis.grandTotal : grandTotalBase;
+
+  // Dropdown open state
+  const [axisOpen, setAxisOpen] = useState(false);
+  const axisRootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!axisOpen) return undefined;
+    const onDown = (e: MouseEvent): void => {
+      if (!axisRootRef.current) return;
+      if (!axisRootRef.current.contains(e.target as Node)) setAxisOpen(false);
+    };
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') {
+        setAxisOpen(false);
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey, true);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey, true);
+    };
+  }, [axisOpen]);
 
   const rowAxisColName = drillQueryParams?.rowAxisCol ?? '';
   const colAxisColName = drillQueryParams?.colAxisCol ?? '';
@@ -601,7 +670,10 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
         <Card>
           <Header>
             <TitleBlock>
-              <Title>{headerText}</Title>
+              <Title>
+                {headerText}
+                {mockMode && <MockBadge>ТЕСТ</MockBadge>}
+              </Title>
             </TitleBlock>
           </Header>
           <SkeletonGrid>
@@ -634,7 +706,10 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
         <Card>
           <Header>
             <TitleBlock>
-              <Title>{headerText}</Title>
+              <Title>
+                {headerText}
+                {mockMode && <MockBadge>ТЕСТ</MockBadge>}
+              </Title>
             </TitleBlock>
           </Header>
           <StateOverlay>{errorMessage ?? 'Нет данных за выбранный период'}</StateOverlay>
@@ -655,10 +730,11 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
           <TitleBlock>
             <Title>
               {headerText}
-              {isPartial && (
-                <PartialBadge title="Часть данных недоступна">Частично</PartialBadge>
-              )}
+              {mockMode && <MockBadge>ТЕСТ</MockBadge>}
             </Title>
+            {isPartial && (
+              <PartialBadge title="Часть данных недоступна">Частично</PartialBadge>
+            )}
             <Breadcrumbs role="navigation" aria-label="Контекст фильтров">
               <BreadcrumbCurrent>{headerSubtitle}</BreadcrumbCurrent>
               {breadcrumbChips.length > 0 && (
@@ -686,6 +762,46 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
             </Breadcrumbs>
           </TitleBlock>
           <Controls>
+            {colAxisOptions && colAxisOptions.length > 1 && activeAxis && (
+              <AxisDropdownRoot ref={axisRootRef}>
+                <AxisDropdownGhost aria-hidden="true">
+                  {colAxisOptions.reduce(
+                    (longest, o) => (o.label.length > longest.length ? o.label : longest),
+                    '',
+                  )}
+                </AxisDropdownGhost>
+                <AxisDropdownPanel open={axisOpen} data-open={axisOpen}>
+                  <AxisDropdownTrigger
+                    type="button"
+                    aria-haspopup="listbox"
+                    aria-expanded={axisOpen}
+                    aria-label="Группировка колонок"
+                    onClick={() => setAxisOpen((v) => !v)}
+                  >
+                    {activeAxis.label}
+                  </AxisDropdownTrigger>
+                  {axisOpen && (
+                    <AxisDropdownMenu role="listbox" aria-label="Группировка колонок">
+                      {colAxisOptions.map((opt) => (
+                        <AxisDropdownItem
+                          key={opt.key}
+                          type="button"
+                          role="option"
+                          active={opt.key === axisKey}
+                          aria-selected={opt.key === axisKey}
+                          onClick={() => {
+                            setAxisKey(opt.key);
+                            setAxisOpen(false);
+                          }}
+                        >
+                          {opt.label}
+                        </AxisDropdownItem>
+                      ))}
+                    </AxisDropdownMenu>
+                  )}
+                </AxisDropdownPanel>
+              </AxisDropdownRoot>
+            )}
             <Unit role="tablist" aria-label="Единицы измерения">
               <UnitButton
                 type="button"
@@ -711,10 +827,10 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
               on={showTotals}
               onClick={() => setShowTotals((v) => !v)}
               aria-pressed={showTotals}
+              aria-label="Показать строку и колонку итогов"
               title="Показать строку и колонку итогов"
             >
-              <span className="sigma">Σ</span>
-              <span>Итоги</span>
+              <span className="sigma" aria-hidden="true">Σ</span>
             </Chip>
           </Controls>
         </Header>
@@ -732,6 +848,8 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
                     col.id === colFilter ? 'filtered' : '',
                     col.id === hoverCol && !showTotals ? 'col-hl' : '',
                   ].filter(Boolean).join(' ');
+                  const shortLabel = truncateLabel(col.name, colLabelMaxChars);
+                  const wasTruncated = shortLabel !== col.name;
                   return (
                     <th
                       key={col.id}
@@ -743,15 +861,20 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
                       onMouseLeave={onHeaderLeave}
                       onMouseMove={onHeaderMove}
                       tabIndex={0}
-                      title="Клик — сортировка · дв. клик — фильтр · ⇧ клик — сравнить"
+                      title={
+                        wasTruncated
+                          ? `${col.name} — клик: сортировка, дв. клик: фильтр, ⇧ клик: сравнить`
+                          : 'Клик — сортировка · дв. клик — фильтр · ⇧ клик — сравнить'
+                      }
+                      aria-label={col.name}
                     >
-                      {col.name}
+                      {shortLabel}
                       {arrow && <span className="sort-arrow">{arrow}</span>}
                     </th>
                   );
                 })}
                 {showTotals && (
-                  <th className="totals-col" scope="col" aria-label="Итого">Σ</th>
+                  <th className="totals-col" scope="col" aria-label="Итого">Итого</th>
                 )}
               </tr>
             </thead>
@@ -760,18 +883,29 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
                 const rowHl = hoverRow === row.id;
                 return (
                   <tr key={row.id} className={rowHl ? 'row-hl' : ''}>
-                    <th
-                      scope="row"
-                      className={row.id === rowFilter ? 'filtered' : ''}
-                      onClick={(e) => onRowHeaderClick(e, row)}
-                      onMouseEnter={(e) => onRowHeaderEnter(e, row)}
-                      onMouseLeave={onHeaderLeave}
-                      onMouseMove={onHeaderMove}
-                      tabIndex={0}
-                      title="Клик — фильтр · ⇧ — сравнить"
-                    >
-                      {row.name}
-                    </th>
+                    {(() => {
+                      const shortRowLabel = truncateLabel(row.name, rowLabelMaxChars);
+                      const rowTruncated = shortRowLabel !== row.name;
+                      return (
+                        <th
+                          scope="row"
+                          className={row.id === rowFilter ? 'filtered' : ''}
+                          onClick={(e) => onRowHeaderClick(e, row)}
+                          onMouseEnter={(e) => onRowHeaderEnter(e, row)}
+                          onMouseLeave={onHeaderLeave}
+                          onMouseMove={onHeaderMove}
+                          tabIndex={0}
+                          title={
+                            rowTruncated
+                              ? `${row.name} — клик: фильтр, ⇧: сравнить`
+                              : 'Клик — фильтр · ⇧ — сравнить'
+                          }
+                          aria-label={row.name}
+                        >
+                          {shortRowLabel}
+                        </th>
+                      );
+                    })()}
                     {cols.map((col) => {
                       const cell = cells.get(`${row.id}|${col.id}`);
                       const st = cellStatus(cell, thresholds);
@@ -837,7 +971,7 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
               })}
               {showTotals && (
                 <tr className="totals-row">
-                  <th scope="row">Σ</th>
+                  <th scope="row">Итого</th>
                   {cols.map((col) => {
                     const ctSt = totalsStatus(colTotals.get(col.id), thresholds);
                     return (

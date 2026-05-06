@@ -21,8 +21,9 @@ function resolveMetricLabel(m) {
         return '';
     return (0, core_1.getMetricLabel)(m);
 }
-function buildMockProps(props, thresholds, fd, overrides = {}) {
-    const mockCells = (0, lossesPreset_1.buildMockCells)();
+/** Compute a full slice (cells, totals, grandTotal) for one mock axis. */
+function computeAxisSlice(axisKey, cols) {
+    const mockCells = (0, lossesPreset_1.buildMockCells)(axisKey);
     const cells = new Map();
     mockCells.forEach((v, k) => {
         cells.set(k, {
@@ -40,7 +41,7 @@ function buildMockProps(props, thresholds, fd, overrides = {}) {
     const rowTotals = new Map();
     const colTotals = new Map();
     lossesPreset_1.MOCK_ROWS.forEach((r) => rowTotals.set(r.id, buildEmptySlice()));
-    lossesPreset_1.MOCK_COLS.forEach((c) => colTotals.set(c.id, buildEmptySlice()));
+    cols.forEach((c) => colTotals.set(c.id, buildEmptySlice()));
     let gf = 0;
     let gp = 0;
     let gr = 0;
@@ -75,6 +76,33 @@ function buildMockProps(props, thresholds, fd, overrides = {}) {
         s.ratio = s.plan && s.plan !== 0 ? s.fact / s.plan : null;
         s.pct = s.revenue && s.revenue !== 0 ? (s.fact / s.revenue) * 100 : null;
     });
+    const grandTotal = {
+        fact: gf,
+        plan: gp || null,
+        ratio: gp !== 0 ? gf / gp : null,
+        revenue: gr || null,
+        pct: gr !== 0 ? (gf / gr) * 100 : null,
+    };
+    return { cells, rowTotals, colTotals, grandTotal };
+}
+function buildMockProps(props, thresholds, fd, overrides = {}) {
+    // Pre-compute slices for all 4 axis variants — UI will switch between them
+    // without re-running buildMockCells (which is deterministic anyway).
+    const colAxisOptions = lossesPreset_1.MOCK_AXES.map((a) => {
+        const slice = computeAxisSlice(a.key, a.cols);
+        return {
+            key: a.key,
+            label: a.label,
+            cols: a.cols,
+            cells: slice.cells,
+            rowTotals: slice.rowTotals,
+            colTotals: slice.colTotals,
+            grandTotal: slice.grandTotal,
+        };
+    });
+    // Default = first axis (division)
+    const def = colAxisOptions[0];
+    const { cells, rowTotals, colTotals } = def;
     const hooks = (props.hooks ?? {});
     return {
         width: props.width,
@@ -83,17 +111,12 @@ function buildMockProps(props, thresholds, fd, overrides = {}) {
         rowAxisLabel: overrides.rowAxisLabel ?? 'Формат',
         colAxisLabel: overrides.colAxisLabel ?? 'Дивизион',
         rows: lossesPreset_1.MOCK_ROWS,
-        cols: lossesPreset_1.MOCK_COLS,
+        cols: def.cols,
         cells,
         rowTotals,
         colTotals,
-        grandTotal: {
-            fact: gf,
-            plan: gp || null,
-            ratio: gp !== 0 ? gf / gp : null,
-            revenue: gr || null,
-            pct: gr !== 0 ? (gf / gr) * 100 : null,
-        },
+        grandTotal: def.grandTotal,
+        colAxisOptions,
         thresholds,
         defaultUnit: fd.defaultUnit ?? 'abs',
         unitSuffix: fd.unitSuffix ?? 'млн ₽',
@@ -103,11 +126,13 @@ function buildMockProps(props, thresholds, fd, overrides = {}) {
         headerText: fd.headerText ?? 'Уровень потерь по форматам',
         headerSubtitle: overrides.subtitle ??
             fd.headerSubtitle ??
-            'Форматы × Дивизион · за год · демо-данные',
+            'Форматы × Дивизион · за год',
         emitFilter: false, // mock mode doesn't emit cross-filters
         setDataMask: hooks.setDataMask,
         drillQueryParams: null,
         mockMode: true,
+        colLabelMaxChars: Number(fd.colLabelMaxChars ?? 18),
+        rowLabelMaxChars: Number(fd.rowLabelMaxChars ?? 24),
         dataState: 'populated',
     };
 }
@@ -252,6 +277,8 @@ function transformProps(chartProps) {
         setDataMask,
         drillQueryParams,
         mockMode: false,
+        colLabelMaxChars: Number(fd.colLabelMaxChars ?? 18),
+        rowLabelMaxChars: Number(fd.rowLabelMaxChars ?? 24),
         dataState,
         errorMessage,
     };

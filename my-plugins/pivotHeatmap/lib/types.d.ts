@@ -14,6 +14,16 @@ export interface CompareItem {
     rowId?: string;
     colId?: string;
 }
+/** Pre-computed slice for a single column-axis variant (mock mode multi-axis). */
+export interface ColAxisOption {
+    key: string;
+    label: string;
+    cols: AxisItem[];
+    cells: Map<string, CellData>;
+    rowTotals: Map<string, TotalsSlice>;
+    colTotals: Map<string, TotalsSlice>;
+    grandTotal: TotalsSlice | null;
+}
 export interface HeatmapPivotFormData extends QueryFormData {
     rowAxis: QueryFormColumn;
     colAxis: QueryFormColumn;
@@ -33,6 +43,8 @@ export interface HeatmapPivotFormData extends QueryFormData {
     valuePolarity: ValuePolarity;
     showTotals: boolean;
     emitFilter: boolean;
+    colLabelMaxChars?: number;
+    rowLabelMaxChars?: number;
     mockModeEnabled?: boolean;
     mockPreset?: string;
 }
@@ -122,6 +134,13 @@ export interface HeatmapPivotProps {
     drillQueryParams: DrillQueryParams | null;
     /** Mock-mode flag — disables real SupersetClient calls, returns synthetic data */
     mockMode: boolean;
+    /** Max chars in column header label before "…"-truncation. <=0 means no limit. */
+    colLabelMaxChars: number;
+    /** Max chars in row header label before "…"-truncation. <=0 means no limit. */
+    rowLabelMaxChars: number;
+    /** Available column-axis variants (mock mode only). When set, UI shows
+     *  collapsible Dropdown to switch axis on the fly. */
+    colAxisOptions?: ColAxisOption[];
     dataState: DataState;
     errorMessage?: string;
 }
