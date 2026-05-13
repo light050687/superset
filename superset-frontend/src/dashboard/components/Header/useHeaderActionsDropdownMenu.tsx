@@ -32,6 +32,9 @@ import { getUrlParam } from 'src/utils/urlUtils';
 import { MenuKeys } from 'src/dashboard/types';
 import { HeaderDropdownProps } from 'src/dashboard/components/Header/types';
 import { updateDashboardTheme } from 'src/dashboard/actions/dashboardInfo';
+import usePagesVisibility from 'src/dashboard/util/usePagesVisibility';
+
+const TOGGLE_PAGES_KEY = 'toggle_pages';
 
 /**
  * Меню шестерёнки в дашборде. Часто-используемые действия (Save / Share /
@@ -58,6 +61,7 @@ export const useHeaderActionsMenu = ({
   const dispatch = useDispatch();
   const [css, setCss] = useState(customCss || '');
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+  const [pagesVisible, setPagesVisible] = usePagesVisibility();
 
   useEffect(() => {
     if (customCss !== css) {
@@ -99,12 +103,21 @@ export const useHeaderActionsMenu = ({
         case MenuKeys.ManageEmbedded:
           manageEmbedded();
           break;
+        case TOGGLE_PAGES_KEY:
+          setPagesVisible(!pagesVisible);
+          break;
         default:
           break;
       }
       setIsDropdownVisible(false);
     },
-    [forceRefreshAllCharts, showPropertiesModal, manageEmbedded],
+    [
+      forceRefreshAllCharts,
+      showPropertiesModal,
+      manageEmbedded,
+      pagesVisible,
+      setPagesVisible,
+    ],
   );
 
   const changeCss = useCallback(
@@ -167,6 +180,13 @@ export const useHeaderActionsMenu = ({
       menuItems.push({ type: 'divider' });
     }
 
+    // Show / hide pages — per-dashboard toggle (localStorage). Не меняет
+    // layout, только скрывает rail с pill'ами + иконку в mini-rail.
+    menuItems.push({
+      key: TOGGLE_PAGES_KEY,
+      label: pagesVisible ? t('Скрыть страницы') : t('Показать страницы'),
+    });
+
     // Download submenu
     menuItems.push(downloadMenuItem);
 
@@ -207,6 +227,7 @@ export const useHeaderActionsMenu = ({
     editMode,
     handleMenuClick,
     handleThemeChange,
+    pagesVisible,
     userCanCurate,
   ]);
 

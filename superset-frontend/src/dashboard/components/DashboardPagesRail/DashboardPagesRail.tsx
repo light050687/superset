@@ -40,9 +40,18 @@ import {
   setActivePagePath,
   setDirectPathToChild,
 } from 'src/dashboard/actions/dashboardState';
-import { PAGE_TYPE, PAGES_TYPE } from 'src/dashboard/util/componentTypes';
+import {
+  PAGE_TYPE,
+  PAGES_TYPE,
+  TABS_TYPE,
+} from 'src/dashboard/util/componentTypes';
 import newComponentFactory from 'src/dashboard/util/newComponentFactory';
 import getDirectPathToTabIndex from 'src/dashboard/util/getDirectPathToTabIndex';
+import usePagesVisibility from 'src/dashboard/util/usePagesVisibility';
+import {
+  DASHBOARD_GRID_ID,
+  DASHBOARD_ROOT_ID,
+} from 'src/dashboard/util/constants';
 import type { RootState } from 'src/dashboard/types';
 
 /* ─── Types ──────────────────────────────────────────────────────── */
@@ -459,6 +468,7 @@ export const DashboardPagesRail: FC = () => {
   const onDashboard = useOnDashboardRoute();
   const dockMetrics = useMainDockMetrics();
   const { isDockCollapsed, hasMiniRail, pagesRailOpen } = useShell();
+  const [pagesVisible] = usePagesVisibility();
   // Hidden когда rail закрыт ИЛИ когда главный dock collapsed.
   const hidden = !pagesRailOpen || isDockCollapsed;
 
@@ -524,6 +534,81 @@ export const DashboardPagesRail: FC = () => {
       }) as any,
     );
   }, [dispatch, pagesId, pagesComponent, pageIds]);
+
+  /* Гарантируем минимум 1 страницу на всех дашбордах когда pagesVisible.
+     Case 1: layout БЕЗ PAGES_TYPE (старый формат) — оборачиваем GRID в
+              PAGES → PAGE("Страница 1"). Только если есть GRID и нет
+              TABS (TABS-based дашборды используют альтернативную
+              навигацию — не мигрируем).
+     Case 2: PAGES_TYPE есть, но детей нет — создаём первую PAGE.
+     Изменения в Redux state; в БД попадают только при явном save. */
+  useEffect(() => {
+    if (!onDashboard || !pagesVisible || !dashboardLayout) return;
+
+    // Case 1 — миграция старого layout
+    if (!pagesComponent) {
+      const rootNode = (dashboardLayout as any)[DASHBOARD_ROOT_ID];
+      const gridNode = (dashboardLayout as any)[DASHBOARD_GRID_ID];
+      if (!rootNode || !gridNode) return;
+      const hasTabs = Object.values(dashboardLayout as any).some(
+        (c: any) => c?.type === TABS_TYPE,
+      );
+      if (hasTabs) return;
+      const newPagesInit = newComponentFactory(PAGES_TYPE, undefined, [
+        DASHBOARD_ROOT_ID,
+      ]);
+      const newPageInit = newComponentFactory(
+        PAGE_TYPE,
+        { text: t('Страница 1') },
+        [DASHBOARD_ROOT_ID, newPagesInit.id],
+      );
+      /* Спред чтобы пересоздать children: factory возвращает
+         children: [] с типом never[], присваивание string ломает
+         webpack ts-loader strict mode. */
+      const newPages = { ...newPagesInit, children: [newPageInit.id] };
+      const newPage = { ...newPageInit, children: [DASHBOARD_GRID_ID] };
+      const rootChildren: string[] = rootNode.children || [];
+      const newRootChildren = rootChildren.map(c =>
+        c === DASHBOARD_GRID_ID ? newPages.id : c,
+      );
+      dispatch(
+        updateComponents({
+          [newPages.id]: newPages,
+          [newPage.id]: newPage,
+          [DASHBOARD_ROOT_ID]: { ...rootNode, children: newRootChildren },
+          [DASHBOARD_GRID_ID]: {
+            ...gridNode,
+            parents: [DASHBOARD_ROOT_ID, newPages.id, newPage.id],
+          },
+        }) as any,
+      );
+      return;
+    }
+
+    // Case 2 — есть PAGES, но 0 страниц
+    if (pagesId && pageIds.length === 0) {
+      const newPageInit = newComponentFactory(PAGE_TYPE);
+      const newPage = {
+        ...newPageInit,
+        meta: { ...(newPageInit.meta || {}), text: t('Страница 1') },
+        parents: [pagesId],
+      };
+      dispatch(
+        updateComponents({
+          [newPage.id]: newPage,
+          [pagesId]: { ...pagesComponent, children: [newPage.id] } as any,
+        }) as any,
+      );
+    }
+  }, [
+    onDashboard,
+    pagesVisible,
+    pagesComponent,
+    pagesId,
+    pageIds.length,
+    dashboardLayout,
+    dispatch,
+  ]);
 
   const handleDeletePage = useCallback(
     (pageId: string) => {
@@ -710,7 +795,12 @@ export const DashboardPagesRail: FC = () => {
     return { left: `${left}px`, top: `${top}px` };
   }, [dockMetrics, pageIds.length]);
 
-  if (!onDashboard || !pagesComponent || pageIds.length === 0) return null;
+  /* Rail рендерится даже при 0 страниц — чтобы кнопка «+ добавить
+     страницу» (AddPageBtn) была видна и юзер мог создать первую
+     страницу. Раньше return null прятал весь rail вместе с +.
+     pagesVisible — per-dashboard toggle (localStorage). Скрывает весь
+     rail без изменения layout. */
+  if (!onDashboard || !pagesComponent || !pagesVisible) return null;
 
   return (
     <Rail

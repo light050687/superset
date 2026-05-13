@@ -49,6 +49,7 @@ import {
   saveFetchStrategy,
   saveRefreshFrequency,
 } from 'src/dashboard/actions/fetchStrategy';
+import usePagesVisibility from 'src/dashboard/util/usePagesVisibility';
 import type { RootState } from 'src/dashboard/types';
 
 /* ─── Styled ─────────────────────────────────────────────────────── */
@@ -216,6 +217,7 @@ export const DashboardSettingsDrawer: FC = () => {
   const [skeleton, setSkeleton] = useState(currentStrategy.show_skeletons);
   const [refreshFreq, setRefreshFreq] = useState(currentRefreshFreq);
   const [saving, setSaving] = useState(false);
+  const [pagesVisible, setPagesVisible] = usePagesVisibility();
 
   // Sync local fetch_strategy state когда currentStrategy меняется
   // (другая вкладка / БД). Срабатывает на mount тоже — норма.
@@ -414,6 +416,34 @@ export const DashboardSettingsDrawer: FC = () => {
             <Helper id="rf-interval-help">
               {t(
                 '«Не обновлять» — авто-обновление выключено. По умолчанию.',
+              )}
+            </Helper>
+          </Field>
+        </Section>
+
+        <Section>
+          <SectionTitle>{t('Интерфейс')}</SectionTitle>
+          <SectionDesc>
+            {t(
+              'Видимость отдельных UI-элементов для текущего дашборда. Настройка сохраняется в браузере (per-user) и применяется сразу — кнопка Сохранить не нужна.',
+            )}
+          </SectionDesc>
+
+          <Field>
+            <FieldHeader>
+              <Label htmlFor="ui-pages-visible">
+                {t('Показывать страницы')}
+              </Label>
+              <Switch
+                id="ui-pages-visible"
+                checked={pagesVisible}
+                onChange={setPagesVisible}
+                aria-describedby="ui-pages-visible-help"
+              />
+            </FieldHeader>
+            <Helper id="ui-pages-visible-help">
+              {t(
+                'Скрывает rail со страницами над дашбордом и иконку «Страницы» в боковой панели. Структура страниц в layout не меняется.',
               )}
             </Helper>
           </Field>

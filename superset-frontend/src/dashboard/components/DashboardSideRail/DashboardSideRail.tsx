@@ -43,6 +43,7 @@ import { useShell } from 'src/views/components/Shell/ShellContext';
 import type { DrawerKind } from 'src/views/components/Shell/types';
 import type { RootState } from 'src/dashboard/types';
 import { useChartIds } from 'src/dashboard/util/charts/useChartIds';
+import usePagesVisibility from 'src/dashboard/util/usePagesVisibility';
 import {
   onRefresh as onRefreshAction,
   saveDashboardRequest,
@@ -590,6 +591,7 @@ export const DashboardSideRail: FC = () => {
   const dockMetrics = useMainDockMetrics();
   const dispatch = useDispatch();
   const chartIds = useChartIds();
+  const [pagesVisible] = usePagesVisibility();
 
   /* Восстанавливаем DevTools-open после reload. */
   const [devToolsOpen, setDevToolsOpen] = useState(() => {
@@ -1078,8 +1080,10 @@ export const DashboardSideRail: FC = () => {
         icon: <IconPages />,
         onClick: togglePagesRail,
         active: pagesRailOpen,
-        // Always visible — единообразный rail на всех дашбордах
-        // независимо от async hydrate'а и количества страниц.
+        // Per-dashboard visibility toggle (localStorage). Когда юзер
+        // выключил pages для этого дашборда — иконка скрывается из
+        // mini-rail. Структура layout не меняется.
+        visible: pagesVisible,
       },
       {
         kind: 'action',
@@ -1134,6 +1138,7 @@ export const DashboardSideRail: FC = () => {
     showingReportDrawer,
     pagesRailOpen,
     togglePagesRail,
+    pagesVisible,
     isStarred,
     handleToggleFavorite,
     userId,
