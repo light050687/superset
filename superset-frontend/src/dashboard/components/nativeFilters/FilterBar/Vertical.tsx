@@ -215,7 +215,19 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
 
   const filterControls = useMemo(
     () =>
-      filterValues.length === 0 ? (
+      useKanban && dashboardId ? (
+        /* Kanban рендерится всегда, даже без фильтров — нужны видимые
+           колонки-категории + preset-секция, чтобы юзер мог создавать
+           категории и применять пресеты до добавления фильтров. */
+        <FilterKanban
+          dashboardId={dashboardId}
+          dataMaskSelected={dataMaskSelected}
+          onFilterSelectionChange={onSelectionChange}
+          clearAllTriggers={clearAllTriggers}
+          onClearAllComplete={onClearAllComplete}
+          kanbanPresetCtx={kanbanPresetCtx}
+        />
+      ) : filterValues.length === 0 ? (
         <FilterBarEmptyStateContainer>
           <EmptyState
             size="small"
@@ -229,15 +241,6 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
             }
           />
         </FilterBarEmptyStateContainer>
-      ) : useKanban && dashboardId ? (
-        <FilterKanban
-          dashboardId={dashboardId}
-          dataMaskSelected={dataMaskSelected}
-          onFilterSelectionChange={onSelectionChange}
-          clearAllTriggers={clearAllTriggers}
-          onClearAllComplete={onClearAllComplete}
-          kanbanPresetCtx={kanbanPresetCtx}
-        />
       ) : (
         <FilterControlsWrapper isMobile={isMobile}>
           <FilterControls
