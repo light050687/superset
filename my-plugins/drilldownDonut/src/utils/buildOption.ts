@@ -145,15 +145,23 @@ export function buildOption(args: {
 
   const showOuterLabels = state.unit === 'pct' && state.showOuterLabelsPct;
 
+  /* Note: prefers-reduced-motion check здесь убран. Windows 11 имеет
+     system setting «Animation effects» default OFF → reduce-motion
+     matches → ECharts animation отключалась на большинстве систем.
+     Также убрали @media (prefers-reduced-motion: reduce) rules из
+     styles.ts и RadialMenu (см. debug doc entry 6 — root cause).
+     Наши animations subtle (1s scale, 0.55s fade-in) — безопасны
+     даже для motion-sensitive users. */
+
   return {
-    // Defaults для pie: animationType='expansion' (init из центра),
-    // animationTypeUpdate='transition' (плавный морф сегментов при drill).
-    // Длительности — медленнее для лучшей визуальности (юзер требование).
+    // Длительности 1:1 с ref/structure-donut-prototype.html (init 450 / update 400).
+    // animationThreshold:0 — не отключать animation для большого N (default 2000).
     animation: true,
-    animationDuration: 1200,
+    animationDuration: 450,
     animationEasing: 'cubicOut',
-    animationDurationUpdate: 1500,
+    animationDurationUpdate: 400,
     animationEasingUpdate: 'cubicInOut',
+    animationThreshold: 0,
 
     // graphic убран — hero-число рендерится HTML overlay'ем поверх canvas
     // (см. StructureDonut.tsx) с CSS-переменными --fs-hero/--fs-meta как
@@ -195,23 +203,19 @@ export function buildOption(args: {
     series: [
       {
         type: 'pie',
-        radius: state.unit === 'pct' ? ['48%', '68%'] : ['58%', '78%'],
+        radius: state.unit === 'pct' ? ['52%', '70%'] : ['62%', '80%'],
         center: ['50%', '50%'],
         avoidLabelOverlap: true,
         startAngle: 90,
         padAngle: state.padAngle,
-        // animationTypeUpdate:'transition' — smooth морф сегментов при
-        // drill (без дублей которые даёт 'expansion'). Verified Chrome
-        // MCP: с full option (как и возвращает buildOption) renders
-        // 58/60 visible pixels. animationType:'expansion' init только.
-        // Длительности на series-level (pie ignores root, issue #20193).
-        animation: true,
-        animationType: 'expansion',
-        animationTypeUpdate: 'transition',
-        animationDuration: 1000,
-        animationEasing: 'cubicOut',
-        animationDurationUpdate: 1000,
-        animationEasingUpdate: 'cubicInOut',
+        // ECharts animation выключена — Plan D: reveal анимация
+        // реализована через кастомный SVG overlay в StructureDonut.tsx
+        // (RevealSvgOverlay). Pie появляется мгновенно в финальном виде
+        // (final state ECharts canvas сразу готов). Поверх него SVG
+        // overlay с stroke-dasharray анимацией сначала рисует sectors
+        // последовательно, затем fade out → ECharts остаётся снизу
+        // для tooltip/click/hover.
+        animation: false,
         itemStyle: { borderRadius: state.borderRadius },
         label: {
           show: showOuterLabels,

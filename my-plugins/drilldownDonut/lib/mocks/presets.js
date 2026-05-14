@@ -1,8 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports._toRgba = exports.STRUCTURE_MOCK_PRESETS = void 0;
-exports.getStructurePreset = getStructurePreset;
-exports._parseCustomPreset = parseCustomPreset;
+exports._toRgba = exports._parseCustomPreset = exports.getStructurePreset = exports.STRUCTURE_MOCK_PRESETS = void 0;
 const zod_1 = require("zod");
 const types_1 = require("../types");
 const toRgba_1 = require("../utils/toRgba");
@@ -132,6 +130,7 @@ function parseCustomPreset(json) {
     }
     return result.data;
 }
+exports._parseCustomPreset = parseCustomPreset;
 /**
  * Возвращает готовые CategoryNode[] с резолвленными цветами и шейдами детей.
  * Используется в transformProps при mockModeEnabled === true.
@@ -168,4 +167,5 @@ function getStructurePreset(presetKey, customJson, tokens) {
     });
     return { categories, totalRevenue: preset.totalRevenue };
 }
+exports.getStructurePreset = getStructurePreset;
 //# sourceMappingURL=presets.js.map

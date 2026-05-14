@@ -14,10 +14,7 @@
  *   v=1500000 → "1,50 трлн ₽"
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fmtRub = fmtRub;
-exports.fmtPct = fmtPct;
-exports.fmtPctOfRev = fmtPctOfRev;
-exports.fmtCnt = fmtCnt;
+exports.fmtCnt = exports.fmtPctOfRev = exports.fmtPct = exports.fmtRub = void 0;
 const nf1 = new Intl.NumberFormat('ru-RU', {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
@@ -60,12 +57,14 @@ function fmtRub(v, decimals = 2) {
     });
     return unit ? `${fmt.format(value)} ${unit} ₽` : `${fmt.format(value)} ₽`;
 }
+exports.fmtRub = fmtRub;
 /** «12,3%» — доля от общего (базовое %-форматирование) */
 function fmtPct(v) {
     if (v == null || !Number.isFinite(v))
         return '—';
     return `${nf1.format(v)}%`;
 }
+exports.fmtPct = fmtPct;
 /**
  * «Процент от оборота». Если totalRevenue не задан — используем sum-of-visible
  * как денуминатор (вернёт тот же процент, что и fmtPct для доли).
@@ -78,10 +77,12 @@ function fmtPctOfRev(v, totalRevenue, fallbackTotal) {
         return '—';
     return `${nf1.format((v / denom) * 100)}%`;
 }
+exports.fmtPctOfRev = fmtPctOfRev;
 /** «12 480 шт» — количество операций */
 function fmtCnt(v) {
     if (v == null || !Number.isFinite(v))
         return '—';
     return `${nf0.format(v)} шт`;
 }
+exports.fmtCnt = fmtCnt;
 //# sourceMappingURL=formatRussian.js.map

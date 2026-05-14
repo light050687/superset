@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = transformProps;
 const core_1 = require("@superset-ui/core");
 const themeTokens_1 = require("../themeTokens");
 const isDarkTheme_1 = require("../utils/isDarkTheme");
@@ -178,4 +177,5 @@ function transformProps(chartProps) {
         mockModeEnabled: false,
     };
 }
+exports.default = transformProps;
 //# sourceMappingURL=transformProps.js.map

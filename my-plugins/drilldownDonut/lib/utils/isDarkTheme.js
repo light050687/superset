@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isDarkTheme = isDarkTheme;
+exports.isDarkTheme = void 0;
 /**
  * W3C luminance check на theme.colorBgContainer.
  * Повторяет логику kpiCard transformProps:566 — порог 128.
@@ -22,4 +22,5 @@ function isDarkTheme(colorBgContainer) {
         return false;
     return (r * 299 + g * 587 + b * 114) / 1000 < 128;
 }
+exports.isDarkTheme = isDarkTheme;
 //# sourceMappingURL=isDarkTheme.js.map
