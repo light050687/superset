@@ -20,9 +20,11 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
+import { useLocation } from 'react-router-dom';
 import { DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 import { IconClose } from './RailIcons';
 import { useShell } from './ShellContext';
@@ -530,6 +532,32 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
   const bodyNode = kind ? content[kind] : null;
   const footerNode = kind ? footer[kind] : null;
 
+  /* Lazy persistent mount FiltersDrawer: mount при первом открытии
+     drawer'а 'filters' (тогда dashboard state уже hydrated, нет crash
+     при Object.values(undefined)). После первого open остаётся
+     смонтированным — visibility управляется display:contents/none
+     на wrapper'е. Это предотвращает re-fetch filter_state на каждое
+     повторное открытие. flag сбрасывается при page refresh — норма. */
+  const [filtersOpenedOnce, setFiltersOpenedOnce] = useState(false);
+  useEffect(() => {
+    if (kind === 'filters' && !filtersOpenedOnce) {
+      setFiltersOpenedOnce(true);
+    }
+  }, [kind, filtersOpenedOnce]);
+
+  const loc = useLocation();
+  const onDashboardRoute = useMemo(() => {
+    const p = loc.pathname;
+    if (/\/dashboard\/list\/?$/.test(p)) return false;
+    return (
+      /^\/(superset\/)?dashboard\/[^/]+\/?/.test(p) ||
+      /^\/dashboard\/new\/?/.test(p)
+    );
+  }, [loc.pathname]);
+  const filtersNode = content.filters;
+  const shouldKeepFiltersMounted =
+    filtersOpenedOnce && onDashboardRoute && !!filtersNode;
+
   return (
     <DrawerSheet
       ref={asideRef as never}
@@ -541,7 +569,11 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
       aria-modal="false"
       data-shell-drawer="true"
     >
-      {kind ? (
+      {/* DrawerHead/Body/Footer рендерятся всегда когда filters уже был
+          открыт хоть раз (нужны portal targets для FilterBarSettings
+          и Apply/Reset). До первого открытия — стандартный conditional
+          render как раньше, чтобы не mount'ить лишнего. */}
+      {kind || shouldKeepFiltersMounted ? (
         <>
           <DragHandle role="presentation" />
           <DrawerHead>
@@ -563,11 +595,25 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
             </DrawerHeadRight>
           </DrawerHead>
           <DrawerBody ref={bodyRef} $flush={kind === 'catalog'}>
-            {bodyNode ?? (
-              <DrawerPlaceholder>
-                {t('Содержимое появится в следующем этапе.')}
-              </DrawerPlaceholder>
-            )}
+            {/* Persistent filters — после первого open остаётся в DOM. */}
+            {shouldKeepFiltersMounted ? (
+              <div
+                style={{
+                  display: kind === 'filters' ? 'contents' : 'none',
+                }}
+              >
+                {filtersNode}
+              </div>
+            ) : null}
+            {/* Другие drawer'ы — conditional как раньше. Filters сюда не
+                попадает — для них persistent блок выше. */}
+            {kind && kind !== 'filters' ? (
+              bodyNode ?? (
+                <DrawerPlaceholder>
+                  {t('Содержимое появится в следующем этапе.')}
+                </DrawerPlaceholder>
+              )
+            ) : null}
           </DrawerBody>
           {/* Footer-slot — куда FiltersDrawer портирует Apply/Reset.
               Всегда присутствует; если портала нет — пустой DrawerFooter
