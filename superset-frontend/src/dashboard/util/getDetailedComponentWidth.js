@@ -26,6 +26,23 @@ import {
   DYNAMIC_TYPE,
 } from './componentTypes';
 
+/* В проекте у чартов три режима размера (см. resizeComponent в
+   actions/dashboardLayout.js): col (legacy meta.width 1..12), sub
+   (meta.widthSub субячеек при meta.subdivisionsUsed на колонку) и
+   free (пиксельные meta.freePxWidth/Height). Для расчёта capacity
+   row'a надо приводить sub-режим к legacy-эквиваленту, иначе три
+   sub-чарта с widthSub=11/sub=5 (~2.2 col каждый, ~6.6 суммарно)
+   ошибочно считаются 4+4+4=12 и блокируют новый drop. Free-режим
+   зависит от пиксельной ширины контейнера, поэтому fall back на
+   meta.width (он сохраняется при конвертации в free). */
+function getChildEffectiveWidth(child) {
+  const meta = child.meta || {};
+  if (meta.layoutMode === 'sub' && meta.widthSub && meta.subdivisionsUsed) {
+    return meta.widthSub / meta.subdivisionsUsed;
+  }
+  return meta.width || 0;
+}
+
 function getTotalChildWidth({ id, components }) {
   const component = components[id];
   if (!component) return 0;
@@ -33,8 +50,7 @@ function getTotalChildWidth({ id, components }) {
   let width = 0;
 
   (component.children || []).forEach(childId => {
-    const child = components[childId] || {};
-    width += (child.meta || {}).width || 0;
+    width += getChildEffectiveWidth(components[childId] || {});
   });
 
   return width;
