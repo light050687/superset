@@ -12,5 +12,5 @@
 export { DashboardSideRail } from './DashboardSideRail';
 export { FiltersDrawer } from './FiltersDrawer';
 export { PagesDrawer } from './PagesDrawer';
-export { BuilderDrawer } from './BuilderDrawer';
+export { BuilderPanel } from './BuilderPanel';
 export { DashboardSettingsDrawer } from './DashboardSettingsDrawer';

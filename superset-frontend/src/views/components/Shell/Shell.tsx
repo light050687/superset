@@ -32,6 +32,13 @@ import { DS2_VARS } from 'src/theme/ds2';
 import { useThemeContext } from 'src/theme/ThemeProvider';
 import type { BootstrapUser, MenuData } from 'src/types/bootstrapTypes';
 import { getUrlParam } from 'src/utils/urlUtils';
+import {
+  DashboardSideRail,
+  FiltersDrawer,
+  DashboardSettingsDrawer,
+} from 'src/dashboard/components/DashboardSideRail';
+import { DashboardPagesRail } from 'src/dashboard/components/DashboardPagesRail';
+import GridSettingsDrawer from 'src/dashboard/components/GridGuides/GridSettingsDrawer';
 import { AiHistorySheet } from './AiHistorySheet';
 import { CalendarDropdown, type CalendarEvent } from './CalendarDropdown';
 import {
@@ -51,14 +58,6 @@ import { SettingsDropdown } from './SettingsDropdown';
 import { ShellProvider } from './ShellContext';
 import { ToolsDrawer } from './ToolsDrawer';
 import type { DrawerKind } from './types';
-import {
-  DashboardSideRail,
-  FiltersDrawer,
-  BuilderDrawer,
-  DashboardSettingsDrawer,
-} from 'src/dashboard/components/DashboardSideRail';
-import { DashboardPagesRail } from 'src/dashboard/components/DashboardPagesRail';
-import GridSettingsDrawer from 'src/dashboard/components/GridGuides/GridSettingsDrawer';
 
 /**
  * Shell = «окно приложения». С переходом на Floating Dock (Этап 1):
@@ -277,7 +276,9 @@ export const Shell: FC<React.PropsWithChildren<ShellProps>> = ({
   const handleToggleTheme = useCallback(() => {
     if (!themeCtx) return;
     const next =
-      themeCtx.themeMode === ThemeMode.DARK ? ThemeMode.DEFAULT : ThemeMode.DARK;
+      themeCtx.themeMode === ThemeMode.DARK
+        ? ThemeMode.DEFAULT
+        : ThemeMode.DARK;
     // data-theme атрибут и анимация (View Transitions API) управляются
     // централизованно внутри ThemeProvider.setThemeMode — здесь только
     // делегируем. Ручной setAttribute здесь бы сломал VT-snapshot.
@@ -338,7 +339,9 @@ export const Shell: FC<React.PropsWithChildren<ShellProps>> = ({
         if (meta.contextId !== contextId) setContextId(meta.contextId);
         if (meta.modelId !== modelId) setModelId(meta.modelId);
       }
-      const ctx = effectiveContexts.find(c => c.id === (meta?.contextId ?? contextId));
+      const ctx = effectiveContexts.find(
+        c => c.id === (meta?.contextId ?? contextId),
+      );
       const ctxPrefix =
         ctx && ctx.id !== DEFAULT_AI_CONTEXT.id ? `[${ctx.label}] ` : '';
       setAiSeedQuery(seed ? `${ctxPrefix}${seed}` : undefined);
@@ -407,7 +410,6 @@ export const Shell: FC<React.PropsWithChildren<ShellProps>> = ({
          удалён — заменён на DashboardPagesRail (toggle через кнопку
          «Страницы» в mini-rail). */
       filters: <FiltersDrawer />,
-      builder: <BuilderDrawer />,
       gridSettings: <GridSettingsDrawer />,
       dashboardSettings: <DashboardSettingsDrawer />,
       ...drawerContent,

@@ -54,7 +54,11 @@ import {
   addSuccessToast as addSuccessToastAction,
   addDangerToast as addDangerToastAction,
 } from 'src/components/MessageToasts/actions';
-import { LOG_ACTIONS_FORCE_REFRESH_DASHBOARD } from 'src/logger/LogUtils';
+import {
+  LOG_ACTIONS_FORCE_REFRESH_DASHBOARD,
+  LOG_ACTIONS_DASHBOARD_DOWNLOAD_AS_PDF,
+  LOG_ACTIONS_DASHBOARD_DOWNLOAD_AS_IMAGE,
+} from 'src/logger/LogUtils';
 import { logEvent as logEventAction } from 'src/logger/actions';
 import {
   DASHBOARD_HEADER_ID,
@@ -65,10 +69,7 @@ import copyTextToClipboard from 'src/utils/copy';
 import downloadAsPdf from 'src/utils/downloadAsPdf';
 import downloadAsImage from 'src/utils/downloadAsImage';
 import { useDownloadScreenshot } from 'src/dashboard/hooks/useDownloadScreenshot';
-import {
-  LOG_ACTIONS_DASHBOARD_DOWNLOAD_AS_PDF,
-  LOG_ACTIONS_DASHBOARD_DOWNLOAD_AS_IMAGE,
-} from 'src/logger/LogUtils';
+
 import { DownloadScreenshotFormat } from 'src/dashboard/components/menu/DownloadMenuItems/types';
 import SaveModal from 'src/dashboard/components/SaveModal';
 import {
@@ -78,6 +79,7 @@ import {
 import type { AlertObject } from 'src/features/alerts/types';
 import { DeleteModal } from '@superset-ui/core/components';
 import DevToolsPanel from './DevToolsPanel';
+import { BuilderPanel } from './BuilderPanel';
 import ReportDrawer from './ReportDrawer';
 
 /* ─── Styled ─────────────────────────────────────────────────────── */
@@ -122,8 +124,7 @@ const Rail = styled.nav<{
   --mini-delay: 200ms;
 
   transform-origin: bottom center;
-  transform: ${({ $collapsed }) =>
-    $collapsed ? 'scaleY(0)' : 'scaleY(1)'};
+  transform: ${({ $collapsed }) => ($collapsed ? 'scaleY(0)' : 'scaleY(1)')};
   opacity: ${({ $collapsed }) => ($collapsed ? 0 : 1)};
   pointer-events: ${({ $collapsed }) => ($collapsed ? 'none' : 'auto')};
   transition:
@@ -140,8 +141,7 @@ const Rail = styled.nav<{
 
   @media (prefers-reduced-motion: reduce) {
     transition: opacity 120ms ease;
-    transform: ${({ $collapsed }) =>
-      $collapsed ? 'scaleY(0)' : 'scaleY(1)'};
+    transform: ${({ $collapsed }) => ($collapsed ? 'scaleY(0)' : 'scaleY(1)')};
   }
 `;
 
@@ -274,8 +274,7 @@ const PopoverItem = styled.button<{ $danger?: boolean }>`
   min-width: 0;
   padding: 0 12px;
   box-sizing: border-box;
-  border: 1px solid
-    ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.g200)};
+  border: 1px solid ${({ $danger }) => ($danger ? DS2_VARS.dn : DS2_VARS.g200)};
   border-radius: 10px;
   background: ${DS2_VARS.s};
   backdrop-filter: blur(12px);
@@ -542,9 +541,7 @@ function useMainDockMetrics(): DockMetrics | null {
     let observer: ResizeObserver | null = null;
     let dock: HTMLElement | null = null;
     const tryAttach = (attemptsLeft: number) => {
-      dock = document.querySelector<HTMLElement>(
-        'nav[data-shell-rail="main"]',
-      );
+      dock = document.querySelector<HTMLElement>('nav[data-shell-rail="main"]');
       if (!dock && attemptsLeft > 0) {
         requestAnimationFrame(() => tryAttach(attemptsLeft - 1));
         return;
@@ -586,6 +583,8 @@ export const DashboardSideRail: FC = () => {
     pagesRailOpen,
     togglePagesRail,
     setSideRailPopupOpen,
+    builderPanelOpen,
+    setBuilderPanelOpen,
   } = useShell();
   const onDashboard = useOnDashboardRoute();
   const dockMetrics = useMainDockMetrics();
@@ -841,12 +840,14 @@ export const DashboardSideRail: FC = () => {
           preventDefault: () => {},
           stopPropagation: () => {},
         } as any;
-        downloadAsPdf(SCREENSHOT_NODE_SELECTOR, dashboardTitle, true)(fakeEvent);
+        downloadAsPdf(
+          SCREENSHOT_NODE_SELECTOR,
+          dashboardTitle,
+          true,
+        )(fakeEvent);
       } catch (error) {
         logging.error(error);
-        dispatch(
-          addDangerToastAction(t('Не удалось экспортировать в PDF.')),
-        );
+        dispatch(addDangerToastAction(t('Не удалось экспортировать в PDF.')));
       }
     }
     dispatch(logEventAction(LOG_ACTIONS_DASHBOARD_DOWNLOAD_AS_PDF, {}));
@@ -1184,9 +1185,7 @@ export const DashboardSideRail: FC = () => {
                 aria-haspopup="menu"
                 aria-expanded={isOpen}
                 title={item.label}
-                onClick={() =>
-                  setOpenPopoverId(isOpen ? null : item.id)
-                }
+                onClick={() => setOpenPopoverId(isOpen ? null : item.id)}
               >
                 {item.icon}
               </RailBtn>
@@ -1196,8 +1195,7 @@ export const DashboardSideRail: FC = () => {
           /* Звезда избранного — единственная кнопка с цветным
              active-state'ом (амбер) и БЕЗ фона/ring'а: цвет
              заполняет саму иконку, не «коробку» вокруг. */
-          const isFavorite =
-            item.kind === 'action' && item.id === 'favorite';
+          const isFavorite = item.kind === 'action' && item.id === 'favorite';
           return (
             <RailBtn
               key={key}
@@ -1295,7 +1293,12 @@ export const DashboardSideRail: FC = () => {
             <span
               ref={saveTriggerRef}
               aria-hidden="true"
-              style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}
+              style={{
+                position: 'absolute',
+                width: 0,
+                height: 0,
+                overflow: 'hidden',
+              }}
             />
           }
           canOverwrite={userCanEdit}
@@ -1329,8 +1332,10 @@ export const DashboardSideRail: FC = () => {
         />
       )}
 
-      {devToolsOpen && (
-        <DevToolsPanel onClose={() => setDevToolsOpen(false)} />
+      {devToolsOpen && <DevToolsPanel onClose={() => setDevToolsOpen(false)} />}
+
+      {builderPanelOpen && (
+        <BuilderPanel onClose={() => setBuilderPanelOpen(false)} />
       )}
     </>
   );

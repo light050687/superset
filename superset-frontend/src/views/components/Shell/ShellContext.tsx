@@ -59,11 +59,22 @@ interface ShellContextValue {
    */
   sideRailPopupOpen: string | null;
   setSideRailPopupOpen: (id: string | null) => void;
+  /**
+   * Открыт ли BuilderPanel (плавающее окно «Библиотека») — параллельно
+   * Shell-drawer'ам, как DevToolsPanel. Не входит в DrawerKind: имеет
+   * свой draggable/resizable lifecycle и не привязан к bottom-sheet
+   * слоту. Toggle через DevToolsPanel tile «Открыть библиотеку».
+   */
+  builderPanelOpen: boolean;
+  toggleBuilderPanel: () => void;
+  setBuilderPanelOpen: (open: boolean) => void;
 }
 
 const ShellContext = createContext<ShellContextValue | null>(null);
 
-export const ShellProvider: FC<React.PropsWithChildren<{ children: ReactNode }>> = ({ children }) => {
+export const ShellProvider: FC<
+  React.PropsWithChildren<{ children: ReactNode }>
+> = ({ children }) => {
   const [openedDrawer, setOpenedDrawer] = useState<DrawerKind | null>(null);
   const [activeRailId, setActiveRailId] = useState<string | null>(null);
   const [isDockCollapsed, setDockCollapsed] = useState(false);
@@ -72,6 +83,7 @@ export const ShellProvider: FC<React.PropsWithChildren<{ children: ReactNode }>>
   const [sideRailPopupOpen, setSideRailPopupOpen] = useState<string | null>(
     null,
   );
+  const [builderPanelOpen, setBuilderPanelOpen] = useState(false);
 
   const toggleDrawer = useCallback((kind: DrawerKind) => {
     setOpenedDrawer(prev => (prev === kind ? null : kind));
@@ -83,6 +95,10 @@ export const ShellProvider: FC<React.PropsWithChildren<{ children: ReactNode }>>
 
   const togglePagesRail = useCallback(() => {
     setPagesRailOpen(prev => !prev);
+  }, []);
+
+  const toggleBuilderPanel = useCallback(() => {
+    setBuilderPanelOpen(prev => !prev);
   }, []);
 
   const value = useMemo<ShellContextValue>(
@@ -101,6 +117,9 @@ export const ShellProvider: FC<React.PropsWithChildren<{ children: ReactNode }>>
       setPagesRailOpen,
       sideRailPopupOpen,
       setSideRailPopupOpen,
+      builderPanelOpen,
+      toggleBuilderPanel,
+      setBuilderPanelOpen,
     }),
     [
       openedDrawer,
@@ -112,6 +131,8 @@ export const ShellProvider: FC<React.PropsWithChildren<{ children: ReactNode }>>
       pagesRailOpen,
       togglePagesRail,
       sideRailPopupOpen,
+      builderPanelOpen,
+      toggleBuilderPanel,
     ],
   );
 

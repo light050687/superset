@@ -159,10 +159,7 @@ export const FiltersDrawer: FC = () => {
           }}
         />
         {/* Portal: unified-search в центр drawer-шапки. */}
-        <DrawerHeadSearchPortal
-          query={searchQuery}
-          setQuery={setSearchQuery}
-        />
+        <DrawerHeadSearchPortal query={searchQuery} setQuery={setSearchQuery} />
         {/* Portal: шестерёнка (FilterBarSettings) в правую часть drawer-
             шапки, рядом с крестиком. */}
         <DrawerHeadSettingsPortal />
@@ -177,13 +174,19 @@ export const FiltersDrawer: FC = () => {
  * рендерит СЛЕВА от кнопки закрытия. Шестерёнка визуально стоит
  * вплотную к крестику. Node lookup через document.getElementById,
  * корректно переживает mount/unmount drawer'а.
+ *
+ * Гарда openedDrawer==='filters' — FiltersDrawer персистентно
+ * смонтирован после первого открытия (display:none), но шестерёнка
+ * через portal попадает в общую drawer-шапку. Без гарды она бы
+ * показывалась поверх других drawer'ов.
  */
 const DrawerHeadSettingsPortal: FC = () => {
+  const { openedDrawer } = useShell();
   const [mount, setMount] = useState<HTMLElement | null>(null);
   useEffect(() => {
     setMount(document.getElementById(DRAWER_HEAD_RIGHT_ID));
   }, []);
-  if (!mount) return null;
+  if (!mount || openedDrawer !== 'filters') return null;
   return createPortal(<FilterBarSettings />, mount);
 };
 
@@ -192,16 +195,22 @@ const DrawerHeadSettingsPortal: FC = () => {
  * и action-слотом. Provides `query` в FilterSearchContext, по которому
  * фильтруются пресеты (через fetchPresets) и карточки фильтров
  * (по name). Колонки без совпадений свёрнуты / скрыты автоматически.
+ *
+ * Гарда openedDrawer==='filters' — иначе portal'ируется в чужую
+ * drawer-шапку (catalog/tools/...). FiltersDrawer персистентно
+ * смонтирован (display:none) после первого открытия, но Portal target
+ * лежит в общем drawer-shell и виден независимо от visibility.
  */
 const DrawerHeadSearchPortal: FC<{
   query: string;
   setQuery: (v: string) => void;
 }> = ({ query, setQuery }) => {
+  const { openedDrawer } = useShell();
   const [mount, setMount] = useState<HTMLElement | null>(null);
   useEffect(() => {
     setMount(document.getElementById(DRAWER_HEAD_CENTER_ID));
   }, []);
-  if (!mount) return null;
+  if (!mount || openedDrawer !== 'filters') return null;
   return createPortal(
     <Input
       allowClear

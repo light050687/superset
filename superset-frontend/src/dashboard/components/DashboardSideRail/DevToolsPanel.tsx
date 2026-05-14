@@ -350,14 +350,26 @@ const TileName = styled.span<{ $disabled?: boolean }>`
 /* ─── Inline SVG ─────────────────────────────────────────────────── */
 
 const IconEdit = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M3.5 14.5v3h3l9-9-3-3-9 9z" />
     <path d="M12 5l3 3" />
   </svg>
 );
 
 const IconSave = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M4 4.5v11a1 1 0 001 1h10a1 1 0 001-1V7.5l-3-3H5a1 1 0 00-1 1z" />
     <path d="M7 4.5v3.5h5V4.5" />
     <path d="M6.5 16v-5h7v5" />
@@ -365,21 +377,39 @@ const IconSave = (): JSX.Element => (
 );
 
 const IconUndo = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M5 9h8a4 4 0 010 8h-2" />
     <path d="M7.5 6L5 9l2.5 3" />
   </svg>
 );
 
 const IconRedo = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M15 9H7a4 4 0 000 8h2" />
     <path d="M12.5 6L15 9l-2.5 3" />
   </svg>
 );
 
 const IconDiscard = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M4 6h12" />
     <path d="M7.5 6V4.5h5V6" />
     <path d="M5.5 6l.8 9.5a1 1 0 001 .9h5.4a1 1 0 001-.9L14.5 6" />
@@ -389,7 +419,13 @@ const IconDiscard = (): JSX.Element => (
 
 /* IconBuilderTile — «stacked blocks» для tile «Конструктор». */
 const IconBuilderTile = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <rect x="3" y="3" width="6" height="6" rx="1" />
     <rect x="11" y="3" width="6" height="6" rx="1" />
     <rect x="3" y="11" width="6" height="6" rx="1" />
@@ -399,7 +435,13 @@ const IconBuilderTile = (): JSX.Element => (
 
 /* IconPublish — глобус с галочкой: «опубликовано/доступно всем». */
 const IconPublish = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <circle cx="10" cy="10" r="7" />
     <path d="M3 10h14M10 3a10 10 0 010 14M10 3a10 10 0 000 14" />
   </svg>
@@ -407,7 +449,13 @@ const IconPublish = (): JSX.Element => (
 
 /* IconUnpublish — глобус с чертой: «снять с публикации». */
 const IconUnpublish = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <circle cx="10" cy="10" r="7" />
     <path d="M3 10h14M10 3a10 10 0 010 14M10 3a10 10 0 000 14" />
     <path d="M4 4l12 12" />
@@ -418,7 +466,13 @@ const IconUnpublish = (): JSX.Element => (
    TODO: реализовать раскладки (bento, masonry, equal-grid). Сейчас
    tile только placeholder, чтобы зарезервировать место в DevTools. */
 const IconTemplates = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <rect x="3" y="3" width="7" height="9" rx="1" />
     <rect x="11" y="3" width="6" height="5" rx="1" />
     <rect x="11" y="9" width="6" height="3" rx="1" />
@@ -428,7 +482,13 @@ const IconTemplates = (): JSX.Element => (
 
 /* IconGrid — иконка «сетка» (3×3 dots) для tile «Сетка». */
 const IconGrid = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <rect x="3" y="3" width="4" height="4" rx="0.5" />
     <rect x="8.5" y="3" width="4" height="4" rx="0.5" />
     <rect x="14" y="3" width="3" height="4" rx="0.5" />
@@ -443,7 +503,13 @@ const IconGrid = (): JSX.Element => (
 
 /* Pin: вертикальная кнопка с шапкой. Active = pinned. */
 const IconPin = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M10 3v4l-2.5 3.5h5L10 7" />
     <path d="M10 11v5M6 10.5h8" />
   </svg>
@@ -451,7 +517,13 @@ const IconPin = (): JSX.Element => (
 
 /* Reset position icon — домик / точка с якорем. */
 const IconReset = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M3 10l7-6 7 6" />
     <path d="M5 9.5V16h10V9.5" />
   </svg>
@@ -459,14 +531,26 @@ const IconReset = (): JSX.Element => (
 
 /* Gear icon — открывает DashboardSettingsDrawer (через Shell drawer). */
 const IconGear = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <circle cx="10" cy="10" r="2.2" />
     <path d="M10 3v2M10 15v2M3 10h2M15 10h2M5.6 5.6l1.4 1.4M13 13l1.4 1.4M5.6 14.4L7 13M13 7l1.4-1.4" />
   </svg>
 );
 
 const IconCloseX = (): JSX.Element => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M5 5l10 10M15 5L5 15" />
   </svg>
 );
@@ -508,7 +592,8 @@ interface DevToolsPanelProps {
 
 export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
   const dispatch = useDispatch();
-  const { toggleDrawer, openedDrawer } = useShell();
+  const { toggleDrawer, openedDrawer, builderPanelOpen, toggleBuilderPanel } =
+    useShell();
   const editMode = useSelector<RootState, boolean>(
     state => state.dashboardState?.editMode ?? false,
   );
@@ -654,14 +739,8 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
   const applyStyle = useCallback(() => {
     const el = panelRef.current;
     if (!el) return;
-    const w = Math.min(
-      Math.max(320, sizeRef.current.w),
-      window.innerWidth,
-    );
-    const h = Math.min(
-      Math.max(200, sizeRef.current.h),
-      window.innerHeight,
-    );
+    const w = Math.min(Math.max(320, sizeRef.current.w), window.innerWidth);
+    const h = Math.min(Math.max(200, sizeRef.current.h), window.innerHeight);
     const x = Math.max(0, Math.min(window.innerWidth - w, posRef.current.x));
     const y = Math.max(0, Math.min(window.innerHeight - h, posRef.current.y));
     posRef.current = { x, y };
@@ -886,20 +965,19 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
       onClick: handleDiscard,
       disabled: !editMode,
     },
-    /* Конструктор — перенесён сюда по запросу юзера. Открывает
-       Shell-drawer kind='builder' (SliceAdder + layout-элементы).
-       Toggle: если builder уже открыт — tile просто закрывает его.
-       Виден только в edit-mode (конструктор нужен только при
-       редактировании лейаута). */
+    /* Библиотека — плавающее окно (BuilderPanel) с табами «Чарты»/
+       «Оформление». Параллельно DevToolsPanel, имеет свой
+       draggable/resizable lifecycle. Toggle через ShellContext.
+       Виден только в edit-mode (библиотека нужна при редактировании
+       лейаута). */
     {
       key: 'builder',
-      label:
-        openedDrawer === 'builder'
-          ? t('Закрыть конструктор')
-          : t('Открыть конструктор'),
+      label: builderPanelOpen
+        ? t('Закрыть библиотеку')
+        : t('Открыть библиотеку'),
       accent: DS2_VARS.cViolet,
       icon: <IconBuilderTile />,
-      onClick: () => toggleDrawer('builder'),
+      onClick: toggleBuilderPanel,
       disabled: !editMode,
     },
     /* Tile «Сетка» — открывает Shell-drawer kind='gridSettings' (тот же
@@ -939,9 +1017,7 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
        пересчитывало дашборд»). */
     {
       key: 'publish',
-      label: isPublished
-        ? t('Снять с публикации')
-        : t('Опубликовать дашборд'),
+      label: isPublished ? t('Снять с публикации') : t('Опубликовать дашборд'),
       accent: isPublished ? DS2_VARS.up : DS2_VARS.cSky,
       icon: isPublished ? <IconUnpublish /> : <IconPublish />,
       onClick: handleTogglePublish,

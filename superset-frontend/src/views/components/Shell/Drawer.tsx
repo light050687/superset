@@ -42,7 +42,10 @@ export const DRAWER_WIDTH = 220;
  * - tools / create / default: ~760px × 320px
  * Разделяем через проп $kind.
  */
-const DrawerSheet = styled.aside<{ $open: boolean; $kind: 'catalog' | 'other' }>`
+const DrawerSheet = styled.aside<{
+  $open: boolean;
+  $kind: 'catalog' | 'other';
+}>`
   position: fixed;
   bottom: ${DS2_VARS.drawerBottom};
   left: 50%;
@@ -297,7 +300,6 @@ const DEFAULT_TITLES: Record<DrawerKind, string> = {
   create: 'Создать',
   filters: 'Фильтры дашборда',
   pages: 'Страницы дашборда',
-  builder: 'Конструктор',
   gridSettings: 'Сетка',
   dashboardSettings: 'Настройки дашборда',
 };
@@ -504,10 +506,7 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
             node.scrollTop + node.clientHeight >= node.scrollHeight - 1;
           const scrollingUp = e.deltaY < 0;
           const scrollingDown = e.deltaY > 0;
-          if (
-            (scrollingUp && !atTop) ||
-            (scrollingDown && !atBottom)
-          ) {
+          if ((scrollingUp && !atTop) || (scrollingDown && !atBottom)) {
             // Native scroll у child'а — выходим.
             return;
           }
@@ -528,7 +527,7 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
 
   const kind = openedDrawer;
   const isOpen = kind !== null;
-  const title = kind ? titles[kind] ?? t(DEFAULT_TITLES[kind]) : '';
+  const title = kind ? (titles[kind] ?? t(DEFAULT_TITLES[kind])) : '';
   const bodyNode = kind ? content[kind] : null;
   const footerNode = kind ? footer[kind] : null;
 
@@ -607,13 +606,13 @@ export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
             ) : null}
             {/* Другие drawer'ы — conditional как раньше. Filters сюда не
                 попадает — для них persistent блок выше. */}
-            {kind && kind !== 'filters' ? (
-              bodyNode ?? (
-                <DrawerPlaceholder>
-                  {t('Содержимое появится в следующем этапе.')}
-                </DrawerPlaceholder>
-              )
-            ) : null}
+            {kind && kind !== 'filters'
+              ? (bodyNode ?? (
+                  <DrawerPlaceholder>
+                    {t('Содержимое появится в следующем этапе.')}
+                  </DrawerPlaceholder>
+                ))
+              : null}
           </DrawerBody>
           {/* Footer-slot — куда FiltersDrawer портирует Apply/Reset.
               Всегда присутствует; если портала нет — пустой DrawerFooter
