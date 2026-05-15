@@ -166,6 +166,7 @@ export const GridSettingsDrawer: FC = () => {
     setRowGap,
     setSubdivisions,
     setFreeMode,
+    setPixelStep,
     reset: resetGridGuides,
   } = useGridGuides();
 
@@ -189,6 +190,13 @@ export const GridSettingsDrawer: FC = () => {
       if (Number.isFinite(n)) setSubdivisions(n);
     },
     [setSubdivisions],
+  );
+  const handlePixelStepChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const n = Number(e.target.value);
+      if (Number.isFinite(n)) setPixelStep(n);
+    },
+    [setPixelStep],
   );
 
   return (
@@ -292,7 +300,7 @@ export const GridSettingsDrawer: FC = () => {
             <span>{t('Произвольный размер (free mode)')}</span>
             <Hint>
               {t(
-                'Snap = 1 px. Чарт ресайзится до любых размеров; сохраняется в пикселях',
+                'Snap = настраиваемый шаг (по умолчанию 1 px). Чарт ресайзится до любых размеров; сохраняется в пикселях',
               )}
             </Hint>
           </Label>
@@ -305,6 +313,30 @@ export const GridSettingsDrawer: FC = () => {
             onClick={() => setFreeMode(!gridGuides.freeMode)}
           />
         </Row>
+        {gridGuides.freeMode && (
+          <Row>
+            <Label>
+              <span>{t('Шаг snap в пикселях')}</span>
+              <Hint>
+                {t(
+                  'От %s до %s px. По умолчанию %s — полная пиксельная свобода. Больше = чаще «прилипает» к шагу',
+                  GRID_GUIDES_LIMITS.minPixelStep,
+                  GRID_GUIDES_LIMITS.maxPixelStep,
+                  GRID_GUIDES_DEFAULTS.pixelStep,
+                )}
+              </Hint>
+            </Label>
+            <NumberInput
+              type="number"
+              min={GRID_GUIDES_LIMITS.minPixelStep}
+              max={GRID_GUIDES_LIMITS.maxPixelStep}
+              step={1}
+              value={gridGuides.pixelStep}
+              onChange={handlePixelStepChange}
+              aria-label={t('Шаг snap в пикселях')}
+            />
+          </Row>
+        )}
         <ResetBtn type="button" onClick={resetGridGuides}>
           {t('Сбросить настройки')}
         </ResetBtn>

@@ -49,10 +49,13 @@ export interface GridGuidesState {
    *  2=2 в каждой колонке, итого 24, и т.д.). Делает сетку мельче,
    *  отступы (columnGap/rowGap) при этом не меняются. */
   subdivisions: number;
-  /** Режим произвольных размеров — snap=1px, чарт можно ресайзить
+  /** Режим произвольных размеров — snap=pixelStep, чарт можно ресайзить
    *  до любого пиксельного значения. Layout сохраняет
    *  meta.freePxWidth/freePxHeight; layoutMode=free. */
   freeMode: boolean;
+  /** Шаг snap в пикселях, применяется только при freeMode=true.
+   *  По умолчанию 1 (полная пиксельная свобода). 1-50 px. */
+  pixelStep: number;
 }
 
 /* Defaults = стандартные значения Superset-grid'а:
@@ -65,6 +68,7 @@ const DEFAULT_STATE: GridGuidesState = {
   rowGap: 16,
   subdivisions: 4,
   freeMode: false,
+  pixelStep: 1,
 };
 
 const LS_KEY = 'superset.gridGuides.v6';
@@ -73,12 +77,17 @@ const MIN_GAP = 0;
 const MAX_GAP = 64;
 const MIN_SUBDIVISIONS = 1;
 const MAX_SUBDIVISIONS = 8;
+const MIN_PIXEL_STEP = 1;
+const MAX_PIXEL_STEP = 50;
 
 function clampGap(n: number): number {
   return Math.max(MIN_GAP, Math.min(MAX_GAP, Math.round(n)));
 }
 function clampSub(n: number): number {
   return Math.max(MIN_SUBDIVISIONS, Math.min(MAX_SUBDIVISIONS, Math.round(n)));
+}
+function clampPixelStep(n: number): number {
+  return Math.max(MIN_PIXEL_STEP, Math.min(MAX_PIXEL_STEP, Math.round(n)));
 }
 
 function readPersist(): GridGuidesState {
@@ -111,6 +120,10 @@ function readPersist(): GridGuidesState {
         typeof parsed.freeMode === 'boolean'
           ? parsed.freeMode
           : DEFAULT_STATE.freeMode,
+      pixelStep:
+        typeof parsed.pixelStep === 'number'
+          ? clampPixelStep(parsed.pixelStep)
+          : DEFAULT_STATE.pixelStep,
     };
   } catch {
     return DEFAULT_STATE;
@@ -143,7 +156,8 @@ function shallowEqual(a: GridGuidesState, b: GridGuidesState): boolean {
     a.columnGap === b.columnGap &&
     a.rowGap === b.rowGap &&
     a.subdivisions === b.subdivisions &&
-    a.freeMode === b.freeMode
+    a.freeMode === b.freeMode &&
+    a.pixelStep === b.pixelStep
   );
 }
 
@@ -189,6 +203,7 @@ export interface GridGuidesApi {
   setRowGap: (v: number) => void;
   setSubdivisions: (v: number) => void;
   setFreeMode: (v: boolean) => void;
+  setPixelStep: (v: number) => void;
   reset: () => void;
 }
 
@@ -223,6 +238,10 @@ export const useGridGuides = (): GridGuidesApi => {
     (v: boolean) => setState({ freeMode: v }),
     [],
   );
+  const setPixelStep = useCallback(
+    (v: number) => setState({ pixelStep: clampPixelStep(v) }),
+    [],
+  );
   const reset = useCallback(() => {
     setState(DEFAULT_STATE);
   }, []);
@@ -235,6 +254,7 @@ export const useGridGuides = (): GridGuidesApi => {
     setRowGap,
     setSubdivisions,
     setFreeMode,
+    setPixelStep,
     reset,
   };
 };
@@ -244,6 +264,8 @@ export const GRID_GUIDES_LIMITS = {
   maxGap: MAX_GAP,
   minSubdivisions: MIN_SUBDIVISIONS,
   maxSubdivisions: MAX_SUBDIVISIONS,
+  minPixelStep: MIN_PIXEL_STEP,
+  maxPixelStep: MAX_PIXEL_STEP,
 };
 
 export const GRID_GUIDES_DEFAULTS = DEFAULT_STATE;

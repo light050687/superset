@@ -331,15 +331,22 @@ const ChartHolder = ({
      рендерит outer container с тем же размером. */
   const resizeConfig = useMemo(() => {
     if (effectiveMode === 'free') {
+      /* pixelStep — настраиваемый шаг snap из GridGuidesContext.
+         Default = 1 (полная пиксельная свобода, прежнее поведение).
+         widthMultiple/heightMultiple теперь в единицах step, чтобы
+         итоговый px-размер (step * multiple) не зависел от step. */
+      const step = Math.max(1, gridGuides.pixelStep);
+      const minW = Math.ceil(80 / step);
+      const minH = Math.ceil(60 / step);
       return {
-        widthStep: 1,
+        widthStep: step,
         gutterWidth: 0,
-        widthMultiple: Math.max(80, Math.round(metaOuter.w)),
-        heightStep: 1,
-        heightMultipleResolved: Math.max(60, Math.round(metaOuter.h)),
-        minWidthMultiple: 80,
+        widthMultiple: Math.max(minW, Math.round(metaOuter.w / step)),
+        heightStep: step,
+        heightMultipleResolved: Math.max(minH, Math.round(metaOuter.h / step)),
+        minWidthMultiple: minW,
         maxWidthMultiple: 99999,
-        minHeightMultiple: 60,
+        minHeightMultiple: minH,
         effectiveMode: 'free' as const,
       };
     }
@@ -404,6 +411,7 @@ const ChartHolder = ({
     metaOuter,
     gridGuides.columnGap,
     gridGuides.rowGap,
+    gridGuides.pixelStep,
     columnWidth,
     widthMultiple,
     component.meta.height,
