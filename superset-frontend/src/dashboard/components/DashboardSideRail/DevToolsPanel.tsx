@@ -132,10 +132,11 @@ const Panel = styled.div<{ $pinned: boolean; $animateIn: boolean }>`
   overflow: auto;
   user-select: none;
 
-  /* Min-width 400 = header'у (Title 240 + HeaderRight 80 + gap 12 +
-     padding 44 ≈ 376) хватает места, крест не вылезает, даже при
-     самом маленьком ресайзе. */
-  min-width: 400px;
+  /* Min-width 240 = после переезда 4 edit-actions в Toolbar основное
+     окно может сужаться до 1 колонки grid. Header при 240px: Title
+     с min-width:0 + ellipsis + 3×IconBtn 24px + gaps ≈ 156px —
+     помещается. Body inner ~196px → 1 тайл minmax(min(116px,100%),1fr). */
+  min-width: 240px;
   min-height: 240px;
   max-width: 100vw;
   max-height: 100vh;
@@ -170,6 +171,96 @@ const Panel = styled.div<{ $pinned: boolean; $animateIn: boolean }>`
       opacity: 1;
       transform: translateY(0);
     }
+  }
+`;
+
+/* ─── Pinned Toolbar (4 edit-actions над Panel) ──────────────────── */
+
+/* Toolbar — отдельное закреплённое окно над Panel с 4 ключевыми
+   действиями: edit/save, undo, redo, discard. Визуально независимое
+   окно (свой border/тень/фон), но геометрически синхронизировано с
+   Panel через applyStyle()/handleDragStart()/ResizeObserver.
+   Lifecycle привязан к Panel: открывается/закрывается вместе. */
+const TOOLBAR_GAP_PX = 10;
+const TOOLBAR_HEIGHT_PX = 64;
+/* Container query breakpoint: ниже ширины — labels скрываются,
+   остаются только иконки + tooltip (через title-attr). 440px = 4 кнопки
+   с текстом «Сохранить дашборд» (~110px каждая) ещё читаемы. */
+const TOOLBAR_COMPACT_BREAKPOINT = 440;
+
+const Toolbar = styled.div<{ $pinned: boolean; $animateIn: boolean }>`
+  position: fixed;
+  box-sizing: border-box;
+  background: ${DS2_VARS.drawerBg};
+  backdrop-filter: ${DS2_VARS.drawerFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.drawerFilter};
+  border: 1px solid ${DS2_VARS.drawerBorder};
+  border-radius: ${DS2_VARS.drawerRadius};
+  box-shadow: ${DS2_VARS.drawerShadow};
+  z-index: 110;
+  height: ${TOOLBAR_HEIGHT_PX}px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: ${DS2_SPACE.s1 + 2}px;
+  padding: 8px 12px;
+  align-items: stretch;
+  user-select: none;
+  container-type: inline-size;
+  container-name: devtools-toolbar;
+  cursor: ${({ $pinned }) => ($pinned ? 'default' : 'grab')};
+  &:active {
+    cursor: ${({ $pinned }) => ($pinned ? 'default' : 'grabbing')};
+  }
+  ${({ $animateIn }) =>
+    $animateIn
+      ? `animation: devtoolsEnter 0.28s cubic-bezier(0.32, 0.72, 0, 1);`
+      : ''}
+`;
+
+const ToolbarBtn = styled.button<{ $accent: string; $disabled?: boolean }>`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: ${DS2_SPACE.s2}px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid ${DS2_VARS.g200};
+  border-radius: 8px;
+  cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
+  opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
+  color: ${({ $accent, $disabled }) => ($disabled ? DS2_VARS.g500 : $accent)};
+  transition:
+    background 0.12s ${DS2_VARS.ease},
+    border-color 0.12s ${DS2_VARS.ease};
+  min-width: 0;
+  &:hover {
+    background: ${({ $disabled }) =>
+      $disabled ? 'transparent' : DS2_VARS.tileHoverBg};
+    border-color: ${({ $disabled }) =>
+      $disabled ? DS2_VARS.g200 : DS2_VARS.tileHoverBorder};
+  }
+  &:focus-visible {
+    outline: 2px solid ${DS2_VARS.cSky};
+    outline-offset: 2px;
+  }
+  svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 1.6;
+    flex-shrink: 0;
+  }
+`;
+
+const ToolbarLabel = styled.span`
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  @container devtools-toolbar (max-width: ${TOOLBAR_COMPACT_BREAKPOINT}px) {
+    display: none;
   }
 `;
 
@@ -268,19 +359,9 @@ const Section = styled.div`
   gap: ${DS2_SPACE.s2}px;
 `;
 
-const SecLabel = styled.div`
-  font-size: var(--fs-micro);
-  font-weight: 600;
-  font-family: ${DS2_VARS.fontMono};
-  color: ${DS2_VARS.g500};
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 0 2px;
-`;
-
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(116px, 100%), 1fr));
   gap: ${DS2_SPACE.s1 + 2}px;
 `;
 
@@ -729,6 +810,9 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
   /* ─── Inline-style apply (ВСЕГДА, ref-based) ───────────────────── */
 
   const panelRef = useRef<HTMLDivElement | null>(null);
+  /* Toolbar ref — синхронизируется с Panel через applyStyle/drag/resize.
+     position: fixed; geometry устанавливается inline-стилем как у Panel. */
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
 
   /** Записывает текущие posRef/sizeRef в inline-style панели
    *  (left/top/width/height) и clamp'ит в bounds viewport'а. Вызывается
@@ -739,16 +823,30 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
   const applyStyle = useCallback(() => {
     const el = panelRef.current;
     if (!el) return;
-    const w = Math.min(Math.max(320, sizeRef.current.w), window.innerWidth);
+    const w = Math.min(Math.max(240, sizeRef.current.w), window.innerWidth);
     const h = Math.min(Math.max(200, sizeRef.current.h), window.innerHeight);
+    /* minY гарантирует место сверху для Toolbar: TOOLBAR_HEIGHT + GAP.
+       Если panel.top < minY — Toolbar.top уйдёт в отрицательное и
+       обрежется браузером. clamp здесь не даёт этому случиться. */
+    const minY = TOOLBAR_HEIGHT_PX + TOOLBAR_GAP_PX;
     const x = Math.max(0, Math.min(window.innerWidth - w, posRef.current.x));
-    const y = Math.max(0, Math.min(window.innerHeight - h, posRef.current.y));
+    const y = Math.max(
+      minY,
+      Math.min(window.innerHeight - h, posRef.current.y),
+    );
     posRef.current = { x, y };
     sizeRef.current = { w, h };
     el.style.left = `${x}px`;
     el.style.top = `${y}px`;
     el.style.width = `${w}px`;
     el.style.height = `${h}px`;
+    /* Sync toolbar: ширина = Panel'у, top = Panel.top - height - gap. */
+    const tb = toolbarRef.current;
+    if (tb) {
+      tb.style.left = `${x}px`;
+      tb.style.top = `${y - TOOLBAR_HEIGHT_PX - TOOLBAR_GAP_PX}px`;
+      tb.style.width = `${w}px`;
+    }
   }, []);
 
   /* Apply один раз при mount'е и каждый раз когда toggle'ится pinned
@@ -760,18 +858,24 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
 
   /* ─── Drag (только unpinned) ───────────────────────────────────── */
 
-  const dragRef = useRef<{ dx: number; dy: number } | null>(null);
+  const dragRef = useRef<{
+    dx: number;
+    dy: number;
+    source: 'panel' | 'toolbar';
+  } | null>(null);
 
-  /** mousedown на ЛЮБОМ месте панели кроме интерактивных элементов
-   *  (кнопки, ссылки, input'ы, tile'ы). Юзер может схватить окно за
-   *  любое место — требование из фидбека «хочу хватать окно за
-   *  любое место а не только за верх». */
-  const handlePanelMouseDown = useCallback(
-    (e: ReactMouseEvent) => {
+  /** mousedown на ЛЮБОМ месте Panel'а ИЛИ Toolbar'а (кроме интерактивных
+   *  элементов). Drag за Toolbar = drag всего блока (Panel + Toolbar)
+   *  как единого целого: offset запоминается от верхнего-левого угла
+   *  Toolbar'а, при move корректируем `panel.top = ev.y - dy + TOOLBAR_H + GAP`.
+   *  Source разделяет ветки в onMove чтобы корректно пересчитать
+   *  координату Panel из mouse'а. */
+  const handleDragStart = useCallback(
+    (e: ReactMouseEvent, source: 'panel' | 'toolbar') => {
       if (pinned) return;
       const target = e.target as HTMLElement;
       /* Не начинаем drag если клик был по:
-         - button (close/pin/reset/tile)
+         - button (close/pin/reset/tile/toolbar-btn)
          - любому элементу с role=button
          - input/textarea/select
          - ссылкам
@@ -784,35 +888,53 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
         return;
       }
       const panel = panelRef.current;
+      const toolbar = toolbarRef.current;
       if (!panel) return;
-      const r = panel.getBoundingClientRect();
-      /* Native CSS `resize: both` использует правый нижний угол
-         (~14×14px UA-shadow hit-zone). Если mousedown попал туда —
+      const r =
+        source === 'toolbar' && toolbar
+          ? toolbar.getBoundingClientRect()
+          : panel.getBoundingClientRect();
+      /* Native CSS `resize: both` (только Panel) использует правый нижний
+         угол (~14×14px UA-shadow hit-zone). Если mousedown попал туда —
          НЕ начинаем drag и НЕ preventDefault'им, чтобы браузер мог
-         запустить собственный resize. Без этой проверки mousedown
-         блокировал native resize и юзер не мог масштабировать окно. */
-      const RESIZE_HANDLE_SIZE = 18;
-      const inResizeHandle =
-        e.clientX >= r.right - RESIZE_HANDLE_SIZE &&
-        e.clientY >= r.bottom - RESIZE_HANDLE_SIZE;
-      if (inResizeHandle) return;
+         запустить собственный resize. Toolbar без resize:both, проверка
+         нужна только для source='panel'. */
+      if (source === 'panel') {
+        const RESIZE_HANDLE_SIZE = 18;
+        const inResizeHandle =
+          e.clientX >= r.right - RESIZE_HANDLE_SIZE &&
+          e.clientY >= r.bottom - RESIZE_HANDLE_SIZE;
+        if (inResizeHandle) return;
+      }
       e.preventDefault();
-      dragRef.current = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+      dragRef.current = {
+        dx: e.clientX - r.left,
+        dy: e.clientY - r.top,
+        source,
+      };
       const onMove = (ev: MouseEvent) => {
         if (!dragRef.current || !panelRef.current) return;
         const pw = panelRef.current.offsetWidth;
         const ph = panelRef.current.offsetHeight;
-        const nx = Math.max(
-          0,
-          Math.min(window.innerWidth - pw, ev.clientX - dragRef.current.dx),
-        );
-        const ny = Math.max(
-          0,
-          Math.min(window.innerHeight - ph, ev.clientY - dragRef.current.dy),
-        );
+        const minY = TOOLBAR_HEIGHT_PX + TOOLBAR_GAP_PX;
+        const desiredX = ev.clientX - dragRef.current.dx;
+        const desiredTop = ev.clientY - dragRef.current.dy;
+        /* Если drag за toolbar — desiredTop это top toolbar'а, а нам
+           нужен top panel'а: panel.top = toolbar.top + height + gap. */
+        const panelTop =
+          dragRef.current.source === 'toolbar'
+            ? desiredTop + TOOLBAR_HEIGHT_PX + TOOLBAR_GAP_PX
+            : desiredTop;
+        const nx = Math.max(0, Math.min(window.innerWidth - pw, desiredX));
+        const ny = Math.max(minY, Math.min(window.innerHeight - ph, panelTop));
         panelRef.current.style.left = `${nx}px`;
         panelRef.current.style.top = `${ny}px`;
         posRef.current = { x: nx, y: ny };
+        const tb = toolbarRef.current;
+        if (tb) {
+          tb.style.left = `${nx}px`;
+          tb.style.top = `${ny - TOOLBAR_HEIGHT_PX - TOOLBAR_GAP_PX}px`;
+        }
       };
       const onUp = () => {
         dragRef.current = null;
@@ -837,6 +959,13 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
       const w = el.offsetWidth;
       const h = el.offsetHeight;
       sizeRef.current = { w, h };
+      /* Sync toolbar width — Panel меняет ширину через native CSS resize,
+         Toolbar должен следовать synchronously, без debounce (визуальная
+         связка важнее, чем localStorage write). Toolbar не имеет
+         resize:both, поэтому ResizeObserver-loop здесь невозможен. */
+      if (toolbarRef.current) {
+        toolbarRef.current.style.width = `${w}px`;
+      }
       /* debounce persist — не бомбим localStorage на каждый пиксель. */
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
@@ -905,7 +1034,7 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
     return () => clearTimeout(id);
   }, []);
 
-  /* ─── Content: 4 action tiles ──────────────────────────────────── */
+  /* ─── Content: action tiles ────────────────────────────────────── */
 
   interface TileDef {
     key: string;
@@ -939,7 +1068,10 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
         disabled: !userCanEdit,
       };
 
-  const tiles: TileDef[] = [
+  /* Toolbar — 4 ключевых edit-action, рендерятся в отдельном Toolbar
+     окне НАД Panel. Всегда в одну строку (grid 4 col), labels
+     адаптивно скрываются через container query. */
+  const toolbarTiles: TileDef[] = [
     mainTile,
     {
       key: 'undo',
@@ -965,6 +1097,9 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
       onClick: handleDiscard,
       disabled: !editMode,
     },
+  ];
+
+  const tiles: TileDef[] = [
     /* Библиотека — плавающее окно (BuilderPanel) с табами «Чарты»/
        «Оформление». Параллельно DevToolsPanel, имеет свой
        draggable/resizable lifecycle. Toggle через ShellContext.
@@ -1041,88 +1176,120 @@ export const DevToolsPanel: FC<DevToolsPanelProps> = ({ onClose }) => {
   ];
 
   return (
-    <Panel
-      ref={panelRef}
-      role="dialog"
-      aria-label={t('Инструменты разработчика')}
-      $pinned={pinned}
-      $animateIn={animateIn}
-      onMouseDown={handlePanelMouseDown}
-      /* Initial inline-style с первого рендера — чтобы не было flash
-         из 0,0 пока не отработает useEffect с applyStyle. */
-      style={{
-        left: posRef.current.x,
-        top: posRef.current.y,
-        width: sizeRef.current.w,
-        height: sizeRef.current.h,
-      }}
-    >
-      {pinned && <DragHandle />}
-      <Header>
-        <Title>{t('Инструменты разработчика')}</Title>
-        <HeaderRight>
-          <IconBtn
+    <>
+      <Toolbar
+        ref={toolbarRef}
+        role="toolbar"
+        aria-label={t('Действия редактора')}
+        $pinned={pinned}
+        $animateIn={animateIn}
+        onMouseDown={e => handleDragStart(e, 'toolbar')}
+        /* Initial inline-style — top вычисляется относительно Panel.top.
+           Width = Panel.width. Sync с Panel через applyStyle/drag/resize. */
+        style={{
+          left: posRef.current.x,
+          top: posRef.current.y - TOOLBAR_HEIGHT_PX - TOOLBAR_GAP_PX,
+          width: sizeRef.current.w,
+        }}
+      >
+        {toolbarTiles.map(tile => (
+          <ToolbarBtn
+            key={tile.key}
             type="button"
-            $active={pinned}
-            aria-label={pinned ? t('Открепить') : t('Закрепить')}
-            title={pinned ? t('Открепить') : t('Закрепить')}
-            aria-pressed={pinned}
-            onClick={handlePinToggle}
+            $accent={tile.accent}
+            $disabled={tile.disabled}
+            disabled={tile.disabled}
+            onClick={tile.onClick}
+            aria-label={tile.label}
+            title={tile.label}
           >
-            <IconPin />
-          </IconBtn>
-          <IconBtn
-            type="button"
-            aria-label={t('Сбросить позицию')}
-            title={t('Сбросить позицию')}
-            onClick={handleReset}
-          >
-            <IconReset />
-          </IconBtn>
-          <IconBtn
-            type="button"
-            aria-label={t('Закрыть')}
-            title={t('Закрыть (Esc)')}
-            onClick={onClose}
-          >
-            <IconCloseX />
-          </IconBtn>
-        </HeaderRight>
-      </Header>
-      <Body>
-        <Sections role="menu">
-          <Section>
-            <SecLabel>{t('Редактор')}</SecLabel>
-            <Grid>
-              {tiles.map(tile => (
-                <Tile
-                  key={tile.key}
-                  type="button"
-                  $disabled={tile.disabled}
-                  disabled={tile.disabled}
-                  onClick={tile.onClick}
-                  aria-label={tile.label}
-                  aria-disabled={tile.disabled}
-                  aria-pressed={
-                    tile.key === 'grid'
-                      ? openedDrawer === 'gridSettings'
-                      : tile.key === 'settings'
-                        ? openedDrawer === 'dashboardSettings'
-                        : undefined
-                  }
-                  title={tile.label}
-                >
-                  <TileIcon $accent={tile.accent} $disabled={tile.disabled}>
-                    {tile.icon}
-                  </TileIcon>
-                  <TileName $disabled={tile.disabled}>{tile.label}</TileName>
-                </Tile>
-              ))}
-            </Grid>
-          </Section>
-        </Sections>
-      </Body>
-    </Panel>
+            {tile.icon}
+            <ToolbarLabel>{tile.label}</ToolbarLabel>
+          </ToolbarBtn>
+        ))}
+      </Toolbar>
+      <Panel
+        ref={panelRef}
+        role="dialog"
+        aria-label={t('Инструменты разработчика')}
+        $pinned={pinned}
+        $animateIn={animateIn}
+        onMouseDown={e => handleDragStart(e, 'panel')}
+        /* Initial inline-style с первого рендера — чтобы не было flash
+           из 0,0 пока не отработает useEffect с applyStyle. */
+        style={{
+          left: posRef.current.x,
+          top: posRef.current.y,
+          width: sizeRef.current.w,
+          height: sizeRef.current.h,
+        }}
+      >
+        {pinned && <DragHandle />}
+        <Header>
+          <Title>{t('Инструменты разработчика')}</Title>
+          <HeaderRight>
+            <IconBtn
+              type="button"
+              $active={pinned}
+              aria-label={pinned ? t('Открепить') : t('Закрепить')}
+              title={pinned ? t('Открепить') : t('Закрепить')}
+              aria-pressed={pinned}
+              onClick={handlePinToggle}
+            >
+              <IconPin />
+            </IconBtn>
+            <IconBtn
+              type="button"
+              aria-label={t('Сбросить позицию')}
+              title={t('Сбросить позицию')}
+              onClick={handleReset}
+            >
+              <IconReset />
+            </IconBtn>
+            <IconBtn
+              type="button"
+              aria-label={t('Закрыть')}
+              title={t('Закрыть (Esc)')}
+              onClick={onClose}
+            >
+              <IconCloseX />
+            </IconBtn>
+          </HeaderRight>
+        </Header>
+        <Body>
+          <Sections role="menu">
+            <Section>
+              <Grid>
+                {tiles.map(tile => (
+                  <Tile
+                    key={tile.key}
+                    type="button"
+                    $disabled={tile.disabled}
+                    disabled={tile.disabled}
+                    onClick={tile.onClick}
+                    aria-label={tile.label}
+                    aria-disabled={tile.disabled}
+                    aria-pressed={
+                      tile.key === 'grid'
+                        ? openedDrawer === 'gridSettings'
+                        : tile.key === 'settings'
+                          ? openedDrawer === 'dashboardSettings'
+                          : undefined
+                    }
+                    title={tile.label}
+                  >
+                    <TileIcon $accent={tile.accent} $disabled={tile.disabled}>
+                      {tile.icon}
+                    </TileIcon>
+                    <TileName $disabled={tile.disabled}>{tile.label}</TileName>
+                  </Tile>
+                ))}
+              </Grid>
+            </Section>
+          </Sections>
+        </Body>
+      </Panel>
+    </>
   );
 };
 
