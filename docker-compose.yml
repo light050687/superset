@@ -43,6 +43,10 @@ x-common-build: &common-build
     INCLUDE_CHROMIUM: ${INCLUDE_CHROMIUM:-false}
     INCLUDE_FIREFOX: ${INCLUDE_FIREFOX:-false}
     BUILD_TRANSLATIONS: ${BUILD_TRANSLATIONS:-false}
+    # Корп-CA для npm/pip за MITM-прокси (см. docs/setup.md → Корп-сеть).
+    # Генерация: base64 -w0 corp-ca.pem | clip
+    # Передавать через docker/.env-local: CORP_CA_CERT_B64=<base64>
+    CORP_CA_CERT_B64: ${CORP_CA_CERT_B64:-}
 
 services:
   nginx:
@@ -111,7 +115,12 @@ services:
 
   superset-websocket:
     container_name: superset_websocket
-    build: ./superset-websocket
+    build:
+      context: ./superset-websocket
+      args:
+        # Передаётся в Dockerfile как ARG для подкладывания корп-CA в trust store.
+        # Если пусто — fallback на npm config strict-ssl=false.
+        CORP_CA_CERT_B64: ${CORP_CA_CERT_B64:-}
     ports:
       - 8080:8080
     extra_hosts:
@@ -152,6 +161,12 @@ services:
         required: true
       - path: docker/.env-local # optional override
         required: false
+    # Форк: не загружаем Superset-examples. Тестовые дашборды/чарты удалены
+    # из БД вручную, а на rebuild-контейнере docker-init.sh иначе восстановит
+    # их через `superset load_examples`. Оверрайд берёт верх над docker/.env,
+    # где прописано SUPERSET_LOAD_EXAMPLES=yes.
+    environment:
+      SUPERSET_LOAD_EXAMPLES: "no"
     depends_on:
       db:
         condition: service_started

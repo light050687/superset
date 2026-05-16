@@ -13,7 +13,7 @@ const LANGUAGES: { key: Language; label: string }[] = [
   { key: 'local', label: 'Local' },
 ];
 
-const ControlBar: FC<ControlBarProps> = ({ language, onLanguageChange }) => (
+const ControlBar: FC<React.PropsWithChildren<ControlBarProps>> = ({ language, onLanguageChange }) => (
   <ControlsWrapper role="group" aria-label="Выбор языка">
     {LANGUAGES.map(({ key, label }) => (
       <ControlBtn

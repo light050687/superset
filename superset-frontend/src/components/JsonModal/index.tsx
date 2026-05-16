@@ -47,7 +47,7 @@ function renderBigIntStrToNumber(value: string | number) {
   return <>{convertBigIntStrToNumber(value)}</>;
 }
 
-export const JsonModal: FC<JsonModalProps> = ({
+export const JsonModal: FC<React.PropsWithChildren<JsonModalProps>> = ({
   modalTitle,
   jsonObject,
   jsonValue,

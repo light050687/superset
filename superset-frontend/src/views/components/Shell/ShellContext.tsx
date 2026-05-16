@@ -28,13 +28,62 @@ interface ShellContextValue {
   /** Активная rail-кнопка для подсветки (id из RailButtonDescriptor). */
   activeRailId: string | null;
   setActiveRailId: (id: string | null) => void;
+  /**
+   * Collapse-to-handle state главного dock'а. Читается DashboardSideRail'ом
+   * (mini-rail), чтобы collapse/expand shell-дока синхронно со свернутым
+   * mini-rail'ом — они одна compound-фигура «laptop lid over dock».
+   */
+  isDockCollapsed: boolean;
+  setDockCollapsed: (collapsed: boolean) => void;
+  /**
+   * Присутствует ли mini-rail (DashboardSideRail) на текущей странице.
+   * Пушится из DashboardSideRail на mount/unmount. Используется в Rail,
+   * чтобы позиционировать top-edge grabber ВЫШЕ mini-rail'а там, где он
+   * есть (не перекрывался с иконками дашборда), и над dock'ом — где нет.
+   */
+  hasMiniRail: boolean;
+  setHasMiniRail: (present: boolean) => void;
+  /**
+   * Открыт ли DashboardPagesRail (pill-rail страниц над mini-rail).
+   * Toggle через кнопку «Страницы» в DashboardSideRail mini-rail.
+   * Заменяет старый PagesDrawer.
+   */
+  pagesRailOpen: boolean;
+  togglePagesRail: () => void;
+  setPagesRailOpen: (open: boolean) => void;
+  /**
+   * Открытый popup в DashboardSideRail (Save / Share). null когда
+   * закрыто, иначе строка-id popup'а. Используется DockGrabber'ом
+   * (Rail.tsx) для 4-го tier'а позиционирования: над открытым popup'ом
+   * вместо main dock / mini-rail / pages-rail.
+   */
+  sideRailPopupOpen: string | null;
+  setSideRailPopupOpen: (id: string | null) => void;
+  /**
+   * Открыт ли BuilderPanel (плавающее окно «Библиотека») — параллельно
+   * Shell-drawer'ам, как DevToolsPanel. Не входит в DrawerKind: имеет
+   * свой draggable/resizable lifecycle и не привязан к bottom-sheet
+   * слоту. Toggle через DevToolsPanel tile «Открыть библиотеку».
+   */
+  builderPanelOpen: boolean;
+  toggleBuilderPanel: () => void;
+  setBuilderPanelOpen: (open: boolean) => void;
 }
 
 const ShellContext = createContext<ShellContextValue | null>(null);
 
-export const ShellProvider: FC<{ children: ReactNode }> = ({ children }) => {
+export const ShellProvider: FC<
+  React.PropsWithChildren<{ children: ReactNode }>
+> = ({ children }) => {
   const [openedDrawer, setOpenedDrawer] = useState<DrawerKind | null>(null);
   const [activeRailId, setActiveRailId] = useState<string | null>(null);
+  const [isDockCollapsed, setDockCollapsed] = useState(false);
+  const [hasMiniRail, setHasMiniRail] = useState(false);
+  const [pagesRailOpen, setPagesRailOpen] = useState(false);
+  const [sideRailPopupOpen, setSideRailPopupOpen] = useState<string | null>(
+    null,
+  );
+  const [builderPanelOpen, setBuilderPanelOpen] = useState(false);
 
   const toggleDrawer = useCallback((kind: DrawerKind) => {
     setOpenedDrawer(prev => (prev === kind ? null : kind));
@@ -44,6 +93,14 @@ export const ShellProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setOpenedDrawer(null);
   }, []);
 
+  const togglePagesRail = useCallback(() => {
+    setPagesRailOpen(prev => !prev);
+  }, []);
+
+  const toggleBuilderPanel = useCallback(() => {
+    setBuilderPanelOpen(prev => !prev);
+  }, []);
+
   const value = useMemo<ShellContextValue>(
     () => ({
       openedDrawer,
@@ -51,8 +108,32 @@ export const ShellProvider: FC<{ children: ReactNode }> = ({ children }) => {
       closeDrawer,
       activeRailId,
       setActiveRailId,
+      isDockCollapsed,
+      setDockCollapsed,
+      hasMiniRail,
+      setHasMiniRail,
+      pagesRailOpen,
+      togglePagesRail,
+      setPagesRailOpen,
+      sideRailPopupOpen,
+      setSideRailPopupOpen,
+      builderPanelOpen,
+      toggleBuilderPanel,
+      setBuilderPanelOpen,
     }),
-    [openedDrawer, toggleDrawer, closeDrawer, activeRailId],
+    [
+      openedDrawer,
+      toggleDrawer,
+      closeDrawer,
+      activeRailId,
+      isDockCollapsed,
+      hasMiniRail,
+      pagesRailOpen,
+      togglePagesRail,
+      sideRailPopupOpen,
+      builderPanelOpen,
+      toggleBuilderPanel,
+    ],
   );
 
   return (

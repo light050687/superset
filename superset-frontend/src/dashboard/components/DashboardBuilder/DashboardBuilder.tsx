@@ -26,16 +26,27 @@ import {
   styled,
   t,
   useTheme,
-  useElementOnScreen,
 } from '@superset-ui/core';
 import { useDispatch, useSelector } from 'react-redux';
 import { EmptyState, Loading } from '@superset-ui/core/components';
-import { ErrorBoundary, BasicErrorAlert } from 'src/components';
-import BuilderComponentPane from 'src/dashboard/components/BuilderComponentPane';
+import { BasicErrorAlert } from 'src/components';
+import { DS2_VARS } from 'src/theme/ds2';
 import DashboardHeader from 'src/dashboard/components/Header';
 import { Icons } from '@superset-ui/core/components/Icons';
 import IconButton from 'src/dashboard/components/IconButton';
 import { Droppable } from 'src/dashboard/components/dnd/DragDroppable';
+
+/**
+ * Shape of the object produced by DragDroppable's drop() handler
+ * (src/dashboard/components/dnd/handleDrop.js) and consumed by the
+ * untyped `handleComponentDrop` thunk.
+ */
+type DashboardDropResult = {
+  source: { id: string | null; type?: string; index: number };
+  destination?: { id: string; type: string; index: number };
+  dragging: { id: string | number; type: string; meta?: Record<string, any> };
+  position?: string;
+};
 import DashboardComponent from 'src/dashboard/containers/DashboardComponent';
 import WithPopoverMenu from 'src/dashboard/components/menu/WithPopoverMenu';
 import getDirectPathToTabIndex from 'src/dashboard/util/getDirectPathToTabIndex';
@@ -66,37 +77,25 @@ import { PAGES_TYPE } from 'src/dashboard/util/componentTypes';
 import FilterBar from 'src/dashboard/components/nativeFilters/FilterBar';
 import MobileFilterBar from 'src/dashboard/components/nativeFilters/FilterBar/MobileFilterBar';
 import { useUiConfig } from 'src/components/UiConfigContext';
-import ResizableSidebar from 'src/components/ResizableSidebar';
 import {
   BUILDER_SIDEPANEL_WIDTH,
-  CLOSED_FILTER_BAR_WIDTH,
-  FILTER_BAR_HEADER_HEIGHT,
-  MAIN_HEADER_HEIGHT,
-  OPEN_FILTER_BAR_MAX_WIDTH,
-  OPEN_FILTER_BAR_WIDTH,
   EMPTY_CONTAINER_Z_INDEX,
 } from 'src/dashboard/constants';
 import { getRootLevelTabsComponent, shouldFocusTabs } from './utils';
 import DashboardContainer from './DashboardContainer';
 import { useNativeFilters } from './state';
 import DashboardWrapper from './DashboardWrapper';
+import { ViewportPriorityProvider } from 'src/dashboard/hooks/useChartViewportPriority';
+import { useFetchStrategy } from 'src/dashboard/utils/fetchStrategy';
+import { setQueueConcurrency } from 'src/dashboard/utils/chartFetchQueue';
+import { isCurrentUserBot } from 'src/utils/isBot';
+import {
+  FeatureFlag,
+  isFeatureEnabled,
+} from '@superset-ui/core';
 
-// @z-index-above-dashboard-charts + 1 = 11
-const FiltersPanel = styled.div<{ width: number; hidden: boolean }>`
-  background-color: ${({ theme }) => theme.colorBgContainer};
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  z-index: 11;
-  width: ${({ width }) => width}px;
-  ${({ hidden }) => hidden && `display: none;`}
-`;
-
-const StickyPanel = styled.div<{ width: number }>`
-  position: sticky;
-  top: -1px;
-  width: ${({ width }) => width}px;
-  flex: 0 0 ${({ width }) => width}px;
-`;
+/* FiltersPanel + StickyPanel удалены вместе с renderChild() —
+   вертикальный FilterBar теперь живёт в Drawer'е через DashboardSideRail. */
 
 // @z-index-above-dashboard-popovers (99) + 1 = 100
 const MOBILE_HEADER_BREAKPOINT = 570;
@@ -237,10 +236,13 @@ const DashboardContentWrapper = styled.div`
         &:after {
           content: '';
           position: absolute;
-          width: 100%;
-          height: 100%;
-          top: 0;
-          left: 0;
+          /* inset:0 + border-box: pseudo right/bottom edge точно совпадает
+             с chart-holder edges. Default content-box давал width=100% +
+             border=1px → визуально :after на 2px шире → пунктирная рамка
+             выходила за правый край карточки и расходилась с DashboardGuides
+             cells overlay. */
+          inset: 0;
+          box-sizing: border-box;
           z-index: 1;
           pointer-events: none;
           border: 1px solid transparent;
@@ -268,7 +270,7 @@ const DashboardContentWrapper = styled.div`
         width: 100%;
       }
 
-      & > .empty-droptarget:first-child:not(.empty-droptarget--full) {
+      & > .empty-droptarget:first-of-type:not(.empty-droptarget--full) {
         height: ${theme.sizeUnit * 4}px;
         top: 0;
       }
@@ -306,15 +308,15 @@ const StyledDashboardContent = styled.div<{
       margin: ${theme.sizeUnit * 4}px;
       margin-left: ${marginLeft}px;
 
-      ${editMode &&
-      `
-      max-width: calc(100% - ${
-        BUILDER_SIDEPANEL_WIDTH + theme.sizeUnit * 16
-      }px);
-    `}
+      /* В edit-mode раньше здесь была компенсация
+         max-width calc(100% - BUILDER_SIDEPANEL_WIDTH) —
+         резервировала 374px справа под sticky-sidebar
+         BuilderComponentPane. Sidebar убран (его роль теперь у
+         BuilderDrawer'а), компенсация не нужна — дашборд
+         занимает всю ширину с симметричными margin 32px. */
 
       /* this is the ParentSize wrapper */
-    & > div:first-child {
+    & > div:first-of-type {
         height: 100% !important;
       }
     }
@@ -327,10 +329,178 @@ const StyledDashboardContent = styled.div<{
     .dashboard-component-chart-holder {
       width: 100%;
       height: 100%;
+      /* Standard charts (table, bar, big_number и т.п.) имеют белый
+         внутренний фон — нужен colorBgContainer на обёртке + 32px
+         padding для дыхания. */
       background-color: ${theme.colorBgContainer};
       position: relative;
       padding: ${theme.sizeUnit * 4}px;
       overflow-y: visible;
+
+      /* DS v2.0 chrome-removal для ВСЕХ ext-* плагинов: их визуал
+         (внутренний Card с background:var(--s) + padding 16/20 + DS 2.0
+         border) должен заполнять ResizableContainer без wrapper-chrome.
+         Универсальный селектор покрывает все 10 плагинов сразу
+         (scorecard, paretoAnalysis, drilldownDonut, divergingBars,
+         pivotHeatmap, leaderboard, metricTimeSeries, riskMatrix,
+         rankedBars, bulletChart) и любые будущие. */
+      &:has(div[data-test-viz-type^='ext-']) {
+        padding: 0;
+        background-color: transparent;
+      }
+
+      /* DS v2.0 — Полный wrapper-reset для ext-* плагинов (1:1 с
+         KpiCard.tsx injected style, но globally — для всех плагинов
+         сразу, без необходимости каждому инжектить свой <style>):
+         1. SliceHeader (chart-slice > div:first-child) — height 0,
+            кнопка ⋮ всё ещё доступна через position:absolute + overflow:visible
+         2. filter-counts (badge с цифрой 1) скрыт
+         3. chart-container/dashboard-chart/chart-slice — без bg, border, shadow
+         4. ВСЁ должно edge-to-edge заполнять resizable-container */
+      &:has(div[data-test-viz-type^='ext-']) {
+        & .chart-container,
+        & .dashboard-chart,
+        & .chart-slice {
+          background: transparent !important;
+          box-shadow: none !important;
+          border: none !important;
+          overflow: visible !important;
+        }
+
+        & .filter-counts {
+          display: none !important;
+        }
+
+        /* SliceHeader collapse: height: 0 keeps the dot-menu accessible */
+        & div[data-test-viz-type^='ext-'].chart-slice > div:first-child {
+          height: 0 !important;
+          min-height: 0 !important;
+          max-height: 0 !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          border: none !important;
+          overflow: visible !important;
+          pointer-events: none !important;
+        }
+
+        /* Скрываем slice_name title (.header-title) для всех ext-*
+           плагинов — у них собственный заголовок внутри Card. Раньше с
+           overflow:visible на SliceHeader выше slice_name выглядывал
+           поверх Card в edit-mode (видно как «График» / slice_name
+           призрачно в левом верхнем углу). */
+        & div[data-test-viz-type^='ext-'].chart-slice > div:first-child .header-title,
+        & div[data-test-viz-type^='ext-'].chart-slice > div:first-child .editable-title {
+          display: none !important;
+          visibility: hidden !important;
+        }
+
+        & div[data-test-viz-type^='ext-'].chart-slice {
+          position: relative !important;
+          overflow: visible !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+
+        /* Dot-menu (⋮) внутри Card top-right.
+           Применяется ко ВСЕМ ext-* плагинам, КРОМЕ ext-kpi-card —
+           у KPI карточки своя per-instance логика (top:6px right:-6px,
+           dot снаружи Card), которая инжектится через KpiCard.tsx
+           useEffect и имеет приоритет. Для остальных плагинов dot ВНУТРИ
+           card top-right, opacity 0→1 на hover.
+           SliceHeader collapsed выше до height:0, но header-controls
+           (контейнер ⋮) поднимаем absolutely в правый верхний угол. */
+        & div[data-test-viz-type^='ext-']:not([data-test-viz-type='ext-kpi-card']).chart-slice
+          > div:first-child
+          .header-controls {
+          position: absolute !important;
+          /* Внутри Card: top:16px = Card padding-top (16) + центр UnitToggle.
+             Right:4px = ближе к правой границе Card. */
+          top: 16px !important;
+          right: 4px !important;
+          z-index: 100 !important;
+          height: auto !important;
+          overflow: visible !important;
+          visibility: visible !important;
+          pointer-events: auto !important;
+          opacity: 0;
+          transition: opacity 0.15s ease;
+        }
+        & div[data-test-viz-type^='ext-']:not([data-test-viz-type='ext-kpi-card']).chart-slice:hover
+          > div:first-child
+          .header-controls,
+        & div[data-test-viz-type^='ext-']:not([data-test-viz-type='ext-kpi-card']).chart-slice
+          > div:first-child
+          .header-controls:focus-within {
+          opacity: 1;
+        }
+
+        & div[data-test-viz-type^='ext-'] .slice-container {
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+
+        & div[data-test-viz-type^='ext-'] .superset-legacy-chart,
+        & div[data-test-viz-type^='ext-'] .chart-container > div {
+          width: 100% !important;
+          height: 100% !important;
+        }
+
+        /* Card-fit: визуал ext-* плагина заполняет всю высоту
+           ResizableContainer. Без этого Chart.jsx передаёт inline
+           height = chartHeight - headerHeight в SliceContainer
+           (=.chart-slice), и в edit-mode визуал короче синей
+           пунктирной рамки на CHART_MARGIN(32) + headerHeight(22) = 54px.
+
+           ВАЖНО: только height:100% (НЕ min-height:100%). Inline minHeight
+           на холдере = outerH (baseline) — нельзя перебивать, иначе в
+           view mode без row.height holder коллапсирует в 0 (нет row stretch
+           до прихода данных). !important перебивает inline style="height"
+           от React. */
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+
+        /* SliceContainer (.chart-slice) с inline height={chartHeight-22}
+           — перетягиваем на 100% контейнера через flex grow. */
+        & > .chart-slice {
+          flex: 1 1 auto !important;
+          height: 100% !important;
+          max-height: none !important;
+          min-height: 0 !important;
+        }
+
+        /* Промежуточные обёртки внутри chart-slice — все height:100%. */
+        & .dashboard-chart,
+        & .chart-container,
+        & .slice_container,
+        & .slice_container > div {
+          height: 100% !important;
+          min-height: 0 !important;
+        }
+
+        /* ext-* plugin Root обычно имеет inline width/height в px через
+           styled-component props (StructureDonutRoot и аналоги).
+           Перетираем на 100% чтобы визуал ровно === ResizableContainer. */
+        & div[data-test-viz-type^='ext-'] > * {
+          width: 100% !important;
+          height: 100% !important;
+        }
+
+        /* superset-legacy-chart-{vizType} конвертит viz_type-дефисы в
+           подчёркивания и оборачивает плагин: <div class="ext_<viztype>">.
+           Эта обёртка по умолчанию display:block и сжимается до контента
+           (~chartHeight-headerHeight). Чтобы визуал === resizable-frame
+           1:1, форсим height:100% на этих обёртках и на их детях
+           (Root плагина), а также на Card второго уровня (header + ChartWrap +
+           footer). Селектор bounded внутри slice_container — не заденет
+           дашбордные обёртки. */
+        & .slice_container [class^='ext_'],
+        & .slice_container [class^='ext_'] > * {
+          width: 100% !important;
+          height: 100% !important;
+          min-height: 0 !important;
+        }
+      }
 
       // transitionable traits to show filter relevance
       transition:
@@ -388,13 +558,75 @@ const StyledDashboardContent = styled.div<{
       flex-direction: column !important;
     }
 
+    /*
+       View-mode: чарт уважает inline width от re-resizable
+       (widthMultiple * columnWidth) — РАВНО как в edit-mode. Никакого
+       width:100%/max-width:100% override — это раньше распирало чарт
+       на всю колонку, и view-mode выглядел иначе чем edit. Сохраняем
+       только вертикальный flex-chain для equal-height stretch.
+    */
     &[data-view-mode="true"] .resizable-container {
-      flex: 1 1 auto !important;
       display: flex !important;
       flex-direction: column !important;
       /* Override inline height — let flex chain control height */
       height: unset !important;
-      min-height: 0 !important;
+      /* НЕ добавлять flex: 1 1 auto / align-self здесь — это ломает
+         charts: re-resizable inline width/height конфликтует с flex
+         distribution → chart canvas получает 0×0. Stretch row
+         достигается через .dragdroppable-column { align-self: stretch }
+         и .dashboard-component-chart-holder { flex: 1 } (ниже). */
+    }
+
+    /* Таргетный flex-grow для resizable-container'ов которые содержат
+       НЕ-canvas компоненты (KPI cards, markdown, header, divider, ext-*
+       плагины с CSS-flow контентом). Без этого resizable-container с
+       height: unset (=auto) рендерится по content-fit — KPI карточка
+       с меньшим контентом (например Конверсия) короче сиблингов в той
+       же row. С :has() селектор не применяется к native ECharts
+       (echarts_*, mixed_chart и т.д.) — их inline height нужен для
+       canvas measurement, иначе chart canvas = 0×0. */
+    &[data-view-mode="true"]
+      .resizable-container:has(.dashboard-markdown),
+    &[data-view-mode="true"]
+      .resizable-container:has(.dashboard-component-header),
+    &[data-view-mode="true"]
+      .resizable-container:has(.dashboard-component-divider),
+    &[data-view-mode="true"]
+      .resizable-container:has(div[data-test-viz-type^="ext-"]) {
+      flex: 1 1 auto !important;
+      align-self: stretch !important;
+    }
+
+    /* Skeleton placeholders во время loading должны соответствовать
+       размеру финального компонента. Skeleton overlay в ChartHolder
+       рендерится с position:absolute;inset:0 — его size = size
+       chart-holder'а. До того как chart передал data-test-viz-type,
+       :has() селектор выше не активен → resizable-container = content-fit
+       = ~50px → skeleton тоже ~50px (узкая полоска вместо карточки).
+       Решение: до chart-load resizable-container должен иметь min-height
+       равной выcоте предполагаемой по resize-config (через flex-grow
+       внутри stretched dragdroppable-column). */
+    &[data-view-mode="true"] .dragdroppable-column > .resizable-container {
+      min-height: 100% !important;
+    }
+
+    /* Если плагин сам рендерит свой loading-skeleton (aria-busy="true"
+       на ВНУТРЕННЕМ компоненте — KPI scorecard, divergingBars и т.д.),
+       прячем оба overlay'а chart-holder'а: и generic ds2-shimmer, и
+       shape-skeleton. Плагин-internal skeleton имеет ТОЧНО ту же
+       DOM-структуру что loaded content → visual size 1:1.
+       Селектор :has([aria-busy="true"]:not([data-shape-skeleton="true"]))
+       срабатывает только когда aria-busy ставит сам плагин (data-shape-
+       skeleton имеет атрибут только наш shape-overlay), не reagueт на
+       свой собственный shape-overlay. Без этого generic overlay /
+       shape-overlay перекрывал плагин-internal skeleton (z-index выше). */
+    &[data-view-mode="true"]
+      .dashboard-component-chart-holder:has([aria-busy="true"]:not([data-shape-skeleton="true"]))
+      > [data-generic-shimmer="true"],
+    &[data-view-mode="true"]
+      .dashboard-component-chart-holder:has([aria-busy="true"]:not([data-shape-skeleton="true"]))
+      > [data-shape-skeleton="true"] {
+      display: none !important;
     }
 
     &[data-view-mode="true"] .dashboard-component-chart-holder {
@@ -425,11 +657,119 @@ const StyledDashboardContent = styled.div<{
       flex: 1;
       display: flex;
       flex-direction: column;
+      /* Chart.tsx Styles div задаёт min-height: chartHeight px из props
+         (Emotion class). В view-mode мы хотим row-equal-height: chart
+         должен растягиваться на row max, а не оставаться фикс. высоты. */
+      min-height: 0 !important;
+      height: 100% !important;
     }
 
-    /* KPI card: propagate flex through anonymous wrapper divs */
+    /* Chart.tsx .slice_container задаёт height: chartHeight px фикс
+         (Emotion). В view-mode override на 100% — flex chain контролирует. */
+    &[data-view-mode="true"] .slice_container {
+      flex: 1;
+      height: 100% !important;
+      min-height: 0 !important;
+    }
+
+    /* DS2 row equalization для markdown — тот же flex-chain что для
+       charts. Без этого markdown короткий, чарт длинный → разные
+       высоты в одном row. */
+    &[data-view-mode="true"] .dashboard-markdown {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* WithPopoverMenu wrapper — важный промежуточный слой между
+       .dragdroppable и .dashboard-markdown/.dashboard-component-header
+       и т.д. Без flex здесь chain рвётся: markdown wrapper висит auto-height. */
+    &[data-view-mode="true"] .with-popover-menu {
+      flex: 1 1 auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-self: stretch !important;
+      min-height: 0;
+    }
+
+    /* dragdroppable wrapper в row (orient=column): растяжение по высоте
+       сиблинга. Без этого markdown/header не получают max(row) даже если
+       внутренние wrapper'ы flex. */
+    &[data-view-mode="true"] .grid-row > .dragdroppable {
+      align-self: stretch !important;
+      display: flex !important;
+      flex-direction: column !important;
+      min-height: 0;
+    }
+
+    /* Markdown contents: пробросить flex через ResizableContainer и
+       внутренний chart-holder, чтобы сам контент SafeMarkdown тоже
+       занимал всю высоту row (а не прижимался к верху карточки).
+       descendant (без >) — устойчиво к любым промежуточным wrapper'ам
+       в кастомных форках. */
+    &[data-view-mode="true"] .dashboard-markdown .resizable-container {
+      flex: 1 1 auto !important;
+      align-self: stretch !important;
+      min-height: 0;
+    }
+
     &[data-view-mode="true"]
-      div[data-test-viz-type='ext-kpi-card']
+      .dashboard-markdown
+      .dashboard-component-chart-holder {
+      flex: 1 1 auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      min-height: 0;
+    }
+
+    /* Header в row рядом с chart/markdown подтягивается до высоты
+       сиблинга. Текст центрируется по вертикали через justify-content.
+       !important на всём — на случай если в кастомном форке Header.jsx
+       inline-стилей или Emotion-styled override'ит. */
+    &[data-view-mode="true"] .dashboard-component-header {
+      flex: 1 1 auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      align-self: stretch !important;
+      min-height: 100% !important;
+      height: 100% !important;
+    }
+
+    /* Divider — wrapper тянется на полную высоту row, hr остаётся
+       центром. Future-proof для будущих divider-стилей с фоном. */
+    &[data-view-mode="true"] .dashboard-component-divider {
+      flex: 1 1 auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      align-self: stretch !important;
+      min-height: 100% !important;
+      height: 100% !important;
+    }
+
+    /* Универсальный fallback для будущих ext-* плагинов: любой
+       .dashboard-component внутри .resizable-container получает
+       flex:1 — высота тянется до dashboard-component-chart-holder,
+       дальше плагин сам пробрасывает по своей DOM-цепочке.
+       descendant (без >) — устойчиво к промежуточным wrapper'ам. */
+    &[data-view-mode="true"]
+      .dragdroppable-column
+      .resizable-container
+      .dashboard-component {
+      flex: 1 1 auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      min-height: 0;
+    }
+
+    /* DS v2.0: propagate flex through anonymous wrapper divs для всех
+       ext-* плагинов (раньше был только ext-kpi-card). Это нужно чтобы
+       внутренний Card плагина (с height: 100%) растягивался на полную
+       высоту resizable-container'а. Универсальный селектор покрывает
+       все 10 плагинов и любые будущие ext-*. */
+    &[data-view-mode="true"]
+      div[data-test-viz-type^='ext-']
       .slice_container
       > div {
       flex: 1;
@@ -438,7 +778,7 @@ const StyledDashboardContent = styled.div<{
     }
 
     &[data-view-mode="true"]
-      div[data-test-viz-type='ext-kpi-card']
+      div[data-test-viz-type^='ext-']
       .slice_container
       > div
       > div {
@@ -448,7 +788,7 @@ const StyledDashboardContent = styled.div<{
     }
 
     &[data-view-mode="true"]
-      div[data-test-viz-type='ext-kpi-card']
+      div[data-test-viz-type^='ext-']
       .slice_container
       > div
       > div
@@ -459,87 +799,22 @@ const StyledDashboardContent = styled.div<{
     }
 
     /*
-     * Responsive layout — view mode only.
-     * Uses @container queries on .grid-container so layout reacts to
-     * actual container width (not viewport), adapting when filter panel opens.
-     * container-type is only set in view mode to protect edit mode.
+     * View-mode layout = edit-mode layout. Чарты уважают widthMultiple
+     * grid (re-resizable inline width). Никаких @container query overrides,
+     * которые меняют доли колонок — это раньше делало view-mode визуально
+     * отличным от edit-mode, и юзер видел разные размеры графиков.
+     *
+     * Container queries оставлены ТОЛЬКО ради мобильного сценария
+     * (<425px → single column). Margin не переопределяется — остаётся
+     * sizeUnit*4 (16px) такой же как в edit, чтобы отступы со всех
+     * сторон были симметричны и идентичны между edit/view.
      */
-
-    /* ── View mode: enable container queries + fill containers ── */
     &[data-view-mode="true"] .grid-container {
       container-type: inline-size;
       container-name: grid;
-      margin: clamp(4px, 1vw, 32px) !important;
-    }
-    &[data-view-mode="true"] .resizable-container {
-      width: 100% !important;
-      max-width: 100% !important;
     }
 
-    /* ── Wide container ≥1440px: 1 row, uniform gap ── */
-    @container grid (min-width: 1440px) {
-      .grid-row {
-        flex-wrap: nowrap !important;
-        gap: clamp(8px, 1cqi, 24px) !important;
-      }
-      .grid-row > :not(:last-child):not(.hover-menu) {
-        margin-right: 0 !important;
-      }
-      /* Vertical gap between row wrappers (override GridContent margin-bottom) */
-      .dragdroppable-row {
-        margin-bottom: clamp(8px, 1cqi, 24px) !important;
-      }
-      .dragdroppable-row:last-child {
-        margin-bottom: 0 !important;
-      }
-      .dragdroppable-column {
-        flex: 1 1 0% !important;
-      }
-    }
-
-    /* ── Medium container 800–1439px: 3 columns per row ── */
-    @container grid (min-width: 800px) and (max-width: 1439px) {
-      .grid-row {
-        flex-wrap: wrap !important;
-        gap: clamp(8px, 1cqi, 24px) !important;
-      }
-      .grid-row > :not(:last-child):not(.hover-menu) {
-        margin-right: 0 !important;
-      }
-      .dragdroppable-row {
-        margin-bottom: clamp(8px, 1cqi, 24px) !important;
-      }
-      .dragdroppable-row:last-child {
-        margin-bottom: 0 !important;
-      }
-      .dragdroppable-column {
-        flex: 1 1 calc(33.333% - clamp(6px, 0.7cqi, 16px)) !important;
-        min-width: calc(33.333% - clamp(6px, 0.7cqi, 16px)) !important;
-      }
-    }
-
-    /* ── Small container 425–799px: 2 columns ── */
-    @container grid (min-width: 425px) and (max-width: 799px) {
-      .grid-row {
-        flex-wrap: wrap !important;
-        gap: clamp(4px, 1cqi, 16px) !important;
-      }
-      .grid-row > :not(:last-child):not(.hover-menu) {
-        margin-right: 0 !important;
-      }
-      .dragdroppable-row {
-        margin-bottom: clamp(4px, 1cqi, 16px) !important;
-      }
-      .dragdroppable-row:last-child {
-        margin-bottom: 0 !important;
-      }
-      .dragdroppable-column {
-        flex: 1 1 calc(50% - clamp(2px, 0.5cqi, 8px)) !important;
-        min-width: calc(50% - clamp(2px, 0.5cqi, 8px)) !important;
-      }
-    }
-
-    /* ── Narrow container <425px: 1 column ── */
+    /* ── Mobile (<425px): single column, для читаемости на телефонах ── */
     @container grid (max-width: 424px) {
       .grid-row {
         flex-wrap: wrap !important;
@@ -568,18 +843,108 @@ const StyledDashboardContent = styled.div<{
   `}
 `;
 
-const ELEMENT_ON_SCREEN_OPTIONS = {
-  threshold: [1],
-};
+/* SaveOverlay — квадратная карточка по центру экрана с иконкой сверху
+   и подписью снизу. Появляется на время saveDashboardRequest (PUT
+   /api/v1/dashboard/:id). Заменяет дефолтный <Loading floating/> —
+   юзер просил квадрат с иконкой и подписью, не plain spinner. */
+const SaveOverlayBackdrop = styled.div`
+  position: fixed;
+  inset: 0;
+  background: ${DS2_VARS.drawerBg};
+  backdrop-filter: ${DS2_VARS.drawerFilter};
+  -webkit-backdrop-filter: ${DS2_VARS.drawerFilter};
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: saveOverlayFadeIn 0.18s ${DS2_VARS.ease};
+
+  @keyframes saveOverlayFadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+`;
+
+const SaveOverlayCard = styled.div`
+  width: 200px;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: ${DS2_VARS.s};
+  border: 1px solid ${DS2_VARS.g200};
+  border-radius: 16px;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.18),
+    0 4px 12px rgba(0, 0, 0, 0.06);
+
+  .save-icon {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${DS2_VARS.cSky};
+  }
+
+  /* Spinner: SVG-обёртка вокруг иконки. Статичный полный круг (track)
+     + вращающаяся 1/4-дуга (stripe). Только stripe крутится, track
+     стоит — раньше border на ::before крутился целиком, выглядело
+     как «дрожащий контур». SVG + transform: rotate с will-change даёт
+     плавную GPU-ускоренную анимацию. */
+  .save-spinner {
+    position: absolute;
+    inset: -10px;
+    pointer-events: none;
+  }
+  .save-spinner-track {
+    fill: none;
+    stroke: color-mix(in oklab, ${DS2_VARS.cSky} 18%, transparent);
+    stroke-width: 4;
+  }
+  .save-spinner-stripe {
+    fill: none;
+    stroke: ${DS2_VARS.cSky};
+    stroke-width: 4;
+    stroke-linecap: round;
+    transform-origin: 50% 50%;
+    transform-box: fill-box;
+    animation: saveRing 0.9s linear infinite;
+    will-change: transform;
+  }
+
+  .save-icon > svg:not(.save-spinner) {
+    width: 30px;
+    height: 30px;
+  }
+
+  .save-caption {
+    font-family: ${DS2_VARS.fontSans};
+    font-size: var(--fs-interactive);
+    font-weight: 600;
+    color: ${DS2_VARS.ink};
+    letter-spacing: 0.01em;
+  }
+
+  @keyframes saveRing {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
 
 const DashboardBuilder = () => {
   const dispatch = useDispatch();
   const uiConfig = useUiConfig();
   const theme = useTheme();
 
-  const dashboardId = useSelector<RootState, string>(
-    ({ dashboardInfo }) => `${dashboardInfo.id}`,
-  );
   const dashboardLayout = useSelector<RootState, DashboardLayout>(
     state => state.dashboardLayout.present,
   );
@@ -598,6 +963,21 @@ const DashboardBuilder = () => {
   const filterBarOrientation = useSelector<RootState, FilterBarOrientation>(
     ({ dashboardInfo }) => dashboardInfo.filterBarOrientation,
   );
+
+  // Apply concurrency limit to global chart fetch queue. Edit mode + bot
+  // user → bypass через Infinity (немедленная отрисовка для drag/drop /
+  // screenshot). Feature flag off → bypass (legacy behavior).
+  const fetchStrategy = useFetchStrategy();
+  useEffect(() => {
+    const flagEnabled = isFeatureEnabled(
+      FeatureFlag.EnableDashboardFetchStrategy as any,
+    );
+    if (!flagEnabled || editMode || isCurrentUserBot()) {
+      setQueueConcurrency(Infinity);
+    } else {
+      setQueueConcurrency(fetchStrategy.concurrency);
+    }
+  }, [editMode, fetchStrategy.concurrency]);
 
   const handleChangeTab = useCallback(
     ({ pathToTabIndex }: { pathToTabIndex: string[] }) => {
@@ -618,7 +998,8 @@ const DashboardBuilder = () => {
   }, [dashboardLayout, dispatch]);
 
   const handleDrop = useCallback(
-    dropResult => dispatch(handleComponentDrop(dropResult)),
+    (dropResult: DashboardDropResult) =>
+      dispatch(handleComponentDrop(dropResult)),
     [dispatch],
   );
 
@@ -653,41 +1034,18 @@ const DashboardBuilder = () => {
     standaloneMode === DashboardStandaloneMode.HideNavAndTitle ||
     isReport;
 
-  const [barTopOffset, setBarTopOffset] = useState(0);
-  const [currentFilterBarWidth, setCurrentFilterBarWidth] = useState(
-    CLOSED_FILTER_BAR_WIDTH,
-  );
-
-  useEffect(() => {
-    setBarTopOffset(headerRef.current?.getBoundingClientRect()?.height || 0);
-
-    let observer: ResizeObserver;
-    if (global.hasOwnProperty('ResizeObserver') && headerRef.current) {
-      observer = new ResizeObserver(entries => {
-        setBarTopOffset(
-          current => entries?.[0]?.contentRect?.height || current,
-        );
-      });
-
-      observer.observe(headerRef.current);
-    }
-
-    return () => {
-      observer?.disconnect();
-    };
-  }, []);
+  /* barTopOffset / setBarTopOffset / ResizeObserver — удалены вместе
+     с вертикальным FilterBar, который теперь живёт в Drawer'е. */
 
   const {
     showDashboard,
     missingInitialFilters,
-    dashboardFiltersOpen,
     toggleDashboardFiltersOpen,
     nativeFiltersEnabled,
   } = useNativeFilters();
 
-  const [containerRef, isSticky] = useElementOnScreen<HTMLDivElement>(
-    ELEMENT_ON_SCREEN_OPTIONS,
-  );
+  /* useElementOnScreen для filterBar sticky-recalc — удалён вместе с
+     FilterBar.Vertical. */
 
   const showFilterBar = !editMode && nativeFiltersEnabled;
 
@@ -703,32 +1061,14 @@ const DashboardBuilder = () => {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  const offset =
-    FILTER_BAR_HEADER_HEIGHT +
-    (isSticky || standaloneMode ? 0 : MAIN_HEADER_HEIGHT);
+  /* offset / filterBarHeight / filterBarOffset вычислялись для renderChild;
+     теперь FilterBar в Drawer'е DashboardSideRail сам рассчитывает размеры. */
 
-  const filterBarHeight = `calc(100vh - ${offset}px)`;
-  const filterBarOffset = dashboardFiltersOpen ? 0 : barTopOffset + 20;
-
-  const draggableStyle = useMemo(
-    () => ({
-      marginLeft:
-        dashboardFiltersOpen ||
-        editMode ||
-        !nativeFiltersEnabled ||
-        filterBarOrientation === FilterBarOrientation.Horizontal ||
-        isMobile
-          ? 0
-          : -32,
-    }),
-    [
-      dashboardFiltersOpen,
-      editMode,
-      filterBarOrientation,
-      nativeFiltersEnabled,
-      isMobile,
-    ],
-  );
+  /* В апстриме сюда ставили marginLeft:-32 как компенсацию под закрытый
+     вертикальный FilterBar (ResizableSidebar был 32px wide в collapsed).
+     В нашем форке FilterBar удалён полностью, поэтому любая такая
+     компенсация тянет шапку влево за пределы viewport'а — убрано. */
+  const draggableStyle = useMemo(() => ({ marginLeft: 0 }), []);
 
   // If a new tab was added, update the directPathToChild to reflect it
   const currentTopLevelTabs = useRef(topLevelTabs);
@@ -804,80 +1144,30 @@ const DashboardBuilder = () => {
     ],
   );
 
-  const dashboardContentMarginLeft = !editMode
-    ? theme.sizeUnit * 4
-    : theme.sizeUnit * 8;
+  /* Симметричный margin-left со всех сторон. Старое значение sizeUnit*8
+     (32px) в edit-mode резервировалось под закрытый BuilderComponentPane;
+     sidebar убран — теперь edit и view используют одинаковые 16px. */
+  const dashboardContentMarginLeft = theme.sizeUnit * 4;
 
-  const renderChild = useCallback(
-    adjustedWidth => {
-      const filterBarWidth = dashboardFiltersOpen
-        ? adjustedWidth
-        : CLOSED_FILTER_BAR_WIDTH;
-      if (filterBarWidth !== currentFilterBarWidth) {
-        setCurrentFilterBarWidth(filterBarWidth);
-      }
-      return (
-        <FiltersPanel
-          width={filterBarWidth}
-          hidden={isReport}
-          data-test="dashboard-filters-panel"
-        >
-          <StickyPanel ref={containerRef} width={filterBarWidth}>
-            <ErrorBoundary>
-              <FilterBar
-                orientation={FilterBarOrientation.Vertical}
-                verticalConfig={{
-                  filtersOpen: dashboardFiltersOpen,
-                  toggleFiltersBar: toggleDashboardFiltersOpen,
-                  width: filterBarWidth,
-                  height: filterBarHeight,
-                  offset: filterBarOffset,
-                  topLevelPages,
-                  editMode,
-                }}
-              />
-            </ErrorBoundary>
-          </StickyPanel>
-        </FiltersPanel>
-      );
-    },
-    [
-      dashboardFiltersOpen,
-      toggleDashboardFiltersOpen,
-      filterBarHeight,
-      filterBarOffset,
-      isReport,
-      topLevelPages,
-      editMode,
-    ],
-  );
+  /* Desktop вертикальный FilterBar и ResizableSidebar удалены — фильтры
+     и pages теперь живут в отдельных Shell.Drawer'ах, которые триггерятся
+     узкой icon-колонкой <DashboardSideRail /> слева (монтируется в
+     Shell.tsx). Это освобождает место под грид и унифицирует UX.
 
-  const hasPages = (topLevelPages?.children?.length || 0) > 1;
-  const isVerticalFilterBarVisible =
-    (showFilterBar && filterBarOrientation === FilterBarOrientation.Vertical) ||
-    hasPages ||
-    editMode;
-  const headerFilterBarWidth =
-    isVerticalFilterBarVisible && !isMobile ? currentFilterBarWidth : 0;
+     MobileFilterBar ниже остаётся — на mobile drawer-pattern свой.
+
+     renderChild() callback удалён вместе с ResizableSidebar — он
+     зависел от FiltersPanel/StickyPanel/FilterBar.Vertical. */
+  const headerFilterBarWidth = 0;
 
   return (
-    <DashboardWrapper>
-      {isVerticalFilterBarVisible && !isMobile && (
-        <ResizableSidebar
-          id={`dashboard:${dashboardId}`}
-          enable={dashboardFiltersOpen}
-          minWidth={OPEN_FILTER_BAR_WIDTH}
-          maxWidth={OPEN_FILTER_BAR_MAX_WIDTH}
-          initialWidth={OPEN_FILTER_BAR_WIDTH}
+    <ViewportPriorityProvider enabled={fetchStrategy.lazy_offscreen}>
+      <DashboardWrapper>
+        <StyledHeader
+          data-test="dashboard-header-wrapper"
+          ref={headerRef}
+          filterBarWidth={headerFilterBarWidth}
         >
-          {renderChild}
-        </ResizableSidebar>
-      )}
-      <StyledHeader
-        data-test="dashboard-header-wrapper"
-        ref={headerRef}
-        filterBarWidth={headerFilterBarWidth}
-      >
         {/* @ts-ignore */}
         <Droppable
           data-test="top-level-tabs"
@@ -963,18 +1253,46 @@ const DashboardBuilder = () => {
             ) : (
               <Loading />
             )}
-            {editMode && <BuilderComponentPane topOffset={barTopOffset} />}
+            {/* Старый sticky-sidebar BuilderComponentPane убран — его
+                содержимое (SliceAdder + layout-элементы) теперь живёт
+                в Shell-drawer'е kind='builder' (BuilderDrawer.tsx),
+                открывается кнопкой «Конструктор» в mini-rail'е. */}
           </StyledDashboardContent>
         </DashboardContentWrapper>
       </StyledContent>
       {dashboardIsSaving && (
-        <Loading
-          css={css`
-            && {
-              position: fixed;
-            }
-          `}
-        />
+        <SaveOverlayBackdrop role="status" aria-live="polite">
+          <SaveOverlayCard>
+            <span className="save-icon" aria-hidden>
+              {/* SVG spinner — track (статичный круг) + stripe
+                  (вращающаяся 1/4 дуга). circle.r=46, c=2π·46≈289;
+                  dasharray "70 220" → 70px дуги видно, 220px пропуск.
+                  CSS animation крутит этот единственный circle. */}
+              <svg
+                className="save-spinner"
+                viewBox="0 0 100 100"
+                aria-hidden="true"
+              >
+                <circle
+                  className="save-spinner-track"
+                  cx="50"
+                  cy="50"
+                  r="46"
+                />
+                <circle
+                  className="save-spinner-stripe"
+                  cx="50"
+                  cy="50"
+                  r="46"
+                  pathLength="100"
+                  strokeDasharray="22 100"
+                />
+              </svg>
+              <Icons.SaveOutlined iconSize="xl" />
+            </span>
+            <span className="save-caption">{t('Сохранение дашборда…')}</span>
+          </SaveOverlayCard>
+        </SaveOverlayBackdrop>
       )}
       {showFilterBar && isMobile && (
         <MobileFilterBar>
@@ -991,7 +1309,8 @@ const DashboardBuilder = () => {
           />
         </MobileFilterBar>
       )}
-    </DashboardWrapper>
+      </DashboardWrapper>
+    </ViewportPriorityProvider>
   );
 };
 

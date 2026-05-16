@@ -31,7 +31,7 @@ export const StyledDivContainer = styled.div`
   //margin-bottom: 10px;
 `;
 
-const ColumnsPreview: FC<ColumnsPreviewProps> = ({
+const ColumnsPreview: FC<React.PropsWithChildren<ColumnsPreviewProps>> = ({
   columns,
   maxColumnsToShow = 4,
 }) => {

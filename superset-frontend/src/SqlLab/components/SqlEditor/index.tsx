@@ -256,7 +256,7 @@ const elementStyle = (
   }px)`,
 });
 
-const SqlEditor: FC<Props> = ({
+const SqlEditor: FC<React.PropsWithChildren<Props>> = ({
   queryEditor,
   defaultQueryLimit,
   maxRow,
@@ -630,7 +630,7 @@ const SqlEditor: FC<Props> = ({
   };
 
   const setQueryEditorAndSaveSql = useCallback(
-    sql => {
+    (sql: string) => {
       dispatch(queryEditorSetAndSaveSql(queryEditor, sql));
     },
     [dispatch, queryEditor],

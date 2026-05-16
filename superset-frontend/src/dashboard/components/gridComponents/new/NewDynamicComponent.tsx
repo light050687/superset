@@ -27,7 +27,7 @@ type DraggableNewDynamicComponent = {
   metadata: DashboardComponentsRegistryMetadata;
 };
 
-const DraggableNewDynamicComponent: FC<DraggableNewDynamicComponent> = ({
+const DraggableNewDynamicComponent: FC<React.PropsWithChildren<DraggableNewDynamicComponent>> = ({
   componentKey,
   metadata,
 }) => (

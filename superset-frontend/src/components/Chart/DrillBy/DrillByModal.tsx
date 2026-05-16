@@ -467,7 +467,7 @@ export default function DrillByModal({
     <Modal
       css={css`
         .ant-modal-footer {
-          border-top: none;
+          border-top: 1px solid ${theme.colorBorderSecondary};
         }
       `}
       show

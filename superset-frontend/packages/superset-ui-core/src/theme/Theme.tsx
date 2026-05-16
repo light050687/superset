@@ -84,10 +84,24 @@ export class Theme {
     // Extra tokens
     transitionTiming: 0.3,
     brandIconMaxWidth: 37,
-    fontSizeXS: '8',
-    fontSizeXXL: '28',
-    fontWeightNormal: '400',
-    fontWeightLight: '300',
+
+    // DS 2.0 — typography base (fluid override через head_custom_extra.html
+    // CSS-vars `--antd-superset-fontSize*` поверх этих значений).
+    // Минимум 11px, hero 28px (соответствует `var(--fs-hero)` нижней границе).
+    fontSize: 14,
+    fontSizeXS: 11,
+    fontSizeSM: 13,
+    fontSizeLG: 17,
+    fontSizeXL: 22,
+    fontSizeXXL: 28,
+    fontSizeHeading1: 36,
+    fontSizeHeading2: 28,
+    fontSizeHeading3: 22,
+    fontSizeHeading4: 18,
+    fontSizeHeading5: 16,
+    lineHeight: 1.5,
+    fontWeightLight: 300,
+    fontWeightNormal: 400,
     fontWeightStrong: 500,
   };
 
@@ -150,6 +164,23 @@ export class Theme {
       ...(antdConfig.token || {}),
     };
 
+    // AntD v6: enable CSS variables mode with a Superset-scoped key so
+    // runtime theme switches (dark/light, custom palettes) don't require a
+    // full re-generation of styles. `cssVar: false` remains the right choice
+    // for the embedded SDK bundle (SSR / static style extraction), so the
+    // embedded entry is expected to rebuild its theme without cssVar.
+    //
+    // ВАЖНО: namespace `antd-superset` (а не `superset`), иначе AntD v6
+    // прицепляет свои <style data-css-hash-key="superset">, а Emotion
+    // уже использует data-emotion="superset". На theme switch AntD
+    // отсоединяет/пересоздаёт свой узел и cleanup попадает по узлам,
+    // которые Emotion успел adopt'нуть → silent removeChild errors,
+    // styled-обёртки чартов остаются без className → height: 0 → пустые
+    // контейнеры без spinner/error.
+    if (antdConfig.cssVar === undefined) {
+      antdConfig.cssVar = { key: 'antd-superset' };
+    }
+
     // First phase: Let Ant Design compute the tokens
     const tokens = Theme.getFilteredAntdTheme(antdConfig);
 
@@ -161,12 +192,14 @@ export class Theme {
       ...tokens,
     };
 
-    // Update the providers with the fully formed theme
-    this.updateProviders(
-      this.theme,
-      this.antdConfig,
-      createCache({ key: 'superset' }),
-    );
+    // Update the providers с новой темой/AntD-конфигом, НО без пересоздания
+    // emotion cache. Cache живёт ровно одну инстанцию на провайдер (см.
+    // SupersetThemeProvider) — пересоздание на каждый setConfig вызывало
+    // collision: новый cache вызывал hydrate() и забирал <style data-emotion>
+    // у старого, старый продолжал insert/flush в уже adopt'нутые узлы →
+    // silent removeChild внутри Emotion, styled-обёртки чартов теряли
+    // className → height:0 → "пустые" контейнеры после theme switch.
+    this.updateProviders(this.theme, this.antdConfig);
   }
 
   /**
@@ -212,9 +245,8 @@ export class Theme {
   private updateProviders(
     theme: SupersetTheme,
     antdConfig: AntdThemeConfig,
-    emotionCache: any,
   ): void {
-    noop(theme, antdConfig, emotionCache);
+    noop(theme, antdConfig);
     // Overridden at runtime by SupersetThemeProvider using setThemeState
   }
 
@@ -223,22 +255,48 @@ export class Theme {
       throw new Error('Theme is not initialized.');
     }
 
+    // Pass CSP nonce to AntD so v6's runtime-injected <style> tags carry
+    // the nonce from head_custom_extra.html; without this, strict CSP
+    // blocks cssinjs from mounting styles.
+    const cspNonce =
+      typeof window !== 'undefined'
+        ? (window as Window & { __CSP_NONCE__?: string }).__CSP_NONCE__
+        : undefined;
+
+    // Один emotion cache на всё время жизни провайдера. Раньше cache
+    // пересоздавался в setConfig() → новый cache hydrate'ил старые
+    // <style data-emotion="superset">, старый cache продолжал insert/flush
+    // в уже забранные DOM-узлы → silent ошибки, styled-обёртки чартов
+    // теряли height и контейнеры пустели после theme switch.
+    // Cache theme-agnostic: тема течёт через <ThemeProvider>, styled
+    // компоненты переэмиттят CSS в тот же стабильный cache.
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const cacheRef = React.useRef<ReturnType<typeof createCache> | null>(null);
+    if (!cacheRef.current) {
+      cacheRef.current = createCache({
+        key: 'superset',
+        nonce: cspNonce,
+      });
+    }
+
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [themeState, setThemeState] = React.useState({
       theme: this.theme,
       antdConfig: this.antdConfig,
-      emotionCache: createCache({ key: 'superset' }),
     });
 
-    this.updateProviders = (theme, antdConfig, emotionCache) => {
-      setThemeState({ theme, antdConfig, emotionCache });
+    this.updateProviders = (theme, antdConfig) => {
+      setThemeState({ theme, antdConfig });
     };
 
     return (
-      <EmotionCacheProvider value={themeState.emotionCache}>
+      <EmotionCacheProvider value={cacheRef.current}>
         <ThemeProvider theme={themeState.theme}>
           <GlobalStyles />
-          <ConfigProvider theme={themeState.antdConfig}>
+          <ConfigProvider
+            theme={themeState.antdConfig}
+            csp={cspNonce ? { nonce: cspNonce } : undefined}
+          >
             {children}
           </ConfigProvider>
         </ThemeProvider>

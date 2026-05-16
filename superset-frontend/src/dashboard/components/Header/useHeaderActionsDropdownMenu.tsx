@@ -17,67 +17,51 @@
  * under the License.
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { Menu, MenuItem } from '@superset-ui/core/components/Menu';
 import { t } from '@superset-ui/core';
 import { isEmpty } from 'lodash';
 import { URL_PARAMS } from 'src/constants';
-import { useShareMenuItems } from 'src/dashboard/components/menu/ShareMenuItems';
 import { useDownloadMenuItems } from 'src/dashboard/components/menu/DownloadMenuItems';
-import { useHeaderReportMenuItems } from 'src/features/reports/ReportModal/HeaderReportDropdown';
 import CssEditor from 'src/dashboard/components/CssEditor';
-import RefreshIntervalModal from 'src/dashboard/components/RefreshIntervalModal';
-import SaveModal from 'src/dashboard/components/SaveModal';
 import injectCustomCss from 'src/dashboard/util/injectCustomCss';
-import { SAVE_TYPE_NEWDASHBOARD } from 'src/dashboard/util/constants';
 import FilterScopeModal from 'src/dashboard/components/filterscope/FilterScopeModal';
 import getDashboardUrl from 'src/dashboard/util/getDashboardUrl';
 import { getActiveFilters } from 'src/dashboard/util/activeDashboardFilters';
 import { getUrlParam } from 'src/utils/urlUtils';
-import { MenuKeys, RootState } from 'src/dashboard/types';
+import { MenuKeys } from 'src/dashboard/types';
 import { HeaderDropdownProps } from 'src/dashboard/components/Header/types';
 import { updateDashboardTheme } from 'src/dashboard/actions/dashboardInfo';
+import usePagesVisibility from 'src/dashboard/util/usePagesVisibility';
 
+const TOGGLE_PAGES_KEY = 'toggle_pages';
+
+/**
+ * Меню шестерёнки в дашборде. Часто-используемые действия (Save / Share /
+ * Email report / Auto-refresh interval) перенесены на DashboardSideRail
+ * как icon-кнопки с popover'ами. Здесь остаются только редкие/edit-mode
+ * пункты: Edit properties, Theme & CSS, Embed, Set filter mapping, Download.
+ */
 export const useHeaderActionsMenu = ({
   customCss,
-  dashboardId,
   dashboardInfo,
-  refreshFrequency,
-  shouldPersistRefreshFrequency,
   editMode,
-  colorNamespace,
-  colorScheme,
-  layout,
-  expandedSlices,
-  onSave,
-  userCanEdit,
-  userCanShare,
-  userCanSave,
-  userCanCurate,
   isLoading,
-  refreshLimit,
-  refreshWarning,
-  lastModifiedTime,
-  addSuccessToast,
   addDangerToast,
   forceRefreshAllCharts,
   showPropertiesModal,
-  showReportModal,
   manageEmbedded,
   onChange,
   updateCss,
-  startPeriodicRender,
-  setRefreshFrequency,
   dashboardTitle,
+  dashboardId,
+  userCanCurate,
   logEvent,
-  setCurrentReportDeleting,
 }: HeaderDropdownProps) => {
   const dispatch = useDispatch();
   const [css, setCss] = useState(customCss || '');
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
-  const directPathToChild = useSelector(
-    (state: RootState) => state.dashboardState.directPathToChild,
-  );
+  const [pagesVisible, setPagesVisible] = usePagesVisibility();
 
   useEffect(() => {
     if (customCss !== css) {
@@ -100,7 +84,6 @@ export const useHeaderActionsMenu = ({
       switch (key) {
         case MenuKeys.RefreshDashboard:
           forceRefreshAllCharts();
-          addSuccessToast(t('Refreshing charts'));
           break;
         case MenuKeys.EditProperties:
           showPropertiesModal();
@@ -120,6 +103,9 @@ export const useHeaderActionsMenu = ({
         case MenuKeys.ManageEmbedded:
           manageEmbedded();
           break;
+        case TOGGLE_PAGES_KEY:
+          setPagesVisible(!pagesVisible);
+          break;
         default:
           break;
       }
@@ -127,9 +113,10 @@ export const useHeaderActionsMenu = ({
     },
     [
       forceRefreshAllCharts,
-      addSuccessToast,
       showPropertiesModal,
       manageEmbedded,
+      pagesVisible,
+      setPagesVisible,
     ],
   );
 
@@ -141,48 +128,6 @@ export const useHeaderActionsMenu = ({
     [onChange, updateCss],
   );
 
-  const changeRefreshInterval = useCallback(
-    (refreshInterval: number, isPersistent: boolean) => {
-      setRefreshFrequency(refreshInterval, isPersistent);
-      startPeriodicRender(refreshInterval * 1000);
-    },
-    [setRefreshFrequency, startPeriodicRender],
-  );
-
-  const emailSubject = useMemo(
-    () => `${t('Superset dashboard')} ${dashboardTitle}`,
-    [dashboardTitle],
-  );
-
-  const url = useMemo(
-    () =>
-      getDashboardUrl({
-        pathname: window.location.pathname,
-        filters: getActiveFilters(),
-        hash: window.location.hash,
-      }),
-    [],
-  );
-
-  const dashboardComponentId = useMemo(
-    () => [...(directPathToChild || [])].pop(),
-    [directPathToChild],
-  );
-
-  const shareMenuItems = useShareMenuItems({
-    title: t('Share'),
-    disabled: isLoading,
-    url,
-    dashboardId,
-    dashboardComponentId,
-    copyMenuItemTitle: t('Copy permalink to clipboard'),
-    emailMenuItemTitle: t('Share permalink by email'),
-    emailSubject,
-    emailBody: t('Check out this dashboard: '),
-    addSuccessToast,
-    addDangerToast,
-  });
-
   const downloadMenuItem = useDownloadMenuItems({
     pdfMenuItemTitle: t('Export to PDF'),
     imageMenuItemTitle: t('Download as Image'),
@@ -191,12 +136,6 @@ export const useHeaderActionsMenu = ({
     title: t('Download'),
     disabled: isLoading,
     logEvent,
-  });
-
-  const reportMenuItem = useHeaderReportMenuItems({
-    dashboardId: dashboardInfo?.id,
-    showReportModal,
-    setCurrentReportDeleting,
   });
 
   // Helper function to create menu items for components with triggerNode
@@ -209,30 +148,7 @@ export const useHeaderActionsMenu = ({
   });
 
   const menu = useMemo(() => {
-    const isEmbedded = !dashboardInfo?.userId;
-    const refreshIntervalOptions =
-      dashboardInfo?.common?.conf?.DASHBOARD_AUTO_REFRESH_INTERVALS;
-
     const menuItems: MenuItem[] = [];
-
-    // Refresh dashboard
-    if (!editMode) {
-      menuItems.push({
-        key: MenuKeys.RefreshDashboard,
-        label: t('Refresh dashboard'),
-        disabled: isLoading,
-      });
-    }
-
-    // Toggle fullscreen
-    if (!editMode && !isEmbedded) {
-      menuItems.push({
-        key: MenuKeys.ToggleFullscreen,
-        label: getUrlParam(URL_PARAMS.standalone)
-          ? t('Exit fullscreen')
-          : t('Enter fullscreen'),
-      });
-    }
 
     // Edit properties
     if (editMode) {
@@ -260,45 +176,19 @@ export const useHeaderActionsMenu = ({
     }
 
     // Divider
-    menuItems.push({ type: 'divider' });
-
-    // Save as
-    if (userCanSave) {
-      menuItems.push(
-        createModalMenuItem(
-          MenuKeys.SaveModal,
-          <SaveModal
-            addSuccessToast={addSuccessToast}
-            addDangerToast={addDangerToast}
-            dashboardId={dashboardId}
-            dashboardTitle={dashboardTitle}
-            dashboardInfo={dashboardInfo}
-            saveType={SAVE_TYPE_NEWDASHBOARD}
-            layout={layout}
-            expandedSlices={expandedSlices}
-            refreshFrequency={refreshFrequency}
-            shouldPersistRefreshFrequency={shouldPersistRefreshFrequency}
-            lastModifiedTime={lastModifiedTime}
-            customCss={customCss}
-            colorNamespace={colorNamespace}
-            colorScheme={colorScheme}
-            onSave={onSave}
-            triggerNode={
-              <div data-test="save-as-menu-item">{t('Save as')}</div>
-            }
-            canOverwrite={userCanEdit}
-          />,
-        ),
-      );
+    if (menuItems.length > 0) {
+      menuItems.push({ type: 'divider' });
     }
+
+    // Show / hide pages — per-dashboard toggle (localStorage). Не меняет
+    // layout, только скрывает rail с pill'ами + иконку в mini-rail.
+    menuItems.push({
+      key: TOGGLE_PAGES_KEY,
+      label: pagesVisible ? t('Скрыть страницы') : t('Показать страницы'),
+    });
 
     // Download submenu
     menuItems.push(downloadMenuItem);
-
-    // Share submenu
-    if (userCanShare) {
-      menuItems.push(shareMenuItems);
-    }
 
     // Embed dashboard
     if (!editMode && userCanCurate) {
@@ -306,14 +196,6 @@ export const useHeaderActionsMenu = ({
         key: MenuKeys.ManageEmbedded,
         label: t('Embed dashboard'),
       });
-    }
-
-    // Divider
-    menuItems.push({ type: 'divider' });
-
-    // Report dropdown
-    if (!editMode && reportMenuItem) {
-      menuItems.push(reportMenuItem);
     }
 
     // Set filter mapping
@@ -328,23 +210,6 @@ export const useHeaderActionsMenu = ({
       );
     }
 
-    // Auto-refresh interval
-    menuItems.push(
-      createModalMenuItem(
-        MenuKeys.AutorefreshModal,
-        <RefreshIntervalModal
-          addSuccessToast={addSuccessToast}
-          refreshFrequency={refreshFrequency}
-          refreshLimit={refreshLimit}
-          refreshWarning={refreshWarning}
-          onChange={changeRefreshInterval}
-          editMode={editMode}
-          refreshIntervalOptions={refreshIntervalOptions}
-          triggerNode={<div>{t('Set auto-refresh interval')}</div>}
-        />,
-      ),
-    );
-
     return (
       <Menu
         selectable={false}
@@ -355,34 +220,15 @@ export const useHeaderActionsMenu = ({
     );
   }, [
     addDangerToast,
-    addSuccessToast,
-    changeRefreshInterval,
     changeCss,
-    colorNamespace,
-    colorScheme,
     css,
-    customCss,
-    dashboardId,
     dashboardInfo,
-    dashboardTitle,
     downloadMenuItem,
     editMode,
-    expandedSlices,
     handleMenuClick,
-    isLoading,
-    lastModifiedTime,
-    layout,
-    onSave,
-    refreshFrequency,
-    refreshLimit,
-    refreshWarning,
-    reportMenuItem,
-    shareMenuItems,
-    shouldPersistRefreshFrequency,
+    handleThemeChange,
+    pagesVisible,
     userCanCurate,
-    userCanEdit,
-    userCanSave,
-    userCanShare,
   ]);
 
   return [menu, isDropdownVisible, setIsDropdownVisible];

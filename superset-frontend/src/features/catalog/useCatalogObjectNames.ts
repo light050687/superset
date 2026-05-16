@@ -48,7 +48,7 @@ function typeLabel(type: CatalogObjectType): string {
     case 'dashboard':
       return 'Дашборд';
     case 'chart':
-      return 'Диаграмма';
+      return 'Чарт';
     case 'dataset':
       return 'Датасет';
     case 'saved_query':

@@ -167,6 +167,12 @@ export interface BaseSelectProps extends AntdExposedProps {
   ref: Ref<RefSelectProps>;
 
   dropdownStyle?: React.CSSProperties;
+
+  /**
+   * AntD v6 semantic styles slots. `popup.root` replaces the deprecated
+   * `dropdownStyle` prop; `root` replaces container-level overrides.
+   */
+  styles?: AntdProps['styles'];
 }
 
 export interface SelectProps extends BaseSelectProps {

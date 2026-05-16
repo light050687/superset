@@ -38,7 +38,7 @@ export type MetadataProps = {
   value: string;
 };
 
-const Metadata: React.FC<MetadataProps> = ({ value }) => (
+const Metadata: React.FC<React.PropsWithChildren<MetadataProps>> = ({ value }) => (
   <MetadataWrapper>
     <MetadataText>{value}</MetadataText>
   </MetadataWrapper>

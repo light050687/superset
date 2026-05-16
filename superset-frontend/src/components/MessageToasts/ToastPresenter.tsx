@@ -17,6 +17,7 @@
  * under the License.
  */
 import { styled } from '@superset-ui/core';
+import { DS2_VARS } from 'src/theme/ds2';
 import { ToastMeta } from 'src/components/MessageToasts/types';
 import Toast from './Toast';
 
@@ -24,52 +25,48 @@ export interface VisualProps {
   position: 'bottom' | 'top';
 }
 
+/* Toast notifications — DS2 glass-pill по центру экрана (по запросу
+   юзера: «сделай по центру как раньше было»). Раньше было «220×200
+   квадратом по центру» — слишком intrusive, блокировало контент.
+   Сейчас compact pill сохранил центрирование, но не блокирует дашборд
+   из-за маленького размера. Stack вертикальный, fade+scale-in. */
 const StyledToastPresenter = styled.div<VisualProps>(
-  ({ theme, position }) =>
-    // Single access to theme, using dot notation
+  ({ theme }) =>
     `
-    max-width: 600px;
     position: fixed;
-    ${position === 'bottom' ? 'bottom' : 'top'}: 0px;
-    right: 0px;
-    margin-right: 50px;
-    margin-bottom: 50px;
+    inset: 0;
     z-index: ${theme.zIndexPopupBase + 1};
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    pointer-events: none;
     word-break: break-word;
 
     .toast {
-      padding: ${theme.sizeUnit * 4}px;
-      margin: ${theme.sizeUnit * 4}px;
-      background: ${theme.colorBgSpotlight};
-      border-radius: ${theme.borderRadius}px;
-      box-shadow: ${theme.boxShadow};
-      color: ${theme.colorTextLightSolid};
+      background: ${DS2_VARS.drawerBg};
+      backdrop-filter: ${DS2_VARS.drawerFilter};
+      -webkit-backdrop-filter: ${DS2_VARS.drawerFilter};
+      border: 1px solid ${DS2_VARS.drawerBorder};
+      border-radius: 12px;
+      box-shadow: ${DS2_VARS.drawerShadow};
       opacity: 0;
-      position: relative;
-      transform: translateY(-100%);
-      white-space: pre-line;
+      transform: scale(0.94);
+      pointer-events: auto;
       will-change: transform, opacity;
       transition:
-        transform ${theme.motionDurationMid},
-        opacity ${theme.motionDurationMid};
-      &:after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 6px;
-        height: 100%;
-      }
-    }
-
-    .toast > button {
-      color: ${theme.colorTextLightSolid};
-      opacity: 1;
+        transform 0.22s ${DS2_VARS.ease},
+        opacity 0.18s ${DS2_VARS.ease};
     }
 
     .toast--visible {
       opacity: 1;
-      transform: translateY(0);
+      transform: scale(1);
+    }
+
+    @media print {
+      display: none;
     }
   `,
 );

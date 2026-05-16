@@ -16,11 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+import type { PropsWithChildren } from 'react';
 import { Form as AntdForm } from 'antd';
 import { FormProps } from './types';
 
-function CustomForm(props: FormProps) {
-  return <AntdForm {...props} />;
+function CustomForm<Values = any>(props: PropsWithChildren<FormProps<Values>>) {
+  return <AntdForm<Values> {...props} />;
 }
 
 export const Form = Object.assign(CustomForm, {

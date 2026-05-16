@@ -138,7 +138,7 @@ const StyledJsonSchema = styled.div`
   }
 `;
 
-const ScheduleQueryButton: FunctionComponent<ScheduleQueryButtonProps> = ({
+const ScheduleQueryButton: FunctionComponent<React.PropsWithChildren<ScheduleQueryButtonProps>> = ({
   defaultLabel = t('Undefined'),
   sql,
   schema,

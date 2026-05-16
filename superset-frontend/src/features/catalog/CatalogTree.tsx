@@ -106,7 +106,7 @@ function getDescendantMap(nodes: TreeNode[]): Map<number, Set<number>> {
   return map;
 }
 
-export const CatalogTree: FC<CatalogTreeProps> = ({
+export const CatalogTree: FC<React.PropsWithChildren<CatalogTreeProps>> = ({
   nodes,
   loading,
   error,

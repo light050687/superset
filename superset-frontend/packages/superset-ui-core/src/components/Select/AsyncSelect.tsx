@@ -29,6 +29,7 @@ import {
   useCallback,
   useImperativeHandle,
   ClipboardEvent,
+  type CSSProperties,
 } from 'react';
 
 import {
@@ -144,6 +145,8 @@ const AsyncSelect = forwardRef(
       getPopupContainer,
       oneLine,
       maxTagCount: propsMaxTagCount,
+      dropdownStyle,
+      styles: stylesProp,
       ...props
     }: AsyncSelectProps,
     ref: RefObject<AsyncSelectRef>,
@@ -631,7 +634,13 @@ const AsyncSelect = forwardRef(
           showSearch={allowNewOptions ? true : showSearch}
           tokenSeparators={tokenSeparators}
           value={selectValue}
-          suffixIcon={getSuffixIcon(isLoading, showSearch, isDropdownVisible)}
+          // AntD v6 widened showSearch to `boolean | SearchConfig<...>`;
+          // any truthy value means search is enabled.
+          suffixIcon={getSuffixIcon(
+            isLoading,
+            Boolean(showSearch),
+            isDropdownVisible,
+          )}
           menuItemSelectedIcon={
             invertSelection ? (
               <StyledStopOutlined iconSize="m" aria-label="stop" />
@@ -641,6 +650,23 @@ const AsyncSelect = forwardRef(
           }
           oneLine={oneLine}
           {...props}
+          styles={
+            dropdownStyle
+              ? {
+                  ...stylesProp,
+                  popup: {
+                    ...(stylesProp as { popup?: { root?: CSSProperties } })
+                      ?.popup,
+                    root: {
+                      ...(stylesProp as {
+                        popup?: { root?: CSSProperties };
+                      })?.popup?.root,
+                      ...dropdownStyle,
+                    },
+                  },
+                }
+              : stylesProp
+          }
           ref={ref}
         />
       </StyledContainer>

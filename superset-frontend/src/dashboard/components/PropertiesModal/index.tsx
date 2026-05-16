@@ -185,7 +185,7 @@ const PropertiesModal = ({
   );
 
   const handleDashboardData = useCallback(
-    dashboardData => {
+    (dashboardData: any) => {
       const {
         id,
         dashboard_title,

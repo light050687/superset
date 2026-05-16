@@ -139,7 +139,7 @@ const handleMouseDown = (e: SyntheticEvent) => {
   e.stopPropagation();
 };
 
-export const EmptyState: React.FC<EmptyStateProps> = ({
+export const EmptyState: React.FC<React.PropsWithChildren<EmptyStateProps>> = ({
   title = t('No results'),
   description = t('There is currently no information to display.'),
   image = 'empty.svg',

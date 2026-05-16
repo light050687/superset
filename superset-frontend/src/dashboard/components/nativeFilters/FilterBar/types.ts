@@ -49,6 +49,13 @@ interface VerticalBarConfig {
   isMobile?: boolean;
   topLevelPages?: any;
   editMode?: boolean;
+  /** Скрыть внутренний `<Header>` (Фильтры + шестерёнка + крестик) —
+   *  используется когда FilterBar монтируется внутри drawer'а, у которого
+   *  свой header. Gear-иконку FiltersDrawer отрендерит сам через portal. */
+  hideInternalHeader?: boolean;
+  /** Отрендерить фильтры в kanban-grid (колонки-категории + DnD) вместо
+   *  вертикального списка FilterControls. Используется в FiltersDrawer. */
+  useKanban?: boolean;
 }
 
 export interface FiltersBarProps {
@@ -65,4 +72,8 @@ export type VerticalBarProps = Omit<FiltersBarProps, 'orientation'> &
   CommonFiltersBarProps &
   VerticalBarConfig & {
     presetButton?: ReactNode;
+    dashboardId?: number;
+    /** Контекст для kanban-preset-колонки — весь набор callbacks и
+     *  данных, нужных для inline-preset-panel'а без popover'а. */
+    kanbanPresetCtx?: import('./FilterKanban/KanbanPresetSection').KanbanPresetSectionProps;
   };

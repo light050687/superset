@@ -19,7 +19,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { styled, t, useTheme, css } from '@superset-ui/core';
+import { styled, t, css } from '@superset-ui/core';
 import { MenuProps } from '@superset-ui/core/components/Menu';
 import { FilterBarOrientation, RootState } from 'src/dashboard/types';
 import {
@@ -28,12 +28,10 @@ import {
 } from 'src/dashboard/actions/dashboardInfo';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { Button, Checkbox, Dropdown } from '@superset-ui/core/components';
-import { Space } from '@superset-ui/core/components/Space';
 import { clearDataMaskState } from 'src/dataMask/actions';
 import { useFilters } from 'src/dashboard/components/nativeFilters/FilterBar/state';
 import { useFilterConfigModal } from 'src/dashboard/components/nativeFilters/FilterBar/FilterConfigurationLink/useFilterConfigModal';
 import { useCrossFiltersScopingModal } from '../CrossFilters/ScopingModal/useCrossFiltersScopingModal';
-import FilterConfigurationLink from '../FilterConfigurationLink';
 
 type SelectedKey = FilterBarOrientation | string | number;
 
@@ -57,7 +55,6 @@ const isOrientation = (o: SelectedKey): o is FilterBarOrientation =>
 const MOBILE_BREAKPOINT = 570;
 
 const FilterBarSettings = () => {
-  const theme = useTheme();
   const dispatch = useDispatch();
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT,
@@ -98,7 +95,7 @@ const FilterBarSettings = () => {
     });
 
   const updateCrossFiltersSetting = useCallback(
-    async isEnabled => {
+    async (isEnabled: boolean) => {
       if (!isEnabled) {
         dispatch(clearDataMaskState());
       }
@@ -173,19 +170,12 @@ const FilterBarSettings = () => {
   const menuItems = useMemo(() => {
     const items: MenuProps['items'] = [];
 
-    if (canEdit) {
-      items.push({
-        key: ADD_EDIT_FILTERS_MENU_KEY,
-        label: (
-          <FilterConfigurationLink>
-            {t('Add or edit filters')}
-          </FilterConfigurationLink>
-        ),
-      });
-      if (canEdit) {
-        items.push({ type: 'divider' });
-      }
-    }
+    /* «Add or edit filters» удалён из gear-меню — вместо него юзер
+       использует «+» (PlusOutlined) в шапке любой kanban-колонки,
+       который открывает тот же FiltersConfigModal. Пункт в gear'е
+       в нашем форке и не работал корректно (FilterConfigurationLink
+       ожидал clickable-trigger внутри себя, а меню-item-рендер
+       ломал клик-handler). */
     if (canEdit) {
       items.push({
         key: CROSS_FILTERS_MENU_KEY,
@@ -197,48 +187,9 @@ const FilterBarSettings = () => {
       });
       items.push({ type: 'divider' });
     }
-    if (canEdit && !isMobile) {
-      items.push({
-        key: 'placement',
-        label: t('Orientation of filter bar'),
-        className: 'filter-bar-orientation-submenu',
-        children: [
-          {
-            key: FilterBarOrientation.Vertical,
-            label: (
-              <Space>
-                {t('Vertical (Left)')}
-                {selectedFilterBarOrientation ===
-                  FilterBarOrientation.Vertical && (
-                  <Icons.CheckOutlined
-                    iconColor={theme.colorPrimary}
-                    iconSize="m"
-                  />
-                )}
-              </Space>
-            ),
-          },
-          {
-            key: FilterBarOrientation.Horizontal,
-            label: (
-              <Space>
-                {t('Horizontal (Top)')}
-                {selectedFilterBarOrientation ===
-                  FilterBarOrientation.Horizontal && (
-                  <Icons.CheckOutlined
-                    iconSize="m"
-                    css={css`
-                      vertical-align: middle;
-                    `}
-                  />
-                )}
-              </Space>
-            ),
-          },
-        ],
-        ...{ 'data-test': 'dropdown-selectable-icon-submenu' },
-      });
-    }
+    /* Пункт «Orientation of filter bar» убран по продуктовому решению:
+       FilterBar теперь всегда живёт в Shell-drawer'е (kanban), выбор
+       горизонтальной/вертикальной ориентации больше не актуален. */
     return items;
   }, [
     selectedFilterBarOrientation,

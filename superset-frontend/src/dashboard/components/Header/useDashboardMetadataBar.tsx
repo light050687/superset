@@ -16,41 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useMemo } from 'react';
-import { t } from '@superset-ui/core';
 import { DashboardInfo } from 'src/dashboard/types';
-import MetadataBar, {
-  MetadataType,
-} from '@superset-ui/core/components/MetadataBar';
-import getOwnerName from 'src/utils/getOwnerName';
 
-export const useDashboardMetadataBar = (dashboardInfo: DashboardInfo) => {
-  const items = useMemo(
-    () => [
-      {
-        type: MetadataType.LastModified as const,
-        value: dashboardInfo.changed_on_delta_humanized,
-        modifiedBy:
-          getOwnerName(dashboardInfo.changed_by) || t('Not available'),
-      },
-      {
-        type: MetadataType.Owner as const,
-        createdBy: getOwnerName(dashboardInfo.created_by) || t('Not available'),
-        owners:
-          dashboardInfo.owners.length > 0
-            ? dashboardInfo.owners.map(getOwnerName)
-            : t('None'),
-        createdOn: dashboardInfo.created_on_delta_humanized,
-      },
-    ],
-    [
-      dashboardInfo.changed_by,
-      dashboardInfo.changed_on_delta_humanized,
-      dashboardInfo.created_by,
-      dashboardInfo.created_on_delta_humanized,
-      dashboardInfo.owners,
-    ],
-  );
-
-  return <MetadataBar items={items} tooltipPlacement="bottom" />;
-};
+/**
+ * DS v2.0: вместо стандартного MetadataBar (требует минимум 2 items и
+ * показывает Owner + LastModified) — возвращаем простой <span> только
+ * с changed_on_delta_humanized ("час назад"). Owner убран — он уже виден
+ * в профиле справа в floating dock (SA avatar). CSS-селектор
+ * [data-test='metadata-bar'] сохранён, чтобы стили из Header/index.jsx
+ * (typography + margin-left: auto) продолжали работать.
+ */
+export const useDashboardMetadataBar = (dashboardInfo: DashboardInfo) => (
+  <span data-test="metadata-bar" className="metadata-text">
+    {dashboardInfo.changed_on_delta_humanized}
+  </span>
+);

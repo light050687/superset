@@ -24,9 +24,19 @@ import { debounce } from 'lodash';
 import { useHistory } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
 import { useDispatch, useSelector } from 'react-redux';
+import {
+  ReloadOutlined,
+  TableOutlined,
+  ZoomInOutlined,
+  SaveOutlined,
+  FileTextOutlined,
+  FileExcelOutlined,
+  FileImageOutlined,
+} from '@ant-design/icons';
 
 import { exportChart, mountExploreUrl } from 'src/explore/exploreUtils';
 import ChartContainer from 'src/components/Chart/ChartContainer';
+import RadialMenu from 'src/components/RadialMenu';
 import {
   LOG_ACTIONS_CHANGE_DASHBOARD_FILTER,
   LOG_ACTIONS_EXPLORE_DASHBOARD_CHART,
@@ -232,7 +242,14 @@ const Chart = props => {
       const computedHeight = getComputedStyle(
         headerRef.current,
       ).getPropertyValue('height');
-      const height = parseInt(computedHeight, 10) || DEFAULT_HEADER_HEIGHT;
+      /* parseInt вернёт 0 для "0px" → falsy → fallback на DEFAULT.
+         Для ext-* плагинов SliceHeader коллапсирован CSS (height:0),
+         и Chart.jsx вычитал бы 22px впустую. NaN-проверка отделяет
+         "у элемента нет высоты" от "у элемента высота 0". */
+      const parsedHeight = parseInt(computedHeight, 10);
+      const height = Number.isNaN(parsedHeight)
+        ? DEFAULT_HEADER_HEIGHT
+        : parsedHeight;
       return height + marginBottom;
     }
     return DEFAULT_HEADER_HEIGHT;
@@ -431,6 +448,103 @@ const Chart = props => {
     boundActionCreators.logEvent,
   ]);
 
+  // ── RadialMenu (новое контекстное меню по правому клику) ──
+  const [radialOpen, setRadialOpen] = useState(false);
+  const [radialPos, setRadialPos] = useState({ x: 0, y: 0 });
+  /* radialOpenId — incrementing counter каждый раз когда меню открывается.
+     Используется как key на <RadialMenu> → React видит новый mount
+     каждый раз → DOM unmount/remount → CSS animations (radial-arc-pop,
+     icon-fade) re-fires from start. Без этого React reconciliation
+     keeps DOM и animations не воспроизводятся повторно. */
+  const [radialOpenId, setRadialOpenId] = useState(0);
+
+  /* Скрытый AntD Dropdown в SliceHeaderControls остаётся в DOM как
+     fallback handler для пунктов которым нет direct callback в Chart.jsx
+     (DrillToDetail, ViewResults, DownloadAsImage). triggerHiddenMenuItem
+     программно: открывает Dropdown через .click() на anchor → ищет
+     MenuItem по data-menu-id key → .click() его → AntD сам закроет
+     Dropdown после действия.
+
+     Polling вместо одиночного rAF: AntD Dropdown анимация ~120ms, до
+     этого MenuItem ещё не отрисован в DOM. Single rAF (~16ms) промахивался
+     → menuItem === null → trigger.click() повторно закрывал dropdown,
+     юзер видел «ничего не произошло». Polling 16ms интервалом до 500ms
+     гарантирует, что мы кликнем как только MenuItem появится. */
+  const triggerHiddenMenuItem = useCallback(
+    menuKey => {
+      const trigger = document.getElementById(`slice_${props.id}-controls`);
+      if (!trigger) return;
+      trigger.click();
+      const startedAt = performance.now();
+      const tryFind = () => {
+        const menuItem = document.querySelector(
+          `#slice_${props.id}-menu [data-menu-id$="-${menuKey}"]`,
+        );
+        if (menuItem instanceof HTMLElement) {
+          menuItem.click();
+          return;
+        }
+        if (performance.now() - startedAt > 500) {
+          // Не дождались появления menu item — закрываем dropdown
+          trigger.click();
+          return;
+        }
+        requestAnimationFrame(tryFind);
+      };
+      requestAnimationFrame(tryFind);
+    },
+    [props.id],
+  );
+
+  const radialItems = useMemo(
+    () => [
+      {
+        key: 'refresh',
+        icon: <ReloadOutlined />,
+        label: t('Обновить'),
+        onClick: forceRefresh,
+      },
+      {
+        key: 'viewTable',
+        icon: <TableOutlined />,
+        label: t('Показать в виде таблицы'),
+        onClick: () => triggerHiddenMenuItem('view_results'),
+      },
+      {
+        key: 'drill',
+        icon: <ZoomInOutlined />,
+        label: t('Перейти к детализации'),
+        onClick: () => triggerHiddenMenuItem('drill_to_detail'),
+      },
+      {
+        key: 'save',
+        icon: <SaveOutlined />,
+        label: t('Сохранить'),
+        children: [
+          {
+            key: 'csv',
+            icon: <FileTextOutlined />,
+            label: t('CSV'),
+            onClick: exportCSV,
+          },
+          {
+            key: 'xlsx',
+            icon: <FileExcelOutlined />,
+            label: t('Excel'),
+            onClick: exportXLSX,
+          },
+          {
+            key: 'png',
+            icon: <FileImageOutlined />,
+            label: t('PNG'),
+            onClick: () => triggerHiddenMenuItem('download_as_image'),
+          },
+        ],
+      },
+    ],
+    [forceRefresh, exportCSV, exportXLSX, triggerHiddenMenuItem],
+  );
+
   if (chart === EMPTY_OBJECT || slice === EMPTY_OBJECT) {
     return <MissingChart height={getChartHeight()} />;
   }
@@ -506,6 +620,18 @@ const Chart = props => {
       <ChartWrapper
         className={cx('dashboard-chart')}
         aria-label={slice.description}
+        onContextMenuCapture={e => {
+          /* Right-click открывает RadialMenu (круговое меню действий).
+             Capture phase + stopPropagation — чтобы не сработал
+             встроенный ChartContextMenu (drill/cross-filter) который
+             пользователь раньше видел как «второе меню». */
+          if (editMode) return;
+          e.preventDefault();
+          e.stopPropagation();
+          setRadialPos({ x: e.clientX, y: e.clientY });
+          setRadialOpen(true);
+          setRadialOpenId(id => id + 1);
+        }}
       >
         {isLoading && (
           <ChartOverlay
@@ -516,6 +642,15 @@ const Chart = props => {
           />
         )}
 
+        {radialOpen && (
+          <RadialMenu
+            key={radialOpenId}
+            items={radialItems}
+            x={radialPos.x}
+            y={radialPos.y}
+            onClose={() => setRadialOpen(false)}
+          />
+        )}
         <ChartContainer
           width={width}
           height={getChartHeight()}
@@ -542,6 +677,9 @@ const Chart = props => {
           datasetsStatus={datasetsStatus}
           isInView={props.isInView}
           emitCrossFilters={emitCrossFilters}
+          lazyOffscreen={props.lazyOffscreen}
+          fetchPriority={props.fetchPriority}
+          dashboardEditMode={props.dashboardEditMode}
         />
       </ChartWrapper>
     </SliceContainer>

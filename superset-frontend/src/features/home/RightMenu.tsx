@@ -779,7 +779,7 @@ const RightMenu = ({
   );
 };
 
-const RightMenuWithQueryWrapper: FC<RightMenuProps> = props => {
+const RightMenuWithQueryWrapper: FC<React.PropsWithChildren<RightMenuProps>> = props => {
   const [, setQuery] = useQueryParams({
     databaseAdded: BooleanParam,
     datasetAdded: BooleanParam,
@@ -813,7 +813,7 @@ class RightMenuErrorWrapper extends PureComponent<RightMenuProps> {
   }
 }
 
-const RightMenuWrapper: FC<RightMenuProps> = props => (
+const RightMenuWrapper: FC<React.PropsWithChildren<RightMenuProps>> = props => (
   <RightMenuErrorWrapper {...props}>
     <RightMenuWithQueryWrapper {...props} />
   </RightMenuErrorWrapper>

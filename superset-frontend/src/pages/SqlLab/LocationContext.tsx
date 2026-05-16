@@ -31,7 +31,7 @@ const { Provider } = locationContext;
 
 const EMPTY_STATE: LocationState = {};
 
-export const LocationProvider: FC = ({ children }: { children: ReactNode }) => {
+export const LocationProvider: FC<React.PropsWithChildren<unknown>> = ({ children }: { children: ReactNode }) => {
   const location = useLocation<LocationState>();
   if (location.state) {
     return <Provider value={location.state}>{children}</Provider>;

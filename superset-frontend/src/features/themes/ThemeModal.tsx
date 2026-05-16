@@ -85,7 +85,7 @@ const StyledFormWrapper = styled.div`
   `}
 `;
 
-const ThemeModal: FunctionComponent<ThemeModalProps> = ({
+const ThemeModal: FunctionComponent<React.PropsWithChildren<ThemeModalProps>> = ({
   addDangerToast,
   addSuccessToast,
   onThemeAdd,

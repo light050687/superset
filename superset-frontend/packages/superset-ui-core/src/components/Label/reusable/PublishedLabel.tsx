@@ -26,7 +26,7 @@ interface PublishedLabelProps {
   onClick?: () => void; // Optional click handler
 }
 
-export const PublishedLabel: React.FC<PublishedLabelProps> = ({
+export const PublishedLabel: React.FC<React.PropsWithChildren<PublishedLabelProps>> = ({
   isPublished,
   onClick,
 }) => {

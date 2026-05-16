@@ -570,7 +570,7 @@ export function dbReducer(
 
 const DEFAULT_TAB_KEY = TABS_KEYS.BASIC;
 
-const DatabaseModal: FunctionComponent<DatabaseModalProps> = ({
+const DatabaseModal: FunctionComponent<React.PropsWithChildren<DatabaseModalProps>> = ({
   addDangerToast,
   addSuccessToast,
   onDatabaseAdd,

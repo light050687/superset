@@ -30,7 +30,7 @@ type FooterProps = {
   canSave?: boolean;
 };
 
-const Footer: FC<FooterProps> = ({
+const Footer: FC<React.PropsWithChildren<FooterProps>> = ({
   canSave = true,
   onCancel,
   handleSave,

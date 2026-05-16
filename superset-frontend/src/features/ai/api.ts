@@ -19,9 +19,11 @@ import { SupersetClient } from '@superset-ui/core';
 import getBootstrapData from 'src/utils/getBootstrapData';
 import type {
   AiActiveTask,
+  AiAnalyzeRawResponse,
   AiAnalyzeRequest,
   AiAnalyzeResponse,
   AiAnswerBlocks,
+  AiAnswerKpi,
   AiChatFolder,
   AiChatMessage,
   AiChatSession,
@@ -151,8 +153,152 @@ export function isAiBackendConfigured(): boolean {
 }
 
 /**
+ * Извлекает до 4 KPI из markdown-текста.
+ *
+ * Ищет паттерны типа «**34 159 528,27 руб.**», «**63,5%**», «**21 354 158,25 ₽**»,
+ * «**12 шт.**» и берёт слово/фразу-предшественник как label. Использует
+ * positive lookbehind для гарантии что число — внутри **bold** разметки.
+ *
+ * Возвращает [] если ничего не найдено — родитель должен fallback на
+ * собственный kpi[] от backend если он есть.
+ */
+function extractKpisFromMarkdown(md: string): AiAnswerKpi[] {
+  if (!md || typeof md !== 'string') return [];
+  const result: AiAnswerKpi[] = [];
+  const seen = new Set<string>();
+
+  // Группа 1 — число (с разделителями), группа 2 — единица.
+  // Локаль: пробел/неразрывный пробел / точка как тысячный, запятая/точка
+  // как десятичный. Поддержка отрицательных чисел для дельт.
+  const numberRe =
+    /\*\*(-?\d[\d\s .,]*?)\s*(руб\.?|₽|%|шт\.?|млн|тыс\.?|тыс|млрд|ед\.?)\*\*/g;
+
+  let match: RegExpExecArray | null;
+  // eslint-disable-next-line no-cond-assign
+  while ((match = numberRe.exec(md)) && result.length < 4) {
+    const [, rawValue, unit] = match;
+    const value = `${rawValue.trim()} ${unit}`.trim();
+    if (seen.has(value)) continue;
+    seen.add(value);
+
+    // Подбираем label из текста перед `**`. Берём 30 предшествующих символов,
+    // ищем последнее слово/фразу — обычно это «составил», «потери:» и т.п.
+    const before = md.slice(Math.max(0, match.index - 60), match.index);
+    const labelMatch = before.match(/[«"'„]([^«"'„]+?)[»"'"]\s*[—:-]?\s*$/);
+    let label: string;
+    if (labelMatch) {
+      label = labelMatch[1].trim();
+    } else {
+      // Fallback — последнее слово/2-3 слова перед числом.
+      const words = before.split(/[\s,;:.\-—]+/).filter(Boolean);
+      label = words.slice(-2).join(' ').trim();
+      if (!label || label.length < 3) label = 'Показатель';
+    }
+
+    result.push({ value, label });
+  }
+  return result;
+}
+
+/**
+ * Нормализует сырой ответ ai-analytics (variability across pipelines)
+ * в каноничный {answer: AiAnswerBlocks}. Гарантирует, что answer
+ * всегда определён — иначе createAiChatMessage упадёт с 400
+ * (Marshmallow требует content_json как обязательное поле).
+ *
+ * Поддерживаемые форматы:
+ *   1. canonical:  {answer: {title, text, kpi, chart, ...}, session_id, meta}
+ *   2. legacy:     {text: '...'} | {content: '...'}
+ *   3. nl2sql:     {intent, data, ...} — собираем из intent + сериализованного data
+ *   4. fallback:   любой другой объект сериализуется в text
+ *
+ * Если у answer нет своих kpi[] — пытаемся извлечь из markdown через
+ * extractKpisFromMarkdown.
+ */
+function adaptAnalyzeResponse(raw: AiAnalyzeRawResponse): AiAnalyzeResponse {
+  // 1) Каноничный: answer уже структурированный AiAnswerBlocks.
+  if (
+    raw &&
+    typeof raw.answer === 'object' &&
+    raw.answer !== null &&
+    !Array.isArray(raw.answer)
+  ) {
+    const answer = raw.answer;
+    // Если backend не вернул kpi, но есть markdown-text — попробуем извлечь.
+    if (
+      (!answer.kpi || answer.kpi.length === 0) &&
+      typeof answer.text === 'string'
+    ) {
+      const extracted = extractKpisFromMarkdown(answer.text);
+      if (extracted.length > 0) answer.kpi = extracted;
+    }
+    return {
+      answer,
+      session_id: raw.session_id,
+      meta: raw.meta,
+    };
+  }
+
+  // 2) ai-analytics LLM-pipeline: {message: '<markdown>', intent, cubeQuery,
+  // rawData: [...]}. message — основной markdown-ответ, rawData — таблица
+  // от Cube.dev. intent НЕ выводим как title (это технический классификатор
+  // запроса, типа 'query_data', не для UI).
+  if (typeof raw?.message === 'string' && raw.message.length > 0) {
+    const blocks: AiAnswerBlocks = { text: raw.message };
+    if (Array.isArray(raw.rawData) && raw.rawData.length > 0) {
+      blocks.table = { rows: raw.rawData };
+    }
+    if (raw.cubeQuery) {
+      blocks.cubeQuery = raw.cubeQuery;
+    }
+    const extracted = extractKpisFromMarkdown(raw.message);
+    if (extracted.length > 0) blocks.kpi = extracted;
+    return {
+      answer: blocks,
+      session_id: raw.session_id,
+      meta: raw.meta,
+    };
+  }
+
+  // 3) Legacy: плоский text/content.
+  const flatText =
+    typeof raw?.text === 'string'
+      ? raw.text
+      : typeof raw?.content === 'string'
+        ? raw.content
+        : null;
+  if (flatText) {
+    return {
+      answer: { text: flatText },
+      session_id: raw.session_id,
+      meta: raw.meta,
+    };
+  }
+
+  // 4) Fallback: незнакомый формат — сериализуем в text с обрезкой,
+  // чтобы хоть что-то показать пользователю и не раздуть metadata DB.
+  const serialized = JSON.stringify(raw, null, 2);
+  const truncated =
+    serialized.length > 4000 ? `${serialized.slice(0, 4000)}…` : serialized;
+  return {
+    answer: { text: truncated },
+    session_id: raw?.session_id,
+    meta: raw?.meta,
+  };
+}
+
+/**
  * Отправляет вопрос в ai-analytics. При отсутствии AI_BACKEND_URL
  * возвращает mock-ответ — frontend остаётся работоспособным без бекенда.
+ *
+ * `credentials: 'include'` намеренно не используется: ai-analytics CORS
+ * возвращает Access-Control-Allow-Origin: '*', что несовместимо с cookies
+ * (см. CORS spec). Аутентификация на стороне ai-analytics — через
+ * X-Session-ID header, а не Superset session cookie.
+ *
+ * TODO(blocked-on-devops): после фикса CORS whitelist в ai-analytics
+ * (см. docs/devops-tasks/ai-analytics-cors.md) вернуть `credentials: 'include'`
+ * в обоих fetch (analyze + tasks).
  */
 export async function analyzeQuestion(
   request: AiAnalyzeRequest,
@@ -164,22 +310,20 @@ export async function analyzeQuestion(
   const res = await fetch(`${base.replace(/\/$/, '')}/api/v1/analyze`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
     body: JSON.stringify(request),
   });
   if (!res.ok) {
     throw new Error(`ai-analytics ${res.status}: ${res.statusText}`);
   }
-  return (await res.json()) as AiAnalyzeResponse;
+  const raw = (await res.json()) as AiAnalyzeRawResponse;
+  return adaptAnalyzeResponse(raw);
 }
 
 export async function listAiActiveTasks(): Promise<AiActiveTask[]> {
   const base = resolveAiBackendUrl();
   if (!base) return [];
   try {
-    const res = await fetch(`${base.replace(/\/$/, '')}/api/v1/tasks`, {
-      credentials: 'include',
-    });
+    const res = await fetch(`${base.replace(/\/$/, '')}/api/v1/tasks`);
     if (!res.ok) return [];
     const body = (await res.json()) as { result?: AiActiveTask[] };
     return body.result ?? [];

@@ -84,24 +84,147 @@ Click here to learn more about [markdown formatting](https://bit.ly/1dQOfRK)`;
 
 const MARKDOWN_ERROR_MESSAGE = t('This markdown component has an error.');
 
+/* DS v2.0 — Markdown типографика по L-шкале (Desktop ≥1280px / 2K).
+   Источник: docs/audit-ds2 wave12. Scope: только `.dashboard-markdown`,
+   глобально не утекает. Шрифт текста — Manrope (var(--f)),
+   моноширинный для code/pre — JetBrains Mono (var(--m)).
+   Цвета через CSS-переменные DS: --ink (основной), --c-sky (ссылки),
+   --g100 (фон inline-code), --g600 (мета/blockquote). */
 const MarkdownStyles = styled.div`
   ${({ theme }) => css`
     &.dashboard-markdown {
       overflow: hidden;
-      color: ${theme.colorText};
+      color: var(--ink, ${theme.colorText});
+      font-family: var(--f, ${theme.fontFamily});
+
+      /* DS v2.0 fluid: --fs-body для абзацев, списков (14-17 fluid) */
+      p,
+      li,
+      dd,
+      dt {
+        font-family: var(--f, ${theme.fontFamily});
+        font-size: var(--fs-body);
+        line-height: 1.5;
+        font-weight: 400;
+        color: var(--ink, ${theme.colorText});
+      }
+
+      p {
+        margin: 0 0 12px;
+      }
+
+      ul,
+      ol {
+        margin: 0 0 12px;
+        padding-left: 24px;
+      }
+
+      /* DS v2.0 fluid: H1 = --fs-hero (28-56), растёт с viewport */
+      h1 {
+        font-family: var(--f, ${theme.fontFamily});
+        font-size: var(--fs-hero);
+        line-height: 1.1;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: var(--ink, ${theme.colorText});
+        margin: 0 0 16px;
+      }
+
+      /* DS v2.0 fluid: H2 = --fs-title (20-28) */
+      h2 {
+        font-family: var(--f, ${theme.fontFamily});
+        font-size: var(--fs-title);
+        line-height: 1.2;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        color: var(--ink, ${theme.colorText});
+        margin: 0 0 12px;
+      }
+
+      /* DS v2.0 fluid: H3 = --fs-subtitle (16-20) — повышение читаемости */
+      h3 {
+        font-family: var(--f, ${theme.fontFamily});
+        font-size: var(--fs-subtitle);
+        line-height: 1.3;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        color: var(--ink, ${theme.colorText});
+        margin: 0 0 8px;
+      }
 
       h4,
       h5,
       h6 {
+        font-family: var(--f, ${theme.fontFamily});
         font-weight: ${theme.fontWeightNormal};
+        color: var(--ink, ${theme.colorText});
+      }
+
+      h6 {
+        font-size: var(--fs-meta);
       }
 
       strong {
         font-weight: 600;
       }
 
-      h6 {
-        font-size: ${theme.fontSizeSM}px;
+      /* Ссылки — DS sky-акцент */
+      a,
+      a:visited {
+        color: var(--c-sky, ${theme.colorPrimary});
+        text-decoration: none;
+      }
+
+      a:hover,
+      a:focus-visible {
+        color: var(--c-sky, ${theme.colorPrimary});
+        text-decoration: underline;
+      }
+
+      a:focus-visible {
+        outline: 2px solid var(--c-sky, ${theme.colorPrimary});
+        outline-offset: 2px;
+      }
+
+      /* DS v2.0 fluid: --fs-meta моно для inline-code и блоков */
+      code,
+      pre,
+      kbd,
+      samp {
+        font-family: var(--m, ${theme.fontFamilyCode || 'monospace'});
+        font-size: var(--fs-meta);
+        line-height: 1.5;
+        font-weight: 400;
+      }
+
+      code {
+        background: var(--g100, ${theme.colorBgLayout});
+        color: var(--ink, ${theme.colorText});
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      pre {
+        background: var(--g100, ${theme.colorBgLayout});
+        color: var(--ink, ${theme.colorText});
+        padding: 12px 16px;
+        border-radius: 6px;
+        overflow-x: auto;
+        margin: 0 0 12px;
+      }
+
+      pre code {
+        background: transparent;
+        padding: 0;
+        border-radius: 0;
+      }
+
+      blockquote {
+        margin: 0 0 12px;
+        padding: 0 12px;
+        border-left: 3px solid var(--g100, ${theme.colorBorder});
+        color: var(--g600, ${theme.colorTextSecondary});
+        font-style: normal;
       }
 
       .dashboard-component-chart-holder {
@@ -166,9 +289,15 @@ class Markdown extends PureComponent {
         hasError: false,
       };
     }
+    // Защита: не затирать локально набранный markdown пустым/неинициализированным
+    // meta.code из Redux. Иначе любой re-render с propsRef-сменой (например смена
+    // темы → новый emotionCache → каскад re-render по дереву) сбрасывает текст,
+    // если Markdown был добавлен но ещё не сохранён в Redux (newComponentFactory
+    // не сидит meta.code, save идёт только на edit→preview).
     if (
       !hasError &&
       editorMode === 'preview' &&
+      typeof nextComponent.meta.code === 'string' &&
       nextComponent.meta.code !== markdownSource
     ) {
       return {
@@ -384,6 +513,7 @@ class Markdown extends PureComponent {
                 minWidthMultiple={GRID_MIN_COLUMN_COUNT}
                 minHeightMultiple={GRID_MIN_ROW_UNITS}
                 maxWidthMultiple={availableColumnCount + widthMultiple}
+                gridSnapColumnBase={columnWidth}
                 onResizeStart={this.handleResizeStart}
                 onResize={onResize}
                 onResizeStop={onResizeStop}

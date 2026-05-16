@@ -1,0 +1,376 @@
+import {
+  ChartProps,
+  getColumnLabel,
+  getMetricLabel,
+  QueryFormMetric,
+  QueryFormColumn,
+} from '@superset-ui/core';
+import type {
+  AxisItem,
+  CellData,
+  ColAxisOption,
+  DataState,
+  DrillQueryParams,
+  HeatmapPivotFormData,
+  HeatmapPivotProps,
+  Thresholds,
+  TotalsSlice,
+  ValuePolarity,
+} from '../types';
+import { reshapePivot } from '../utils/pivotReshape';
+import { MOCK_AXES, MOCK_COLS, MOCK_ROWS, buildMockCells } from '../mocks/lossesPreset';
+
+interface ChartPropsLike {
+  width: number;
+  height: number;
+  formData: HeatmapPivotFormData;
+  queriesData: Array<
+    | {
+        data?: Record<string, unknown>[];
+        is_cached?: boolean;
+        applied_filters?: Array<unknown>;
+        rejected_filters?: Array<unknown>;
+      }
+    | undefined
+  >;
+  hooks?: Record<string, unknown>;
+  datasource?: { id?: number; type?: string };
+}
+
+interface DataMaskPayload {
+  extraFormData?: Record<string, unknown>;
+  filterState?: Record<string, unknown>;
+}
+
+function firstValue<T>(v: T | T[] | null | undefined): T | undefined {
+  if (v == null) return undefined;
+  return Array.isArray(v) ? v[0] : v;
+}
+
+function resolveColumnName(col: QueryFormColumn | undefined): string {
+  if (!col) return '';
+  if (typeof col === 'string') return col;
+  return getColumnLabel(col);
+}
+
+function resolveMetricLabel(m: QueryFormMetric | undefined): string {
+  if (!m) return '';
+  return getMetricLabel(m);
+}
+
+interface MockOverrides {
+  subtitle?: string;
+  rowAxisLabel?: string;
+  colAxisLabel?: string;
+}
+
+/** Compute a full slice (cells, totals, grandTotal) for one mock axis. */
+function computeAxisSlice(
+  axisKey: string,
+  cols: AxisItem[],
+): {
+  cells: Map<string, CellData>;
+  rowTotals: Map<string, TotalsSlice>;
+  colTotals: Map<string, TotalsSlice>;
+  grandTotal: TotalsSlice | null;
+} {
+  const mockCells = buildMockCells(axisKey);
+  const cells = new Map<string, CellData>();
+  mockCells.forEach((v, k) => {
+    cells.set(k, {
+      rowId: v.rowId,
+      colId: v.colId,
+      value: v.value,
+      plan: v.plan,
+      ratio: v.ratio,
+      pct: v.pct,
+      planPct: v.planPct,
+      revenue: v.revenue,
+      shops: v.shops,
+    });
+  });
+
+  const rowTotals = new Map<string, TotalsSlice>();
+  const colTotals = new Map<string, TotalsSlice>();
+  MOCK_ROWS.forEach((r) => rowTotals.set(r.id, buildEmptySlice()));
+  cols.forEach((c) => colTotals.set(c.id, buildEmptySlice()));
+  let gf = 0;
+  let gp = 0;
+  let gr = 0;
+  cells.forEach((c) => {
+    const rt = rowTotals.get(c.rowId);
+    const ct = colTotals.get(c.colId);
+    if (rt) {
+      rt.fact += c.value;
+      if (c.plan != null) rt.plan = (rt.plan ?? 0) + c.plan;
+      if (c.revenue != null) rt.revenue = (rt.revenue ?? 0) + c.revenue;
+    }
+    if (ct) {
+      ct.fact += c.value;
+      if (c.plan != null) ct.plan = (ct.plan ?? 0) + c.plan;
+      if (c.revenue != null) ct.revenue = (ct.revenue ?? 0) + c.revenue;
+    }
+    gf += c.value;
+    if (c.plan != null) gp += c.plan;
+    if (c.revenue != null) gr += c.revenue;
+  });
+  rowTotals.forEach((s) => {
+    s.ratio = s.plan && s.plan !== 0 ? s.fact / s.plan : null;
+    s.pct = s.revenue && s.revenue !== 0 ? (s.fact / s.revenue) * 100 : null;
+  });
+  colTotals.forEach((s) => {
+    s.ratio = s.plan && s.plan !== 0 ? s.fact / s.plan : null;
+    s.pct = s.revenue && s.revenue !== 0 ? (s.fact / s.revenue) * 100 : null;
+  });
+  const grandTotal: TotalsSlice = {
+    fact: gf,
+    plan: gp || null,
+    ratio: gp !== 0 ? gf / gp : null,
+    revenue: gr || null,
+    pct: gr !== 0 ? (gf / gr) * 100 : null,
+  };
+  return { cells, rowTotals, colTotals, grandTotal };
+}
+
+function buildMockProps(
+  props: ChartPropsLike,
+  thresholds: Thresholds,
+  fd: HeatmapPivotFormData,
+  overrides: MockOverrides = {},
+): HeatmapPivotProps {
+  // Pre-compute slices for all 4 axis variants — UI will switch between them
+  // without re-running buildMockCells (which is deterministic anyway).
+  const colAxisOptions: ColAxisOption[] = MOCK_AXES.map((a) => {
+    const slice = computeAxisSlice(a.key, a.cols);
+    return {
+      key: a.key,
+      label: a.label,
+      cols: a.cols,
+      cells: slice.cells,
+      rowTotals: slice.rowTotals,
+      colTotals: slice.colTotals,
+      grandTotal: slice.grandTotal,
+    };
+  });
+  // Default = first axis (division)
+  const def = colAxisOptions[0];
+  const { cells, rowTotals, colTotals } = def;
+
+  const hooks = (props.hooks ?? {}) as { setDataMask?: (m: DataMaskPayload) => void };
+
+  return {
+    width: props.width,
+    height: props.height,
+    formData: fd,
+    rowAxisLabel: overrides.rowAxisLabel ?? 'Формат',
+    colAxisLabel: overrides.colAxisLabel ?? 'Дивизион',
+    rows: MOCK_ROWS,
+    cols: def.cols,
+    cells,
+    rowTotals,
+    colTotals,
+    grandTotal: def.grandTotal,
+    colAxisOptions,
+    thresholds,
+    defaultUnit: fd.defaultUnit ?? 'abs',
+    unitSuffix: fd.unitSuffix ?? 'млн ₽',
+    decimals: fd.decimals ?? 1,
+    autoFormatRussian: fd.autoFormatRussian ?? true,
+    showTotalsDefault: fd.showTotals ?? false,
+    headerText: fd.headerText ?? 'Уровень потерь по форматам',
+    headerSubtitle:
+      overrides.subtitle ??
+      fd.headerSubtitle ??
+      'Форматы × Дивизион · за год',
+    emitFilter: false, // mock mode doesn't emit cross-filters
+    setDataMask: hooks.setDataMask,
+    drillQueryParams: null,
+    mockMode: true,
+    colLabelMaxChars: Number(fd.colLabelMaxChars ?? 18),
+    rowLabelMaxChars: Number(fd.rowLabelMaxChars ?? 24),
+    dataState: 'populated',
+  };
+}
+
+function buildEmptySlice(): TotalsSlice {
+  return { fact: 0, plan: 0, ratio: null, revenue: 0, pct: null };
+}
+
+/**
+ * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
+ * Если raw — не пресет (например конкретный диапазон) — возвращаем как есть.
+ */
+function formatTimeRangeRu(tr: string | undefined): string {
+  if (!tr || tr === 'No filter') return 'за период';
+  const map: Record<string, string> = {
+    'Last day': 'за день',
+    'Last week': 'за неделю',
+    'Last month': 'за месяц',
+    'Last quarter': 'за квартал',
+    'Last year': 'за год',
+    Today: 'сегодня',
+    'This week': 'за эту неделю',
+    'This month': 'за этот месяц',
+    'This year': 'за этот год',
+    'previous calendar week': 'за прошлую неделю',
+    'previous calendar month': 'за прошлый месяц',
+    'previous calendar year': 'за прошлый год',
+  };
+  return map[tr] ?? tr;
+}
+
+export default function transformProps(
+  chartProps: ChartProps,
+): HeatmapPivotProps {
+  const props = chartProps as unknown as ChartPropsLike;
+  const { width, height, formData, queriesData, hooks } = props;
+  const fd = formData;
+
+  const thresholds: Thresholds = {
+    ok: Number(fd.thresholdOk ?? 1.0),
+    wn: Number(fd.thresholdWn ?? 1.3),
+    polarity: (fd.valuePolarity ?? 'higher_is_worse') as ValuePolarity,
+  };
+
+  const fdRec = fd as unknown as Record<string, unknown>;
+
+  // ── Mock mode short-circuit ──
+  // Read both snake_case (raw) and camelCase (post-lodash) — Superset is inconsistent:
+  // some controls (esp. CheckboxControl) sometimes leak through with snake_case keys.
+  const mockOn = Boolean(
+    fdRec.mockModeEnabled ?? fdRec.mock_mode_enabled ?? false,
+  );
+  if (mockOn) {
+    return buildMockProps(props, thresholds, fd);
+  }
+  const rowAxisRaw = firstValue<QueryFormColumn>(
+    (fd.rowAxis ?? fdRec.row_axis) as QueryFormColumn,
+  );
+  const colAxisRaw = firstValue<QueryFormColumn>(
+    (fd.colAxis ?? fdRec.col_axis) as QueryFormColumn,
+  );
+  const breakdownRaw = firstValue<QueryFormColumn>(
+    (fd.breakdownDim ?? fdRec.breakdown_dim) as QueryFormColumn,
+  );
+
+  const rowAxisCol = resolveColumnName(rowAxisRaw);
+  const colAxisCol = resolveColumnName(colAxisRaw);
+
+  const valueLabel = resolveMetricLabel(fd.valueMetric);
+  const planLabel = resolveMetricLabel(fd.planMetric);
+  const revenueLabel = resolveMetricLabel(fd.revenueMetric);
+  const shopsLabel = resolveMetricLabel(fd.shopsMetric);
+
+  const rawData = queriesData?.[0]?.data ?? [];
+
+  // Second-level mock fallback: when the chart isn't fully configured yet,
+  // show the design preset so the user immediately sees what the viz looks like.
+  // This prevents the "blank chart" experience right after adding a new viz.
+  if (!rowAxisCol || !colAxisCol || !valueLabel) {
+    return buildMockProps(props, thresholds, fd, {
+      subtitle: 'Демо-данные · выберите оси и метрику или включите режим проектирования',
+      rowAxisLabel: rowAxisCol || 'Формат',
+      colAxisLabel: colAxisCol || 'Дивизион',
+    });
+  }
+
+  let dataState: DataState = 'populated';
+  let errorMessage: string | undefined;
+
+  if (rawData.length === 0) {
+    dataState = 'empty';
+  } else {
+    /* DS 2.0 §06 «6 состояний»:
+       - stale: данные пришли из кеша (queriesData[0].is_cached === true)
+       - partial: некоторые фильтры отвергнуты бэкендом (rejected_filters
+         не пуст). Приоритет partial > stale (юзеру важнее знать что
+         фильтр не применился, чем что данные из кеша). */
+    const q0 = queriesData?.[0];
+    if (q0?.rejected_filters && q0.rejected_filters.length > 0) {
+      dataState = 'partial';
+    } else if (q0?.is_cached) {
+      dataState = 'stale';
+    }
+  }
+
+  const reshape = reshapePivot({
+    data: rawData,
+    rowAxisCol,
+    colAxisCol,
+    valueKey: valueLabel,
+    planKey: planLabel || null,
+    revenueKey: revenueLabel || null,
+    shopsKey: shopsLabel || null,
+  });
+
+  // Axis names fallback to column name
+  const rows: AxisItem[] = reshape.rows;
+  const cols: AxisItem[] = reshape.cols;
+
+  const setDataMask = (hooks as { setDataMask?: (m: DataMaskPayload) => void })?.setDataMask;
+  const emitCrossFilters = (fdRec.emitCrossFilters as boolean | undefined) ?? false;
+  const emitFilter = Boolean(fd.emitFilter && emitCrossFilters);
+
+  const datasource = props.datasource ?? {};
+
+  // Drill query params — collected once and reused by DrillModal / CompareModal
+  const drillQueryParams: DrillQueryParams | null =
+    datasource.id && datasource.type && rowAxisCol && colAxisCol && fd.valueMetric
+      ? {
+          datasourceId: datasource.id,
+          datasourceType: datasource.type,
+          rowAxisCol,
+          colAxisCol,
+          breakdownCol: resolveColumnName(breakdownRaw) || null,
+          valueMetric: fd.valueMetric,
+          valueMetricLabel: valueLabel,
+          timeRange:
+            (fdRec.timeRange as string | undefined) ??
+            (fdRec.time_range as string | undefined) ??
+            'No filter',
+          filters:
+            (fdRec.filters as Array<{
+              col: string;
+              op: string;
+              val: unknown;
+            }>) ?? [],
+          extras:
+            (fdRec.extras as Record<string, unknown>) ?? {},
+        }
+      : null;
+
+  return {
+    width,
+    height,
+    formData: fd,
+    rowAxisLabel: rowAxisCol || 'Строки',
+    colAxisLabel: colAxisCol || 'Колонки',
+    rows,
+    cols,
+    cells: reshape.cells,
+    rowTotals: reshape.rowTotals,
+    colTotals: reshape.colTotals,
+    grandTotal: reshape.grandTotal,
+    thresholds,
+    defaultUnit: fd.defaultUnit ?? 'abs',
+    unitSuffix: fd.unitSuffix ?? '',
+    decimals: fd.decimals ?? 1,
+    autoFormatRussian: fd.autoFormatRussian ?? true,
+    showTotalsDefault: fd.showTotals ?? false,
+    headerText: fd.headerText ?? 'Heatmap Pivot',
+    headerSubtitle:
+      fd.headerSubtitle ??
+      formatTimeRangeRu(
+        (fdRec.time_range as string | undefined) ??
+          (fdRec.timeRange as string | undefined),
+      ),
+    emitFilter,
+    setDataMask,
+    drillQueryParams,
+    mockMode: false,
+    colLabelMaxChars: Number(fd.colLabelMaxChars ?? 18),
+    rowLabelMaxChars: Number(fd.rowLabelMaxChars ?? 24),
+    dataState,
+    errorMessage,
+  };
+}

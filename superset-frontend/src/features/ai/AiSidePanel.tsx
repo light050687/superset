@@ -15,7 +15,7 @@
  * и кнопку «+ Новый чат». Slide из левого края, высота = высота overlay.
  */
 import { styled, t } from '@superset-ui/core';
-import { type FC, useEffect, useMemo, useState } from 'react';
+import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { DS2_VARS } from 'src/theme/ds2';
 import {
   createAiChatFolder,
@@ -123,31 +123,6 @@ const SearchInput = styled.input`
   }
 `;
 
-const CloseBtn = styled.button`
-  background: none;
-  border: none;
-  color: ${DS2_VARS.g500};
-  cursor: pointer;
-  padding: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition:
-    background 0.12s ${DS2_VARS.ease},
-    color 0.12s ${DS2_VARS.ease};
-
-  &:hover {
-    background: ${DS2_VARS.g100};
-    color: ${DS2_VARS.ink};
-  }
-
-  svg {
-    width: 12px;
-    height: 12px;
-  }
-`;
-
 /* Primary-кнопка DS 2.0: ink-фон + surface-текст. Контрастно и одинаково
    выразительно в обеих темах (раньше использовался cSky, у которого hex
    разный в light/dark → кнопка выглядела по-разному). */
@@ -200,13 +175,6 @@ const Body = styled.div`
   }
 `;
 
-const SectionLabelRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px 2px;
-`;
-
 const SectionLabel = styled.span`
   font-family: ${DS2_VARS.fontMono};
   font-size: 9.5px;
@@ -217,36 +185,9 @@ const SectionLabel = styled.span`
   flex: 1;
 `;
 
-const SectionAddBtn = styled.button`
-  background: none;
-  border: 1px solid ${DS2_VARS.g200};
-  color: ${DS2_VARS.g500};
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition:
-    border-color 0.1s ${DS2_VARS.ease},
-    color 0.1s ${DS2_VARS.ease},
-    background 0.1s ${DS2_VARS.ease};
-
-  &:hover {
-    border-color: ${DS2_VARS.cSky};
-    color: ${DS2_VARS.cSky};
-    background: rgba(59, 139, 217, 0.12);
-  }
-
-  svg {
-    width: 8px;
-    height: 8px;
-  }
-`;
-
-const FolderRow = styled.div<{ $selected?: boolean }>`
+const FolderRow = styled.button<{ $selected?: boolean }>`
+  border: none;
+  text-align: left;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -268,38 +209,74 @@ const FolderRow = styled.div<{ $selected?: boolean }>`
   }
 `;
 
+/**
+ * Hover-actions (карандаш / корзина / +папка) — невидимы по умолчанию,
+ * проявляются при hover на родительский row. Группа для inline CRUD без
+ * открывания тяжёлых модалок.
+ */
 const RowActions = styled.span`
+  margin-left: auto;
   display: none;
   gap: 2px;
-  margin-left: 4px;
+  flex-shrink: 0;
+`;
 
-  ${FolderRow}:hover & {
+const FolderRowWrap = styled.div`
+  position: relative;
+  &:hover ${RowActions} {
     display: inline-flex;
   }
 `;
 
 const RowActBtn = styled.button`
-  background: none;
+  background: transparent;
   border: none;
-  color: ${DS2_VARS.g500};
-  width: 18px;
-  height: 18px;
-  border-radius: 3px;
-  cursor: pointer;
-  display: flex;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  border-radius: 4px;
+  color: ${DS2_VARS.g500};
+  cursor: pointer;
+  transition: all 0.1s ${DS2_VARS.ease};
 
   &:hover {
     background: ${DS2_VARS.g200};
     color: ${DS2_VARS.ink};
   }
 
-  svg {
-    width: 10px;
-    height: 10px;
+  &:focus-visible {
+    outline: 1px solid ${DS2_VARS.cSky};
   }
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+`;
+
+const SectionAddBtn = styled.button`
+  background: transparent;
+  border: 1px dashed ${DS2_VARS.g300};
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: ${DS2_VARS.fontSans};
+  color: ${DS2_VARS.g500};
+  cursor: pointer;
+  margin-left: 8px;
+
+  &:hover {
+    color: ${DS2_VARS.cSky};
+    border-color: ${DS2_VARS.cSky};
+  }
+`;
+
+const SectionLabelRow = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
 `;
 
 const FolderDot = styled.span<{ $color: string; $dashed?: boolean }>`
@@ -380,21 +357,29 @@ const Empty = styled.div`
 
 /* ─── icons ─── */
 
-const IconClose: FC = () => (
-  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M3 3l6 6M9 3l-6 6" />
-  </svg>
-);
-
-const IconPlus: FC = () => (
+const IconPlus: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.8}>
     <path d="M6 2v8M2 6h8" />
   </svg>
 );
 
-const IconChatBubble: FC = () => (
+const IconChatBubble: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M2 4a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6l-3 2v-2H4a2 2 0 01-2-2V4z" />
+  </svg>
+);
+
+const IconPencil: FC<React.PropsWithChildren<unknown>> = () => (
+  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <path d="M2 10l1-3 5-5 2 2-5 5-3 1z" />
+    <path d="M7 3l2 2" />
+  </svg>
+);
+
+const IconTrash: FC<React.PropsWithChildren<unknown>> = () => (
+  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <path d="M2 3.5h8M4.5 3.5V2a1 1 0 011-1h1a1 1 0 011 1v1.5" />
+    <path d="M3 3.5l.5 7a1 1 0 001 1h3a1 1 0 001-1l.5-7" />
   </svg>
 );
 
@@ -410,7 +395,7 @@ const FOLDER_PALETTE = [
   '#CCB604',
 ];
 
-export const AiSidePanel: FC<AiSidePanelProps> = ({
+export const AiSidePanel: FC<React.PropsWithChildren<AiSidePanelProps>> = ({
   open,
   onClose,
   folders,
@@ -418,6 +403,7 @@ export const AiSidePanel: FC<AiSidePanelProps> = ({
   currentSessionId,
   onSelectSession,
   onNewChat,
+  onChanged,
 }) => {
   const [query, setQuery] = useState('');
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
@@ -453,6 +439,96 @@ export const AiSidePanel: FC<AiSidePanelProps> = ({
     [sessions],
   );
 
+  /* CRUD handlers (MVP: window.prompt + window.confirm).
+     Полные модалки — в следующей итерации; сейчас цель — функциональный UI. */
+  const refresh = useCallback(async () => {
+    if (onChanged) await onChanged();
+  }, [onChanged]);
+
+  const handleNewFolder = useCallback(async () => {
+    // eslint-disable-next-line no-alert
+    const name = window.prompt(t('Название новой папки'));
+    if (!name || !name.trim()) return;
+    try {
+      await createAiChatFolder({ name: name.trim() });
+      await refresh();
+    } catch {
+      // eslint-disable-next-line no-alert
+      window.alert(t('Не удалось создать папку'));
+    }
+  }, [refresh]);
+
+  const handleRenameFolder = useCallback(
+    async (folder: AiChatFolder) => {
+      // eslint-disable-next-line no-alert
+      const name = window.prompt(t('Переименовать папку:'), folder.name);
+      if (!name || name.trim() === folder.name) return;
+      try {
+        await updateAiChatFolder(folder.id, { name: name.trim() });
+        await refresh();
+      } catch {
+        // eslint-disable-next-line no-alert
+        window.alert(t('Не удалось переименовать папку'));
+      }
+    },
+    [refresh],
+  );
+
+  const handleDeleteFolder = useCallback(
+    async (folder: AiChatFolder) => {
+      // eslint-disable-next-line no-alert
+      const ok = window.confirm(
+        t('Удалить папку «%(name)s»? Чаты внутри останутся (без папки).',
+          { name: folder.name }),
+      );
+      if (!ok) return;
+      try {
+        await deleteAiChatFolder(folder.id);
+        if (selectedFolderId === folder.id) setSelectedFolderId(null);
+        await refresh();
+      } catch {
+        // eslint-disable-next-line no-alert
+        window.alert(t('Не удалось удалить папку'));
+      }
+    },
+    [refresh, selectedFolderId],
+  );
+
+  const handleRenameSession = useCallback(
+    async (session: AiChatSession) => {
+      // eslint-disable-next-line no-alert
+      const title = window.prompt(t('Переименовать чат:'), session.title);
+      if (!title || title.trim() === session.title) return;
+      try {
+        await updateAiChatSession(session.id, { title: title.trim() });
+        await refresh();
+      } catch {
+        // eslint-disable-next-line no-alert
+        window.alert(t('Не удалось переименовать чат'));
+      }
+    },
+    [refresh],
+  );
+
+  const handleDeleteSession = useCallback(
+    async (session: AiChatSession) => {
+      // eslint-disable-next-line no-alert
+      const ok = window.confirm(
+        t('Удалить чат «%(title)s» вместе со всеми сообщениями?',
+          { title: session.title || t('Без названия') }),
+      );
+      if (!ok) return;
+      try {
+        await deleteAiChatSession(session.id);
+        await refresh();
+      } catch {
+        // eslint-disable-next-line no-alert
+        window.alert(t('Не удалось удалить чат'));
+      }
+    },
+    [refresh],
+  );
+
   return (
     <Shell $open={open} aria-hidden={!open}>
       <TopRow>
@@ -473,7 +549,17 @@ export const AiSidePanel: FC<AiSidePanelProps> = ({
       <Body>
         {/* Папки */}
         <div>
-          <SectionLabel>{t('Папки')}</SectionLabel>
+          <SectionLabelRow>
+            <SectionLabel>{t('Папки')}</SectionLabel>
+            <SectionAddBtn
+              type="button"
+              onClick={handleNewFolder}
+              title={t('Создать папку')}
+              aria-label={t('Создать папку')}
+            >
+              + {t('папка')}
+            </SectionAddBtn>
+          </SectionLabelRow>
           <FolderRow
             type="button"
             $selected={selectedFolderId === null}
@@ -490,18 +576,43 @@ export const AiSidePanel: FC<AiSidePanelProps> = ({
                   s => s.folder_id === f.id,
                 ).length;
                 return (
-                  <FolderRow
-                    key={f.id}
-                    type="button"
-                    $selected={selectedFolderId === f.id}
-                    onClick={() => setSelectedFolderId(f.id)}
-                  >
-                    <FolderDot
-                      $color={FOLDER_PALETTE[idx % FOLDER_PALETTE.length]}
-                    />
-                    <FolderName>{f.name}</FolderName>
-                    <FolderCount>{count}</FolderCount>
-                  </FolderRow>
+                  <FolderRowWrap key={f.id}>
+                    <FolderRow
+                      type="button"
+                      $selected={selectedFolderId === f.id}
+                      onClick={() => setSelectedFolderId(f.id)}
+                    >
+                      <FolderDot
+                        $color={FOLDER_PALETTE[idx % FOLDER_PALETTE.length]}
+                      />
+                      <FolderName>{f.name}</FolderName>
+                      <FolderCount>{count}</FolderCount>
+                      <RowActions>
+                        <RowActBtn
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            void handleRenameFolder(f);
+                          }}
+                          title={t('Переименовать')}
+                          aria-label={t('Переименовать папку')}
+                        >
+                          <IconPencil />
+                        </RowActBtn>
+                        <RowActBtn
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            void handleDeleteFolder(f);
+                          }}
+                          title={t('Удалить')}
+                          aria-label={t('Удалить папку')}
+                        >
+                          <IconTrash />
+                        </RowActBtn>
+                      </RowActions>
+                    </FolderRow>
+                  </FolderRowWrap>
                 );
               })}
               {noFolderCount > 0 ? (
@@ -526,15 +637,40 @@ export const AiSidePanel: FC<AiSidePanelProps> = ({
             </Empty>
           ) : (
             filteredSessions.map(s => (
-              <ChatRow
-                key={s.id}
-                type="button"
-                $active={currentSessionId === s.id}
-                onClick={() => onSelectSession(s.id)}
-              >
-                <IconChatBubble />
-                <ChatTitle>{s.title || t('Без названия')}</ChatTitle>
-              </ChatRow>
+              <FolderRowWrap key={s.id}>
+                <ChatRow
+                  type="button"
+                  $active={currentSessionId === s.id}
+                  onClick={() => onSelectSession(s.id)}
+                >
+                  <IconChatBubble />
+                  <ChatTitle>{s.title || t('Без названия')}</ChatTitle>
+                  <RowActions>
+                    <RowActBtn
+                      type="button"
+                      onClick={e => {
+                        e.stopPropagation();
+                        void handleRenameSession(s);
+                      }}
+                      title={t('Переименовать')}
+                      aria-label={t('Переименовать чат')}
+                    >
+                      <IconPencil />
+                    </RowActBtn>
+                    <RowActBtn
+                      type="button"
+                      onClick={e => {
+                        e.stopPropagation();
+                        void handleDeleteSession(s);
+                      }}
+                      title={t('Удалить')}
+                      aria-label={t('Удалить чат')}
+                    >
+                      <IconTrash />
+                    </RowActBtn>
+                  </RowActions>
+                </ChatRow>
+              </FolderRowWrap>
             ))
           )}
         </div>

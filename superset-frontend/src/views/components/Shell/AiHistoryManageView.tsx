@@ -69,7 +69,7 @@ const Col = styled.div`
   padding: 0 16px;
   border-right: 1px solid ${DS2_VARS.g100};
 
-  &:first-child {
+  &:first-of-type {
     padding-left: 0;
   }
   &:last-child {
@@ -84,7 +84,7 @@ const Head = styled.div`
   gap: 6px;
   padding: 14px 4px 10px;
   flex-shrink: 0;
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   text-transform: uppercase;
@@ -179,7 +179,7 @@ const Row = styled.div<{ $selected?: boolean; $dropActive?: boolean }>`
       : 'transparent'};
   color: ${({ $selected }) => ($selected ? DS2_VARS.cSky : DS2_VARS.ink)};
   font-family: ${DS2_VARS.fontSans};
-  font-size: 12.5px;
+  font-size: var(--fs-meta);
   text-align: left;
   position: relative;
   outline: 1px dashed
@@ -209,7 +209,7 @@ const Name = styled.span`
 `;
 
 const Count = styled.span`
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
 `;
@@ -262,7 +262,7 @@ const Empty = styled.div`
   padding: 28px 12px;
   text-align: center;
   color: ${DS2_VARS.g500};
-  font-size: 12px;
+  font-size: var(--fs-meta);
   font-family: ${DS2_VARS.fontSans};
 
   svg {
@@ -273,13 +273,13 @@ const Empty = styled.div`
   }
 
   strong {
-    font-weight: 500;
-    font-size: 12.5px;
+    font-weight: 600;
+    font-size: var(--fs-meta);
     color: ${DS2_VARS.g600};
   }
 
   span {
-    font-size: 10.5px;
+    font-size: var(--fs-micro);
     color: ${DS2_VARS.g500};
     font-family: ${DS2_VARS.fontMono};
   }
@@ -366,7 +366,7 @@ function parseDrag(raw: string): DragPayload | null {
 
 /* ─── Component ─── */
 
-export const AiHistoryManageView: FC<AiHistoryManageViewProps> = ({
+export const AiHistoryManageView: FC<React.PropsWithChildren<AiHistoryManageViewProps>> = ({
   folders,
   sessions,
   onChanged,

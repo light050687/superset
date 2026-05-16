@@ -34,13 +34,21 @@
  *   │ МРТС Analytics                   v6.0.0  │
  *   └──────────────────────────────────────────┘
  */
-import { styled, t, ThemeMode } from '@superset-ui/core';
+// eslint-disable-next-line no-restricted-imports
+import {
+  configure,
+  styled,
+  t,
+  ThemeMode,
+  type LanguagePack,
+} from '@superset-ui/core';
 import {
   type FC,
   type ReactElement,
   useCallback,
   useEffect,
   useRef,
+  useSyncExternalStore,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { DS2_VARS } from 'src/theme/ds2';
@@ -146,8 +154,8 @@ const Avatar = styled.div`
   flex-shrink: 0;
   border-radius: 50%;
   background: linear-gradient(135deg, #8B5CF6, #D946A8);
-  color: #ffffff;
-  font-size: 13px;
+  color: ${DS2_VARS.s};
+  font-size: var(--fs-interactive);
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -160,7 +168,7 @@ const Identity = styled.div`
 `;
 
 const IdName = styled.div`
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 700;
   color: ${DS2_VARS.ink};
   white-space: nowrap;
@@ -170,7 +178,7 @@ const IdName = styled.div`
 
 const IdEmail = styled.div`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
   white-space: nowrap;
   overflow: hidden;
@@ -212,13 +220,17 @@ const Section = styled.div`
   gap: 8px;
 `;
 
+/* Единый стиль заголовков секций — как SecLabel в ToolsDrawer/CreateDrawer:
+   моно-шрифт, тусклый g500, без цветных точек и без цветной типографики.
+   Упрощённый лейбл не спорит за внимание с плитками секции. */
 const SectionLabel = styled.div`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: ${DS2_VARS.g500};
-  font-weight: 600;
+  font-weight: 700;
+  padding: 0 2px;
 `;
 
 /* Tile grid (как ToolsDrawer): авто-укладка, фиксированная ширина плиток.
@@ -230,7 +242,7 @@ const TileGrid = styled.div`
   gap: 4px;
 `;
 
-const Tile = styled.a`
+const Tile = styled.a<{ $accent: string }>`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -241,7 +253,7 @@ const Tile = styled.a`
   border: 1px solid transparent;
   color: ${DS2_VARS.ink};
   font-family: ${DS2_VARS.fontSans};
-  font-size: 11.5px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   text-align: center;
   text-decoration: none;
@@ -284,10 +296,18 @@ const TileLabel = styled.span`
 
 /* ─── Bottom bar (3 кнопки) ─── */
 
+/* Нижняя строка с быстрыми действиями: Тёмная · Язык · Личные · Выход.
+   Выводим все 4 в один ряд равной ширины — auto-fit, чтобы на узких
+   экранах элементы могли съехать на 2 ряда, но на нормальной ширине
+   drawer'а умещаются в строку. */
 const BottomBar = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
 `;
 
 const BottomBtnBase = `
@@ -299,7 +319,7 @@ const BottomBtnBase = `
   padding: 0 12px;
   border-radius: 8px;
   font-family: ${DS2_VARS.fontSans};
-  font-size: 12px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   cursor: pointer;
   text-decoration: none;
@@ -343,7 +363,9 @@ const BottomButton = styled.button<{ $variant?: 'danger' }>`
 
 const LangBadge = styled.span`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 9px;
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 1px 5px;
   border-radius: 3px;
@@ -361,13 +383,13 @@ const BrandFooter = styled.div`
   padding-top: 8px;
   border-top: 1px solid ${DS2_VARS.g100};
   font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
+  font-size: var(--fs-meta);
   color: ${DS2_VARS.g500};
 `;
 
 /* ─── SVG Icons ─── */
 
-const IconClose: FC = () => (
+const IconClose: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={12}
     height={12}
@@ -381,7 +403,7 @@ const IconClose: FC = () => (
   </svg>
 );
 
-const IconShield: FC = () => (
+const IconShield: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -397,7 +419,7 @@ const IconShield: FC = () => (
   </svg>
 );
 
-const IconUser: FC = () => (
+const IconUser: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -414,7 +436,7 @@ const IconUser: FC = () => (
   </svg>
 );
 
-const IconUsers: FC = () => (
+const IconUsers: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -433,7 +455,7 @@ const IconUsers: FC = () => (
   </svg>
 );
 
-const IconJournal: FC = () => (
+const IconJournal: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -450,7 +472,7 @@ const IconJournal: FC = () => (
   </svg>
 );
 
-const IconLock: FC = () => (
+const IconLock: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -467,7 +489,7 @@ const IconLock: FC = () => (
   </svg>
 );
 
-const IconDatabase: FC = () => (
+const IconDatabase: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -485,7 +507,7 @@ const IconDatabase: FC = () => (
   </svg>
 );
 
-const IconTable: FC = () => (
+const IconTable: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -502,7 +524,7 @@ const IconTable: FC = () => (
   </svg>
 );
 
-const IconSql: FC = () => (
+const IconSql: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -520,7 +542,7 @@ const IconSql: FC = () => (
   </svg>
 );
 
-const IconCode: FC = () => (
+const IconCode: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -536,7 +558,7 @@ const IconCode: FC = () => (
   </svg>
 );
 
-const IconBell: FC = () => (
+const IconBell: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -553,7 +575,7 @@ const IconBell: FC = () => (
   </svg>
 );
 
-const IconPin: FC = () => (
+const IconPin: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={18}
     height={18}
@@ -569,7 +591,7 @@ const IconPin: FC = () => (
   </svg>
 );
 
-const IconProfile: FC = () => (
+const IconProfile: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={14}
     height={14}
@@ -586,7 +608,7 @@ const IconProfile: FC = () => (
   </svg>
 );
 
-const IconGlobe: FC = () => (
+const IconGlobe: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={14}
     height={14}
@@ -603,7 +625,43 @@ const IconGlobe: FC = () => (
   </svg>
 );
 
-const IconLogout: FC = () => (
+const IconDashboard: FC<React.PropsWithChildren<unknown>> = () => (
+  <svg
+    width={18}
+    height={18}
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.6}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ flexShrink: 0 }}
+  >
+    <rect x="2.5" y="2.5" width="7" height="7" rx="1.5" />
+    <rect x="10.5" y="2.5" width="7" height="4" rx="1.5" />
+    <rect x="10.5" y="7.5" width="7" height="10" rx="1.5" />
+    <rect x="2.5" y="10.5" width="7" height="7" rx="1.5" />
+  </svg>
+);
+
+const IconChart: FC<React.PropsWithChildren<unknown>> = () => (
+  <svg
+    width={18}
+    height={18}
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.6}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ flexShrink: 0 }}
+  >
+    <path d="M3 17V7M8 17V3M13 17v-7M18 17v-4" />
+    <path d="M2 17.5h17" />
+  </svg>
+);
+
+const IconLogout: FC<React.PropsWithChildren<unknown>> = () => (
   <svg
     width={14}
     height={14}
@@ -673,9 +731,11 @@ function findUrl(menuUrls: string[], substrings: string[]): string | null {
   return null;
 }
 
-/** Строит полный набор плиток (10 штук всегда). URL подставляется из меню
- *  если найден, иначе используется стандартный fallback Superset 6.0. */
+/** Строит полный набор плиток. URL подставляется из меню если найден,
+ *  иначе используется стандартный fallback Superset 6.0. */
 function buildTileDefs(menu: MenuData): {
+  content: TileDef[];
+  create: TileDef[];
   security: TileDef[];
   data: TileDef[];
   management: TileDef[];
@@ -685,6 +745,45 @@ function buildTileDefs(menu: MenuData): {
     findUrl(urls, substrings) ?? fallback;
 
   return {
+    // «Контент» — навигация к существующим объектам. Стандартные листинги
+    // Superset /dashboard/list/ и /chart/list/ нужно иметь в быстром доступе,
+    // иначе к ним нет UI-пути после переноса старой админ-навигации сюда.
+    content: [
+      {
+        key: 'dashboards',
+        label: t('Дашборды'),
+        url: pick(['/dashboard/list'], '/dashboard/list/'),
+        accent: DS2_VARS.cSky,
+        icon: <IconDashboard />,
+      },
+      {
+        key: 'charts',
+        label: t('Чарты'),
+        url: pick(['/chart/list'], '/chart/list/'),
+        accent: DS2_VARS.cTangerine,
+        icon: <IconChart />,
+      },
+    ],
+    // «Создание» — быстрые действия для админа/аналитика. Видны всем
+    // залогиненным; в Superset создание чарта/дашборда защищено
+    // server-side permissions, так что неавторизованный клик упрётся
+    // в 403 — UI не ломается.
+    create: [
+      {
+        key: 'new-dashboard',
+        label: t('Новый дашборд'),
+        url: pick(['/dashboard/new'], '/dashboard/new/'),
+        accent: DS2_VARS.cViolet,
+        icon: <IconDashboard />,
+      },
+      {
+        key: 'new-chart',
+        label: t('Новый чарт'),
+        url: pick(['/chart/add'], '/chart/add'),
+        accent: DS2_VARS.cFuchsia,
+        icon: <IconChart />,
+      },
+    ],
     security: [
       {
         key: 'roles',
@@ -777,9 +876,40 @@ function buildTileDefs(menu: MenuData): {
   };
 }
 
+/* ─── Module-level locale store ────────────────────────────────────
+ *
+ * Переключение языка делает key-bump <App /> через событие
+ * `superset:lang-changed` (см. views/index.tsx → AppWithLangSwitch).
+ * Любое React-состояние внутри компонентов теряется при ремонте.
+ *
+ * Если хранить выбранный язык в useState внутри SettingsDropdown и
+ * инициализировать его из `menu.navbar_right.locale` (bootstrap HTML,
+ * frozen at page load), то после ремонта value возвращается в старое
+ * значение — юзер видит «моргание» бейджа ru→en→ru одним кликом.
+ *
+ * Решение: module-level переменная + useSyncExternalStore. Значение
+ * живёт в памяти JS-модуля, переживает любые ремонты React-дерева,
+ * сбрасывается только при hard reload страницы (как и должно быть —
+ * тогда bootstrap HTML обновлён). */
+let currentLocaleValue = 'en';
+let currentLocaleInitialized = false;
+const localeSubscribers = new Set<() => void>();
+const localeSnapshot = (): string => currentLocaleValue;
+const localeSubscribe = (listener: () => void): (() => void) => {
+  localeSubscribers.add(listener);
+  return () => {
+    localeSubscribers.delete(listener);
+  };
+};
+const setCurrentLocale = (next: string): void => {
+  if (currentLocaleValue === next) return;
+  currentLocaleValue = next;
+  localeSubscribers.forEach(fn => fn());
+};
+
 /* ─── Component ─── */
 
-export const SettingsDropdown: FC<SettingsDropdownProps> = ({
+export const SettingsDropdown: FC<React.PropsWithChildren<SettingsDropdownProps>> = ({
   anchor,
   open,
   onClose,
@@ -809,15 +939,95 @@ export const SettingsDropdown: FC<SettingsDropdownProps> = ({
   }, [themeCtx, isDark]);
 
   const languages = menu.navbar_right?.languages ?? {};
-  const handleLangChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const lang = languages[e.target.value];
-      if (lang?.url) {
-        window.location.href = lang.url;
-      }
-    },
-    [languages],
+  const serverLocale = menu.navbar_right?.locale ?? 'en';
+  /* Текущий язык хранится в module-level переменной (см. `currentLocale`
+     внизу файла), чтобы пережить ремонт React-дерева по событию
+     `superset:lang-changed`. Иначе при key-bump компонент инициализировался
+     бы из `serverLocale` (bootstrap HTML, frozen at page load), и бейдж
+     откатывался бы в старое значение — юзер видел бы «мигание ru→en→ru»
+     при одном клике.
+
+     useSyncExternalStore подписывается на обновления module-store, чтобы
+     все экземпляры SettingsDropdown в приложении видели одно состояние. */
+  if (!currentLocaleInitialized) {
+    currentLocaleValue = serverLocale;
+    currentLocaleInitialized = true;
+  }
+  const displayLocale = useSyncExternalStore(
+    localeSubscribe,
+    localeSnapshot,
+    localeSnapshot,
   );
+  const setDisplayLocale = setCurrentLocale;
+
+  const handleLangToggle = useCallback(async () => {
+    const keys = Object.keys(languages);
+    if (keys.length < 2) return;
+    const currentIdx = keys.indexOf(displayLocale);
+    const nextKey = keys[(currentIdx + 1) % keys.length];
+    const nextLang = languages[nextKey];
+    if (!nextLang?.url) return;
+
+    setDisplayLocale(nextKey);
+    /* Флаг для Shell: после ремонта App'а Shell заново откроет
+       SettingsDropdown, чтобы юзер видел модалку с применённым
+       переводом. sessionStorage живёт ровно одну вкладку, не утечёт. */
+    try {
+      window.sessionStorage.setItem(
+        'superset-reopen-settings-after-lang-switch',
+        '1',
+      );
+    } catch {
+      // private mode — модалка не восстановится, язык всё равно сменится
+    }
+
+    /* 1. Серверный cookie для будущих страничных загрузок.
+          redirect:'manual' → opaqueredirect на 302, cookie поставлен
+          до редиректа, тело следовать не нужно. */
+    try {
+      await fetch(nextLang.url, {
+        credentials: 'include',
+        redirect: 'manual',
+      });
+    } catch {
+      // Сеть упала — продолжаем, может пакет всё равно загрузится
+    }
+
+    /* 2. Грузим новый language-pack (если это не en — en = default без пака). */
+    if (nextKey === 'en') {
+      configure();
+    } else {
+      try {
+        const resp = await fetch(`/superset/language_pack/${nextKey}/`);
+        if (resp.ok) {
+          const json = (await resp.json()) as LanguagePack;
+          configure({ languagePack: json });
+        } else {
+          configure();
+        }
+      } catch {
+        configure();
+      }
+    }
+
+    /* 3. dayjs — отдельный globals-state, обновляем вручную (см. preamble). */
+    try {
+      const dayjs = (await import('dayjs')).default;
+      if (nextKey !== 'en') {
+        await import(`dayjs/locale/${nextKey}.js`);
+      }
+      dayjs.locale(nextKey);
+    } catch {
+      // locale-файл может отсутствовать — не критично
+    }
+
+    /* 4. Триггерим ремонт всего React-дерева через key-bump в index.tsx.
+          Все компоненты заново вызовут t(), который теперь возвращает
+          переводы нового языка. */
+    window.dispatchEvent(
+      new CustomEvent('superset:lang-changed', { detail: { locale: nextKey } }),
+    );
+  }, [languages, displayLocale]);
 
   void anchor; // anchor не используется в drawer-формате (модалка по центру)
 
@@ -826,7 +1036,6 @@ export const SettingsDropdown: FC<SettingsDropdownProps> = ({
   const { navbar_right: navbarRight } = menu;
   const fullName = extractFullName(user);
   const initials = extractInitials(user);
-  const currentLocale = navbarRight?.locale ?? 'en';
   const showLangPicker =
     (navbarRight?.show_language_picker ?? false) &&
     Object.keys(languages).length > 1;
@@ -849,6 +1058,8 @@ export const SettingsDropdown: FC<SettingsDropdownProps> = ({
     </Tile>
   );
 
+  const contentTiles = tiles.content;
+  const createTiles = tiles.create;
   const securityTiles = tiles.security;
   const dataTiles = tiles.data;
   const managementTiles = tiles.management;
@@ -880,6 +1091,20 @@ export const SettingsDropdown: FC<SettingsDropdownProps> = ({
         </HeadRow>
 
         <Body>
+          {contentTiles.length > 0 ? (
+            <Section>
+              <SectionLabel>{t('Контент')}</SectionLabel>
+              <TileGrid>{contentTiles.map(renderTile)}</TileGrid>
+            </Section>
+          ) : null}
+
+          {!isAnonymous && createTiles.length > 0 ? (
+            <Section>
+              <SectionLabel>{t('Создание')}</SectionLabel>
+              <TileGrid>{createTiles.map(renderTile)}</TileGrid>
+            </Section>
+          ) : null}
+
           {securityTiles.length > 0 ? (
             <Section>
               <SectionLabel>{t('Безопасность')}</SectionLabel>
@@ -901,56 +1126,42 @@ export const SettingsDropdown: FC<SettingsDropdownProps> = ({
             </Section>
           ) : null}
 
-          {/* Тема + язык — отдельная строка */}
-          <Section>
-            <SectionLabel>{t('Вид')}</SectionLabel>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: showLangPicker ? '1fr 1fr' : '1fr',
-                gap: 8,
-              }}
-            >
-              <BottomButton
-                type="button"
-                onClick={handleToggleTheme}
-                aria-pressed={isDark}
-                aria-label={t('Переключить тему')}
-              >
-                {isDark ? '☾' : '☀'} {isDark ? t('Тёмная') : t('Светлая')}
-              </BottomButton>
-              {showLangPicker ? (
-                <BottomButton
-                  as="label"
-                  style={{ cursor: 'pointer', position: 'relative' }}
-                >
-                  <IconGlobe />
-                  <span>{t('Язык')}</span>
-                  <LangBadge>{currentLocale}</LangBadge>
-                  <select
-                    value={currentLocale}
-                    onChange={handleLangChange}
-                    aria-label={t('Язык интерфейса')}
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      opacity: 0,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {Object.keys(languages).map(key => (
-                      <option key={key} value={key}>
-                        {languages[key].name}
-                      </option>
-                    ))}
-                  </select>
-                </BottomButton>
-              ) : null}
-            </div>
-          </Section>
         </Body>
 
+        {/* Единая строка: Тёмная · Язык · Личные · Выход. 4 равных по ширине
+            кнопки. Раньше было 2+2 (Вид-секция внутри Body + BottomBar),
+            сейчас собрано в один ряд в footer'е. */}
         <BottomBar>
+          <BottomButton
+            type="button"
+            onClick={handleToggleTheme}
+            aria-pressed={isDark}
+            aria-label={t('Переключить тему')}
+          >
+            {isDark ? '☾' : '☀'} {isDark ? t('Тёмная') : t('Светлая')}
+          </BottomButton>
+
+          {showLangPicker ? (
+            <BottomButton
+              type="button"
+              onClick={handleLangToggle}
+              aria-label={t('Переключить язык')}
+              title={(() => {
+                const keys = Object.keys(languages);
+                if (keys.length < 2) return undefined;
+                const nextKey =
+                  keys[(keys.indexOf(displayLocale) + 1) % keys.length];
+                return languages[nextKey]?.name
+                  ? `${t('Переключить на')} ${languages[nextKey].name}`
+                  : t('Переключить язык');
+              })()}
+            >
+              <IconGlobe />
+              <span>{t('Язык')}</span>
+              <LangBadge>{displayLocale}</LangBadge>
+            </BottomButton>
+          ) : null}
+
           {!isAnonymous && navbarRight?.user_info_url ? (
             <BottomLink href={navbarRight.user_info_url} onClick={onClose}>
               <IconProfile />
@@ -970,7 +1181,6 @@ export const SettingsDropdown: FC<SettingsDropdownProps> = ({
                 window.location.href = navbarRight.user_logout_url as string;
                 onClose();
               }}
-              style={{ gridColumn: 'span 2' }}
             >
               <IconLogout />
               {t('Выход')}

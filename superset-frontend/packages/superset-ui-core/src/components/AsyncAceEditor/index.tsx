@@ -100,9 +100,7 @@ export type AsyncAceEditorOptions = {
   defaultTheme?: AceEditorTheme;
   defaultTabSize?: number;
   fontFamily?: string;
-  placeholder?: ComponentType<
-    PlaceholderProps & Partial<IAceEditorProps>
-  > | null;
+  placeholder?: ComponentType<React.PropsWithChildren<PlaceholderProps & Partial<IAceEditorProps>>> | null;
 };
 
 /**
@@ -114,7 +112,8 @@ export function AsyncAceEditor(
     defaultMode,
     defaultTheme,
     defaultTabSize = 2,
-    fontFamily = 'Menlo, Consolas, Courier New, Ubuntu Mono, source-code-pro, Lucida Console, monospace',
+    // DS v2.0 — JetBrains Mono (--m) первым в стеке, остальное fallback.
+    fontFamily = "'JetBrains Mono', Menlo, Consolas, 'Courier New', 'Ubuntu Mono', source-code-pro, 'Lucida Console', monospace",
     placeholder,
   }: AsyncAceEditorOptions = {},
 ) {

@@ -9,7 +9,7 @@
  *
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
-import { act, renderHook } from '@testing-library/react-hooks';
+import { act, renderHook } from '@testing-library/react';
 import { DS2_DARK, DS2_LIGHT } from '../ds2Tokens';
 import { useDs2 } from '../useDs2';
 

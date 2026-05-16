@@ -17,10 +17,36 @@
  * under the License.
  */
 import 'src/public-path';
+// RO throttle shim disabled — suspected of swallowing the resize
+// callback on large-delta window resize (monitor/preset switch),
+// leaving ECharts canvases stretched/cropped at the old size. See
+// the bug report with screenshots from 2026-04-21.
+// import 'src/bootstrap/resizeObserverShim';
+import 'src/suppressWarnings';
 
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
+import { useEffect, useState } from 'react';
 import initPreamble from '../preamble';
 import App from './App';
+
+/**
+ * Wrapper, который ремонтирует <App /> через key-bump, когда
+ * SettingsDropdown (или что-то ещё) триггерит переключение языка.
+ * Ремонтирование без reload — переводы уже обновлены через
+ * configure({languagePack}) в обработчике, key-change просто
+ * заставляет все компоненты перечитать t() с новым словарём.
+ * Плюс не происходит flash (нет navigation), минус — теряется
+ * локальный state компонентов (сознательный trade-off, как и у reload).
+ */
+const AppWithLangSwitch = () => {
+  const [langKey, setLangKey] = useState(0);
+  useEffect(() => {
+    const handler = () => setLangKey(k => k + 1);
+    window.addEventListener('superset:lang-changed', handler);
+    return () => window.removeEventListener('superset:lang-changed', handler);
+  }, []);
+  return <App key={langKey} />;
+};
 
 // Await language pack loading before first render (upstream PR #36893)
 // This prevents the English "flash" when BABEL_DEFAULT_LOCALE != 'en'.
@@ -29,6 +55,7 @@ import App from './App';
     await initPreamble();
   } finally {
     // Always render the app, even if preamble fails
-    ReactDOM.render(<App />, document.getElementById('app'));
+    const container = document.getElementById('app');
+    if (container) createRoot(container).render(<AppWithLangSwitch />);
   }
 })();

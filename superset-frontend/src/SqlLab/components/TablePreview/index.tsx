@@ -117,7 +117,7 @@ const renderWell = (partitions: TableMetaData['partitions']) => {
   );
 };
 
-const TablePreview: FC<Props> = ({ dbId, catalog, schema, tableName }) => {
+const TablePreview: FC<React.PropsWithChildren<Props>> = ({ dbId, catalog, schema, tableName }) => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const [databaseName, backend, disableDataPreview] = useSelector<

@@ -72,7 +72,7 @@ const DATASET_BACKEND_QUERY = {
   columns: ['database.backend'],
 };
 
-const ViewQuery: FC<ViewQueryProps> = props => {
+const ViewQuery: FC<React.PropsWithChildren<ViewQueryProps>> = props => {
   const { sql, language = 'sql', datasource } = props;
   const theme = useTheme();
   const datasetId = datasource?.split('__')[0];

@@ -148,7 +148,7 @@ import {
   HistoryOutlined,
   SlackOutlined,
 } from '@ant-design/icons';
-import { FC } from 'react';
+import { ForwardRefExoticComponent, RefAttributes, forwardRef } from 'react';
 import { IconType } from './types';
 import { BaseIconComponent } from './BaseIcon';
 
@@ -287,21 +287,26 @@ const AntdIcons = {
 
 type AntdIconNames = keyof typeof AntdIcons;
 
-export const antdEnhancedIcons: Record<
-  AntdIconNames,
-  FC<IconType>
-> = Object.keys(AntdIcons)
-  .filter(key => !EXCLUDED_ICONS.some(excluded => key.includes(excluded)))
-  .reduce(
-    (acc, key) => {
-      acc[key as AntdIconNames] = (props: IconType) => (
-        <BaseIconComponent
-          component={AntdIcons[key as AntdIconNames]}
-          fileName={key}
-          {...props}
-        />
-      );
-      return acc;
-    },
-    {} as Record<AntdIconNames, FC<IconType>>,
-  );
+type AntdEnhancedIcon = ForwardRefExoticComponent<
+  React.PropsWithChildren<IconType> & RefAttributes<HTMLSpanElement>
+>;
+
+export const antdEnhancedIcons: Record<AntdIconNames, AntdEnhancedIcon> =
+  Object.keys(AntdIcons)
+    .filter(key => !EXCLUDED_ICONS.some(excluded => key.includes(excluded)))
+    .reduce(
+      (acc, key) => {
+        const Wrapped = forwardRef<HTMLSpanElement, IconType>((props, ref) => (
+          <BaseIconComponent
+            ref={ref}
+            component={AntdIcons[key as AntdIconNames]}
+            fileName={key}
+            {...props}
+          />
+        ));
+        Wrapped.displayName = key;
+        acc[key as AntdIconNames] = Wrapped;
+        return acc;
+      },
+      {} as Record<AntdIconNames, AntdEnhancedIcon>,
+    );

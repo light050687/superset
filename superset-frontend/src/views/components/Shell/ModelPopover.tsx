@@ -48,7 +48,7 @@ const Popover = styled.div`
 
 const GroupLabel = styled.div`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 9px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -68,7 +68,7 @@ const Item = styled.button<{ $active: boolean }>`
   border-radius: 10px;
   color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.ink)};
   font-family: ${DS2_VARS.fontSans};
-  font-size: 13px;
+  font-size: var(--fs-interactive);
   cursor: pointer;
   text-align: left;
   transition:
@@ -103,16 +103,16 @@ const LabelRow = styled.span`
 `;
 
 const Hint = styled.span`
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
   line-height: 1.3;
 `;
 
 const RecommendedBadge = styled.span`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   background: ${DS2_VARS.upBg};
   color: ${DS2_VARS.up};
@@ -122,7 +122,7 @@ const RecommendedBadge = styled.span`
 
 const Check = styled.span`
   color: ${DS2_VARS.cSky};
-  font-size: 14px;
+  font-size: var(--fs-body);
   line-height: 1.3;
 `;
 
@@ -147,7 +147,7 @@ function computeAbovePosition(
   return { top, left };
 }
 
-export const ModelPopover: FC<ModelPopoverProps> = ({
+export const ModelPopover: FC<React.PropsWithChildren<ModelPopoverProps>> = ({
   anchor,
   open,
   onClose,

@@ -65,7 +65,7 @@ interface DragItem {
   type: string;
 }
 
-export const DraggableFilter: FC<FilterTabTitleProps> = ({
+export const DraggableFilter: FC<React.PropsWithChildren<FilterTabTitleProps>> = ({
   index,
   onRearrange,
   filterIds,
@@ -73,6 +73,7 @@ export const DraggableFilter: FC<FilterTabTitleProps> = ({
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [{ isDragging }, drag] = useDrag({
+    type: FILTER_TYPE,
     item: { filterIds, type: FILTER_TYPE, index },
     collect: (monitor: DragSourceMonitor) => ({
       isDragging: monitor.isDragging(),

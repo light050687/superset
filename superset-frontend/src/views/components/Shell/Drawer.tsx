@@ -15,7 +15,16 @@
  * Закрывается: Esc, клик по той же rail-кнопке, клик вне sheet'а.
  */
 import { styled, t } from '@superset-ui/core';
-import { type FC, type ReactNode, useEffect, useRef } from 'react';
+import {
+  type FC,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useLocation } from 'react-router-dom';
 import { DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 import { IconClose } from './RailIcons';
 import { useShell } from './ShellContext';
@@ -33,7 +42,10 @@ export const DRAWER_WIDTH = 220;
  * - tools / create / default: ~760px × 320px
  * Разделяем через проп $kind.
  */
-const DrawerSheet = styled.aside<{ $open: boolean; $kind: 'catalog' | 'other' }>`
+const DrawerSheet = styled.aside<{
+  $open: boolean;
+  $kind: 'catalog' | 'other';
+}>`
   position: fixed;
   bottom: ${DS2_VARS.drawerBottom};
   left: 50%;
@@ -55,8 +67,14 @@ const DrawerSheet = styled.aside<{ $open: boolean; $kind: 'catalog' | 'other' }>
   display: flex;
   flex-direction: column;
   pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};
+  /* max-height/height из transition'ов убран: в Chromium
+     transitions на значениях с viewport-unit min(..., 80vh) в
+     редких случаях застревают в startTime=0 — drawer оставался
+     height:0 пока юзер вручную не ресайзил окно. Теперь размер
+     применяется мгновенно, плавность появления держат transform +
+     opacity (стандартные свойства, никаких vh) — визуально почти
+     идентично предыдущему поведению. */
   transition:
-    max-height 0.28s ${DS2_VARS.ease},
     transform 0.28s ${DS2_VARS.ease},
     opacity 0.2s ${DS2_VARS.ease};
   /* Выше ShellMain контента (1) и ниже dropdowns/AI overlay/dock. */
@@ -89,19 +107,50 @@ const DragHandle = styled.div`
   flex-shrink: 0;
 `;
 
-/* Мокап `.drawer-head`: padding 8 22 10. */
+/* Мокап `.drawer-head`: padding 8 22 10. 3-колоночный layout чтобы
+   кастомные drawer-ы могли инжектить свой UI по центру (например,
+   CatalogDrawer кладёт туда ScopeToggle через React Portal). Центр
+   выравнивается по оси независимо от ширины title/close. */
 const DrawerHead = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 8px 22px 10px;
   flex-shrink: 0;
+  gap: 12px;
 `;
 
-/* Мокап `.drawer-title`: font 12 / weight 700 / uppercase / ls 0.06em sans. */
+const DrawerHeadCenter = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+`;
+
+const DrawerHeadRight = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+`;
+
+/** id-mount для React Portal-а из drawer-чайлдов (CatalogDrawer
+ *  инжектит ScopeToggle — «Дашборды/Чарты»). Общий id используется
+ *  для lookup'а через document.getElementById внутри portal-обёртки. */
+export const DRAWER_HEAD_CENTER_ID = 'shell-drawer-header-center';
+/** id-mount для Portal'а в правую часть drawer-шапки, СЛЕВА от кнопки
+ *  закрытия (крестика). FiltersDrawer инжектит сюда шестерёнку
+ *  (FilterBarSettings) — она визуально стоит рядом с ×. */
+export const DRAWER_HEAD_RIGHT_ID = 'shell-drawer-header-right';
+/** id-mount для Portal'а в футер drawer'а (sticky-footer вне scrollable
+ *  body). FiltersDrawer.Vertical-Kanban инжектит сюда Apply/Reset
+ *  действия — кнопки не ездят со скроллом и не перекрывают его. */
+export const DRAWER_FOOTER_SLOT_ID = 'shell-drawer-footer-slot';
+
+/* DS v2.0 fluid: --fs-meta UPPER моно для drawer-title. */
 const DrawerTitle = styled.span`
-  font-family: ${DS2_VARS.fontSans};
-  font-size: 12px;
+  font-family: ${DS2_VARS.fontMono};
+  font-size: var(--fs-meta);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -154,30 +203,84 @@ const DrawerBody = styled.div<{ $flush: boolean }>`
   box-sizing: border-box;
   overflow-y: ${({ $flush }) => ($flush ? 'hidden' : 'auto')};
   overflow-x: hidden;
+  /* БЕЗ scrollbar-gutter: юзер не хочет видеть резервную полосу справа,
+     когда скролла нет. Scrollbar появляется in-flow только при реальном
+     overflow (см. HasOverflowContext ниже — на основе этого же признака
+     DrawerFooter рисует border-top). */
   padding: ${({ $flush }) => ($flush ? '0' : '4px 22px 18px')};
   display: ${({ $flush }) => ($flush ? 'flex' : 'block')};
   flex-direction: column;
 
+  /* DS 2.0 scrollbar — 10px, g300 thumb, padding-box clip (2px пусто
+     внутри thumb'а). Hover → g400. Firefox — scrollbar-color.
+     ВАЖНО: scrollbar-width:thin в современном Chrome заставляет
+     спрятать ::-webkit-scrollbar-button (у thin-scroll нет кнопок).
+     Поэтому оставляем только scrollbar-color для Firefox и не
+     трогаем webkit — он отрендерит наши стрелки из SVG. */
+  scrollbar-color: ${DS2_VARS.g300} transparent;
   &::-webkit-scrollbar {
-    width: 3px;
+    width: 10px;
+    height: 10px;
   }
-
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    /* Отступы track'а, чтобы стрелки (scrollbar-button) не клипались
+       rounded-corner'ами DrawerSheet (radius 18px). Нижняя стрелка
+       уходила за пределы скругления без этого margin'а. */
+    margin: 4px 0 20px 0;
+  }
   &::-webkit-scrollbar-thumb {
     background: ${DS2_VARS.g300};
-    border-radius: 2px;
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${DS2_VARS.g400};
+    background-clip: padding-box;
+  }
+  &::-webkit-scrollbar-button {
+    display: block;
+    height: 12px;
+    width: 10px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 7px 7px;
+  }
+  &::-webkit-scrollbar-button:vertical:start:decrement {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8" fill="none" stroke="%23737373" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 5.5 4 3l2.5 2.5"/></svg>');
+  }
+  &::-webkit-scrollbar-button:vertical:end:increment {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8" fill="none" stroke="%23737373" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 2.5 4 5l2.5-2.5"/></svg>');
+  }
+  /* Скрываем «лишние» parts (double arrows у concat-paired buttons). */
+  &::-webkit-scrollbar-button:vertical:start:increment,
+  &::-webkit-scrollbar-button:vertical:end:decrement,
+  &::-webkit-scrollbar-button:horizontal {
+    display: none;
   }
 `;
 
-const DrawerFooter = styled.div`
+const DrawerFooter = styled.div<{ $hasOverflow?: boolean }>`
   padding: 10px 22px 14px;
-  border-top: 1px solid ${DS2_VARS.g100};
+  /* Нижний разделитель — только когда body реально проскроллен
+     (scrollHeight > clientHeight). Без overflow линия снизу выглядит
+     как лишняя рамка на пустом месте — юзер просил убрать. */
+  border-top: 1px solid
+    ${({ $hasOverflow }) => ($hasOverflow ? DS2_VARS.g100 : 'transparent')};
   flex-shrink: 0;
+  background: ${DS2_VARS.drawerBg};
+  /* Пустой footer-slot (без portal-контента) невидим — иначе
+     drawer снизу получает лишнюю 24px полосу. */
+  &:empty {
+    display: none;
+  }
 `;
 
 const DrawerPlaceholder = styled.div`
   padding: ${DS2_SPACE.s4}px ${DS2_SPACE.s3}px;
   font-family: ${DS2_VARS.fontSans};
-  font-size: 12px;
+  font-size: var(--fs-meta);
   color: ${DS2_VARS.g500};
   line-height: 1.5;
 `;
@@ -195,21 +298,45 @@ const DEFAULT_TITLES: Record<DrawerKind, string> = {
   catalog: 'Каталог',
   tools: 'Инструменты',
   create: 'Создать',
+  filters: 'Фильтры дашборда',
+  pages: 'Страницы дашборда',
+  gridSettings: 'Сетка',
+  dashboardSettings: 'Настройки дашборда',
 };
 
-export const Drawer: FC<DrawerProps> = ({
+export const Drawer: FC<React.PropsWithChildren<DrawerProps>> = ({
   titles = {},
   content = {},
   footer = {},
 }) => {
   const { openedDrawer, closeDrawer } = useShell();
   const asideRef = useRef<HTMLElement | null>(null);
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  const [hasOverflow, setHasOverflow] = useState(false);
+
+  /* Детектируем, помещается ли содержимое body целиком. Результат
+     используется DrawerFooter'ом: border-top рисуется только когда
+     контент реально скроллится (2-й ряд kanban-колонок, длинный
+     catalog и т.п.). Иначе линия снизу выглядит как лишняя рамка. */
+  const measureOverflow = useCallback(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    setHasOverflow(el.scrollHeight > el.clientHeight + 1);
+  }, []);
 
   // Esc закрывает drawer; click-outside — тоже, но с mousedown-tracking.
   useEffect(() => {
     if (!openedDrawer) return undefined;
+    const isAnyModalOpen = () =>
+      document.querySelector('.ant-modal-wrap, [role="dialog"].ant-modal') !==
+      null;
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        /* Если поверх drawer'а открыт AntD-modal — даём модалке
+           поймать Escape первой (она закроется), drawer не трогаем.
+           Иначе оба закрываются одновременно и юзер теряет контекст. */
+        if (isAnyModalOpen()) return;
         closeDrawer();
       }
     };
@@ -241,6 +368,54 @@ export const Drawer: FC<DrawerProps> = ({
           el.matches('nav[aria-label]'),
       );
       if (inRail) return false;
+      /* Модалки каталога (create/rename/delete/confirm) монтируются через
+         React portal в document.body — DOM-путь не проходит через drawer.
+         Без этой проверки клик на «Сохранить»/«Удалить» в модалке
+         воспринимается как клик ВНЕ drawer → drawer закрывается,
+         CatalogManageView размонтируется, handleSubmit не успевает
+         завершить API-вызов. Маркер выставляется в CatalogModalBox. */
+      const inCatalogModal = path.some(
+        el =>
+          el instanceof Element &&
+          el.getAttribute?.('data-catalog-modal') === 'true',
+      );
+      if (inCatalogModal) return false;
+      /* AntD-модалки (CreatePresetModal, ImportPresetModal и любые другие)
+         тоже рендерятся portal'ом в body. Клик по overlay/content модалки
+         НЕ должен закрывать drawer под ней — иначе create/import/edit
+         preset прерывают взаимодействие. */
+      const inAntdModal = path.some(
+        el =>
+          el instanceof Element &&
+          typeof el.matches === 'function' &&
+          (el.matches('.ant-modal') ||
+            el.matches('.ant-modal-wrap') ||
+            el.matches('.ant-modal-mask')),
+      );
+      if (inAntdModal) return false;
+      /* DevToolsPanel — плавающее окно mini-rail'а, существует параллельно
+         с любым Shell-drawer'ом. Клик в него не должен закрывать открытый
+         drawer (например, Конструктор) — иначе юзер, нажимая Undo в
+         DevTools'е поверх BuilderDrawer'а, теряет драфт конструктора. */
+      const inDevTools = path.some(
+        el =>
+          el instanceof Element &&
+          typeof el.matches === 'function' &&
+          el.matches('[role="dialog"][aria-label*="Инструменты"]'),
+      );
+      if (inDevTools) return false;
+      /* Edit-mode дашборда — все клики по `.dashboard--editing` (resize-
+         handles, hover-menu с кнопкой Delete на чартах, drag-handle, layout
+         элементы) НЕ должны закрывать BuilderDrawer. Юзер удаляет чарт →
+         drawer закрывался, deletion успевал dispatch'нуться, но юзер видел
+         «закрытое окно» и решал что фикс не сработал.
+         Используем closest вместо path.some — composedPath на synthetic
+         events не всегда содержит полный путь до document, а closest идёт
+         по реальному parentNode chain. */
+      const firstEl = path.find((el): el is Element => el instanceof Element);
+      if (firstEl?.closest?.('.dashboard--editing, .dashboard-component')) {
+        return false;
+      }
       return true;
     };
 
@@ -269,11 +444,118 @@ export const Drawer: FC<DrawerProps> = ({
     };
   }, [openedDrawer, closeDrawer]);
 
+  /* Следим за содержимым DrawerBody: ResizeObserver ловит изменение
+     client-размеров, MutationObserver — добавление/удаление child-ов
+     (новые kanban-колонки, фильтры, каталог-карточки). На каждое
+     изменение пересчитываем hasOverflow. */
+  useEffect(() => {
+    if (!openedDrawer) {
+      setHasOverflow(false);
+      return undefined;
+    }
+    const el = bodyRef.current;
+    if (!el) return undefined;
+    measureOverflow();
+    const ro = new ResizeObserver(measureOverflow);
+    ro.observe(el);
+    const mo = new MutationObserver(measureOverflow);
+    mo.observe(el, { childList: true, subtree: true });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
+  }, [openedDrawer, measureOverflow]);
+
+  /**
+   * Unified wheel forwarding — «свободный скролл по всей поверхности
+   * drawer'а». Классический scroll-chaining bug в Chromium: когда
+   * wheel event попадает на элемент без собственного scroll'а (gap
+   * между grid-item'ами, <button> типа «+ Добавить колонку», empty
+   * state), Chrome иногда НЕ пробрасывает событие к scrollable
+   * ancestor'у — пользователь видит, что колесо «не работает» в этих
+   * областях.
+   *
+   * Решение (см. обсуждения crbug/MDN): вешаем глобальный wheel
+   * listener на body-контейнер drawer'а с passive:false. Если в
+   * ancestry wheel-target'а есть child-scrollable (Column Body), у
+   * которого ЕСТЬ запас скролла в направлении deltaY — выходим,
+   * native scroll обрабатывает child. Иначе вручную скроллим
+   * DrawerBody и preventDefault.
+   *
+   * Итого: inner scroll внутри kanban-колонки работает как раньше,
+   * но wheel над ЛЮБОЙ точкой drawer-body всегда приводит к скроллу.
+   */
+  useEffect(() => {
+    if (!openedDrawer) return undefined;
+    const body = bodyRef.current;
+    if (!body) return undefined;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY === 0) return;
+      let node: HTMLElement | null = e.target as HTMLElement | null;
+      // Ищем в ancestry (до body) scrollable-child, у которого есть
+      // реальный запас скролла в направлении deltaY.
+      while (node && node !== body) {
+        const cs = window.getComputedStyle(node);
+        if (
+          (cs.overflowY === 'auto' || cs.overflowY === 'scroll') &&
+          node.scrollHeight > node.clientHeight
+        ) {
+          const atTop = node.scrollTop <= 0;
+          const atBottom =
+            node.scrollTop + node.clientHeight >= node.scrollHeight - 1;
+          const scrollingUp = e.deltaY < 0;
+          const scrollingDown = e.deltaY > 0;
+          if ((scrollingUp && !atTop) || (scrollingDown && !atBottom)) {
+            // Native scroll у child'а — выходим.
+            return;
+          }
+        }
+        node = node.parentElement;
+      }
+      // Ни один child не может проскроллить в этом направлении —
+      // двигаем сам DrawerBody.
+      if (body.scrollHeight > body.clientHeight) {
+        body.scrollTop += e.deltaY;
+        e.preventDefault();
+      }
+    };
+
+    body.addEventListener('wheel', onWheel, { passive: false });
+    return () => body.removeEventListener('wheel', onWheel);
+  }, [openedDrawer]);
+
   const kind = openedDrawer;
   const isOpen = kind !== null;
-  const title = kind ? titles[kind] ?? t(DEFAULT_TITLES[kind]) : '';
+  const title = kind ? (titles[kind] ?? t(DEFAULT_TITLES[kind])) : '';
   const bodyNode = kind ? content[kind] : null;
   const footerNode = kind ? footer[kind] : null;
+
+  /* Lazy persistent mount FiltersDrawer: mount при первом открытии
+     drawer'а 'filters' (тогда dashboard state уже hydrated, нет crash
+     при Object.values(undefined)). После первого open остаётся
+     смонтированным — visibility управляется display:contents/none
+     на wrapper'е. Это предотвращает re-fetch filter_state на каждое
+     повторное открытие. flag сбрасывается при page refresh — норма. */
+  const [filtersOpenedOnce, setFiltersOpenedOnce] = useState(false);
+  useEffect(() => {
+    if (kind === 'filters' && !filtersOpenedOnce) {
+      setFiltersOpenedOnce(true);
+    }
+  }, [kind, filtersOpenedOnce]);
+
+  const loc = useLocation();
+  const onDashboardRoute = useMemo(() => {
+    const p = loc.pathname;
+    if (/\/dashboard\/list\/?$/.test(p)) return false;
+    return (
+      /^\/(superset\/)?dashboard\/[^/]+\/?/.test(p) ||
+      /^\/dashboard\/new\/?/.test(p)
+    );
+  }, [loc.pathname]);
+  const filtersNode = content.filters;
+  const shouldKeepFiltersMounted =
+    filtersOpenedOnce && onDashboardRoute && !!filtersNode;
 
   return (
     <DrawerSheet
@@ -286,28 +568,59 @@ export const Drawer: FC<DrawerProps> = ({
       aria-modal="false"
       data-shell-drawer="true"
     >
-      {kind ? (
+      {/* DrawerHead/Body/Footer рендерятся всегда когда filters уже был
+          открыт хоть раз (нужны portal targets для FilterBarSettings
+          и Apply/Reset). До первого открытия — стандартный conditional
+          render как раньше, чтобы не mount'ить лишнего. */}
+      {kind || shouldKeepFiltersMounted ? (
         <>
           <DragHandle role="presentation" />
           <DrawerHead>
             <DrawerTitle>{title}</DrawerTitle>
-            <DrawerClose
-              type="button"
-              onClick={closeDrawer}
-              aria-label={t('Закрыть панель')}
-              title={t('Закрыть (Esc)')}
-            >
-              <IconClose />
-            </DrawerClose>
+            <DrawerHeadCenter id={DRAWER_HEAD_CENTER_ID} />
+            <DrawerHeadRight>
+              <div
+                id={DRAWER_HEAD_RIGHT_ID}
+                style={{ display: 'flex', alignItems: 'center' }}
+              />
+              <DrawerClose
+                type="button"
+                onClick={closeDrawer}
+                aria-label={t('Закрыть панель')}
+                title={t('Закрыть (Esc)')}
+              >
+                <IconClose />
+              </DrawerClose>
+            </DrawerHeadRight>
           </DrawerHead>
-          <DrawerBody $flush={kind === 'catalog'}>
-            {bodyNode ?? (
-              <DrawerPlaceholder>
-                {t('Содержимое появится в следующем этапе.')}
-              </DrawerPlaceholder>
-            )}
+          <DrawerBody ref={bodyRef} $flush={kind === 'catalog'}>
+            {/* Persistent filters — после первого open остаётся в DOM. */}
+            {shouldKeepFiltersMounted ? (
+              <div
+                style={{
+                  display: kind === 'filters' ? 'contents' : 'none',
+                }}
+              >
+                {filtersNode}
+              </div>
+            ) : null}
+            {/* Другие drawer'ы — conditional как раньше. Filters сюда не
+                попадает — для них persistent блок выше. */}
+            {kind && kind !== 'filters'
+              ? (bodyNode ?? (
+                  <DrawerPlaceholder>
+                    {t('Содержимое появится в следующем этапе.')}
+                  </DrawerPlaceholder>
+                ))
+              : null}
           </DrawerBody>
-          {footerNode ? <DrawerFooter>{footerNode}</DrawerFooter> : null}
+          {/* Footer-slot — куда FiltersDrawer портирует Apply/Reset.
+              Всегда присутствует; если портала нет — пустой DrawerFooter
+              с границей border-top визуально не выделяется (min-height). */}
+          <DrawerFooter id={DRAWER_FOOTER_SLOT_ID} $hasOverflow={hasOverflow} />
+          {footerNode ? (
+            <DrawerFooter $hasOverflow={hasOverflow}>{footerNode}</DrawerFooter>
+          ) : null}
         </>
       ) : null}
     </DrawerSheet>

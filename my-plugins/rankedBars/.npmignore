@@ -1,0 +1,15 @@
+node_modules
+src
+test
+tests
+.storybook
+*.stories.tsx
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+tsconfig.json
+jest.config.js
+AUDIT.md
+*.log
+.DS_Store

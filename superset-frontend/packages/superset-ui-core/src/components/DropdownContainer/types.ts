@@ -17,7 +17,6 @@
  * under the License.
  */
 import type { CSSProperties, ReactElement, RefObject, ReactNode } from 'react';
-import { IconType } from '../Icons';
 
 /**
  * Container item.
@@ -68,9 +67,10 @@ export interface DropdownContainerProps {
    */
   dropdownTriggerCount?: number;
   /**
-   * Icon of the dropdown trigger.
+   * Icon of the dropdown trigger. Pass a JSX element (e.g.
+   * `<Icons.FilterOutlined />`), not icon props.
    */
-  dropdownTriggerIcon?: IconType;
+  dropdownTriggerIcon?: ReactNode;
   /**
    * Text of the dropdown trigger.
    */

@@ -126,9 +126,14 @@ const HorizontalOverflowFilterControlContainer = styled(
   }
 `;
 
-const VerticalFormItem = styled(StyledFormItem)<{
-  inverseSelection: boolean;
-}>`
+// Emotion v11 does not auto-filter $-prefixed transient props (that is a
+// styled-components feature). We use `shouldForwardProp` so `inverseSelection`
+// drives the style but never leaks to the underlying DOM element.
+const filterInverseSelection = (prop: string) => prop !== 'inverseSelection';
+
+const VerticalFormItem = styled(StyledFormItem, {
+  shouldForwardProp: filterInverseSelection,
+})<{ inverseSelection: boolean }>`
   .ant-form-item-label {
     overflow: visible;
     label.ant-form-item-required:not(.ant-form-item-required-mark-optional) {
@@ -159,9 +164,9 @@ const VerticalFormItem = styled(StyledFormItem)<{
   }
 `;
 
-const HorizontalFormItem = styled(StyledFormItem)<{
-  inverseSelection: boolean;
-}>`
+const HorizontalFormItem = styled(StyledFormItem, {
+  shouldForwardProp: filterInverseSelection,
+})<{ inverseSelection: boolean }>`
   && {
     margin-bottom: 0;
     align-items: center;

@@ -60,7 +60,7 @@ const reducer = (state: DropzoneSet = {}, action: Action) => {
   return state;
 };
 
-const ExploreContainer: FC<{}> = ({ children }) => {
+const ExploreContainer: FC<React.PropsWithChildren<{}>> = ({ children }) => {
   const dragDropManager = useDragDropManager();
   const [dragging, setDragging] = useState(
     dragDropManager.getMonitor().isDragging(),

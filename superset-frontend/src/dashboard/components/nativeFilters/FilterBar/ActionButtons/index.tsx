@@ -41,6 +41,10 @@ interface ActionButtonsProps {
   isApplyDisabled: boolean;
   filterBarOrientation?: FilterBarOrientation;
   isMobile?: boolean;
+  /** В kanban-drawer-е рендерим action-кнопки в одну строку, статически
+   *  в потоке (без position:fixed), чтобы они не перекрывали scrollbar
+   *  и не прыгали при скролле. Аналог mobileStyle. */
+  useKanbanLayout?: boolean;
 }
 
 const containerStyle = (theme: SupersetTheme) => css`
@@ -95,19 +99,20 @@ const horizontalStyle = (theme: SupersetTheme) => css`
 const mobileStyle = (theme: SupersetTheme) => css`
   flex-direction: row;
   align-items: center;
+  justify-content: center;
   position: static;
   width: 100%;
   box-sizing: border-box;
   padding: ${theme.sizeUnit * 2}px ${theme.sizeUnit * 2}px;
-  border-top: 1px solid ${theme.colorBorderSecondary};
-  background: ${theme.colorBgContainer};
-  gap: ${theme.sizeUnit}px;
+  background: transparent;
+  gap: ${theme.sizeUnit * 2}px;
   flex-shrink: 0;
 
+  /* Стандартные размеры кнопок — без stretch'а, по центру. */
   & > .filter-apply-button {
-    flex: 1;
-    min-width: 0;
+    flex: 0 0 auto;
     margin: 0;
+    min-width: 120px;
   }
 
   & > .filter-clear-all-button {
@@ -121,10 +126,11 @@ const ButtonsContainer = styled.div<{
   isVertical: boolean;
   width: number;
   isMobile?: boolean;
+  useKanbanLayout?: boolean;
 }>`
-  ${({ theme, isVertical, width, isMobile }) => css`
+  ${({ theme, isVertical, width, isMobile, useKanbanLayout }) => css`
     ${containerStyle(theme)};
-    ${isMobile
+    ${isMobile || useKanbanLayout
       ? mobileStyle(theme)
       : isVertical
         ? verticalStyle(theme, width)
@@ -141,6 +147,7 @@ const ActionButtons = ({
   isApplyDisabled,
   filterBarOrientation = FilterBarOrientation.Vertical,
   isMobile,
+  useKanbanLayout,
 }: ActionButtonsProps) => {
   const isClearAllEnabled = useMemo(
     () =>
@@ -159,6 +166,7 @@ const ActionButtons = ({
       isVertical={isVertical}
       width={width}
       isMobile={isMobile}
+      useKanbanLayout={useKanbanLayout}
       data-test="filterbar-action-buttons"
     >
       <Button

@@ -27,7 +27,7 @@ interface DatasetTypeLabelProps {
 
 const SIZE = 's'; // Define the size as a constant
 
-export const DatasetTypeLabel: React.FC<DatasetTypeLabelProps> = ({
+export const DatasetTypeLabel: React.FC<React.PropsWithChildren<DatasetTypeLabelProps>> = ({
   datasetType,
 }) => {
   const theme = useTheme();

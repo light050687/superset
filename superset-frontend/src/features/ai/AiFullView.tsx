@@ -25,21 +25,15 @@ import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 import type { BootstrapUser } from 'src/types/bootstrapTypes';
 import {
   analyzeQuestion,
-  createAiChatFolder,
   createAiChatMessage,
   createAiChatSession,
-  deleteAiChatFolder,
-  deleteAiChatSession,
-  isAiBackendConfigured,
   listAiActiveTasks,
   listAiChatFolders,
   listAiChatMessages,
   listAiChatSessions,
-  updateAiChatSession,
 } from './api';
 import { AiEmpty } from './AiEmpty';
 import { AiMessage } from './AiMessage';
-import { AiSidebar } from './AiSidebar';
 import { AiSidePanel } from './AiSidePanel';
 import type {
   AiActiveTask,
@@ -270,30 +264,16 @@ const Chip = styled.button`
 /* InputBox/IconBtn/SendBtn удалены — нижний input-ряд убран в B12
    (ввод идёт через CentralPill в dock'е, которая парит над overlay-ем). */
 
-const MockBanner = styled.div`
-  background: ${DS2_VARS.wnBg};
-  border-bottom: 1px solid rgba(204, 182, 4, 0.25);
-  padding: ${DS2_SPACE.s2}px ${DS2_SPACE.s6}px;
-  font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
-  color: ${DS2_VARS.g700};
-  text-align: center;
-
-  strong {
-    color: ${DS2_VARS.ink};
-  }
-`;
-
 /* Икона side-panel toggle — прямоугольник с вертикальной линией слева
    (sidebar symbol). */
-const IconSidePanel: FC = () => (
+const IconSidePanel: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6}>
     <rect x="2" y="3" width="12" height="10" rx="1.5" />
     <path d="M6 3v10" />
   </svg>
 );
 
-const IconClose: FC = () => (
+const IconClose: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M3 3l10 10M13 3L3 13" />
   </svg>
@@ -316,6 +296,8 @@ interface ChatItem {
   blocks?: AiAnswerBlocks;
   /** id записи в БД, если сохранено. */
   messageId?: number;
+  /** Метаданные модели/тайминга от ai-analytics (показываются под именем). */
+  meta?: { tokens?: number; model?: string; latency_ms?: number };
 }
 
 function parseBotContent(json: string | null | undefined): AiAnswerBlocks {
@@ -327,7 +309,7 @@ function parseBotContent(json: string | null | undefined): AiAnswerBlocks {
   }
 }
 
-export const AiFullView: FC<AiFullViewProps> = ({
+export const AiFullView: FC<React.PropsWithChildren<AiFullViewProps>> = ({
   open,
   onClose,
   user,
@@ -347,13 +329,10 @@ export const AiFullView: FC<AiFullViewProps> = ({
 
   const [folders, setFolders] = useState<AiChatFolder[]>([]);
   const [sessions, setSessions] = useState<AiChatSession[]>([]);
-  const [tasks, setTasks] = useState<AiActiveTask[]>([]);
+  const [, setTasks] = useState<AiActiveTask[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
   const [items, setItems] = useState<ChatItem[]>([]);
   const [sending, setSending] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
-  const mockMode = !isAiBackendConfigured();
 
   // Первичная загрузка папок и сессий.
   const refresh = useCallback(async () => {
@@ -425,41 +404,6 @@ export const AiFullView: FC<AiFullViewProps> = ({
     setItems([]);
   }, []);
 
-  const handleNewFolder = useCallback(async () => {
-    const name = window.prompt(t('Название новой папки'));
-    if (!name) return;
-    await createAiChatFolder({ name: name.trim() });
-    await refresh();
-  }, [refresh]);
-
-  const handleDeleteFolder = useCallback(
-    async (id: number) => {
-      await deleteAiChatFolder(id);
-      await refresh();
-    },
-    [refresh],
-  );
-
-  const handleDeleteSession = useCallback(
-    async (id: number) => {
-      await deleteAiChatSession(id);
-      if (currentSessionId === id) {
-        setCurrentSessionId(null);
-        setItems([]);
-      }
-      await refresh();
-    },
-    [currentSessionId, refresh],
-  );
-
-  const handleRenameSession = useCallback(
-    async (id: number, title: string) => {
-      await updateAiChatSession(id, { title });
-      await refresh();
-    },
-    [refresh],
-  );
-
   const sendQuery = useCallback(
     async (raw: string) => {
       const trimmed = raw.trim();
@@ -512,9 +456,15 @@ export const AiFullView: FC<AiFullViewProps> = ({
           model: modelId,
         });
 
+        // adaptAnalyzeResponse в api.ts гарантирует, что answer определён,
+        // но дублируем guard на случай неожиданной формы ответа.
+        const safeAnswer: AiAnswerBlocks = response.answer ?? {
+          text: t('Пустой ответ ИИ'),
+        };
+
         setItems(prev => {
           const next = prev.slice(0, -1); // убираем thinking
-          next.push({ role: 'bot', blocks: response.answer });
+          next.push({ role: 'bot', blocks: safeAnswer, meta: response.meta });
           return next;
         });
 
@@ -523,7 +473,7 @@ export const AiFullView: FC<AiFullViewProps> = ({
           try {
             await createAiChatMessage(sessionId, {
               role: 'bot',
-              content_json: JSON.stringify(response.answer),
+              content_json: JSON.stringify(safeAnswer),
               meta_json: response.meta ? JSON.stringify(response.meta) : null,
             });
           } catch {
@@ -589,6 +539,7 @@ export const AiFullView: FC<AiFullViewProps> = ({
         currentSessionId={currentSessionId}
         onSelectSession={handleSelectSession}
         onNewChat={handleNewChat}
+        onChanged={refresh}
       />
       <Panel role="dialog" aria-modal="true" aria-label={t('ИИ-аналитик')}>
       <SidePanelTab
@@ -623,6 +574,7 @@ export const AiFullView: FC<AiFullViewProps> = ({
                 role={msg.role}
                 text={msg.text}
                 blocks={msg.blocks}
+                meta={msg.meta}
                 onFollowup={handleFollowup}
               />
             ))

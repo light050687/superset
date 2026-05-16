@@ -145,7 +145,7 @@ type SliceHeaderControlsPropsWithRouter = SliceHeaderControlsProps &
   RouteComponentProps;
 
 const dropdownIconsStyles = css`
-  &&.anticon > .anticon:first-child {
+  &&.anticon > .anticon:first-of-type {
     margin-right: 0;
     vertical-align: 0;
   }
@@ -576,6 +576,17 @@ const SliceHeaderControls = (
           css={theme => css`
             padding: ${theme.sizeUnit * 2}px;
             padding-right: 0px;
+            /* Скрываем три-точие визуально, но оставляем кликабельным —
+               меню теперь открывается через right-click по chart area
+               (Chart.jsx onContextMenu имитирует click на этом button'е).
+               visibility:hidden сохраняет layout (чтобы Dropdown anchor
+               остался в правом-верхнем углу карточки), pointer-events:auto
+               сохраняет programmatic click(). */
+            visibility: hidden;
+            pointer-events: auto;
+            position: absolute;
+            right: 0;
+            top: 0;
           `}
         >
           <VerticalDotsTrigger />

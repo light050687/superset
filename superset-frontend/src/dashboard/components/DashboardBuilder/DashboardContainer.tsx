@@ -18,7 +18,7 @@
  */
 // ParentSize uses resize observer so the dashboard will update size
 // when its container size changes, due to e.g., builder side panel opening
-import {
+import React, {
   FC,
   memo,
   useCallback,
@@ -102,7 +102,7 @@ const useNativeFilterScopes = () => {
 
 const TOP_OF_PAGE_RANGE = 220;
 
-const DashboardContainer: FC<DashboardContainerProps> = ({ topLevelTabs, topLevelPages }) => {
+const DashboardContainer: FC<React.PropsWithChildren<DashboardContainerProps>> = ({ topLevelTabs, topLevelPages }) => {
   const nativeFilterScopes = useNativeFilterScopes();
   const nativeFilters = useSelector<RootState, Filters>(
     state => state.nativeFilters?.filters,
@@ -282,10 +282,10 @@ const DashboardContainer: FC<DashboardContainerProps> = ({ topLevelTabs, topLeve
   }, [onBeforeUnload]);
 
   const renderTabBar = useCallback(() => <></>, []);
-  const handleFocus = useCallback(e => {
+  const handleFocus = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
     if (
       // prevent scrolling when tabbing to the tab pane
-      e.target.classList.contains('ant-tabs-tabpane') &&
+      (e.target as HTMLElement).classList.contains('ant-tabs-tabpane') &&
       window.scrollY < TOP_OF_PAGE_RANGE
     ) {
       // prevent window from jumping down when tabbing
@@ -296,7 +296,7 @@ const DashboardContainer: FC<DashboardContainerProps> = ({ topLevelTabs, topLeve
   }, []);
 
   const renderParentSizeChildren = useCallback(
-    ({ width }) => {
+    ({ width }: { width: number }) => {
       // Pages: render ONLY the active page. Both pages share the same chart IDs
       // (COPY_PAGE clones layout IDs but keeps chartId references). Rendering
       // both simultaneously causes duplicate React instances of the same chart,

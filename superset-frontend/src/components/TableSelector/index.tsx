@@ -154,7 +154,7 @@ function renderSelectRow(select: ReactNode, refreshBtn: ReactNode) {
   );
 }
 
-const TableSelector: FunctionComponent<TableSelectorProps> = ({
+const TableSelector: FunctionComponent<React.PropsWithChildren<TableSelectorProps>> = ({
   database,
   emptyState,
   formMode = false,
@@ -370,8 +370,6 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
   );
 };
 
-export const TableSelectorMultiple: FunctionComponent<
-  TableSelectorProps
-> = props => <TableSelector tableSelectMode="multiple" {...props} />;
+export const TableSelectorMultiple: FunctionComponent<React.PropsWithChildren<TableSelectorProps>> = props => <TableSelector tableSelectMode="multiple" {...props} />;
 
 export default TableSelector;

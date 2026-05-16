@@ -37,6 +37,7 @@ interface AdhocFilterPopoverTriggerProps {
   togglePopover?: (visible: boolean) => void;
   closePopover?: () => void;
   requireSave?: boolean;
+  children?: React.ReactNode;
 }
 
 interface AdhocFilterPopoverTriggerState {

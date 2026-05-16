@@ -34,7 +34,10 @@ import { EmptyState, Tooltip } from '@superset-ui/core/components';
 import { detectOS } from 'src/utils/common';
 import * as Actions from 'src/SqlLab/actions/sqlLab';
 import getBootstrapData from 'src/utils/getBootstrapData';
-import { locationContext } from 'src/pages/SqlLab/LocationContext';
+import {
+  locationContext,
+  type LocationState,
+} from 'src/pages/SqlLab/LocationContext';
 import { navigateWithState } from 'src/utils/navigationUtils';
 import { Icons } from '@superset-ui/core/components/Icons';
 import SqlEditor from '../SqlEditor';
@@ -70,6 +73,13 @@ type TabbedSqlEditorsProps = ReturnType<typeof mergeProps>;
 const SQL_LAB_URL = '/sqllab';
 
 class TabbedSqlEditors extends PureComponent<TabbedSqlEditorsProps> {
+  // Typed class-component context: PureComponent's declared `context: unknown`
+  // gets overridden here so `this.context.requestedQuery` / `.isDataset`
+  // typecheck without unsafe casts.
+  static contextType = locationContext;
+
+  declare context: LocationState;
+
   constructor(props: TabbedSqlEditorsProps) {
     super(props);
     this.removeQueryEditor = this.removeQueryEditor.bind(this);

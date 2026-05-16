@@ -40,7 +40,9 @@ function handleHover(props, monitor, Component) {
     return;
   }
 
-  Component?.props?.onHover();
+  // onHover не обязательный prop — после миграции react-dnd HOC→hooks
+  // у FunctionComponent больше нет defaultProps; вызывать только если задан.
+  Component?.props?.onHover?.();
 
   Component.setState(() => ({
     dropIndicator: dropPosition,

@@ -317,7 +317,9 @@ export const ScopingModal = ({
       destroyOnHidden
       bodyStyle={{
         padding: 0,
-        height: 700,
+        height: '70vh',
+        minHeight: 600,
+        maxHeight: 'calc(100vh - 200px)',
       }}
     >
       <ScopingModalContent

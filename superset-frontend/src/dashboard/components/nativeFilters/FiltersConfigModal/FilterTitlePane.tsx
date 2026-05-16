@@ -46,7 +46,7 @@ const TabsContainer = styled.div`
   padding-top: 2px;
 `;
 
-const FilterTitlePane: FC<Props> = ({
+const FilterTitlePane: FC<React.PropsWithChildren<Props>> = ({
   getFilterTitle,
   onChange,
   onAdd,

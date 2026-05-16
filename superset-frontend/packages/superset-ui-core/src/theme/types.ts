@@ -109,11 +109,12 @@ export interface ColorVariants {
 }
 
 export interface SupersetSpecificTokens {
-  // Font-related
-  fontSizeXS: string;
-  fontSizeXXL: string;
-  fontWeightNormal: string;
-  fontWeightLight: string;
+  // Font-related (px values — соответствует AntD theme tokens, где
+  // все размеры/веса задаются как number)
+  fontSizeXS: number;
+  fontSizeXXL: number;
+  fontWeightNormal: number;
+  fontWeightLight: number;
   fontWeightStrong: number;
 
   // Brand-related

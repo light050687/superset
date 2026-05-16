@@ -74,7 +74,7 @@ const TemplateContainer = styled.div(
   `,
 );
 
-const CssTemplateModal: FunctionComponent<CssTemplateModalProps> = ({
+const CssTemplateModal: FunctionComponent<React.PropsWithChildren<CssTemplateModalProps>> = ({
   addDangerToast,
   onCssTemplateAdd,
   onHide,

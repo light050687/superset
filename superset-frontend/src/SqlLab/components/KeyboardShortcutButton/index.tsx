@@ -91,7 +91,7 @@ const ShortcutCode = styled.code`
   padding: ${({ theme }) => `${theme.sizeUnit}px ${theme.sizeUnit * 2}px`};
 `;
 
-const KeyboardShortcutButton: FC<{}> = ({ children }) => (
+const KeyboardShortcutButton: FC<React.PropsWithChildren<{}>> = ({ children }) => (
   <ModalTrigger
     modalTitle={t('Keyboard shortcuts')}
     modalBody={

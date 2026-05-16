@@ -159,7 +159,7 @@ export default function PageSwitcherBar({ pagesComponent, editMode }) {
               background: ${isActive ? '#1890ff' : '#fff'};
               color: ${isActive ? '#fff' : '#333'};
               cursor: pointer;
-              font-size: 13px;
+              font-size: var(--fs-interactive);
               font-weight: 500;
               white-space: nowrap;
               &:hover {
@@ -204,7 +204,7 @@ export default function PageSwitcherBar({ pagesComponent, editMode }) {
                   css={css`
                     cursor: pointer;
                     opacity: 0.6;
-                    font-size: 11px;
+                    font-size: var(--fs-micro);
                     &:hover {
                       opacity: 1;
                     }
@@ -222,7 +222,7 @@ export default function PageSwitcherBar({ pagesComponent, editMode }) {
                   css={css`
                     cursor: pointer;
                     opacity: 0.6;
-                    font-size: 11px;
+                    font-size: var(--fs-micro);
                     &:hover {
                       opacity: 1;
                     }
@@ -241,7 +241,7 @@ export default function PageSwitcherBar({ pagesComponent, editMode }) {
                     css={css`
                       cursor: pointer;
                       opacity: 0.6;
-                      font-size: 11px;
+                      font-size: var(--fs-micro);
                       &:hover {
                         opacity: 1;
                       }
@@ -269,7 +269,7 @@ export default function PageSwitcherBar({ pagesComponent, editMode }) {
             background: transparent;
             color: #999;
             cursor: pointer;
-            font-size: 13px;
+            font-size: var(--fs-interactive);
             &:hover {
               border-color: #1890ff;
               color: #1890ff;

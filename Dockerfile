@@ -35,12 +35,30 @@ ENV BUILD_TRANSLATIONS=${BUILD_TRANSLATIONS}
 ARG DEV_MODE="false"           # Skip frontend build in dev mode
 ENV DEV_MODE=${DEV_MODE}
 
+# Корп-CA: подкладываем в trust store если передан --build-arg CORP_CA_CERT_B64.
+# Без него — npm с strict-ssl=false (TLS не проверяется, dev-only fallback).
+ARG CORP_CA_CERT_B64=""
+RUN if [ -n "$CORP_CA_CERT_B64" ]; then \
+      apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && \
+      echo "$CORP_CA_CERT_B64" | base64 -d > /usr/local/share/ca-certificates/corp.crt && \
+      update-ca-certificates && \
+      npm config set cafile /etc/ssl/certs/ca-certificates.crt && \
+      rm -rf /var/lib/apt/lists/*; \
+    else \
+      npm config set strict-ssl false; \
+    fi
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt \
+    REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+
 COPY docker/ /app/docker/
 # Arguments for build configuration
 ARG NPM_BUILD_CMD="build"
 
-# Install system dependencies required for node-gyp
-RUN /app/docker/apt-install.sh build-essential python3 zstd
+# Install system dependencies required for node-gyp. `git` is needed because
+# one of our deps (`dom-to-pdf` → `dom-to-image@github:dmapper/dom-to-image`)
+# is installed from a git URL — npm ci shells out to `git` to fetch it.
+RUN /app/docker/apt-install.sh build-essential python3 zstd git
 
 # Define environment variables for frontend build
 ENV BUILD_CMD=${NPM_BUILD_CMD} \
@@ -62,14 +80,18 @@ RUN mkdir -p /app/superset/static/assets \
 # Note that it's not possible to selectively COPY or mount using blobs.
 RUN --mount=type=bind,source=./superset-frontend/package.json,target=./package.json \
     --mount=type=bind,source=./superset-frontend/package-lock.json,target=./package-lock.json \
+    --mount=type=bind,source=./my-plugins,target=/app/my-plugins \
     --mount=type=cache,target=/root/.cache \
     --mount=type=cache,target=/root/.npm \
     if [ "$DEV_MODE" = "false" ]; then \
-        npm ci; \
+        npm ci --legacy-peer-deps; \
     else \
         echo "Skipping 'npm ci' in dev mode"; \
     fi
 
+# Copy our custom Samberi plugins (referenced from package.json as
+# `file:../my-plugins/*`) into the build context so webpack can resolve them.
+COPY my-plugins /app/my-plugins
 # Runs the webpack build process
 COPY superset-frontend /app/superset-frontend
 
@@ -105,6 +127,20 @@ FROM python:${PY_VER} AS python-base
 
 ARG SUPERSET_HOME="/app/superset_home"
 ENV SUPERSET_HOME=${SUPERSET_HOME}
+
+# Корп-CA: тот же механизм, что для node-стадий выше. Python urllib/requests/uv
+# используют системный trust store (ca-certificates). REQUESTS_CA_BUNDLE и
+# SSL_CERT_FILE нужны для библиотек которые не следуют системе.
+ARG CORP_CA_CERT_B64=""
+RUN if [ -n "$CORP_CA_CERT_B64" ]; then \
+      apt-get update && apt-get install -y --no-install-recommends ca-certificates && \
+      echo "$CORP_CA_CERT_B64" | base64 -d > /usr/local/share/ca-certificates/corp.crt && \
+      update-ca-certificates && \
+      rm -rf /var/lib/apt/lists/*; \
+    fi
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
+    CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 
 RUN mkdir -p $SUPERSET_HOME
 RUN useradd --user-group -d ${SUPERSET_HOME} -m --no-log-init --shell /bin/bash superset \

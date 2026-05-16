@@ -98,7 +98,7 @@ const Suggest = styled.button`
   }
 `;
 
-const AiLogoSvg: FC = () => (
+const AiLogoSvg: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <circle cx="8" cy="8" r="6" />
     <circle cx="8" cy="8" r="2" />
@@ -106,7 +106,7 @@ const AiLogoSvg: FC = () => (
   </svg>
 );
 
-export const AiEmpty: FC<AiEmptyProps> = ({
+export const AiEmpty: FC<React.PropsWithChildren<AiEmptyProps>> = ({
   userFirstName,
   prompts,
   onPrompt,

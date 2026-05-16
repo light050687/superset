@@ -37,7 +37,7 @@ const EMPTY = {};
 
 export type PromiseOrValue<T> = Promise<T> | T;
 export type PromiseOrValueLoader<T> = () => PromiseOrValue<T>;
-export type ChartType = ComponentType<any>;
+export type ChartType = ComponentType<React.PropsWithChildren<any>>;
 type ValueOrModuleWithValue<T> = T | { default: T };
 
 interface ChartPluginConfig<

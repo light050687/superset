@@ -40,15 +40,15 @@ export const DS2_EASE = 'cubic-bezier(.4, 0, .2, 1)';
  */
 export const DS2_DOCK = {
   /** Высота самого дока в compact-состоянии. */
-  height: 58,
+  height: 46,
   /** Отступ дока от нижнего края viewport. */
   bottom: 18,
   /** Bottom sheet drawer — над доком (dock.height + gap). */
-  drawerBottom: 76,
+  drawerBottom: 64,
   /** AI overlay снизу (dock.height + gap). */
-  aiOverlayBottom: 92,
+  aiOverlayBottom: 80,
   /** Настолько dropdowns (settings, calendar) подняты над доком. */
-  dropdownBottom: 84,
+  dropdownBottom: 72,
   /** Ширина AI overlay-а (фиксированная на desktop). */
   aiOverlayWidth: 820,
   /** Высота AI overlay-а (capped 70vh на меньших экранах). */
@@ -56,9 +56,9 @@ export const DS2_DOCK = {
   /** Порог, ниже которого рендерим MobileNav вместо FloatingDock. */
   mobileBreakpoint: 768,
   /** Высота MobileNav (bottom tab bar). */
-  mobileNavHeight: 64,
+  mobileNavHeight: 52,
   /** Отступ контента снизу, чтобы не прятался под доком. */
-  contentPaddingBottom: 88,
+  contentPaddingBottom: 76,
 } as const;
 
 /**
@@ -66,10 +66,10 @@ export const DS2_DOCK = {
  * compact = одна строка, expanded = две (при focus).
  */
 export const DS2_PILL = {
-  compactWidth: 280,
-  compactHeight: 44,
-  expandedWidth: 420,
-  expandedHeight: 100,
+  compactWidth: 224,
+  compactHeight: 36,
+  expandedWidth: 336,
+  expandedHeight: 80,
   /** Длительность morph-анимации focus/blur. */
   morphDuration: '0.2s',
 } as const;
@@ -91,40 +91,16 @@ export const DS2_MAGNIFY = {
 } as const;
 
 /**
- * Liquid Glass — параметры полупрозрачного материала (iOS 26 / One UI 8.5).
- * Применяются к доку, drawer-у, AI overlay-ю, popover-ам.
- * Значения отличаются для light/dark темы — используйте через useDs2().glass.
+ * Liquid Glass — DEPRECATED статические константы удалены (DS v2.0 audit F-003).
+ *
+ * Раньше здесь были `DS2_GLASS_LIGHT`/`DS2_GLASS_DARK` с rgba+box-shadow и
+ * `DS2_GLASS_FILTER` с `blur(16px) saturate(180%)`. После апгрейда DS v2.0
+ * glass-материал стал flat solid (`--glass-shadow: none`, `--glass-bg: #FFFFFF`,
+ * `--glass-filter: none`), а источником правды стал `head_custom_extra.html`.
+ *
+ * Используйте `DS2_VARS.glassBg / glassBorder / glassShadow / glassScrim /
+ * glassFilter` (var(--*) — реактивные на смену темы) вместо JS-констант.
  */
-export const DS2_GLASS_LIGHT = {
-  /** rgba фон glass-панели (светлая тема). */
-  bg: 'rgba(255, 255, 255, 0.85)',
-  /** rgba фон вложенных контролов внутри glass. */
-  bgElevated: 'rgba(255, 255, 255, 0.95)',
-  /** rgba border для glass-панели. */
-  border: 'rgba(0, 0, 0, 0.06)',
-  /** box-shadow для floating-элементов. */
-  shadow: '0 12px 32px rgba(0, 0, 0, 0.15)',
-  /** box-shadow для AI overlay (сильнее). */
-  shadowElevated: '0 20px 60px rgba(0, 0, 0, 0.25)',
-  /** scrim-фон под модальными overlay-ями. */
-  scrim: 'rgba(0, 0, 0, 0.4)',
-} as const;
-
-export const DS2_GLASS_DARK = {
-  bg: 'rgba(23, 26, 30, 0.85)',
-  bgElevated: 'rgba(39, 43, 48, 0.90)',
-  border: 'rgba(255, 255, 255, 0.08)',
-  shadow: '0 12px 32px rgba(0, 0, 0, 0.4)',
-  shadowElevated: '0 20px 60px rgba(0, 0, 0, 0.55)',
-  scrim: 'rgba(0, 0, 0, 0.55)',
-} as const;
-
-/** backdrop-filter — общий для обеих тем. */
-export const DS2_GLASS_FILTER = 'blur(16px) saturate(180%)' as const;
-
-export type Ds2GlassPalette = {
-  [K in keyof typeof DS2_GLASS_LIGHT]: string;
-};
 
 export const DS2_LIGHT = {
   bg: '#F3F3F3',
@@ -302,61 +278,172 @@ export const DS2_VARS = {
   magnifyDuration: 'var(--magnify-duration)',
 } as const;
 
-/** Типографическая шкала DS 2.0 (см. раздел 02 дизайн-документа). */
+/**
+ * CSS-имена fluid типографических переменных (определены в head_custom_extra.html).
+ * Использовать в Emotion-стилях через `font-size: ${DS2_FS_VARS.hero}`.
+ * Полная шкала Perfect Fourth (1.333), driven by container/viewport units.
+ */
+export const DS2_FS_VARS = {
+  nano: 'var(--fs-nano)',
+  micro: 'var(--fs-micro)',
+  meta: 'var(--fs-meta)',
+  interactive: 'var(--fs-interactive)',
+  body: 'var(--fs-body)',
+  subtitle: 'var(--fs-subtitle)',
+  title: 'var(--fs-title)',
+  hero: 'var(--fs-hero)',
+  display: 'var(--fs-display)',
+} as const;
+
+/**
+ * Типографическая шкала DS 2.0 (см. раздел 02 дизайн-документа).
+ *
+ * Каждый стиль теперь fluid: `fontSize` возвращает `var(--fs-*)` (clamp-строку).
+ * `fontSizePx` — численный fallback для legacy-кода, который умножает/складывает
+ * (например, расчёт высоты строки в SVG, где clamp не применим).
+ *
+ * Минимум для текста — 11px (`micro`), 10px только для UPPERCASE (`nano`).
+ * Hero KPI ≥ 28px на любом устройстве, до 56px на 4K через container queries.
+ */
 export const DS2_TYPE = {
+  // ─── Новая 9-уровневая шкала (Perfect Fourth) ───
+  display: {
+    fontFamily: DS2_VARS.fontSans,
+    fontSize: DS2_FS_VARS.display,
+    fontSizePx: 32,
+    lineHeight: 1.05,
+    fontWeight: 800,
+    letterSpacing: '-0.03em',
+    fontVariantNumeric: 'tabular-nums' as const,
+  },
+  hero: {
+    fontFamily: DS2_VARS.fontSans,
+    fontSize: DS2_FS_VARS.hero,
+    fontSizePx: 28,
+    lineHeight: 1.1,
+    fontWeight: 800,
+    letterSpacing: '-0.02em',
+    fontVariantNumeric: 'tabular-nums' as const,
+  },
+  title: {
+    fontFamily: DS2_VARS.fontSans,
+    fontSize: DS2_FS_VARS.title,
+    fontSizePx: 20,
+    lineHeight: 1.2,
+    fontWeight: 700,
+    letterSpacing: '-0.01em',
+  },
+  subtitle: {
+    fontFamily: DS2_VARS.fontSans,
+    fontSize: DS2_FS_VARS.subtitle,
+    fontSizePx: 16,
+    lineHeight: 1.3,
+    fontWeight: 600,
+  },
+  body: {
+    fontFamily: DS2_VARS.fontSans,
+    fontSize: DS2_FS_VARS.body,
+    fontSizePx: 14,
+    lineHeight: 1.5,
+    fontWeight: 400,
+  },
+  bodyStrong: {
+    fontFamily: DS2_VARS.fontSans,
+    fontSize: DS2_FS_VARS.body,
+    fontSizePx: 14,
+    lineHeight: 1.5,
+    fontWeight: 600,
+  },
+  interactive: {
+    fontFamily: DS2_VARS.fontSans,
+    fontSize: DS2_FS_VARS.interactive,
+    fontSizePx: 13,
+    lineHeight: 1.4,
+    fontWeight: 500,
+  },
+  meta: {
+    fontFamily: DS2_VARS.fontSans,
+    fontSize: DS2_FS_VARS.meta,
+    fontSizePx: 12,
+    lineHeight: 1.4,
+    fontWeight: 500,
+  },
+  metaMono: {
+    fontFamily: DS2_VARS.fontMono,
+    fontSize: DS2_FS_VARS.meta,
+    fontSizePx: 12,
+    lineHeight: 1.4,
+    fontWeight: 500,
+    fontVariantNumeric: 'tabular-nums' as const,
+  },
+  micro: {
+    fontFamily: DS2_VARS.fontMono,
+    fontSize: DS2_FS_VARS.micro,
+    fontSizePx: 11,
+    lineHeight: 1.4,
+    fontWeight: 600,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase' as const,
+  },
+  nano: {
+    fontFamily: DS2_VARS.fontMono,
+    fontSize: DS2_FS_VARS.nano,
+    fontSizePx: 10,
+    lineHeight: 1.3,
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase' as const,
+  },
+
+  // ─── Legacy aliases (обратная совместимость со старым кодом) ───
+  // Старые имена сохраняются и проксируют на новые токены.
   pageTitle: {
     fontFamily: DS2_VARS.fontSans,
-    fontSize: 28,
-    lineHeight: '34px',
+    fontSize: DS2_FS_VARS.hero,
+    fontSizePx: 28,
+    lineHeight: 1.1,
     fontWeight: 800,
     letterSpacing: '-0.03em',
   },
   sectionTitle: {
     fontFamily: DS2_VARS.fontSans,
-    fontSize: 14,
-    lineHeight: '18px',
+    fontSize: DS2_FS_VARS.micro,
+    fontSizePx: 11,
+    lineHeight: 1.4,
     fontWeight: 700,
     letterSpacing: '0.05em',
     textTransform: 'uppercase' as const,
   },
-  metaMono: {
-    fontFamily: DS2_VARS.fontMono,
-    fontSize: 11,
-    lineHeight: '16px',
-    fontWeight: 400,
-  },
-  kpiLabel: {
-    fontFamily: DS2_VARS.fontMono,
-    fontSize: 11,
-    lineHeight: '16px',
-    fontWeight: 500,
-    letterSpacing: '0.06em',
-    textTransform: 'uppercase' as const,
-  },
   heroNumber: {
     fontFamily: DS2_VARS.fontSans,
-    fontSize: 28,
-    lineHeight: '34px',
+    fontSize: DS2_FS_VARS.hero,
+    fontSizePx: 28,
+    lineHeight: 1.1,
     fontWeight: 800,
     letterSpacing: '-0.02em',
     fontVariantNumeric: 'tabular-nums' as const,
   },
+  kpiLabel: {
+    fontFamily: DS2_VARS.fontMono,
+    fontSize: DS2_FS_VARS.micro,
+    fontSizePx: 11,
+    lineHeight: 1.4,
+    fontWeight: 500,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase' as const,
+  },
   delta: {
     fontFamily: DS2_VARS.fontMono,
-    fontSize: 11,
-    lineHeight: '16px',
+    fontSize: DS2_FS_VARS.micro,
+    fontSizePx: 11,
+    lineHeight: 1.4,
     fontWeight: 600,
-  },
-  body: {
-    fontFamily: DS2_VARS.fontSans,
-    fontSize: 14,
-    lineHeight: '20px',
-    fontWeight: 400,
   },
   tableHeader: {
     fontFamily: DS2_VARS.fontMono,
-    fontSize: 11,
-    lineHeight: '16px',
+    fontSize: DS2_FS_VARS.micro,
+    fontSizePx: 11,
+    lineHeight: 1.4,
     fontWeight: 600,
     letterSpacing: '0.06em',
     textTransform: 'uppercase' as const,

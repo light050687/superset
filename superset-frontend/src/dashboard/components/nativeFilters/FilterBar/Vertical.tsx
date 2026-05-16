@@ -30,12 +30,14 @@ import {
   FC,
 } from 'react';
 import cx from 'classnames';
-import { styled, t, useTheme } from '@superset-ui/core';
+import { css, styled, t, useTheme } from '@superset-ui/core';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { EmptyState, Loading } from '@superset-ui/core/components';
 import { getFilterBarTestId } from './utils';
 import { VerticalBarProps } from './types';
 import Header from './Header';
+import FilterKanban from './FilterKanban';
+import { DrawerFooterActionsPortal } from './FilterKanban/DrawerFooterActionsPortal';
 import FilterControls from './FilterControls/FilterControls';
 import CrossFiltersVertical from './CrossFilters/Vertical';
 import PagesPanel from './PagesPanel';
@@ -65,8 +67,11 @@ const Bar = styled.div<{ width: number; isMobile?: boolean }>`
     flex-grow: 1;
     width: ${isMobile ? '100%' : `${width}px`};
     background: ${theme.colorBgContainer};
-    ${isMobile ? '' : `border-right: 1px solid ${theme.colorSplit};`}
-    ${isMobile ? '' : `border-bottom: 1px solid ${theme.colorSplit};`}
+    /* Border-right и border-bottom убраны: FilterBar теперь живёт
+       внутри Shell-drawer'а, а не на sidebar'е. Эти рамки давали
+       лишние линии справа/снизу ВНУТРИ drawer-body и читались как
+       «рамки окна». Drawer сам рисует свой контур (border+radius
+       в Shell/Drawer.tsx). */
     min-height: ${isMobile ? 'auto' : '100%'};
     display: ${isMobile ? 'flex' : 'none'};
     ${isMobile ? 'flex: 1; overflow: hidden;' : ''}
@@ -114,7 +119,7 @@ const FilterControlsWrapper = styled.div<{ isMobile?: boolean }>`
 `;
 
 export const FilterBarScrollContext = createContext(false);
-const VerticalFilterBar: FC<VerticalBarProps> = ({
+const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
   actions,
   canEdit,
   dataMaskSelected,
@@ -132,6 +137,10 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
   presetButton,
   topLevelPages,
   editMode,
+  hideInternalHeader,
+  useKanban,
+  dashboardId,
+  kanbanPresetCtx,
 }) => {
   const theme = useTheme();
   const [isScrolling, setIsScrolling] = useState(false);
@@ -164,23 +173,61 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
     };
   }, [onScroll]);
 
-  const tabPaneStyle = useMemo(
-    () =>
-      isMobile
-        ? {
-            overflow: 'auto',
-            flex: 1,
-            overscrollBehavior: 'contain',
-            width: '100%',
-            boxSizing: 'border-box' as const,
-          }
-        : { overflow: 'auto', height, overscrollBehavior: 'contain' },
-    [height, isMobile],
+  /* Unified DS 2.0 scrollbar фрагмент: thin 10px, g300 thumb, 5px radius,
+     background-clip:padding-box, hover→g400. Прописан через emotion
+     css-fragment — inline-style не поддерживает ::-webkit-scrollbar-*.
+     Только вертикальный scroll: overflow-x: hidden (без горизонтальной
+     полосы), overflow-y: auto.
+     В kanban-режиме scroll отдаётся родительскому drawer body — чтобы
+     не было двойных полос. Поэтому overflow: visible и нет height. */
+  const tabPaneCss = useMemo(
+    () => css`
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+      ${useKanban
+        ? 'overflow-y: visible; height: auto; width: 100%;'
+        : isMobile
+          ? 'overflow-y: auto; flex: 1; width: 100%;'
+          : `overflow-y: auto; height: ${typeof height === 'number' ? `${height}px` : height};`}
+      scrollbar-width: thin;
+      scrollbar-color: var(--g300) transparent;
+      &::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: var(--g300);
+        border-radius: 5px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+      }
+      &::-webkit-scrollbar-thumb:hover {
+        background: var(--g400);
+        background-clip: padding-box;
+      }
+    `,
+    [height, isMobile, useKanban],
   );
 
   const filterControls = useMemo(
     () =>
-      filterValues.length === 0 ? (
+      useKanban && dashboardId ? (
+        /* Kanban рендерится всегда, даже без фильтров — нужны видимые
+           колонки-категории + preset-секция, чтобы юзер мог создавать
+           категории и применять пресеты до добавления фильтров. */
+        <FilterKanban
+          dashboardId={dashboardId}
+          dataMaskSelected={dataMaskSelected}
+          onFilterSelectionChange={onSelectionChange}
+          clearAllTriggers={clearAllTriggers}
+          onClearAllComplete={onClearAllComplete}
+          kanbanPresetCtx={kanbanPresetCtx}
+        />
+      ) : filterValues.length === 0 ? (
         <FilterBarEmptyStateContainer>
           <EmptyState
             size="small"
@@ -205,7 +252,18 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
           />
         </FilterControlsWrapper>
       ),
-    [canEdit, dataMaskSelected, filterValues.length, onSelectionChange, isMobile],
+    [
+      canEdit,
+      dataMaskSelected,
+      filterValues.length,
+      onSelectionChange,
+      isMobile,
+      useKanban,
+      dashboardId,
+      clearAllTriggers,
+      onClearAllComplete,
+      kanbanPresetCtx,
+    ],
   );
 
   return (
@@ -292,8 +350,15 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
             />
           ) : (
             <>
-              <Header toggleFiltersBar={toggleFiltersBar} isMobile={isMobile} />
-              {presetButton && (
+              {!hideInternalHeader && (
+                <Header
+                  toggleFiltersBar={toggleFiltersBar}
+                  isMobile={isMobile}
+                />
+              )}
+              {/* В kanban-режиме preset уходит первой колонкой — здесь
+                  рендерим только когда НЕ kanban (classic sidebar). */}
+              {!useKanban && presetButton && (
                 <div
                   css={{
                     padding: `0 ${theme.sizeUnit * 4}px`,
@@ -308,14 +373,22 @@ const VerticalFilterBar: FC<VerticalBarProps> = ({
                   <Loading />
                 </div>
               ) : (
-                <div css={tabPaneStyle} onScroll={onScroll}>
+                <div css={tabPaneCss} onScroll={onScroll}>
                   <>
                     <CrossFiltersVertical />
                     {filterControls}
                   </>
                 </div>
               )}
-              {actions}
+              {/* В kanban-режиме actions портируются в footer-slot
+                  drawer'а (см. DrawerFooterActionsPortal) — чтобы не
+                  плыть со скроллом и не перекрывать его. В classic
+                  sidebar — рендерятся на месте как раньше. */}
+              {useKanban ? (
+                <DrawerFooterActionsPortal>{actions}</DrawerFooterActionsPortal>
+              ) : (
+                actions
+              )}
             </>
           )}
         </Bar>

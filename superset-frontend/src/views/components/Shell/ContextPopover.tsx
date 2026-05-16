@@ -47,7 +47,7 @@ const Popover = styled.div`
 
 const GroupLabel = styled.div`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 9px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -67,7 +67,7 @@ const Item = styled.button<{ $active: boolean }>`
   border-radius: 10px;
   color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.ink)};
   font-family: ${DS2_VARS.fontSans};
-  font-size: 13px;
+  font-size: var(--fs-interactive);
   cursor: pointer;
   text-align: left;
   transition:
@@ -108,13 +108,13 @@ const ItemLabel = styled.span`
 
 const ItemHint = styled.span`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
+  font-size: var(--fs-meta);
   color: ${DS2_VARS.g500};
 `;
 
 const Check = styled.span`
   color: ${DS2_VARS.cSky};
-  font-size: 14px;
+  font-size: var(--fs-body);
   line-height: 1;
 `;
 
@@ -156,7 +156,7 @@ function computeAbovePosition(
   return { top, left };
 }
 
-export const ContextPopover: FC<ContextPopoverProps> = ({
+export const ContextPopover: FC<React.PropsWithChildren<ContextPopoverProps>> = ({
   anchor,
   open,
   onClose,

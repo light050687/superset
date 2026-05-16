@@ -65,7 +65,7 @@ export function filterUnsavedQueryEditorList(
     .filter(queryEditor => hasUnsavedChanges(queryEditor, lastSavedTimestamp));
 }
 
-const EditorAutoSync: FC = () => {
+const EditorAutoSync: FC<React.PropsWithChildren<unknown>> = () => {
   const queryEditors = useSelector<SqlLabRootState, QueryEditor[]>(
     state => state.sqlLab.queryEditors,
   );

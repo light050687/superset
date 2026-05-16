@@ -69,7 +69,7 @@ const registerLanguage = async (language: SupportedLanguage): Promise<void> => {
  * Languages are loaded lazily to improve initial page load performance.
  * Uses ultra-neutral themes for professional, consistent appearance.
  */
-export const CodeSyntaxHighlighter: React.FC<CodeSyntaxHighlighterProps> = ({
+export const CodeSyntaxHighlighter: React.FC<React.PropsWithChildren<CodeSyntaxHighlighterProps>> = ({
   children,
   language = 'sql',
   customStyle = {},
@@ -110,7 +110,8 @@ export const CodeSyntaxHighlighter: React.FC<CodeSyntaxHighlighterProps> = ({
       <pre
         style={{
           ...defaultCustomStyle,
-          fontFamily: 'monospace',
+          // DS v2.0: код через JetBrains Mono (theme.fontFamilyCode), а не голый monospace.
+          fontFamily: theme.fontFamilyCode,
           whiteSpace: 'pre-wrap',
           margin: 0,
         }}

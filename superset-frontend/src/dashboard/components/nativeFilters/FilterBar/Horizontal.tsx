@@ -63,7 +63,7 @@ const FilterBarEmptyStateContainer = styled.div`
   `}
 `;
 
-const HorizontalFilterBar: FC<HorizontalBarProps> = ({
+const HorizontalFilterBar: FC<React.PropsWithChildren<HorizontalBarProps>> = ({
   actions,
   dataMaskSelected,
   filterValues,

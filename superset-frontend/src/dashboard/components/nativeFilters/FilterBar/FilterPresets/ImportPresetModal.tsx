@@ -133,6 +133,7 @@ const ImportPresetModal = ({
       confirmLoading={importing}
       okButtonProps={{ disabled: !parsed }}
       destroyOnClose
+      centered
       width={typeof window !== 'undefined' && window.innerWidth <= 570 ? '95vw' : 520}
       styles={{
         body: {
@@ -155,7 +156,7 @@ const ImportPresetModal = ({
             border: none;
             background: none;
             cursor: pointer;
-            font-size: 13px;
+            font-size: var(--fs-interactive);
             color: var(--ant-color-primary);
             padding: 0;
           `}

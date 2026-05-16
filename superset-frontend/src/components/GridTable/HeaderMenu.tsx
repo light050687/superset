@@ -44,7 +44,7 @@ export type HeaderMenuProps = {
   onVisibleChange: DropdownProps['onOpenChange'];
 };
 
-export const HeaderMenu: React.FC<HeaderMenuProps> = ({
+export const HeaderMenu: React.FC<React.PropsWithChildren<HeaderMenuProps>> = ({
   colId,
   api,
   pinnedLeft,

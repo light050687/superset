@@ -53,6 +53,9 @@ export interface ModalProps {
   zIndex?: number;
   bodyStyle?: CSSProperties;
   openerRef?: React.RefObject<HTMLElement>;
+  /** AntD's wrapClassName — applied to the modal wrap container.
+   *  Используется для CSS-override позиции (например, превратить в bottom-sheet). */
+  wrapClassName?: string;
 }
 
 export interface StyledModalProps {
@@ -66,9 +69,17 @@ export interface StyledModalProps {
 
 export type { ModalFuncProps };
 
-export interface FormModalProps extends ModalProps {
+import type { FormInstance } from 'antd';
+
+export interface FormModalProps extends Omit<ModalProps, 'children'> {
   initialValues?: Object;
   formSubmitHandler: (values: Object) => Promise<void>;
   onSave: () => void;
   requiredFields: string[];
+  /**
+   * Render prop that receives the internal FormInstance, or a plain ReactNode
+   * of form fields. The render-prop variant is used by consumers that need to
+   * drive imperative form APIs (e.g. setFieldsValue) from within children.
+   */
+  children: ReactNode | ((form: FormInstance) => ReactNode);
 }

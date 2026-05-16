@@ -282,20 +282,20 @@ const FootBtn = styled.button`
   }
 `;
 
-const IconPlus: FC = () => (
+const IconPlus: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8}>
     <path d="M8 3v10M3 8h10" />
   </svg>
 );
 
-const IconFolder: FC = () => (
+const IconFolder: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M2 4l2-2h4l1 1h5v9H2V4z" />
     <path d="M7 8h2M8 7v2" />
   </svg>
 );
 
-const IconChevronLeft: FC = () => (
+const IconChevronLeft: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M10 4l-4 4 4 4" />
   </svg>
@@ -336,7 +336,7 @@ function groupSessionsByDate(sessions: AiChatSession[]): {
   return out;
 }
 
-export const AiSidebar: FC<AiSidebarProps> = ({
+export const AiSidebar: FC<React.PropsWithChildren<AiSidebarProps>> = ({
   folders,
   sessions,
   activeTasks,

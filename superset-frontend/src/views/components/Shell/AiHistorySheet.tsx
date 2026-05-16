@@ -119,7 +119,7 @@ const Head = styled.div`
 
 const HeadTitle = styled.div`
   font-family: ${DS2_VARS.fontMono};
-  font-size: 10px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -146,7 +146,7 @@ const HeadPrimaryBtn = styled.button`
   color: ${DS2_VARS.s};
   cursor: pointer;
   font-family: ${DS2_VARS.fontSans};
-  font-size: 12px;
+  font-size: var(--fs-meta);
   font-weight: 600;
   transition: opacity 0.12s ${DS2_VARS.ease};
 
@@ -243,7 +243,8 @@ const ColHead = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
+  font-weight: 600;
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   text-transform: uppercase;
@@ -260,7 +261,7 @@ const ColHeadCount = styled.span`
 const Empty = styled.div`
   padding: 20px 12px;
   color: ${DS2_VARS.g500};
-  font-size: 11px;
+  font-size: var(--fs-micro);
   text-align: center;
   font-family: ${DS2_VARS.fontSans};
 `;
@@ -305,7 +306,7 @@ const Spinner = styled.div`
 
 const ActiveText = styled.div`
   flex: 1;
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.ink};
   overflow: hidden;
   text-overflow: ellipsis;
@@ -313,7 +314,7 @@ const ActiveText = styled.div`
 `;
 
 const ActiveTime = styled.div`
-  font-size: 9px;
+  font-size: var(--fs-micro);
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
 `;
@@ -329,7 +330,7 @@ const FolderRow = styled.button`
   background: transparent;
   border: none;
   color: ${DS2_VARS.ink};
-  font-size: 13px;
+  font-size: var(--fs-interactive);
   font-weight: 500;
   cursor: pointer;
   text-align: left;
@@ -371,7 +372,7 @@ const FolderName = styled.span<{ $italic?: boolean }>`
 `;
 
 const FolderCount = styled.span`
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   flex-shrink: 0;
@@ -458,7 +459,8 @@ const InsIcon = styled.span<{ $kind: 'daily' | 'weekly' | 'anomaly' }>`
 
 const InsBadge = styled.span`
   flex: 1;
-  font-size: 9px;
+  font-size: var(--fs-nano);
+  font-weight: 700;
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   text-transform: uppercase;
@@ -466,13 +468,15 @@ const InsBadge = styled.span`
 `;
 
 const InsTime = styled.span`
-  font-size: 9px;
+  font-size: var(--fs-nano);
+  font-weight: 600;
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g400};
+  letter-spacing: 0.06em;
 `;
 
 const InsTitle = styled.div`
-  font-size: 12px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: ${DS2_VARS.ink};
   line-height: 1.3;
@@ -480,7 +484,7 @@ const InsTitle = styled.div`
 `;
 
 const InsPreview = styled.div`
-  font-size: 10.5px;
+  font-size: var(--fs-micro);
   color: ${DS2_VARS.g500};
   line-height: 1.35;
   overflow: hidden;
@@ -501,7 +505,7 @@ const ChatRow = styled.button`
   border: none;
   border-radius: 7px;
   color: ${DS2_VARS.ink};
-  font-size: 12.5px;
+  font-size: var(--fs-meta);
   cursor: pointer;
   text-align: left;
   width: 100%;
@@ -528,7 +532,7 @@ const ChatTitle = styled.span`
 `;
 
 const ChatTime = styled.span`
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   flex-shrink: 0;
@@ -552,7 +556,7 @@ const FootBtn = styled.button`
   border-radius: 6px;
   cursor: pointer;
   color: ${DS2_VARS.g500};
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-family: ${DS2_VARS.fontSans};
   display: inline-flex;
   align-items: center;
@@ -575,7 +579,7 @@ const FootBtn = styled.button`
 
 const FootHint = styled.span`
   flex: 1;
-  font-size: 10px;
+  font-size: var(--fs-meta);
   font-family: ${DS2_VARS.fontMono};
   color: ${DS2_VARS.g500};
   text-align: center;
@@ -586,7 +590,10 @@ const FootHint = styled.span`
     border-radius: 3px;
     padding: 1px 5px;
     font-family: ${DS2_VARS.fontMono};
-    font-size: 9px;
+    font-size: var(--fs-nano);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: ${DS2_VARS.g600};
     margin: 0 2px;
   }
@@ -604,59 +611,59 @@ const TabView = styled.div<{ $active: boolean }>`
 
 /* ─── SVG icons ─── */
 
-const IconPlus: FC = () => (
+const IconPlus: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.8}>
     <path d="M6 2v8M2 6h8" />
   </svg>
 );
 
-const IconClose: FC = () => (
+const IconClose: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M3 3l6 6M9 3l-6 6" />
   </svg>
 );
 
-const IconDaily: FC = () => (
+const IconDaily: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <circle cx="8" cy="8" r="3" />
     <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.3 3.3l1.4 1.4M11.3 11.3l1.4 1.4M3.3 12.7l1.4-1.4M11.3 4.7l1.4-1.4" />
   </svg>
 );
 
-const IconWeekly: FC = () => (
+const IconWeekly: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <rect x="2" y="3" width="12" height="11" rx="1.5" />
     <path d="M2 6h12M6 1v3M10 1v3" />
   </svg>
 );
 
-const IconAnomaly: FC = () => (
+const IconAnomaly: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6}>
     <path d="M8 1.5L1.5 14h13z" />
     <path d="M8 6.5v3.5M8 11.5v.7" strokeLinecap="round" />
   </svg>
 );
 
-const IconChatBubble: FC = () => (
+const IconChatBubble: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M2 4a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6l-3 2v-2H4a2 2 0 01-2-2V4z" />
   </svg>
 );
 
-const IconGear: FC = () => (
+const IconGear: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <circle cx="8" cy="8" r="2" />
     <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3" />
   </svg>
 );
 
-const IconBack: FC = () => (
+const IconBack: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6}>
     <path d="M6 3L2 7l4 4M2 7h10a2 2 0 012 2v3" />
   </svg>
 );
 
-const IconReset: FC = () => (
+const IconReset: FC<React.PropsWithChildren<unknown>> = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
     <path d="M13 8a5 5 0 11-1.5-3.5M13 3v2h-2" />
   </svg>
@@ -732,7 +739,7 @@ function formatRelative(iso?: string): string {
   ).padStart(2, '0')}`;
 }
 
-export const AiHistorySheet: FC<AiHistorySheetProps> = ({
+export const AiHistorySheet: FC<React.PropsWithChildren<AiHistorySheetProps>> = ({
   open,
   onClose,
   onSelectSession,

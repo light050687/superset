@@ -50,7 +50,7 @@ const TitlesContainer = styled.div`
   border-right: 1px solid ${({ theme }) => theme.colorSplit};
 `;
 
-const FilterConfigurePane: FC<Props> = ({
+const FilterConfigurePane: FC<React.PropsWithChildren<Props>> = ({
   getFilterTitle,
   onChange,
   onRemove,

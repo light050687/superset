@@ -70,7 +70,9 @@ const propTypes = {
   isComponentVisible: PropTypes.bool,
 };
 
-const defaultProps = {
+// React 18 deprecates `defaultProps` on function components. Defaults are
+// now merged inline at the start of `Tab` via spread over `rawProps`.
+const propDefaults = {
   availableColumnCount: 0,
   columnWidth: 0,
   onDropOnTab() {},
@@ -115,7 +117,8 @@ const TitleDropIndicator = styled.div`
 const renderDraggableContent = dropProps =>
   dropProps.dropIndicatorProps && <div {...dropProps.dropIndicatorProps} />;
 
-const Tab = props => {
+const Tab = rawProps => {
+  const props = { ...propDefaults, ...rawProps };
   const dispatch = useDispatch();
   const canEdit = useSelector(state => state.dashboardInfo.dash_edit_perm);
   const dashboardLayout = useSelector(state => state.dashboardLayout.present);
@@ -444,6 +447,5 @@ const Tab = props => {
 };
 
 Tab.propTypes = propTypes;
-Tab.defaultProps = defaultProps;
 
 export default memo(Tab);

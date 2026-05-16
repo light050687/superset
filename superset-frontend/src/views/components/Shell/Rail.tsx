@@ -14,11 +14,13 @@ import {
   type FC,
   type ReactNode,
   type RefObject,
+  useEffect,
   useMemo,
 } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 import { CentralPill } from './CentralPill';
+import { useDockCollapse } from './useDockCollapse';
 import type {
   AiContext,
   AiModelDescriptor,
@@ -45,43 +47,224 @@ export const RAIL_WIDTH = 56;
  * magnification на hover, active-состояние с gradient+glow.
  * На узких экранах (<768px) скрыт CSS-ом (вместо него MobileNav).
  */
-const RailNav = styled.nav`
+/**
+ * Collapse-to-handle: одна нода, morph между двумя состояниями.
+ *   • expanded — полноразмерный dock (700×58, padding 6, border-radius 18,
+ *     кнопки видны и кликабельны);
+ *   • collapsed — тонкая pill 64×6 по центру, background g300, opacity 0.6.
+ *     Кнопки fade-out (opacity 0 + pointer-events none), overflow:hidden
+ *     режет их за пределами pill. Кликом/Enter/Space — expand.
+ *
+ * Анимация через layout-properties (width/height/padding/border-radius/bottom).
+ * Layout-thrashing минимизирован `will-change` + единым transition-timing'ом
+ * и ограниченной областью (fixed-position, isolated stacking context). Длина
+ * 280ms collapse / 220ms expand — Apple iOS-spring cubic-bezier(0.32,0.72,0,1).
+ */
+const RailNav = styled.nav<{ $collapsed: boolean }>`
   position: fixed;
-  bottom: ${DS2_VARS.dockBottom};
+  /* Когда collapsed — pill садится ближе к нижнему краю (10px), чтобы не
+     мозолить глаза. Expanded — штатные 18px от низа. */
+  bottom: ${({ $collapsed }) => ($collapsed ? '10px' : DS2_VARS.dockBottom)};
   left: 50%;
   transform: translateX(-50%);
-  height: ${DS2_VARS.dockHeight};
-  /* В мокапе глобальный box-sizing: border-box — height 58 ВКЛЮЧАЕТ
-     padding и border. Без этого dock получался 72px (58 + 12 padding + 2 border). */
+  height: ${({ $collapsed }) => ($collapsed ? '6px' : DS2_VARS.dockHeight)};
+  /* max-content — ширина по контенту кнопок в expanded; 64px — в collapsed. */
+  width: ${({ $collapsed }) => ($collapsed ? '64px' : 'max-content')};
+  min-width: ${({ $collapsed }) => ($collapsed ? '64px' : '0')};
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
   align-items: center;
-  /* Точно по мокапу: padding 6px, gap 2px. */
-  gap: 2px;
-  padding: 6px;
-  background: ${DS2_VARS.dockBg};
-  backdrop-filter: ${DS2_VARS.dockFilter};
-  -webkit-backdrop-filter: ${DS2_VARS.dockFilter};
-  border: 1px solid ${DS2_VARS.dockBorder};
-  border-radius: ${DS2_VARS.dockRadius};
-  box-shadow: ${DS2_VARS.dockShadow};
+  /* overflow:hidden нужен ТОЛЬКО в collapsed: кнопки внутри fade'ают
+     и должны клипаться за pill'ом 64×6. В expanded state overflow
+     обязан быть visible — иначе hover-magnification (translateY(-3px)
+     scale(1.08)) и focus-ring/outline у кнопок обрезаются по границе
+     dock'а (иконки «съедаются» сверху, focus-ring не видно снаружи). */
+  overflow: ${({ $collapsed }) => ($collapsed ? 'hidden' : 'visible')};
+  gap: ${({ $collapsed }) => ($collapsed ? '0' : '8px')};
+  padding: ${({ $collapsed }) => ($collapsed ? '0' : '4px 12px')};
+  background: ${({ $collapsed }) =>
+    $collapsed ? DS2_VARS.g300 : DS2_VARS.dockBg};
+  backdrop-filter: ${({ $collapsed }) =>
+    $collapsed ? 'none' : DS2_VARS.dockFilter};
+  -webkit-backdrop-filter: ${({ $collapsed }) =>
+    $collapsed ? 'none' : DS2_VARS.dockFilter};
+  border: ${({ $collapsed }) =>
+    $collapsed ? '0 solid transparent' : `1px solid ${DS2_VARS.dockBorder}`};
+  border-radius: ${({ $collapsed }) =>
+    $collapsed ? '3px' : DS2_VARS.dockRadius};
+  box-shadow: ${({ $collapsed }) =>
+    $collapsed ? 'none' : DS2_VARS.dockShadow};
+  opacity: ${({ $collapsed }) => ($collapsed ? 0.6 : 1)};
+  cursor: ${({ $collapsed }) => ($collapsed ? 'pointer' : 'default')};
   z-index: 101;
+  will-change: width, height, padding, border-radius, bottom;
+  /* Material 3 standard easing. Choreography через CSS-vars + data-attr
+     (Conditional transition string ломает transition при flip className'а):
+     • collapse (data-collapsed-state='true'): main dock сжимается ПОСЛЕДНИМ
+       (160ms delay) — после pages-rail (0ms) и mini-rail (80ms). Children
+       fade out с 100ms delay через ease-in.
+     • expand (data-collapsed-state='false'): main dock раскрывается ПЕРВЫМ
+       (0ms delay), потом mini-rail (200ms), pages-rail (280ms). Children
+       fade in с 120ms delay через ease-out. */
+  --dock-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dock-delay: 160ms;
+  --dock-children-ease: cubic-bezier(0.4, 0, 1, 1);
+  --dock-children-delay: 100ms;
+  &[data-collapsed='false'] {
+    --dock-delay: 0ms;
+    --dock-children-ease: cubic-bezier(0, 0, 0.2, 1);
+    --dock-children-delay: 120ms;
+  }
 
-  /* Magnetic neighbor magnification (мокап rail-btn hover sibling).
-     Селектор по типу элемента — все button-дети nav (RailButton + RailAvatar).
-     Работает без emotion-component-selectors. */
-  & > button:hover + button,
-  & > button:has(+ button:hover) {
+  transition:
+    width 320ms var(--dock-ease) var(--dock-delay),
+    height 320ms var(--dock-ease) var(--dock-delay),
+    padding 320ms var(--dock-ease) var(--dock-delay),
+    border-radius 320ms var(--dock-ease) var(--dock-delay),
+    bottom 320ms var(--dock-ease) var(--dock-delay),
+    background 200ms ease,
+    border 200ms ease,
+    opacity 180ms ease,
+    box-shadow 200ms ease;
+
+  /* Кнопки внутри fade'аются и становятся не-кликабельными при collapse.
+     Direction-specific easing: ease-in (быстрый старт→замедление в конце)
+     на collapse (плавно «гаснут»), ease-out на expand (бодро «появляются»). */
+  & > * {
+    opacity: ${({ $collapsed }) => ($collapsed ? 0 : 1)};
+    pointer-events: ${({ $collapsed }) => ($collapsed ? 'none' : 'auto')};
+    transition: opacity 180ms var(--dock-children-ease)
+      var(--dock-children-delay);
+  }
+
+  /* Magnetic neighbor magnification — только в expanded. */
+  &[data-collapsed='false'] > button:hover + button,
+  &[data-collapsed='false'] > button:has(+ button:hover) {
     transform: translateY(-3px) scale(1.08);
   }
 
-  @media print {
+  /* В collapsed pill светлеет и становится ярче на hover/focus. */
+  &[data-collapsed='true']:hover,
+  &[data-collapsed='true']:focus-visible {
+    opacity: 1;
+    background: ${DS2_VARS.g400};
+  }
+
+  &[data-collapsed='true']:focus-visible {
+    outline: 2px solid ${DS2_VARS.cSky};
+    outline-offset: 4px;
+  }
+
+  /* Collapsed hit-area расширена до 44×44 (Fitts's law, touch-friendly). */
+  &[data-collapsed='true']::before {
+    content: '';
+    position: absolute;
+    inset: -20px;
+  }
+
+  @media print,
+    (max-width: 767px) {
     display: none;
   }
 
-  @media (max-width: 767px) {
+  /* prefers-reduced-motion: убираем layout-transitions, остаётся opacity
+     и background. Смена размера происходит instant — меньше motion sickness. */
+  @media (prefers-reduced-motion: reduce) {
+    transition:
+      opacity 120ms ease,
+      background 120ms ease;
+  }
+`;
+
+/**
+ * Top-edge grabber — компактная «рукоятка» 28×4 по центру верхней кромки
+ * floating dock'а, по клику сворачивает dock в pill.
+ *
+ * Паттерн взят у iOS bottom-sheet (drag indicator), Apple Maps, Notion
+ * mobile toolbar: тонкая горизонтальная полоска сверху — сразу читается
+ * как «свернуть/перетащить». Не занимает flex-ячейку в dock'е, сидит
+ * выше как отдельный fixed-элемент (z-index 103 > dock 101 > mini-rail 99).
+ *
+ * Hit-area расширена до 44×24 невидимым ::before (Fitts's law).
+ */
+const DockGrabber = styled.button<{
+  $hidden: boolean;
+  $hasMiniRail: boolean;
+  $pagesRailVisible: boolean;
+  $sideRailPopupOpen: boolean;
+}>`
+  position: fixed;
+  /* 4-tier позиция grabber'а — всегда сидит над САМОЙ ВЕРХНЕЙ rail-планкой:
+     • Side-rail popup открыт (Save/Share): grabber над popup'ом. Высота
+       popup'а пишется в --side-rail-popup-h через ResizeObserver
+       (useSideRailPopupHeightVar в DashboardSideRail). Popup bottom =
+       dockBottom + dockHeight + 36 (тот же anchor что и pages-rail).
+       Popup TOP = bottom + var(--side-rail-popup-h). Grabber 4px выше top.
+     • Pages-rail видим: grabber над pages-rail. Высота pages-rail
+       динамическая (multi-row wrap), пишется в --pages-rail-h через
+       ResizeObserver (см. usePagesRailHeightVar в DashboardPagesRail).
+       Pages bottom = dockBottom + dockHeight + 36 (anchor над mini-rail).
+       Pages TOP = bottom + var(--pages-rail-h). Grabber 4px выше top.
+     • Иначе mini-rail есть: grabber над mini-rail (mini top = dockBottom +
+       dockHeight + 30, grabber 4px выше = +34).
+     • Иначе: grabber над main dock-ом (+2). */
+  bottom: ${({ $hasMiniRail, $pagesRailVisible, $sideRailPopupOpen }) =>
+    $sideRailPopupOpen
+      ? `calc(${DS2_VARS.dockBottom} + ${DS2_VARS.dockHeight} + 36px + var(--side-rail-popup-h, 28px) + 4px)`
+      : $pagesRailVisible
+        ? `calc(${DS2_VARS.dockBottom} + ${DS2_VARS.dockHeight} + 36px + var(--pages-rail-h, 28px) + 4px)`
+        : $hasMiniRail
+          ? `calc(${DS2_VARS.dockBottom} + ${DS2_VARS.dockHeight} + 34px)`
+          : `calc(${DS2_VARS.dockBottom} + ${DS2_VARS.dockHeight} + 2px)`};
+  transition:
+    opacity 160ms ease,
+    transform 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    bottom 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    background 160ms ease;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 4px;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: ${DS2_VARS.g300};
+  opacity: ${({ $hidden }) => ($hidden ? 0 : 0.5)};
+  pointer-events: ${({ $hidden }) => ($hidden ? 'none' : 'auto')};
+  cursor: pointer;
+  z-index: 103;
+
+  /* Расширенная hit-area 44×24 (touch-friendly, не меняя визуала). */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -10px -8px;
+  }
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+    background: ${DS2_VARS.g400};
+    transform: translateX(-50%) scaleY(1.5);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${DS2_VARS.cSky};
+    outline-offset: 4px;
+  }
+
+  @media print,
+    (max-width: 767px) {
     display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: opacity 100ms ease;
+    &:hover,
+    &:focus-visible {
+      transform: translateX(-50%);
+    }
   }
 `;
 
@@ -91,7 +274,7 @@ const RailNav = styled.nav`
  */
 const RailSep = styled.span`
   width: 1px;
-  height: 26px;
+  height: 20px;
   background: ${DS2_VARS.g200};
   opacity: 0.6;
   margin: 0 ${DS2_SPACE.s1}px;
@@ -107,11 +290,11 @@ const RailSep = styled.span`
  * как в macOS dock, создавая иллюзию магнитного приближения.
  */
 const RailButton = styled.button<{ $active?: boolean }>`
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: none;
-  border-radius: 14px;
+  border-radius: 11px;
   background: ${({ $active }) =>
     $active ? DS2_VARS.dockBtnActiveBg : 'transparent'};
   color: ${({ $active }) => ($active ? DS2_VARS.cSky : DS2_VARS.g600)};
@@ -156,8 +339,8 @@ const RailButton = styled.button<{ $active?: boolean }>`
   }
 
   svg {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     stroke-width: 1.6;
   }
 
@@ -167,8 +350,8 @@ const RailButton = styled.button<{ $active?: boolean }>`
     bottom: -8px;
     left: 50%;
     transform: translateX(-50%);
-    width: 4px;
-    height: 4px;
+    width: 3px;
+    height: 3px;
     border-radius: 50%;
     background: ${({ $active }) =>
       $active ? DS2_VARS.cSky : 'transparent'};
@@ -181,10 +364,10 @@ const RailButton = styled.button<{ $active?: boolean }>`
 /** Бейдж без glow — ring цвета dock-фона визуально отделяет от иконки. */
 const RailBadgeDot = styled.span<{ $color: string }>`
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 8px;
-  height: 8px;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: ${({ $color }) => $color};
   box-shadow: 0 0 0 2px ${DS2_VARS.dockBg};
@@ -193,10 +376,10 @@ const RailBadgeDot = styled.span<{ $color: string }>`
 /** Простая цветная точка без glow (для календаря — наличие событий). */
 const RailDot = styled.span<{ $color: string }>`
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 6px;
-  height: 6px;
+  top: 6px;
+  right: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: ${({ $color }) => $color};
 `;
@@ -207,11 +390,11 @@ const RailDot = styled.span<{ $color: string }>`
  * gradient. Структура мокапа: `<button class="rail-btn"><div class="rail-avatar"/></button>`.
  */
 const RailAvatarBtn = styled.button`
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: none;
-  border-radius: 14px;
+  border-radius: 11px;
   background: transparent;
   cursor: pointer;
   flex-shrink: 0;
@@ -233,8 +416,8 @@ const RailAvatarBtn = styled.button`
 
 /* Мокап `.rail-avatar`: 34×34, gradient violet→fuchsia, border 2px bg1 60%. */
 const RailAvatarDot = styled.span`
-  width: 34px;
-  height: 34px;
+  width: 27px;
+  height: 27px;
   flex-shrink: 0;
   box-sizing: border-box;
   border: 2px solid ${DS2_VARS.dockBg};
@@ -244,9 +427,9 @@ const RailAvatarDot = styled.span`
     ${DS2_VARS.cViolet},
     ${DS2_VARS.cFuchsia}
   );
-  color: #fff;
+  color: var(--s);
   font-family: ${DS2_VARS.fontSans};
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -335,7 +518,7 @@ type RailSlot =
   | { kind: 'sep' }
   | { kind: 'custom'; node: ReactNode };
 
-export const Rail: FC<RailProps> = ({
+export const Rail: FC<React.PropsWithChildren<RailProps>> = ({
   userInitials = '',
   onOpenCalendar,
   onToggleTheme,
@@ -358,7 +541,34 @@ export const Rail: FC<RailProps> = ({
 }) => {
   const history = useHistory();
   const location = useLocation();
-  const { openedDrawer, toggleDrawer, activeRailId } = useShell();
+  const {
+    openedDrawer,
+    toggleDrawer,
+    activeRailId,
+    setDockCollapsed,
+    hasMiniRail,
+    pagesRailOpen,
+    sideRailPopupOpen,
+  } = useShell();
+  // Pages-rail видим только на dashboard (где есть mini-rail) И когда юзер
+  // открыл его кнопкой «Страницы». Используется в DockGrabber для 3-tier
+  // позиционирования над самой верхней rail-планкой.
+  const pagesRailVisible = hasMiniRail && pagesRailOpen;
+
+  /* Collapse-to-handle: dock auto-сворачивается при скролле вниз или
+     3.5с бездействия. Pin (всегда expanded) — когда открыт drawer или
+     AI-overlay: в этих режимах юзер явно работает с dock'ом/overlay'ем. */
+  const dockPinned = !!openedDrawer || aiActive;
+  const { isCollapsed, expand, collapse } = useDockCollapse({
+    pinned: dockPinned,
+  });
+
+  /* Синхронизируем collapse-state с ShellContext — mini-rail
+     (DashboardSideRail) читает его и сворачивается вместе с главным
+     доком: они одна compound-фигура «laptop lid + main dock». */
+  useEffect(() => {
+    setDockCollapsed(isCollapsed);
+  }, [isCollapsed, setDockCollapsed]);
 
   // Home активна только когда ничего другое не выбрано И drawer закрыт —
   // иначе была ситуация «Home + Каталог горят одновременно» при открытии
@@ -561,15 +771,52 @@ export const Rail: FC<RailProps> = ({
   );
 
   return (
-    <RailNav aria-label={t('Главная навигация')}>
-      {slots.map((slot, i) =>
-        slot.kind === 'sep' ? (
-          // eslint-disable-next-line react/no-array-index-key
-          <RailSep key={`sep-${i}`} role="presentation" />
-        ) : (
-          slot.node
-        ),
-      )}
-    </RailNav>
+    <>
+      {/* Top-edge grabber — виден когда dock expanded, клик → collapse.
+          3-tier позиция: над pages-rail (если открыт) → над mini-rail (если
+          есть) → над main dock'ом (welcome/charts). */}
+      <DockGrabber
+        type="button"
+        $hidden={isCollapsed || dockPinned}
+        $hasMiniRail={hasMiniRail}
+        $pagesRailVisible={pagesRailVisible}
+        $sideRailPopupOpen={!!sideRailPopupOpen}
+        onClick={collapse}
+        aria-label={t('Свернуть панель')}
+        aria-controls="shell-floating-dock"
+        title={t('Свернуть панель')}
+        tabIndex={isCollapsed || dockPinned ? -1 : 0}
+      />
+      <RailNav
+        id="shell-floating-dock"
+        $collapsed={isCollapsed}
+        data-collapsed={isCollapsed ? 'true' : 'false'}
+        data-shell-rail="main"
+        aria-label={t('Главная навигация')}
+        aria-expanded={!isCollapsed}
+        role={isCollapsed ? 'button' : undefined}
+        tabIndex={isCollapsed ? 0 : undefined}
+        onClick={isCollapsed ? expand : undefined}
+        onKeyDown={
+          isCollapsed
+            ? e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  expand();
+                }
+              }
+            : undefined
+        }
+      >
+        {slots.map((slot, i) =>
+          slot.kind === 'sep' ? (
+            // eslint-disable-next-line react/no-array-index-key
+            (<RailSep key={`sep-${i}`} role="presentation" />)
+          ) : (
+            slot.node
+          ),
+        )}
+      </RailNav>
+    </>
   );
 };

@@ -32,7 +32,7 @@ import { MapPageContainer } from './styles';
  * Full-page GeoMap component for Superset.
  * Vector tile map with layer toggles, theme switching, and language selection.
  */
-const GeoMap: FC = () => {
+const GeoMap: FC<React.PropsWithChildren<unknown>> = () => {
   const [map, setMap] = useState<MaplibreMap | null>(null);
   const [theme, setTheme] = useState<ThemeMode>('light');
   const [language, setLanguage] = useState<Language>('ru');

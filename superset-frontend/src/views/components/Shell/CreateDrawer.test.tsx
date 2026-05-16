@@ -25,7 +25,7 @@ describe('<CreateDrawer>', () => {
     expect(screen.getByText('Документы')).toBeInTheDocument();
     expect(screen.getByText('Данные')).toBeInTheDocument();
     expect(screen.getByText('Дашборд')).toBeInTheDocument();
-    expect(screen.getByText('Диаграмма')).toBeInTheDocument();
+    expect(screen.getByText('Чарт')).toBeInTheDocument();
     expect(screen.getByText('Гео-карта')).toBeInTheDocument();
     expect(screen.getByText('Таблица')).toBeInTheDocument();
     expect(screen.getByText('Документ')).toBeInTheDocument();

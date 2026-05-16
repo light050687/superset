@@ -13,6 +13,7 @@ export { CatalogDrawer } from './CatalogDrawer';
 export { CatalogTree } from './CatalogTree';
 export { CatalogTreeNode } from './CatalogTreeNode';
 export { CatalogDeleteModal } from './CatalogDeleteModal';
+export { CatalogPromptModal } from './CatalogPromptModal';
 export { CatalogManageView } from './CatalogManageView';
 export {
   useCatalogFolders,
@@ -20,9 +21,19 @@ export {
   type CatalogTreeNode as CatalogTreeNodeData,
 } from './useCatalogFolders';
 export {
+  useCatalogFolderItems,
+  type DrilledItem,
+  type DrilledScope,
+} from './useCatalogFolderItems';
+export {
   useCatalogHasUpdates,
   markCatalogViewed,
 } from './useCatalogHasUpdates';
+export {
+  useItemToFolderMap,
+  type ItemFolderInfo,
+  type ItemFolderMap,
+} from './useItemToFolderMap';
 export {
   CATALOG_DRAG_TYPES,
   type CatalogFolderNode,

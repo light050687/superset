@@ -23,8 +23,10 @@ import { HeaderProps, HeaderDropdownProps } from '../Header/types';
 
 export type DashboardPublishedStatusType = {
   dashboardId: HeaderDropdownProps['dashboardId'];
-  userCanEdit: HeaderDropdownProps['userCanEdit'];
-  userCanSave: HeaderDropdownProps['userCanSave'];
+  // userCanEdit/userCanSave — удалены из HeaderDropdownProps (см. types.ts:35-44),
+  // PublishedStatus использует их как boolean напрямую от родителя.
+  userCanEdit: boolean;
+  userCanSave: boolean;
   isPublished: HeaderProps['isPublished'];
   savePublished: HeaderProps['savePublished'];
 };

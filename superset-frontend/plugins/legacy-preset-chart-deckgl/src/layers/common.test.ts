@@ -98,8 +98,10 @@ describe('getAggFunc', () => {
 
 describe('commonLayerProps', () => {
   const mockSetTooltip = jest.fn();
+  // Matches the CommonLayerProps signature:
+  // `setTooltipContent: (content: JsonObject) => ReactNode`.
   const mockSetTooltipContent = jest.fn(
-    () => (o: JsonObject) => `Tooltip for ${o}`,
+    (o: JsonObject) => `Tooltip for ${JSON.stringify(o)}`,
   );
   const mockOnSelect = jest.fn();
 

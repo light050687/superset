@@ -18,7 +18,8 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { css, styled, t, useTheme } from '@superset-ui/core';
-import { Input, Tooltip, message } from 'antd';
+import { Input, message } from 'antd';
+import { Tooltip } from '@superset-ui/core/components';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { FilterPreset } from './types';
 import {
@@ -140,7 +141,7 @@ const IconButton = styled.button`
     padding: 2px;
     border-radius: ${theme.borderRadiusSM}px;
     color: ${theme.colorTextTertiary};
-    font-size: 14px;
+    font-size: var(--fs-body);
     &:hover {
       background: ${theme.colorBgTextHover};
       color: ${theme.colorText};

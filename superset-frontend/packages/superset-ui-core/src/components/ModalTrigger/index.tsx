@@ -40,6 +40,10 @@ export interface ModalTriggerProps {
   draggable?: boolean;
   draggableConfig?: any;
   destroyOnHidden?: boolean;
+  /** Центрировать модалку вертикально. По умолчанию true — раньше
+   *  ModalTrigger не пробрасывал centered и модалка отображалась
+   *  фиксированным top:100px от верха. */
+  centered?: boolean;
 }
 
 export interface ModalTriggerRef {
@@ -71,6 +75,7 @@ export const ModalTrigger = forwardRef(
       responsive,
       width,
       maxWidth,
+      centered = true,
     } = props;
 
     const close = () => {
@@ -122,6 +127,7 @@ export const ModalTrigger = forwardRef(
           draggable={draggable}
           draggableConfig={draggableConfig}
           destroyOnHidden={destroyOnHidden}
+          centered={centered}
         >
           {modalBody}
         </Modal>

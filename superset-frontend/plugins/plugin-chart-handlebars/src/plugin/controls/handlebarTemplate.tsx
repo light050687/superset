@@ -69,7 +69,10 @@ ${helperDescriptions
     <div>
       <ControlHeader>
         <div>
-          {props.label}
+          {/* `label` is typed as ReactNode | RenderFunction; only render the
+              plain-node variant — RenderFunction requires control panel state
+              that isn't available in this custom control. */}
+          {typeof props.label === 'function' ? null : props.label}
           <InfoTooltip
             iconStyle={{ marginLeft: theme.sizeUnit }}
             tooltip={<SafeMarkdown source={helpersTooltipContent} />}

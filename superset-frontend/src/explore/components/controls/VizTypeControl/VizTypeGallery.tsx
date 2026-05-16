@@ -327,7 +327,7 @@ interface ThumbnailProps {
   onDoubleClick: () => void;
 }
 
-const Thumbnail: FC<ThumbnailProps> = ({
+const Thumbnail: FC<React.PropsWithChildren<ThumbnailProps>> = ({
   entry,
   selectedViz,
   setSelectedViz,
@@ -380,7 +380,7 @@ interface ThumbnailGalleryProps {
 }
 
 /** A list of viz thumbnails, used within the viz picker modal */
-const ThumbnailGallery: FC<ThumbnailGalleryProps> = ({
+const ThumbnailGallery: FC<React.PropsWithChildren<ThumbnailGalleryProps>> = ({
   vizEntries,
   ...props
 }) => (
@@ -391,14 +391,14 @@ const ThumbnailGallery: FC<ThumbnailGalleryProps> = ({
   </IconsPane>
 );
 
-const Selector: FC<{
+const Selector: FC<React.PropsWithChildren<{
   selector: string;
   sectionId: string;
   icon: ReactElement;
   isSelected: boolean;
   onClick: (selector: string, sectionId: string) => void;
   className?: string;
-}> = ({ selector, sectionId, icon, isSelected, onClick, className }) => {
+}>> = ({ selector, sectionId, icon, isSelected, onClick, className }) => {
   const btnRef = useRef<HTMLButtonElement>(null);
 
   // see Element.scrollIntoViewIfNeeded()

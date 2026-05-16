@@ -24,7 +24,7 @@ import { extendedDayjs } from '../../utils/dates';
 interface Props {
   cachedTimestamp?: string;
 }
-export const TooltipContent: FC<Props> = ({ cachedTimestamp }) => {
+export const TooltipContent: FC<React.PropsWithChildren<Props>> = ({ cachedTimestamp }) => {
   const cachedText = cachedTimestamp ? (
     <span>
       {t('Loaded data cached')}

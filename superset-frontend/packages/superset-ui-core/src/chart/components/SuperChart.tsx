@@ -66,7 +66,7 @@ export type Props = Omit<SuperChartCoreProps, 'chartProps'> &
     /** enable "No Results" message if empty result set */
     enableNoResults?: boolean;
     /** Component to render when there are unexpected errors */
-    FallbackComponent?: ComponentType<FallbackPropsWithDimension>;
+    FallbackComponent?: ComponentType<React.PropsWithChildren<FallbackPropsWithDimension>>;
     /** Event listener for unexpected errors from chart */
     onErrorBoundary?: ErrorBoundaryProps['onError'];
     /** Prop for form plugins using superchart */
@@ -88,7 +88,7 @@ export type Props = Omit<SuperChartCoreProps, 'chartProps'> &
      * when using dynamic width or height
      * because it will clash with auto-sizing.
      */
-    Wrapper?: ComponentType<WrapperProps>;
+    Wrapper?: ComponentType<React.PropsWithChildren<WrapperProps>>;
     /**
      * Component to display when query returns no results.
      * If not defined, NoResultsComponent is used

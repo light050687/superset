@@ -324,7 +324,7 @@ export const DropdownContainer = forwardRef(
                     width: 14px;
                   }
                   ::-webkit-scrollbar-thumb {
-                    border-radius: 9px;
+                    border-radius: 6px;
                     background-color: ${theme.colorFillSecondary};
                     border: 3px solid transparent;
                     background-clip: content-box;
@@ -339,7 +339,9 @@ export const DropdownContainer = forwardRef(
 
             <Popover
               styles={{
-                body: {
+                // AntD v6: styles.body → styles.content (Popover semantic names
+                // are root/container/arrow/title/content).
+                content: {
                   maxHeight: `${MAX_HEIGHT}px`,
                   overflow: showOverflow ? 'auto' : 'visible',
                 },

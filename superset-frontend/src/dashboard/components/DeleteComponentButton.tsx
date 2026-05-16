@@ -27,7 +27,7 @@ type DeleteComponentButtonProps = {
   iconSize?: IconType['iconSize'];
 };
 
-const DeleteComponentButton: FC<DeleteComponentButtonProps> = ({
+const DeleteComponentButton: FC<React.PropsWithChildren<DeleteComponentButtonProps>> = ({
   onDelete,
   iconSize,
 }) => (

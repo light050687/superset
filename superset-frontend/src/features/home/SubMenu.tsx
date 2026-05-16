@@ -19,10 +19,14 @@
 import { ReactNode, useState, useEffect, FunctionComponent } from 'react';
 
 import { Link, useHistory } from 'react-router-dom';
-import { styled, SupersetTheme, css, t, useTheme } from '@superset-ui/core';
+import { styled, css, t, useTheme } from '@superset-ui/core';
 import cx from 'classnames';
 import { debounce } from 'lodash';
-import { Menu, MenuMode, MainNav } from '@superset-ui/core/components/Menu';
+import {
+  Menu,
+  MenuMode,
+  type MenuItem,
+} from '@superset-ui/core/components/Menu';
 import {
   Button,
   Tooltip,
@@ -30,8 +34,10 @@ import {
   type OnClickHandler,
 } from '@superset-ui/core/components';
 import { Icons } from '@superset-ui/core/components/Icons';
-import { IconType } from '@superset-ui/core/components/Icons/types';
-import { MenuObjectProps } from 'src/types/bootstrapTypes';
+import {
+  MenuObjectChildProps,
+  MenuObjectProps,
+} from 'src/types/bootstrapTypes';
 import { Typography } from '@superset-ui/core/components/Typography';
 
 const StyledHeader = styled.div<{ backgroundColor?: string }>`
@@ -42,13 +48,18 @@ const StyledHeader = styled.div<{ backgroundColor?: string }>`
   padding: ${({ theme }) => theme.sizeUnit * 2}px
     ${({ theme }) => theme.sizeUnit * 4}px;
   margin-bottom: ${({ theme }) => theme.sizeUnit * 4}px;
+  /* DS v2.0 — page title (Wave 17): 28px / 800 / Manrope / -0.03em.
+     Один заголовок страницы для CRUD list-views (Dashboards/Charts/etc.). */
   .header {
-    font-weight: ${({ theme }) => theme.fontWeightStrong};
+    font-family: var(--f, 'Manrope', 'Inter', Helvetica, Arial, sans-serif);
+    font-weight: 800;
     margin-right: ${({ theme }) => theme.sizeUnit * 3}px;
     text-align: left;
-    font-size: 18px;
+    font-size: 28px;
+    line-height: 34px;
+    letter-spacing: -0.03em;
+    color: var(--ink, ${({ theme }) => theme.colorText});
     display: inline-block;
-    line-height: ${({ theme }) => theme.sizeUnit * 9}px;
   }
   .nav-right {
     display: flex;
@@ -113,19 +124,6 @@ const StyledHeader = styled.div<{ backgroundColor?: string }>`
   }
 `;
 
-const styledDisabled = (theme: SupersetTheme) => css`
-  color: ${theme.colorTextDisabled};
-  cursor: not-allowed;
-
-  &:hover {
-    color: ${theme.colorTextDisabled};
-  }
-
-  .ant-menu-item-selected {
-    background-color: ${theme.colorBgContainerDisabled};
-  }
-`;
-
 type MenuChild = {
   label: string;
   name: string;
@@ -143,7 +141,11 @@ export interface ButtonProps {
   'data-test'?: string;
   buttonStyle: 'primary' | 'secondary' | 'dashed' | 'link' | 'tertiary';
   loading?: boolean;
-  icon?: IconType;
+  /**
+   * Forwarded to the core Button's `icon` prop (a JSX element, e.g.
+   * `<Icons.PlusOutlined />`).
+   */
+  icon?: ReactNode;
 }
 
 export interface SubMenuProps {
@@ -160,9 +162,7 @@ export interface SubMenuProps {
   backgroundColor?: string;
 }
 
-const { SubMenu } = MainNav;
-
-const SubMenuComponent: FunctionComponent<SubMenuProps> = props => {
+const SubMenuComponent: FunctionComponent<React.PropsWithChildren<SubMenuProps>> = props => {
   const [showMenu, setMenu] = useState<MenuMode>('horizontal');
   const [navRightStyle, setNavRightStyle] = useState('nav-right');
   const theme = useTheme();
@@ -248,52 +248,59 @@ const SubMenuComponent: FunctionComponent<SubMenuProps> = props => {
           })}
         />
         <div className={navRightStyle}>
-          <Menu mode="horizontal" triggerSubMenuAction="click" disabledOverflow>
-            {props.dropDownLinks?.map((link, i) => (
-              <SubMenu
-                css={css`
-                  [data-icon='caret-down'] {
-                    color: ${theme.colorIcon};
-                    font-size: ${theme.fontSizeXS}px;
-                    margin-left: ${theme.sizeUnit}px;
-                  }
-                `}
-                key={i}
-                title={link.label}
-                icon={<Icons.CaretDownOutlined />}
-                popupOffset={[10, 20]}
-                className="dropdown-menu-links"
-              >
-                {link.childs?.map(item => {
-                  if (typeof item === 'object') {
-                    return item.disable ? (
-                      <MainNav.Item
-                        key={item.label}
-                        css={styledDisabled}
-                        disabled
-                      >
-                        <Tooltip
-                          placement="top"
-                          title={t(
-                            "Enable 'Allow file uploads to database' in any database's settings",
-                          )}
-                        >
-                          {item.label}
-                        </Tooltip>
-                      </MainNav.Item>
-                    ) : (
-                      <MainNav.Item key={item.label}>
-                        <Typography.Link href={item.url} onClick={item.onClick}>
-                          {item.label}
-                        </Typography.Link>
-                      </MainNav.Item>
-                    );
-                  }
-                  return null;
-                })}
-              </SubMenu>
-            ))}
-          </Menu>
+          <Menu
+            mode="horizontal"
+            triggerSubMenuAction="click"
+            disabledOverflow
+            css={css`
+              .ant-menu-submenu-title [data-icon='caret-down'] {
+                color: ${theme.colorIcon};
+                font-size: ${theme.fontSizeXS}px;
+                margin-left: ${theme.sizeUnit}px;
+              }
+            `}
+            items={props.dropDownLinks?.map<MenuItem>((link, i) => ({
+              key: `submenu-${i}`,
+              label: link.label,
+              icon: <Icons.CaretDownOutlined />,
+              popupOffset: [10, 20],
+              popupClassName: 'dropdown-menu-links-popup',
+              className: 'dropdown-menu-links',
+              children: link.childs
+                ?.filter(
+                  (item): item is MenuObjectChildProps =>
+                    typeof item === 'object',
+                )
+                .map<MenuItem>(item =>
+                  item.disable
+                    ? {
+                        key: item.label,
+                        disabled: true,
+                        label: (
+                          <Tooltip
+                            placement="top"
+                            title={t(
+                              "Enable 'Allow file uploads to database' in any database's settings",
+                            )}
+                          >
+                            {item.label}
+                          </Tooltip>
+                        ),
+                      }
+                    : {
+                        key: item.label,
+                        label: (
+                          <Typography.Link
+                            href={item.url}
+                            onClick={item.onClick}
+                          >
+                            {item.label}
+                          </Typography.Link>
+                        ),
+                      },
+                ),
+            }))}
+          />
           {props.buttons?.map((btn, i) => (
             <Button
               key={i}

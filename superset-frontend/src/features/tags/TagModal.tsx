@@ -64,7 +64,7 @@ interface TagModalProps {
   editTag?: Tag | null;
 }
 
-const TagModal: FC<TagModalProps> = ({
+const TagModal: FC<React.PropsWithChildren<TagModalProps>> = ({
   show,
   onHide,
   editTag,
