@@ -178,7 +178,7 @@ function ParetoCardInner(props: ParetoCardProps) {
       className={PARETO_CARD_CLASS}
     >
       <Global styles={css`${PARETO_KEYFRAMES_CSS}`} />
-      <Card role="region" aria-labelledby={titleId}>
+      <Card role="region" aria-labelledby={titleId} data-info-hint-container="">
         <CardHead>
           <CardTitleGroup>
             <CardTitle id={titleId}>{headerText}</CardTitle>
@@ -238,7 +238,6 @@ function ParetoCardInner(props: ParetoCardProps) {
         </ChartBox>
 
         <CardFooter>
-          <HintRow />
           <ZoneLegend
             state={state}
             tokens={tokens}
@@ -252,7 +251,7 @@ function ParetoCardInner(props: ParetoCardProps) {
               })
             }
           />
-          <div />
+          <HintRow />
         </CardFooter>
       </Card>
 

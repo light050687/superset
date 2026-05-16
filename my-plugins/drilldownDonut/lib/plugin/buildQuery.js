@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = buildQuery;
 const core_1 = require("@superset-ui/core");
 /**
  * Build query context для structure-donut.
@@ -85,5 +86,4 @@ function buildQuery(formData) {
         return [query];
     });
 }
-exports.default = buildQuery;
 //# sourceMappingURL=buildQuery.js.map

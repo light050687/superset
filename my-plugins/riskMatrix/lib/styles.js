@@ -91,7 +91,7 @@ exports.CardRoot = core_1.styled.div `
   /* DS 2.0 mount animation. Эмоция keyframes() — race-condition-free. При
      переходе loading → loaded React unmount'ит loading-CardRoot и mount'ит
      новый → animation запускается ровно когда юзер видит контент. */
-  animation: ${cardInKf} 0.6s ${EASE} both;
+  animation: ${cardInKf} 0.5s ${EASE} both;
 
   * {
     box-sizing: border-box;

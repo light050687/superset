@@ -41,6 +41,8 @@ export const KEYFRAMES_CSS = `
  * Корневой контейнер с переменными DS 2.0.
  * width / height — приходят из Superset ChartProps.
  */
+/* InfoHintCell упразднён → shared <InfoHintCorner> из components/InfoHint. */
+
 export const VelocityRoot = styled.div<{ width: number; height: number }>`
   --bg: ${L.bg};
   --s: ${L.s};
@@ -117,6 +119,7 @@ export const VelocityRoot = styled.div<{ width: number; height: number }>`
 
   /* ── Карточка (DS 2.0 §06: radius 10, padding 16×20, gap 12) ── */
   .vd-card {
+    position: relative;
     background: var(--s);
     border: 1px solid var(--g200);
     border-radius: 10px;
@@ -129,7 +132,7 @@ export const VelocityRoot = styled.div<{ width: number; height: number }>`
        animation-name доступен ДО commit'а — без race condition. При
        переходе loading → loaded React unmount'ит loading-Card и mount'ит
        новый → animation запускается ровно когда юзер видит контент. */
-    animation: ${cardInKf} 0.6s ${EASE} both;
+    animation: ${cardInKf} 0.5s ${EASE} both;
   }
 
   .vd-head {

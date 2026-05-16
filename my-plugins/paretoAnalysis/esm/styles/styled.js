@@ -91,6 +91,7 @@ export const ParetoCardRoot = styled.div `
 // Card shell
 // ═══════════════════════════════════════
 export const Card = styled.div `
+  position: relative;
   background: var(--s);
   border: 1px solid var(--g200);
   border-radius: 10px;
@@ -103,7 +104,7 @@ export const Card = styled.div `
   /* DS 2.0 mount animation. fill-mode both — initial state мгновенно. При
      переходе loading → loaded React unmount'ит loading-Card и mount'ит
      новый → animation запускается ровно когда юзер видит реальный контент. */
-  animation: ${cardInKf} 0.6s ${EASE} both;
+  animation: ${cardInKf} 0.5s ${EASE} both;
 `;
 export const CardHead = styled.div `
   display: flex;
@@ -387,8 +388,7 @@ export const ChartCanvasDiv = styled.div `
 // Footer: hint + legend
 // ═══════════════════════════════════════
 export const CardFooter = styled.div `
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
   align-items: center;
   gap: 12px;
   margin-top: 6px;

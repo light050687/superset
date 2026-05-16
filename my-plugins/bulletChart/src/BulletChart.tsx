@@ -31,6 +31,7 @@ import BulletRow from './components/BulletRow';
 import SortMenu from './components/SortMenu';
 import BulletTooltip from './components/Tooltip';
 import DetailModal from './DetailModal';
+import { InfoHint, InfoHintCorner } from './components/InfoHint';
 import type {
   BulletChartProps,
   FormatRow,
@@ -236,7 +237,7 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
       data-theme={isDarkMode ? 'dark' : 'light'}
     >
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_CSS }} />
-      <Card role="region" aria-label={headerText}>
+      <Card role="region" aria-label={headerText} data-info-hint-container="">
         {dataState === 'stale' && <StaleBar aria-hidden="true" />}
         <CardHead>
           <TitleBlock>
@@ -346,37 +347,52 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
           </BulletList>
         ) : null}
 
-        {rows.length > 0 ? (
-          <CardFooter>
-            <FootHint>
-              <Kbd>Click</Kbd>
-              <span>фильтр</span>
-              {enableDetailModal ? (
+        <CardFooter>
+          {rows.length > 0 && (
+            <>
+              <FootHint>
+                <Kbd>Click</Kbd>
+                <span>фильтр</span>
+                {enableDetailModal ? (
+                  <>
+                    <FootDot>·</FootDot>
+                    <Kbd>Ctrl</Kbd>
+                    <span>+</span>
+                    <Kbd>Click</Kbd>
+                    <span>детализация</span>
+                  </>
+                ) : null}
+              </FootHint>
+              <FootLegend>
+                <LegendItem>
+                  <LegendBar />
+                  <span>факт</span>
+                </LegendItem>
+                <LegendItem>
+                  <LegendTarget />
+                  <span>цель</span>
+                </LegendItem>
+                <LegendItem>
+                  <LegendBand />
+                  <span>зона</span>
+                </LegendItem>
+              </FootLegend>
+            </>
+          )}
+          <InfoHintCorner>
+            <InfoHint ariaLabel="Подсказка по управлению">
+              {enableDetailModal && (
                 <>
-                  <FootDot>·</FootDot>
-                  <Kbd>Ctrl</Kbd>
-                  <span>+</span>
-                  <Kbd>Click</Kbd>
-                  <span>детализация</span>
+                  <span className="hi"><span>Click bar — детали</span></span>
+                  <span className="hi-sep" aria-hidden="true" />
                 </>
-              ) : null}
-            </FootHint>
-            <FootLegend>
-              <LegendItem>
-                <LegendBar />
-                <span>факт</span>
-              </LegendItem>
-              <LegendItem>
-                <LegendTarget />
-                <span>цель</span>
-              </LegendItem>
-              <LegendItem>
-                <LegendBand />
-                <span>зона</span>
-              </LegendItem>
-            </FootLegend>
-          </CardFooter>
-        ) : null}
+              )}
+              <span className="hi"><span>Sort / Filter — controls сверху</span></span>
+              <span className="hi-sep" aria-hidden="true" />
+              <span className="hi"><span>Right Click — меню действий</span></span>
+            </InfoHint>
+          </InfoHintCorner>
+        </CardFooter>
       </Card>
 
       {tooltipState ? (

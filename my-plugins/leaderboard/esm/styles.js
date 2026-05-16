@@ -68,6 +68,7 @@ export const Wrap = styled.div `
   padding: 16px 16px 24px;
 `;
 export const Card = styled.section `
+  position: relative;
   background: var(--s);
   border: 1px solid var(--g200);
   border-radius: 10px;
@@ -75,7 +76,7 @@ export const Card = styled.section `
   box-shadow: var(--sh);
   /* DS 2.0 mount animation. Эмоция keyframes() гарантирует, что
      animation-name доступен ДО commit'а — без race condition. */
-  animation: ${cardInKf} 0.6s ${EASE} both;
+  animation: ${cardInKf} 0.5s ${EASE} both;
 `;
 export const CardHead = styled.div `
   display: flex;

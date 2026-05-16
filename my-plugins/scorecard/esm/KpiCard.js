@@ -2,6 +2,7 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { CARD_CLASS, KEYFRAMES_CSS, KpiCardRoot, Card, CardHead, CardTitle, SkeletonText, ToggleGroup, ToggleButton, DataContainer, DataLayer, HeroValue, Subtitle, ComparisonSection, ComparisonItem, ComparisonLabel, ComparisonValue, DeltaPill, EmptyStateWrap, EmptyStateIcon, EmptyStateText, PartialBadge, MockBadge, ErrorStateIcon, RefreshBar, } from './styles';
 import DetailModal from './DetailModal';
+import { InfoHint, InfoHintCorner } from './components/InfoHint';
 /* ── Counter animation ──────────────────────────────────────────────
  * The integer part of the hero value counts up from 0 → target.
  * Easing: cubic-bezier(.4,0,.2,1) ≈ easeOutQuart.
@@ -74,8 +75,8 @@ function layerStyle(visible, direction) {
 function ComparisonRow({ item, skipAnimation, }) {
     return (_jsxs(ComparisonItem, { children: [_jsx(ComparisonLabel, { children: item.label }), _jsx(ComparisonValue, { children: item.value }), _jsx(DeltaPill, { status: item.status, skipAnimation: skipAnimation, children: item.delta })] }));
 }
-function ViewContent({ view, skipAnimation, }) {
-    return (_jsxs(_Fragment, { children: [_jsx(AnimatedHero, { value: view.value, skipAnimation: skipAnimation }), view.subtitle && _jsx(Subtitle, { children: view.subtitle }), view.comparisons.length > 0 && (_jsx(ComparisonSection, { skipAnimation: skipAnimation, children: view.comparisons.map((cmp, i) => (_jsx(ComparisonRow, { item: cmp, skipAnimation: skipAnimation }, `${cmp.label}-${i}`))) }))] }));
+function ViewContent({ view, skipAnimation, trailingInComparison, }) {
+    return (_jsxs(_Fragment, { children: [_jsx(AnimatedHero, { value: view.value, skipAnimation: skipAnimation }), view.subtitle && _jsx(Subtitle, { children: view.subtitle }), view.comparisons.length > 0 && (_jsxs(ComparisonSection, { skipAnimation: skipAnimation, children: [view.comparisons.map((cmp, i) => (_jsx(ComparisonRow, { item: cmp, skipAnimation: skipAnimation }, `${cmp.label}-${i}`))), trailingInComparison] }))] }));
 }
 /* ── Main component ────────────────────────────────────────────── */
 /**
@@ -231,38 +232,10 @@ formatValueA, formatValueB, formatDelta, detailTopN, detailPageSize, mockModeEna
                 Array.from(header.children).forEach(child => {
                     child.style.cssText = 'visibility:hidden!important;pointer-events:none!important;height:0!important;overflow:hidden!important;';
                 });
-                // Show ONLY the dots button, positioned over our card
-                if (dotsBtn) {
-                    const controlsDiv = dotsBtn.closest('.header-controls');
-                    if (controlsDiv) {
-                        controlsDiv.style.cssText = [
-                            'visibility: visible !important',
-                            'pointer-events: auto !important',
-                            'position: absolute !important',
-                            'top: 6px !important',
-                            'right: -6px !important',
-                            'z-index: 100 !important',
-                            'height: auto !important',
-                            'overflow: visible !important',
-                            'opacity: 0',
-                            'transition: opacity 0.15s ease',
-                        ].join(';');
-                    }
-                    dotsBtn.style.cssText += ';visibility:visible!important;pointer-events:auto!important;';
-                    // Show dots on hover — listen on chart-slice (parent of both header and card)
-                    // so mouse moving from card to dots doesn't trigger mouseleave
-                    const hoverTarget = chartSlice || el;
-                    const target = controlsDiv || dotsBtn;
-                    const onEnter = () => { target.style.opacity = '1'; };
-                    const onLeave = () => { target.style.opacity = '0'; };
-                    hoverTarget.addEventListener('mouseenter', onEnter);
-                    hoverTarget.addEventListener('mouseleave', onLeave);
-                    // Store cleanup refs
-                    el.__kpiDotsCleanup = () => {
-                        hoverTarget.removeEventListener('mouseenter', onEnter);
-                        hoverTarget.removeEventListener('mouseleave', onLeave);
-                    };
-                }
+                // Троеточие (dotsBtn) теперь скрыто глобально через
+                // SliceHeaderControls visibility:hidden — RadialMenu по правому
+                // клику заменяет его. Не показываем dots поверх KPI карточки,
+                // чтобы поведение совпадало с остальными плагинами.
             }
             // Dashboard chart wrapper — stretch to fill holder height
             const dashChart = chartSlice.querySelector('.dashboard-chart');
@@ -291,13 +264,6 @@ formatValueA, formatValueB, formatDelta, detailTopN, detailPageSize, mockModeEna
         if (holder) {
             holder.style.cssText += ';background:transparent!important;box-shadow:none!important;overflow:visible!important;padding:0!important;';
         }
-        return () => {
-            const elc = el;
-            if (elc?.__kpiDotsCleanup) {
-                elc.__kpiDotsCleanup();
-                elc.__kpiDotsCleanup = undefined;
-            }
-        };
     }, []);
     // Disable entrance animations after initial render completes
     useEffect(() => {
@@ -370,13 +336,17 @@ formatValueA, formatValueB, formatDelta, detailTopN, detailPageSize, mockModeEna
     const activeView = isA ? viewA : viewB;
     const activeModeEmpty = activeView.value === '' && activeView.comparisons.length === 0;
     const hasDetail = (hasGroupby && !activeModeEmpty) || mockModeEnabled;
-    return (_jsxs(KpiCardRoot, { ref: rootRef, width: width, height: height, "data-theme": isDarkMode ? 'dark' : 'light', role: "figure", "aria-label": `${headerText}: ${modeAView.value}`, children: [_jsx("style", { dangerouslySetInnerHTML: { __html: KEYFRAMES_CSS } }), _jsxs(Card, { className: CARD_CLASS, clickable: hasDetail, onClick: hasDetail ? () => setIsModalOpen(true) : undefined, children: [isStale && _jsx(RefreshBar, {}), _jsxs(CardHead, { children: [_jsxs(CardTitle, { children: [headerText, mockModeEnabled && _jsx(MockBadge, { children: "\u0422\u0415\u0421\u0422" })] }), isPartial && _jsx(PartialBadge, { children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435" }), isDual && (_jsxs(ToggleGroup, { role: "tablist", "aria-label": "Toggle mode A / B", children: [_jsx(ToggleButton, { active: isA, role: "tab", "aria-selected": isA, onClick: e => {
+    /* i-иконка передаётся в активный ViewContent как trailingInComparison,
+       чтобы оказаться в той же flex-row что и ComparisonRow'ы (визуальное
+       выравнивание справа на одной линии с "ПЛАН: ... / ПГ: ..."). */
+    const hintCorner = (_jsx(InfoHintCorner, { children: _jsxs(InfoHint, { ariaLabel: "\u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430 \u043F\u043E \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u044E", children: [hasDetail && (_jsxs(_Fragment, { children: [_jsx("span", { className: "hi", children: _jsx("span", { children: "Click \u2014 \u0434\u0435\u0442\u0430\u043B\u0438" }) }), _jsx("span", { className: "hi-sep", "aria-hidden": "true" })] })), isDual && (_jsxs(_Fragment, { children: [_jsx("span", { className: "hi", children: _jsxs("span", { children: [toggleLabelA, " / ", toggleLabelB, " \u2014 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0430\u0442\u0435\u043B\u044C"] }) }), _jsx("span", { className: "hi-sep", "aria-hidden": "true" })] })), _jsx("span", { className: "hi", children: _jsx("span", { children: "Right Click \u2014 \u043C\u0435\u043D\u044E \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0439" }) })] }) }));
+    return (_jsxs(KpiCardRoot, { ref: rootRef, width: width, height: height, "data-theme": isDarkMode ? 'dark' : 'light', role: "figure", "aria-label": `${headerText}: ${modeAView.value}`, children: [_jsx("style", { dangerouslySetInnerHTML: { __html: KEYFRAMES_CSS } }), _jsxs(Card, { className: CARD_CLASS, clickable: hasDetail, onClick: hasDetail ? () => setIsModalOpen(true) : undefined, "data-info-hint-container": "", children: [isStale && _jsx(RefreshBar, {}), _jsxs(CardHead, { children: [_jsxs(CardTitle, { children: [headerText, mockModeEnabled && _jsx(MockBadge, { children: "\u0422\u0415\u0421\u0422" })] }), isPartial && _jsx(PartialBadge, { children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435" }), isDual && (_jsxs(ToggleGroup, { role: "tablist", "aria-label": "Toggle mode A / B", children: [_jsx(ToggleButton, { active: isA, role: "tab", "aria-selected": isA, onClick: e => {
                                             e.stopPropagation();
                                             setActiveMode('a');
                                         }, children: toggleLabelA }), _jsx(ToggleButton, { active: !isA, role: "tab", "aria-selected": !isA, onClick: e => {
                                             e.stopPropagation();
                                             setActiveMode('b');
-                                        }, children: toggleLabelB })] }))] }), _jsxs(DataContainer, { children: [_jsx(DataLayer, { style: layerStyle(isA, 'left'), "aria-hidden": !isA, children: viewA.value ? (_jsx(ViewContent, { view: viewA, skipAnimation: hasAnimated })) : (_jsxs(EmptyStateWrap, { children: [_jsx(EmptyStateIcon, { "aria-hidden": "true", children: "\u2014" }), _jsx(EmptyStateText, { children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u0437\u0430 \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434" })] })) }), isDual && (_jsx(DataLayer, { style: layerStyle(!isA, 'right'), "aria-hidden": isA, children: viewB.value ? (_jsx(ViewContent, { view: viewB, skipAnimation: hasAnimated })) : (_jsxs(EmptyStateWrap, { children: [_jsx(EmptyStateIcon, { "aria-hidden": "true", children: "\u2014" }), _jsx(EmptyStateText, { children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u0437\u0430 \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434" })] })) }))] })] }), hasDetail && detailQueryParams && (_jsx(DetailModal, { isOpen: isModalOpen, onClose: () => setIsModalOpen(false), title: headerText, headerValue: isA ? viewA.value : viewB.value, queryParams: detailQueryParams, activeMode: activeMode, aggregationType: 'SUM', colorScheme1: isA ? colorScheme1A : colorScheme1B, colorScheme2: isA ? colorScheme2A : colorScheme2B, deltaFormat1: isA ? deltaFormat1A : deltaFormat1B, deltaFormat2: isA ? deltaFormat2A : deltaFormat2B, formatValue: isA ? formatValueA : formatValueB, formatDelta: formatDelta, formatComp1: isA ? formatComp1A : formatComp1B, formatComp2: isA ? formatComp2A : formatComp2B, formatDelta1: isA ? formatDelta1A : formatDelta1B, formatDelta2: isA ? formatDelta2A : formatDelta2B, showDelta1: showDelta1, showDelta2: showDelta2, colFact: detailColFact, colComp1: detailColComp1, colDelta1: detailColDelta1, colComp2: detailColComp2, colDelta2: detailColDelta2, hierarchyLabelPrimary: hierarchyLabelPrimary, hierarchyLabelSecondary: hierarchyLabelSecondary, enableComp1: enableComp1, enableComp2: enableComp2, comp1Label: comp1Label, comp2Label: comp2Label, topN: detailTopN, pageSize: detailPageSize, isDarkMode: isDarkMode, mockModeEnabled: mockModeEnabled, mockPreset: mockPreset, mockCustomJson: mockCustomJson }))] }));
+                                        }, children: toggleLabelB })] }))] }), _jsxs(DataContainer, { children: [_jsx(DataLayer, { style: layerStyle(isA, 'left'), "aria-hidden": !isA, children: viewA.value ? (_jsx(ViewContent, { view: viewA, skipAnimation: hasAnimated, trailingInComparison: isA ? hintCorner : null })) : (_jsxs(EmptyStateWrap, { children: [_jsx(EmptyStateIcon, { "aria-hidden": "true", children: "\u2014" }), _jsx(EmptyStateText, { children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u0437\u0430 \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434" })] })) }), isDual && (_jsx(DataLayer, { style: layerStyle(!isA, 'right'), "aria-hidden": isA, children: viewB.value ? (_jsx(ViewContent, { view: viewB, skipAnimation: hasAnimated, trailingInComparison: !isA ? hintCorner : null })) : (_jsxs(EmptyStateWrap, { children: [_jsx(EmptyStateIcon, { "aria-hidden": "true", children: "\u2014" }), _jsx(EmptyStateText, { children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u0437\u0430 \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434" })] })) }))] })] }), hasDetail && detailQueryParams && (_jsx(DetailModal, { isOpen: isModalOpen, onClose: () => setIsModalOpen(false), title: headerText, headerValue: isA ? viewA.value : viewB.value, queryParams: detailQueryParams, activeMode: activeMode, aggregationType: 'SUM', colorScheme1: isA ? colorScheme1A : colorScheme1B, colorScheme2: isA ? colorScheme2A : colorScheme2B, deltaFormat1: isA ? deltaFormat1A : deltaFormat1B, deltaFormat2: isA ? deltaFormat2A : deltaFormat2B, formatValue: isA ? formatValueA : formatValueB, formatDelta: formatDelta, formatComp1: isA ? formatComp1A : formatComp1B, formatComp2: isA ? formatComp2A : formatComp2B, formatDelta1: isA ? formatDelta1A : formatDelta1B, formatDelta2: isA ? formatDelta2A : formatDelta2B, showDelta1: showDelta1, showDelta2: showDelta2, colFact: detailColFact, colComp1: detailColComp1, colDelta1: detailColDelta1, colComp2: detailColComp2, colDelta2: detailColDelta2, hierarchyLabelPrimary: hierarchyLabelPrimary, hierarchyLabelSecondary: hierarchyLabelSecondary, enableComp1: enableComp1, enableComp2: enableComp2, comp1Label: comp1Label, comp2Label: comp2Label, topN: detailTopN, pageSize: detailPageSize, isDarkMode: isDarkMode, mockModeEnabled: mockModeEnabled, mockPreset: mockPreset, mockCustomJson: mockCustomJson }))] }));
 }, arePropsEqual);
 class KpiCardErrorBoundary extends React.Component {
     constructor(props) {

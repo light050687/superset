@@ -110,7 +110,7 @@ exports.CardRoot = styled_1.default.div `
   display: flex;
   flex-direction: column;
   /* DS 2.0 mount animation. Эмоция keyframes() — race-condition-free. */
-  animation: ${cardInKf} 0.6s ${themeTokens_1.EASE} both;
+  animation: ${cardInKf} 0.5s ${themeTokens_1.EASE} both;
 `;
 /* DS 2.0 §06 — Stale bar: тонкая sky-полоса сверху Card. */
 exports.StaleBar = styled_1.default.div `

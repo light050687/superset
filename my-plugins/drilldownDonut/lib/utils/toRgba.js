@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.toRgba = void 0;
+exports.toRgba = toRgba;
 /**
  * Преобразование hex → rgba. Повторяет `toRgba()` из прототипа (строки 219–225).
  *
@@ -35,5 +35,4 @@ function toRgba(color, alpha) {
     }
     return color;
 }
-exports.toRgba = toRgba;
 //# sourceMappingURL=toRgba.js.map

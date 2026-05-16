@@ -489,7 +489,7 @@ export default function RankedStoresChart(
     >
       <Global styles={css(KEYFRAMES_CSS)} />
       <Wrap>
-        <Card>
+        <Card data-info-hint-container="">
           <CardHead>
             <TitleBlock>
               <CardTitle>Рейтинг магазинов</CardTitle>

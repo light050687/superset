@@ -36,6 +36,7 @@ import {
   RefreshBar,
 } from './styles';
 import DetailModal from './DetailModal';
+import { InfoHint, InfoHintCorner } from './components/InfoHint';
 
 /* ── Counter animation ──────────────────────────────────────────────
  * The integer part of the hero value counts up from 0 → target.
@@ -154,9 +155,11 @@ function ComparisonRow({
 function ViewContent({
   view,
   skipAnimation,
+  trailingInComparison,
 }: {
   view: KpiViewData;
   skipAnimation?: boolean;
+  trailingInComparison?: React.ReactNode;
 }): JSX.Element {
   return (
     <>
@@ -171,6 +174,7 @@ function ViewContent({
               skipAnimation={skipAnimation}
             />
           ))}
+          {trailingInComparison}
         </ComparisonSection>
       )}
     </>
@@ -385,40 +389,10 @@ const KpiCardMemo = React.memo(function KpiCardInner({
           (child as HTMLElement).style.cssText = 'visibility:hidden!important;pointer-events:none!important;height:0!important;overflow:hidden!important;';
         });
 
-        // Show ONLY the dots button, positioned over our card
-        if (dotsBtn) {
-          const controlsDiv = dotsBtn.closest('.header-controls') as HTMLElement | null;
-          if (controlsDiv) {
-            controlsDiv.style.cssText = [
-              'visibility: visible !important',
-              'pointer-events: auto !important',
-              'position: absolute !important',
-              'top: 6px !important',
-              'right: -6px !important',
-              'z-index: 100 !important',
-              'height: auto !important',
-              'overflow: visible !important',
-              'opacity: 0',
-              'transition: opacity 0.15s ease',
-            ].join(';');
-          }
-          dotsBtn.style.cssText += ';visibility:visible!important;pointer-events:auto!important;';
-
-          // Show dots on hover — listen on chart-slice (parent of both header and card)
-          // so mouse moving from card to dots doesn't trigger mouseleave
-          const hoverTarget = chartSlice || el;
-          const target = controlsDiv || dotsBtn;
-          const onEnter = () => { target.style.opacity = '1'; };
-          const onLeave = () => { target.style.opacity = '0'; };
-          hoverTarget.addEventListener('mouseenter', onEnter);
-          hoverTarget.addEventListener('mouseleave', onLeave);
-
-          // Store cleanup refs
-          (el as HTMLElement & { __kpiDotsCleanup?: () => void }).__kpiDotsCleanup = () => {
-            hoverTarget.removeEventListener('mouseenter', onEnter);
-            hoverTarget.removeEventListener('mouseleave', onLeave);
-          };
-        }
+        // Троеточие (dotsBtn) теперь скрыто глобально через
+        // SliceHeaderControls visibility:hidden — RadialMenu по правому
+        // клику заменяет его. Не показываем dots поверх KPI карточки,
+        // чтобы поведение совпадало с остальными плагинами.
       }
 
       // Dashboard chart wrapper — stretch to fill holder height
@@ -450,15 +424,6 @@ const KpiCardMemo = React.memo(function KpiCardInner({
       holder.style.cssText += ';background:transparent!important;box-shadow:none!important;overflow:visible!important;padding:0!important;';
     }
 
-    return () => {
-      // Cleanup event listeners to prevent memory leak
-      type ElWithCleanup = HTMLElement & { __kpiDotsCleanup?: () => void };
-      const elc = el as ElWithCleanup | null;
-      if (elc?.__kpiDotsCleanup) {
-        elc.__kpiDotsCleanup();
-        elc.__kpiDotsCleanup = undefined;
-      }
-    };
   }, []);
 
   // Disable entrance animations after initial render completes
@@ -638,6 +603,29 @@ const KpiCardMemo = React.memo(function KpiCardInner({
   const activeModeEmpty = activeView.value === '' && activeView.comparisons.length === 0;
   const hasDetail = (hasGroupby && !activeModeEmpty) || mockModeEnabled;
 
+  /* i-иконка передаётся в активный ViewContent как trailingInComparison,
+     чтобы оказаться в той же flex-row что и ComparisonRow'ы (визуальное
+     выравнивание справа на одной линии с "ПЛАН: ... / ПГ: ..."). */
+  const hintCorner = (
+    <InfoHintCorner>
+      <InfoHint ariaLabel="Подсказка по управлению">
+        {hasDetail && (
+          <>
+            <span className="hi"><span>Click — детали</span></span>
+            <span className="hi-sep" aria-hidden="true" />
+          </>
+        )}
+        {isDual && (
+          <>
+            <span className="hi"><span>{toggleLabelA} / {toggleLabelB} — переключатель</span></span>
+            <span className="hi-sep" aria-hidden="true" />
+          </>
+        )}
+        <span className="hi"><span>Right Click — меню действий</span></span>
+      </InfoHint>
+    </InfoHintCorner>
+  );
+
   return (
     <KpiCardRoot
       ref={rootRef}
@@ -655,6 +643,7 @@ const KpiCardMemo = React.memo(function KpiCardInner({
         className={CARD_CLASS}
         clickable={hasDetail}
         onClick={hasDetail ? () => setIsModalOpen(true) : undefined}
+        data-info-hint-container=""
       >
         {isStale && <RefreshBar />}
         <CardHead>
@@ -691,7 +680,11 @@ const KpiCardMemo = React.memo(function KpiCardInner({
         <DataContainer>
           <DataLayer style={layerStyle(isA, 'left')} aria-hidden={!isA}>
             {viewA.value ? (
-              <ViewContent view={viewA} skipAnimation={hasAnimated} />
+              <ViewContent
+                view={viewA}
+                skipAnimation={hasAnimated}
+                trailingInComparison={isA ? hintCorner : null}
+              />
             ) : (
               <EmptyStateWrap>
                 <EmptyStateIcon aria-hidden="true">—</EmptyStateIcon>
@@ -702,7 +695,11 @@ const KpiCardMemo = React.memo(function KpiCardInner({
           {isDual && (
             <DataLayer style={layerStyle(!isA, 'right')} aria-hidden={isA}>
               {viewB.value ? (
-                <ViewContent view={viewB} skipAnimation={hasAnimated} />
+                <ViewContent
+                  view={viewB}
+                  skipAnimation={hasAnimated}
+                  trailingInComparison={!isA ? hintCorner : null}
+                />
               ) : (
                 <EmptyStateWrap>
                   <EmptyStateIcon aria-hidden="true">—</EmptyStateIcon>

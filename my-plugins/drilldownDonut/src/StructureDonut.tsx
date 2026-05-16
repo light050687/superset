@@ -52,8 +52,6 @@ import {
   HeroLabel,
   HeroOverlay,
   HeroValue,
-  HintTooltip,
-  HintTrigger,
   KEYFRAMES_CSS,
   MockBadge,
   Legend,
@@ -66,6 +64,7 @@ import {
   Title,
   UnitToggle,
 } from './styles';
+import { InfoHint, type InfoHintHandle, InfoHintCorner } from './components/InfoHint';
 import {
   buildOption,
   computeHero,
@@ -130,23 +129,8 @@ function IconBack(): JSX.Element {
     </svg>
   );
 }
-function IconInfo(): JSX.Element {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.6}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="10" cy="10" r="8" />
-      <path d="M10 6.5 L10 6.5" strokeWidth={2.2} />
-      <path d="M10 9 L10 14" />
-    </svg>
-  );
-}
+/* IconInfo вынесен в shared components/InfoHint/. Локально используются
+   только IconClick, IconDrill, IconBack для содержимого подсказки. */
 
 /* ──────────────────────────────────────────────────────────────────────
    DonutChartInner — изолированный chart-компонент. Содержит ECharts
@@ -570,8 +554,7 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
   const [drilledId, setDrilledId] = useState<string | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
-  const [hintOpen, setHintOpen] = useState(false);
-  const hintTriggerRef = useRef<HTMLButtonElement>(null);
+  const infoHintRef = useRef<InfoHintHandle>(null);
 
   /* Card mount animation теперь через emotion keyframes helper в
      styles.ts (см. cardInKf). Это canonical solution от emotion:
@@ -608,11 +591,15 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
   )} по ${categories.length} категориям`;
 
   // ── Keyboard: Escape ──
+  // InfoHint имеет свой Escape (closeOnEscape), но мы opt-out (closeOnEscape={false})
+  // и проксируем через infoHintRef, чтобы сохранить приоритет: hint закрывается
+  // раньше чем срабатывает return-to-root / clear-selection логика донат-чарта.
+  // Tap-away для tooltip обрабатывается внутри InfoHint, дублировать не нужно.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key !== 'Escape') return;
-      if (hintOpen) {
-        setHintOpen(false);
+      if (infoHintRef.current?.isOpen()) {
+        infoHintRef.current.close();
         return;
       }
       if (level === 'drilled') {
@@ -625,27 +612,7 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [level, selectedIdx, hintOpen]);
-
-  // ── Hint tooltip: tap-away на touch ──
-  useEffect(() => {
-    if (!hintOpen) return undefined;
-    const onDocClick = (e: MouseEvent): void => {
-      if (!hintTriggerRef.current) return;
-      if (hintTriggerRef.current.contains(e.target as Node)) return;
-      setHintOpen(false);
-    };
-    /* setTimeout 0 — текущий click который открыл tooltip уже всплыл
-       к document. Listener attaches на следующий tick, тогда click-outside
-       не закроет tooltip немедленно. */
-    const tid = window.setTimeout(() => {
-      document.addEventListener('click', onDocClick);
-    }, 0);
-    return () => {
-      window.clearTimeout(tid);
-      document.removeEventListener('click', onDocClick);
-    };
-  }, [hintOpen]);
+  }, [level, selectedIdx]);
 
   // ── Навигация ──
   const drillDown = useCallback((id: string) => {
@@ -854,7 +821,7 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
           skeleton-pulse и fade-in для overlay'ев. Card-in animation
           через emotion keyframes helper (см. styles.ts cardInKf). */}
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_CSS }} />
-      <Card role="region" aria-labelledby="sd-title">
+      <Card role="region" aria-labelledby="sd-title" data-info-hint-container="">
         <CardHead>
           <Title>
             <HeaderText id="sd-title">
@@ -994,20 +961,15 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
               </LegendChip>
             ))}
           </Legend>
-          <HintTrigger
-            ref={hintTriggerRef}
-            type="button"
-            aria-label="Подсказка по управлению"
-            aria-expanded={hintOpen}
-            onClick={(e) => {
-              e.stopPropagation();
-              setHintOpen((v) => !v);
-            }}
-            data-open={hintOpen ? '' : undefined}
-          >
-            <IconInfo />
-            <HintTooltip role="tooltip">{hintContent}</HintTooltip>
-          </HintTrigger>
+          <InfoHintCorner>
+            <InfoHint
+              ref={infoHintRef}
+              closeOnEscape={false}
+              ariaLabel="Подсказка по управлению"
+            >
+              {hintContent}
+            </InfoHint>
+          </InfoHintCorner>
         </Footer>
       </Card>
     </StructureDonutRoot>

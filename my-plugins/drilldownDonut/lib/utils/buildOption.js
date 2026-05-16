@@ -1,6 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.buildOption = exports.computeHero = exports.applyChildShades = exports.getCurrentItems = void 0;
+exports.getCurrentItems = getCurrentItems;
+exports.applyChildShades = applyChildShades;
+exports.computeHero = computeHero;
+exports.buildOption = buildOption;
 const themeTokens_1 = require("../themeTokens");
 const toRgba_1 = require("./toRgba");
 const formatRussian_1 = require("./formatRussian");
@@ -30,7 +33,6 @@ function getCurrentItems(state) {
         origIdx: i,
     }));
 }
-exports.getCurrentItems = getCurrentItems;
 /**
  * Шейды детей вычисляются на основе цвета родителя: альфа от 1.0 до 0.45.
  * Вызывается из transformProps после того, как родительские цвета уже резолвлены.
@@ -41,7 +43,6 @@ function applyChildShades(category) {
         ch.color = (0, toRgba_1.toRgba)(category.color, 1 - (i / Math.max(1, n)) * 0.55);
     });
 }
-exports.applyChildShades = applyChildShades;
 function computeHero(state) {
     const items = getCurrentItems(state);
     const visible = items.filter((i) => !i.hidden);
@@ -68,7 +69,6 @@ function computeHero(state) {
         label: state.unit === 'pct' ? `${base} · ОТ ОБОРОТА` : base,
     };
 }
-exports.computeHero = computeHero;
 function buildOption(args) {
     const { state, tokens: t } = args;
     const items = getCurrentItems(state);
@@ -194,5 +194,4 @@ function buildOption(args) {
         ],
     };
 }
-exports.buildOption = buildOption;
 //# sourceMappingURL=buildOption.js.map

@@ -38,8 +38,6 @@ import {
   ChartInner,
   BrushButton,
   CardFooter,
-  Hint,
-  HintItem,
   LegendRow,
   LegendItem,
   LegendMark,
@@ -61,6 +59,7 @@ import {
   KEYFRAMES_CSS,
   CARD_CLASS,
 } from './styles';
+import { InfoHint, InfoHintAbsolute } from './components/InfoHint';
 import { ruMonthShort } from './utils/dateHelpers';
 
 /* ──────────────── Icons ──────────────── */
@@ -598,7 +597,7 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
       <SrLive aria-live="polite" aria-atomic="true">
         {liveMessage}
       </SrLive>
-      <Card>
+      <Card data-info-hint-container="">
         {isStale && <StaleBar aria-hidden="true" />}
         <CardHead>
           <TitleWrap>
@@ -716,33 +715,6 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
         </ChartWrap>
 
         <CardFooter>
-          <Hint>
-            {!isFullRange ? (
-              <HintItem>
-                <IconBack />
-                <span>
-                  <span className="hi-arrow" aria-hidden="true">◂</span> Esc — назад
-                </span>
-              </HintItem>
-            ) : (
-              <>
-                {gran === 'month' && enableDrillDown && (
-                  <>
-                    <HintItem>
-                      <IconClick />
-                      <span>клик — месяц</span>
-                    </HintItem>
-                    <span className="hi-sep" aria-hidden="true" />
-                  </>
-                )}
-                <HintItem>
-                  <IconBrush />
-                  <span>выделить — диапазон</span>
-                </HintItem>
-              </>
-            )}
-          </Hint>
-
           <LegendRow>
             {mode === 'line' ? (
               <>
@@ -829,6 +801,25 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
 
           <FooterSpacer />
         </CardFooter>
+        <InfoHintAbsolute>
+          <InfoHint ariaLabel="Подсказка по управлению">
+            {!isFullRange ? (
+              <span className="hi"><span>◂ или Esc — назад</span></span>
+            ) : (
+              <>
+                {gran === 'month' && enableDrillDown && (
+                  <>
+                    <span className="hi"><span>клик — месяц</span></span>
+                    <span className="hi-sep" aria-hidden="true" />
+                  </>
+                )}
+                <span className="hi"><span>выделить — диапазон</span></span>
+              </>
+            )}
+            <span className="hi-sep" aria-hidden="true" />
+            <span className="hi"><span>Right Click — меню действий</span></span>
+          </InfoHint>
+        </InfoHintAbsolute>
       </Card>
     </Root>
   );

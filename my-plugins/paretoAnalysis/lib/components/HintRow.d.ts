@@ -1,3 +1,5 @@
-/** Подсказка-строка «клик — фильтр · Ctrl+клик — разложение» в футере карточки. */
+/** Подсказка про управление — i-иконка в правом нижнем углу карточки.
+   InfoHintCorner: absolute positioning, должен рендериться внутри Card
+   с position:relative (parent ParetoCard). */
 export default function HintRow(): import("react/jsx-runtime").JSX.Element;
 //# sourceMappingURL=HintRow.d.ts.map

@@ -70,6 +70,8 @@ export const Root = styled.div<{ isDarkMode: boolean; widthPx: number; heightPx:
   * { box-sizing: border-box; }
 `;
 
+/* InfoHintCell упразднён → shared <InfoHintCorner> из components/InfoHint. */
+
 /* ──────────────────────────────────────────────────────────
    Card — основная карточка
    ────────────────────────────────────────────────────────── */
@@ -88,7 +90,7 @@ export const Card = styled.div`
   /* DS 2.0 mount animation. Эмоция keyframes() — race-condition-free.
      При переходе loading → loaded React unmount'ит loading-Card и mount'ит
      новый → animation запускается ровно когда юзер видит контент. */
-  animation: ${cardInKf} 0.6s ${EASE} both;
+  animation: ${cardInKf} 0.5s ${EASE} both;
 `;
 
 /* DS 2.0 §06 «Состояния» — Partial badge: данные неполные. */

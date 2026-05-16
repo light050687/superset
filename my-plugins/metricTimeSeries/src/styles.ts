@@ -148,7 +148,7 @@ export const Card = styled.div`
   flex-direction: column;
   transition: border-color 0.25s ${EASE};
   /* Эмоция keyframes() — race-condition-free относительно plain CSS keyframes. */
-  animation: ${cardInKf} 0.6s ${EASE} both;
+  animation: ${cardInKf} 0.5s ${EASE} both;
 
   &:hover {
     border-color: var(--g300);
@@ -519,6 +519,10 @@ export const HintItem = styled.span`
 `;
 
 export const LegendRow = styled.div`
+  /* Явно ставим в центральную колонку CardFooter (grid 1fr auto 1fr),
+     иначе автозаполнение grid отправляет LegendRow в col 1 (1fr) и
+     визуально она оказывается слева от центра, а не по центру визуала. */
+  grid-column: 2;
   display: inline-flex;
   align-items: center;
   gap: 18px;

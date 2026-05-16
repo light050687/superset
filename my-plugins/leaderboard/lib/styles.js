@@ -72,6 +72,7 @@ exports.Wrap = core_1.styled.div `
   padding: 16px 16px 24px;
 `;
 exports.Card = core_1.styled.section `
+  position: relative;
   background: var(--s);
   border: 1px solid var(--g200);
   border-radius: 10px;
@@ -79,7 +80,7 @@ exports.Card = core_1.styled.section `
   box-shadow: var(--sh);
   /* DS 2.0 mount animation. Эмоция keyframes() гарантирует, что
      animation-name доступен ДО commit'а — без race condition. */
-  animation: ${cardInKf} 0.6s ${EASE} both;
+  animation: ${cardInKf} 0.5s ${EASE} both;
 `;
 exports.CardHead = core_1.styled.div `
   display: flex;

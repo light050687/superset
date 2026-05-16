@@ -17,6 +17,7 @@ const features_1 = require("echarts/features");
 ]);
 const themeTokens_1 = require("./themeTokens");
 const styles_1 = require("./styles");
+const InfoHint_1 = require("./components/InfoHint");
 const buildOption_1 = require("./utils/buildOption");
 const formatRussian_1 = require("./utils/formatRussian");
 /**
@@ -45,9 +46,6 @@ function IconDrill() {
 }
 function IconBack() {
     return ((0, jsx_runtime_1.jsx)("svg", { viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", children: (0, jsx_runtime_1.jsx)("path", { d: "M10 3 L5 8 L10 13" }) }));
-}
-function IconInfo() {
-    return ((0, jsx_runtime_1.jsxs)("svg", { viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", children: [(0, jsx_runtime_1.jsx)("circle", { cx: "10", cy: "10", r: "8" }), (0, jsx_runtime_1.jsx)("path", { d: "M10 6.5 L10 6.5", strokeWidth: 2.2 }), (0, jsx_runtime_1.jsx)("path", { d: "M10 9 L10 14" })] }));
 }
 function DonutChartInner({ width, height, dataState, categories, hasSubcategories, totalRevenue, padAngle, borderRadius, showOuterLabelsPct, rubDecimals, unit, level, drilledId, selectedIdx, hidden, tokens, ariaLabel, onSelect, onDrill, }) {
     const chartDivRef = (0, react_1.useRef)(null);
@@ -311,8 +309,7 @@ function StructureDonut(props) {
     const [drilledId, setDrilledId] = (0, react_1.useState)(null);
     const [selectedIdx, setSelectedIdx] = (0, react_1.useState)(null);
     const [hidden, setHidden] = (0, react_1.useState)(new Set());
-    const [hintOpen, setHintOpen] = (0, react_1.useState)(false);
-    const hintTriggerRef = (0, react_1.useRef)(null);
+    const infoHintRef = (0, react_1.useRef)(null);
     /* Card mount animation теперь через emotion keyframes helper в
        styles.ts (см. cardInKf). Это canonical solution от emotion:
        keyframes гарантированно injected в stylesheet ДО commit'а Card.
@@ -335,12 +332,16 @@ function StructureDonut(props) {
     }, []);
     const donutAriaLabel = `Структура потерь: ${(0, formatRussian_1.fmtRub)(categories.reduce((s, c) => s + c.rub, 0))} по ${categories.length} категориям`;
     // ── Keyboard: Escape ──
+    // InfoHint имеет свой Escape (closeOnEscape), но мы opt-out (closeOnEscape={false})
+    // и проксируем через infoHintRef, чтобы сохранить приоритет: hint закрывается
+    // раньше чем срабатывает return-to-root / clear-selection логика донат-чарта.
+    // Tap-away для tooltip обрабатывается внутри InfoHint, дублировать не нужно.
     (0, react_1.useEffect)(() => {
         const onKey = (e) => {
             if (e.key !== 'Escape')
                 return;
-            if (hintOpen) {
-                setHintOpen(false);
+            if (infoHintRef.current?.isOpen()) {
+                infoHintRef.current.close();
                 return;
             }
             if (level === 'drilled') {
@@ -354,29 +355,7 @@ function StructureDonut(props) {
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [level, selectedIdx, hintOpen]);
-    // ── Hint tooltip: tap-away на touch ──
-    (0, react_1.useEffect)(() => {
-        if (!hintOpen)
-            return undefined;
-        const onDocClick = (e) => {
-            if (!hintTriggerRef.current)
-                return;
-            if (hintTriggerRef.current.contains(e.target))
-                return;
-            setHintOpen(false);
-        };
-        /* setTimeout 0 — текущий click который открыл tooltip уже всплыл
-           к document. Listener attaches на следующий tick, тогда click-outside
-           не закроет tooltip немедленно. */
-        const tid = window.setTimeout(() => {
-            document.addEventListener('click', onDocClick);
-        }, 0);
-        return () => {
-            window.clearTimeout(tid);
-            document.removeEventListener('click', onDocClick);
-        };
-    }, [hintOpen]);
+    }, [level, selectedIdx]);
     // ── Навигация ──
     const drillDown = (0, react_1.useCallback)((id) => {
         setLevel('drilled');
@@ -470,7 +449,7 @@ function StructureDonut(props) {
     if (dataState === 'loading') {
         return ((0, jsx_runtime_1.jsxs)(styles_1.StructureDonutRoot, { "data-theme": isDarkMode ? 'dark' : 'light', width: width, height: height, children: [(0, jsx_runtime_1.jsx)("style", { dangerouslySetInnerHTML: { __html: styles_1.KEYFRAMES_CSS } }), (0, jsx_runtime_1.jsxs)(styles_1.Card, { role: "region", "aria-labelledby": "sd-title-loading", "aria-busy": "true", children: [(0, jsx_runtime_1.jsx)(styles_1.CardHead, { children: (0, jsx_runtime_1.jsx)(styles_1.Title, { children: (0, jsx_runtime_1.jsxs)(styles_1.HeaderText, { id: "sd-title-loading", children: [headerText, mockModeEnabled && (0, jsx_runtime_1.jsx)(styles_1.MockBadge, { children: "\u0422\u0415\u0421\u0422" })] }) }) }), (0, jsx_runtime_1.jsx)(styles_1.SkeletonOverlay, { role: "status", "aria-label": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430" })] })] }));
     }
-    return ((0, jsx_runtime_1.jsxs)(styles_1.StructureDonutRoot, { "data-theme": isDarkMode ? 'dark' : 'light', width: width, height: height, children: [(0, jsx_runtime_1.jsx)("style", { dangerouslySetInnerHTML: { __html: styles_1.KEYFRAMES_CSS } }), (0, jsx_runtime_1.jsxs)(styles_1.Card, { role: "region", "aria-labelledby": "sd-title", children: [(0, jsx_runtime_1.jsxs)(styles_1.CardHead, { children: [(0, jsx_runtime_1.jsxs)(styles_1.Title, { children: [(0, jsx_runtime_1.jsxs)(styles_1.HeaderText, { id: "sd-title", children: [headerText, mockModeEnabled && (0, jsx_runtime_1.jsx)(styles_1.MockBadge, { children: "\u0422\u0415\u0421\u0422" })] }), (0, jsx_runtime_1.jsx)(styles_1.Breadcrumb, { children: breadcrumbContent }), dataState === 'partial' && ((0, jsx_runtime_1.jsx)(styles_1.PartialChip, { role: "status", "aria-live": "polite", children: "\u26A0 \u041F\u043E\u043A\u0430\u0437\u0430\u043D\u044B \u043F\u0435\u0440\u0432\u044B\u0435 500 \u0441\u0442\u0440\u043E\u043A" })), dataState === 'stale' && ((0, jsx_runtime_1.jsx)(styles_1.StaleBadge, { role: "status", "aria-live": "polite", children: "\u21BB \u0414\u0430\u043D\u043D\u044B\u0435 \u0438\u0437 \u043A\u044D\u0448\u0430" }))] }), (0, jsx_runtime_1.jsx)(styles_1.Controls, { children: (0, jsx_runtime_1.jsxs)(styles_1.UnitToggle, { role: "radiogroup", "aria-label": "\u0415\u0434\u0438\u043D\u0438\u0446\u044B \u0438\u0437\u043C\u0435\u0440\u0435\u043D\u0438\u044F", children: [(0, jsx_runtime_1.jsx)("button", { type: "button", role: "radio", className: unit === 'rub' ? 'on' : '', "aria-checked": unit === 'rub', onClick: () => setUnit('rub'), title: "\u0412 \u0440\u0443\u0431\u043B\u044F\u0445", children: "\u20BD" }), (0, jsx_runtime_1.jsx)("button", { type: "button", role: "radio", className: unit === 'pct' ? 'on' : '', "aria-checked": unit === 'pct', onClick: () => setUnit('pct'), title: "\u041F\u0440\u043E\u0446\u0435\u043D\u0442 \u043E\u0442 \u043E\u0431\u043E\u0440\u043E\u0442\u0430", children: "%" })] }) })] }), dataState === 'empty' && ((0, jsx_runtime_1.jsx)(styles_1.EmptyOverlay, { role: "status", children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u0437\u0430 \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434" })), dataState === 'error' && ((0, jsx_runtime_1.jsxs)(styles_1.ErrorOverlay, { role: "alert", children: [(0, jsx_runtime_1.jsx)("div", { children: "\u26A0 \u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u0434\u0430\u043D\u043D\u044B\u0445" }), (0, jsx_runtime_1.jsx)("div", { className: "sd-error-sub", children: errorMessage ?? 'Проверьте настройки запроса' })] })), showChart && (
+    return ((0, jsx_runtime_1.jsxs)(styles_1.StructureDonutRoot, { "data-theme": isDarkMode ? 'dark' : 'light', width: width, height: height, children: [(0, jsx_runtime_1.jsx)("style", { dangerouslySetInnerHTML: { __html: styles_1.KEYFRAMES_CSS } }), (0, jsx_runtime_1.jsxs)(styles_1.Card, { role: "region", "aria-labelledby": "sd-title", "data-info-hint-container": "", children: [(0, jsx_runtime_1.jsxs)(styles_1.CardHead, { children: [(0, jsx_runtime_1.jsxs)(styles_1.Title, { children: [(0, jsx_runtime_1.jsxs)(styles_1.HeaderText, { id: "sd-title", children: [headerText, mockModeEnabled && (0, jsx_runtime_1.jsx)(styles_1.MockBadge, { children: "\u0422\u0415\u0421\u0422" })] }), (0, jsx_runtime_1.jsx)(styles_1.Breadcrumb, { children: breadcrumbContent }), dataState === 'partial' && ((0, jsx_runtime_1.jsx)(styles_1.PartialChip, { role: "status", "aria-live": "polite", children: "\u26A0 \u041F\u043E\u043A\u0430\u0437\u0430\u043D\u044B \u043F\u0435\u0440\u0432\u044B\u0435 500 \u0441\u0442\u0440\u043E\u043A" })), dataState === 'stale' && ((0, jsx_runtime_1.jsx)(styles_1.StaleBadge, { role: "status", "aria-live": "polite", children: "\u21BB \u0414\u0430\u043D\u043D\u044B\u0435 \u0438\u0437 \u043A\u044D\u0448\u0430" }))] }), (0, jsx_runtime_1.jsx)(styles_1.Controls, { children: (0, jsx_runtime_1.jsxs)(styles_1.UnitToggle, { role: "radiogroup", "aria-label": "\u0415\u0434\u0438\u043D\u0438\u0446\u044B \u0438\u0437\u043C\u0435\u0440\u0435\u043D\u0438\u044F", children: [(0, jsx_runtime_1.jsx)("button", { type: "button", role: "radio", className: unit === 'rub' ? 'on' : '', "aria-checked": unit === 'rub', onClick: () => setUnit('rub'), title: "\u0412 \u0440\u0443\u0431\u043B\u044F\u0445", children: "\u20BD" }), (0, jsx_runtime_1.jsx)("button", { type: "button", role: "radio", className: unit === 'pct' ? 'on' : '', "aria-checked": unit === 'pct', onClick: () => setUnit('pct'), title: "\u041F\u0440\u043E\u0446\u0435\u043D\u0442 \u043E\u0442 \u043E\u0431\u043E\u0440\u043E\u0442\u0430", children: "%" })] }) })] }), dataState === 'empty' && ((0, jsx_runtime_1.jsx)(styles_1.EmptyOverlay, { role: "status", children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u0437\u0430 \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434" })), dataState === 'error' && ((0, jsx_runtime_1.jsxs)(styles_1.ErrorOverlay, { role: "alert", children: [(0, jsx_runtime_1.jsx)("div", { children: "\u26A0 \u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u0434\u0430\u043D\u043D\u044B\u0445" }), (0, jsx_runtime_1.jsx)("div", { className: "sd-error-sub", children: errorMessage ?? 'Проверьте настройки запроса' })] })), showChart && (
                     /* key на ChartWrap → React unmount'ит весь ChartWrap (canvas +
                        hero) на drill/back → donutRevealKf CSS animation re-fires
                        на mount. Это Plan C из debug doc — guaranteed visible
@@ -496,10 +475,7 @@ function StructureDonut(props) {
                                             e.preventDefault();
                                             toggleHidden(it.id);
                                         }
-                                    }, children: [(0, jsx_runtime_1.jsx)("span", { className: "lg-dot", style: { background: it.color } }), (0, jsx_runtime_1.jsx)("span", { className: "lg-l", children: it.name })] }, it.id))) }), (0, jsx_runtime_1.jsxs)(styles_1.HintTrigger, { ref: hintTriggerRef, type: "button", "aria-label": "\u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430 \u043F\u043E \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u044E", "aria-expanded": hintOpen, onClick: (e) => {
-                                    e.stopPropagation();
-                                    setHintOpen((v) => !v);
-                                }, "data-open": hintOpen ? '' : undefined, children: [(0, jsx_runtime_1.jsx)(IconInfo, {}), (0, jsx_runtime_1.jsx)(styles_1.HintTooltip, { role: "tooltip", children: hintContent })] })] })] })] }));
+                                    }, children: [(0, jsx_runtime_1.jsx)("span", { className: "lg-dot", style: { background: it.color } }), (0, jsx_runtime_1.jsx)("span", { className: "lg-l", children: it.name })] }, it.id))) }), (0, jsx_runtime_1.jsx)(InfoHint_1.InfoHintCorner, { children: (0, jsx_runtime_1.jsx)(InfoHint_1.InfoHint, { ref: infoHintRef, closeOnEscape: false, ariaLabel: "\u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430 \u043F\u043E \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u044E", children: hintContent }) })] })] })] }));
 }
 exports.default = StructureDonut;
 //# sourceMappingURL=StructureDonut.js.map

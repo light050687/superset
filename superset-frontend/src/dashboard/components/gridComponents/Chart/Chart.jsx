@@ -26,7 +26,6 @@ import { bindActionCreators } from 'redux';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   ReloadOutlined,
-  FullscreenOutlined,
   TableOutlined,
   ZoomInOutlined,
   SaveOutlined,
@@ -464,23 +463,35 @@ const Chart = props => {
      (DrillToDetail, ViewResults, DownloadAsImage). triggerHiddenMenuItem
      программно: открывает Dropdown через .click() на anchor → ищет
      MenuItem по data-menu-id key → .click() его → AntD сам закроет
-     Dropdown после действия. */
+     Dropdown после действия.
+
+     Polling вместо одиночного rAF: AntD Dropdown анимация ~120ms, до
+     этого MenuItem ещё не отрисован в DOM. Single rAF (~16ms) промахивался
+     → menuItem === null → trigger.click() повторно закрывал dropdown,
+     юзер видел «ничего не произошло». Polling 16ms интервалом до 500ms
+     гарантирует, что мы кликнем как только MenuItem появится. */
   const triggerHiddenMenuItem = useCallback(
     menuKey => {
       const trigger = document.getElementById(`slice_${props.id}-controls`);
       if (!trigger) return;
       trigger.click();
-      requestAnimationFrame(() => {
+      const startedAt = performance.now();
+      const tryFind = () => {
         const menuItem = document.querySelector(
           `#slice_${props.id}-menu [data-menu-id$="-${menuKey}"]`,
         );
         if (menuItem instanceof HTMLElement) {
           menuItem.click();
-        } else {
-          // Если не нашли — закроем dropdown повторным click на anchor.
-          trigger.click();
+          return;
         }
-      });
+        if (performance.now() - startedAt > 500) {
+          // Не дождались появления menu item — закрываем dropdown
+          trigger.click();
+          return;
+        }
+        requestAnimationFrame(tryFind);
+      };
+      requestAnimationFrame(tryFind);
     },
     [props.id],
   );
@@ -492,12 +503,6 @@ const Chart = props => {
         icon: <ReloadOutlined />,
         label: t('Обновить'),
         onClick: forceRefresh,
-      },
-      {
-        key: 'fullscreen',
-        icon: <FullscreenOutlined />,
-        label: t('Полноэкранный режим'),
-        onClick: () => props.handleToggleFullSize(),
       },
       {
         key: 'viewTable',
@@ -537,13 +542,7 @@ const Chart = props => {
         ],
       },
     ],
-    [
-      forceRefresh,
-      exportCSV,
-      exportXLSX,
-      triggerHiddenMenuItem,
-      props.handleToggleFullSize,
-    ],
+    [forceRefresh, exportCSV, exportXLSX, triggerHiddenMenuItem],
   );
 
   if (chart === EMPTY_OBJECT || slice === EMPTY_OBJECT) {

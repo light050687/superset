@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resolveCategoryColor = void 0;
+exports.resolveCategoryColor = resolveCategoryColor;
 const types_1 = require("../types");
 /**
  * Возвращает accent-ключ и итоговый hex-цвет для категории.
@@ -25,5 +25,4 @@ function resolveCategoryColor(categoryName, colorMap, tokens, fallbackIndex) {
     const accent = types_1.ACCENT_PALETTE[fallbackIndex % types_1.ACCENT_PALETTE.length];
     return { accent, color: tokens[accent] };
 }
-exports.resolveCategoryColor = resolveCategoryColor;
 //# sourceMappingURL=resolveColor.js.map

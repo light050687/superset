@@ -103,7 +103,7 @@ export const CardRoot = styled.div `
   display: flex;
   flex-direction: column;
   /* DS 2.0 mount animation. Эмоция keyframes() — race-condition-free. */
-  animation: ${cardInKf} 0.6s ${EASE} both;
+  animation: ${cardInKf} 0.5s ${EASE} both;
 `;
 /* DS 2.0 §06 — Stale bar: тонкая sky-полоса сверху Card. */
 export const StaleBar = styled.div `

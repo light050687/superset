@@ -137,6 +137,7 @@ export const Root = styled.div `
 /* ── Card ── */
 export const Card = styled.div `
   /* DS 2.0 §06: padding space-4 × space-6 (16×20px) */
+  position: relative;
   background: var(--s);
   border: 1px solid var(--g200);
   border-radius: 10px;
@@ -151,7 +152,7 @@ export const Card = styled.div `
      переходе loading/error → populated React unmount'ит соответствующий
      Card и mount'ит новый → animation запускается ровно когда юзер видит
      реальный контент. */
-  animation: ${cardInKf} 0.6s ${EASE} both;
+  animation: ${cardInKf} 0.5s ${EASE} both;
 `;
 export const Header = styled.div `
   display: flex;

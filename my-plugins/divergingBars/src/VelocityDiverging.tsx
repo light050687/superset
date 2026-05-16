@@ -15,6 +15,7 @@ import {
   TooltipRoot,
   VelocityRoot,
 } from './styles';
+import { InfoHint, InfoHintCorner } from './components/InfoHint';
 import { DARK_TOKENS, LIGHT_TOKENS } from './themeTokens';
 import type {
   DirectionFilter,
@@ -629,7 +630,7 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
   if (dataState === 'error') {
     return (
       <VelocityRoot {...rootProps}>
-        <div className="vd-card">
+        <div className="vd-card" data-info-hint-container="">
           <div className="vd-state error" role="alert" aria-live="assertive">
             <IconError />
             <div className="vd-state-message">
@@ -652,7 +653,7 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
   if (dataState === 'loading') {
     return (
       <VelocityRoot {...rootProps}>
-        <div className="vd-card" aria-busy="true" aria-live="polite">
+        <div className="vd-card" data-info-hint-container="" aria-busy="true" aria-live="polite">
           <SkeletonBlock variant="title" />
           <SkeletonBlock variant="header" />
           <SkeletonBlock variant="row" />
@@ -668,7 +669,7 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
   if (dataState === 'empty') {
     return (
       <VelocityRoot {...rootProps}>
-        <div className="vd-card">
+        <div className="vd-card" data-info-hint-container="">
           <h2 className="vd-title">{headerText}</h2>
           <div className="vd-state" role="status">
             <IconEmpty />
@@ -693,7 +694,7 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
   return (
     <>
       <VelocityRoot {...rootProps} role="region" aria-label={headerText}>
-        <div className="vd-card">
+        <div className="vd-card" data-info-hint-container="">
           {/* Header */}
           <div className="vd-head">
             <div className="vd-title-block">
@@ -1092,17 +1093,6 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
                 />
                 <span>{t('снижение')}</span>
               </div>
-              <div className="vd-hint-item">
-                <kbd>Click</kbd> — {t('кросс-фильтр')}
-              </div>
-              {showDetailModal && (
-                <div className="vd-hint-item">
-                  <kbd>Ctrl</kbd>+<kbd>Click</kbd> — {t('детализация')}
-                </div>
-              )}
-              <div className="vd-hint-item">
-                <kbd>Esc</kbd> — {t('закрыть')}
-              </div>
             </div>
             <div aria-live="polite">
               {t('Показано')}{' '}
@@ -1110,6 +1100,21 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
               {t('из')}{' '}
               <span className="vd-total-right">{inputStores.length}</span>
             </div>
+            <InfoHintCorner>
+              <InfoHint ariaLabel="Подсказка по управлению">
+                <span className="hi"><span>Click — кросс-фильтр</span></span>
+                {showDetailModal && (
+                  <>
+                    <span className="hi-sep" aria-hidden="true" />
+                    <span className="hi"><span>Ctrl+Click — детализация</span></span>
+                  </>
+                )}
+                <span className="hi-sep" aria-hidden="true" />
+                <span className="hi"><span>Esc — закрыть</span></span>
+                <span className="hi-sep" aria-hidden="true" />
+                <span className="hi"><span>Right Click — меню действий</span></span>
+              </InfoHint>
+            </InfoHintCorner>
           </div>
         </div>
       </VelocityRoot>

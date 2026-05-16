@@ -157,6 +157,7 @@ export const StructureDonutRoot = styled.div<{ width: number; height: number }>`
 `;
 
 export const Card = styled.div`
+  position: relative;
   box-sizing: border-box;
   height: 100%;
   width: 100%;
@@ -195,7 +196,7 @@ export const Card = styled.div`
      загруженный контент (1:1 с подходом scorecard KpiCard.tsx).
      fill-mode both — начальное состояние применено мгновенно,
      никакой «вспышки» уже-final state до animation start. */
-  animation: ${cardInKf} 0.6s ${EASE} both;
+  animation: ${cardInKf} 0.5s ${EASE} both;
   display: flex;
   flex-direction: column;
 `;
@@ -497,28 +498,25 @@ export const HeroLabel = styled.div`
 `;
 
 export const Footer = styled.div`
-  /* 3-column grid: spacer | Legend | HintTrigger.
-     Spacer симметричен HintTrigger → Legend визуально центрирован
-     относительно Footer width, не смещён HintTrigger'ом справа.
-     align-items: center → HintTrigger выровнен по центру высоты Legend. */
-  display: grid;
-  grid-template-columns: 24px 1fr 24px;
+  /* Flex-row: Legend растягивается, InfoHintCorner справа через
+     margin-left:auto. align-items:center → иконка на одной линии
+     с легендой. */
+  display: flex;
   align-items: center;
+  gap: 8px;
   margin-top: 6px;
   padding-top: 8px;
   @media (min-width: 768px) {
     padding-top: 10px;
-  }
-  @media (hover: none), (pointer: coarse) {
-    grid-template-columns: 44px 1fr 44px;
   }
   border-top: 1px solid var(--g200);
   animation: ${footerInKf} 0.5s ${EASE} 0.6s both;
 `;
 
 export const Legend = styled.div`
-  /* Grid-column 2 в Footer 3-column grid (spacer | Legend | HintTrigger). */
-  grid-column: 2;
+  /* Растягивается на доступную ширину; InfoHintCorner справа от него. */
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -601,140 +599,9 @@ export const LegendChip = styled.div`
   }
 `;
 
-/* HintTrigger — info-иконка в правом столбце Footer-grid'а. Vertically
-   centered автоматом через grid align-items:center. Compact desktop
-   (24×24), 44×44 на touch. Tooltip всплывает вверх (legend pinned внизу
-   Card — места для tooltip больше сверху). justify-self:end чтобы
-   прижать к правому краю grid column. */
-export const HintTrigger = styled.button`
-  /* Grid-column 3 в Footer 3-column grid. justify-self:end прижимает к правому краю. */
-  grid-column: 3;
-  position: relative;
-  justify-self: end;
-  width: 24px;
-  height: 24px;
-  padding: 4px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  border-radius: 50%;
-  color: var(--g500);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s var(--ease), color 0.15s var(--ease);
-  animation: ${hintInKf} 0.4s ${EASE} 0.85s both;
-  @media (hover: none), (pointer: coarse) {
-    width: 44px;
-    height: 44px;
-    padding: 12px;
-  }
-
-  & > svg {
-    width: 16px;
-    height: 16px;
-    display: block;
-    flex-shrink: 0;
-    @media (hover: none), (pointer: coarse) {
-      width: 20px;
-      height: 20px;
-    }
-  }
-
-  &:hover {
-    background: var(--g100);
-    color: var(--ink);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--c-sky);
-    outline-offset: 2px;
-  }
-
-  &:hover [role='tooltip'],
-  &:focus-visible [role='tooltip'],
-  &[data-open] [role='tooltip'] {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-    transition-delay: 0s;
-  }
-`;
-
-/* HintTooltip — DS «Tooltip»: bg var(--ink), color var(--s), radius 6px,
-   padding 8px 12px, max-width 240px, fade 0.1s. Растёт вверх-влево из
-   угла иконки, не уходит за right edge ChartWrap. */
-export const HintTooltip = styled.div`
-  position: absolute;
-  bottom: calc(100% + 8px);
-  right: 4px;
-  width: max-content;
-  max-width: 240px;
-  padding: 8px 12px;
-  background: var(--ink);
-  color: var(--s);
-  border-radius: 6px;
-  font-family: var(--m);
-  font-size: var(--fs-micro);
-  font-weight: 500;
-  line-height: 1.4;
-  letter-spacing: 0.02em;
-  text-align: left;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(4px);
-  transition: opacity 0.1s var(--ease),
-    transform 0.1s var(--ease),
-    visibility 0s linear 0.1s;
-  pointer-events: none;
-
-  /* стрелка-указатель к иконке */
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: -4px;
-    right: 14px;
-    width: 10px;
-    height: 10px;
-    background: var(--ink);
-    transform: rotate(45deg);
-    border-radius: 1px;
-  }
-
-  /* Hint content переориентирован: вертикальный layout (column) с
-     горизонтальными divider'ами. На узком 240px max-width читается
-     лучше чем wrap-row. */
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-
-  .hi {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .hi svg {
-    width: 14px;
-    height: 14px;
-    color: var(--s);
-    flex-shrink: 0;
-  }
-  .hi .hi-arrow {
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 1;
-    color: var(--s);
-    margin-right: 2px;
-    vertical-align: -1px;
-  }
-  .hi-sep {
-    display: block;
-    width: 100%;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.15);
-    margin: 0;
-  }
-`;
+/* HintCell упразднён в пользу shared <InfoHintCorner> (absolute bottom-right)
+   из components/InfoHint. Иконка теперь не часть Footer-grid, а absolute
+   на уровне Card — место одинаковое во всех плагинах. */
 
 /* ── DataState overlays ── */
 

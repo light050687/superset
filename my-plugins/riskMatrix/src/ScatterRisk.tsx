@@ -30,6 +30,7 @@ import {
   PartialBadge,
   StaleBar,
 } from './styles';
+import { InfoHint, InfoHintCorner } from './components/InfoHint';
 
 /* === Локальные styled-обёртки (миграция inline style → Emotion, P-011) === */
 
@@ -928,7 +929,7 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
   }
 
   return (
-    <CardRoot data-theme={themeMode} role="region" aria-labelledby="sr-card-title">
+    <CardRoot data-theme={themeMode} role="region" aria-labelledby="sr-card-title" data-info-hint-container="">
       <style>{KEYFRAMES_CSS}</style>
       {dataState === 'stale' && <StaleBar aria-hidden="true" />}
       <CardHead>
@@ -1063,28 +1064,6 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
 
       <Footer>
         <div className="hint">
-          {shortcutsHint.split(/\s*·\s*/).map((part, i) => {
-            // Каждая подсказка: "Click — фильтр" / "Ctrl+Click — детализация" / "Drag — перемещение".
-            // Делим по тире: левая часть — клавиши (в <kbd>), правая — описание.
-            const [keyPart, descPart] = part.split(/\s+[—-]\s+/);
-            const keys = (keyPart ?? part).split('+').map((k) => k.trim()).filter(Boolean);
-            return (
-              <React.Fragment key={i}>
-                {i > 0 && <span className="hi-sep" aria-hidden="true" />}
-                <span className="hi">
-                  {keys.map((k, ki) => (
-                    <React.Fragment key={ki}>
-                      {ki > 0 && <span>+</span>}
-                      <kbd>{k}</kbd>
-                    </React.Fragment>
-                  ))}
-                  {descPart && <span>— {descPart}</span>}
-                </span>
-              </React.Fragment>
-            );
-          })}
-        </div>
-        <div className="hint">
           <span className="hi">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="8" cy="8" r="5" />
@@ -1092,6 +1071,23 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
             <span>размер = {sizeUnit}</span>
           </span>
         </div>
+        <InfoHintCorner>
+          <InfoHint ariaLabel="Подсказка по управлению">
+            <div className="hint-section">
+              <div className="hint-section-title">Управление</div>
+              {shortcutsHint.split(/\s*·\s*/).map((part, i) => (
+                <span className="hi" key={i}>
+                  <span>{part}</span>
+                </span>
+              ))}
+              <span className="hi"><span>Right Click — меню действий</span></span>
+            </div>
+            <div className="hint-section">
+              <div className="hint-section-title">Пояснения</div>
+              <span className="hi"><span>Размер кружка = {sizeUnit}</span></span>
+            </div>
+          </InfoHint>
+        </InfoHintCorner>
       </Footer>
 
       <Tooltip ref={tooltipRef} role="tooltip" aria-hidden="true" />

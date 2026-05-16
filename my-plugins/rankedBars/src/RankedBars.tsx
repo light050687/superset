@@ -32,6 +32,7 @@ import { fmtRub } from './utils/formatRussian';
 import DetailModal from './components/DetailModal';
 import AllItemsModal from './components/AllItemsModal';
 import { buildTooltipContent } from './components/tooltipContent';
+import { InfoHint, InfoHintCorner } from './components/InfoHint';
 
 // ── Sorting helpers ─────────────────────────────────────────────────────────
 function sortRows(rows: RankedRow[], by: SortMode): RankedRow[] {
@@ -422,6 +423,7 @@ const RankedBars: React.FC<RankedBarsProps> = props => {
       data-theme={themeMode}
       role="region"
       aria-labelledby="rb-card-title"
+      data-info-hint-container=""
     >
       {dataState === 'stale' && <StaleBar aria-hidden="true" />}
       <CardHead>
@@ -442,23 +444,6 @@ const RankedBars: React.FC<RankedBarsProps> = props => {
       {renderBody()}
 
       <CardFooter>
-        <div className="hint">
-          <svg
-            viewBox="0 0 14 14"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M3 4 L7 1 L11 4 L11 11 L3 11 Z" />
-            <path d="M5 11 L5 7 L9 7 L9 11" />
-          </svg>
-          <span>
-            Клик — фильтр · <kbd>Ctrl</kbd>+клик — детализация
-          </span>
-        </div>
         {enableAllItemsModal && totalRowsCount > topNVisible && (
           <button
             type="button"
@@ -468,6 +453,15 @@ const RankedBars: React.FC<RankedBarsProps> = props => {
             Показать все {totalRowsCount} позиций →
           </button>
         )}
+        <InfoHintCorner>
+          <InfoHint ariaLabel="Подсказка по управлению">
+            <span className="hi"><span>Клик — фильтр</span></span>
+            <span className="hi-sep" aria-hidden="true" />
+            <span className="hi"><span>Ctrl+клик — детализация</span></span>
+            <span className="hi-sep" aria-hidden="true" />
+            <span className="hi"><span>Right Click — меню действий</span></span>
+          </InfoHint>
+        </InfoHintCorner>
       </CardFooter>
 
       {showHoverTooltip && <Tooltip payload={tooltip} />}

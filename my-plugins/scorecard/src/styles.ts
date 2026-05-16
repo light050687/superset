@@ -193,7 +193,7 @@ export const Card = styled.div<{ clickable?: boolean }>`
   cursor: ${({ clickable }) => (clickable ? 'pointer' : 'default')};
   transition: border-color 0.25s ${EASE};
   animation-name: kpi-card-in;
-  animation-duration: 0.85s;
+  animation-duration: 0.5s;
   animation-timing-function: ${EASE};
   animation-fill-mode: both;
   box-shadow: none !important;
@@ -218,6 +218,9 @@ export const Card = styled.div<{ clickable?: boolean }>`
     padding: 8px 6px;
   }
 `;
+
+/* KpiFooterRow упразднён — i-иконка теперь рендерится в ComparisonSection
+   (rightmost), на одной линии с ComparisonRow'ами. */
 
 /** Mock mode badge — DS v2.0 "Статусный бейдж": --fs-nano UPPER моно.
     Стиль superscript: text по центру + чуть выше базовой линии (как ²). */

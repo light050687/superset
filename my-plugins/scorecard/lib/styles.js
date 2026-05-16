@@ -167,7 +167,10 @@ exports.Card = core_1.styled.div `
      Card без своего border — outer outline = единственная рамка.
      Background var(--s) визуально отделяет KPI от bg-фона дашборда. */
   background: var(--s);
-  border: 1px solid transparent;
+  /* DS 2.0: рамка и тень убраны на ВСЕХ состояниях. !important чтобы
+     перебить outer Superset chart-holder hover (он добавлял outline и
+     box-shadow при наведении). */
+  border: 1px solid transparent !important;
   border-radius: 10px;
   padding: 16px 20px;
   overflow: hidden;
@@ -180,12 +183,16 @@ exports.Card = core_1.styled.div `
   cursor: ${({ clickable }) => (clickable ? 'pointer' : 'default')};
   transition: border-color 0.25s ${EASE};
   animation-name: kpi-card-in;
-  animation-duration: 0.85s;
+  animation-duration: 0.5s;
   animation-timing-function: ${EASE};
   animation-fill-mode: both;
-
-  /* DS 2.0: card border убран и в idle, и в hover — outer ResizableContainer
-     уже даёт визуальную границу. Тень не используется по дизайн-документу. */
+  box-shadow: none !important;
+  outline: none !important;
+  &:hover, &:focus, &:focus-within {
+    box-shadow: none !important;
+    outline: none !important;
+    border-color: transparent !important;
+  }
 
   @container kpi (max-width: 400px) {
     padding: 14px 12px;
@@ -201,6 +208,8 @@ exports.Card = core_1.styled.div `
     padding: 8px 6px;
   }
 `;
+/* KpiFooterRow упразднён — i-иконка теперь рендерится в ComparisonSection
+   (rightmost), на одной линии с ComparisonRow'ами. */
 /** Mock mode badge — DS v2.0 "Статусный бейдж": --fs-nano UPPER моно.
     Стиль superscript: text по центру + чуть выше базовой линии (как ²). */
 exports.MockBadge = core_1.styled.span `

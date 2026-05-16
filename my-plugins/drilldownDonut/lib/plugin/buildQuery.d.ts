@@ -10,5 +10,5 @@ import { StructureDonutFormData } from '../types';
  * возвращает массив, даже при multi:false. buildQueryContext может вызвать
  * .toLowerCase() на этих полях → crash если не string. Нормализуем в начале.
  */
-export default function buildQuery(formData: StructureDonutFormData): any;
+export default function buildQuery(formData: StructureDonutFormData): import("@superset-ui/core").QueryContext;
 //# sourceMappingURL=buildQuery.d.ts.map

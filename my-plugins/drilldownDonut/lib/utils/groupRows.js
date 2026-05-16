@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.groupRows = void 0;
+exports.groupRows = groupRows;
 const NULL_SUBCATEGORY_NAME = 'Без подкатегории';
 const NULL_SUBCATEGORY_SUFFIX = '__null';
 function toNumberOrZero(v) {
@@ -92,5 +92,4 @@ function groupRows(rows, catCol, subCol, valueLabel, countLabel) {
     });
     return { categories };
 }
-exports.groupRows = groupRows;
 //# sourceMappingURL=groupRows.js.map

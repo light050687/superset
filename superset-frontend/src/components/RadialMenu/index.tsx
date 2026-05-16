@@ -111,11 +111,20 @@ const Root = styled.div<{ x: number; y: number }>`
     cursor: pointer;
     transition:
       fill 0.15s ease,
-      opacity 0.15s ease;
+      opacity 0.15s ease,
+      stroke 0.15s ease;
     /* 0.3s — быстрая, snappy animation. Stagger 40ms counterclockwise. */
     animation: arc-pop 0.18s cubic-bezier(0.4, 0, 0.2, 1) both;
     transform-origin: ${CX}px ${CY}px;
     transform-box: view-box;
+    /* Браузерный focus-outline на SVG path рисует bounding-box rectangle
+       — для pie-сегмента это выглядит как квадрат вокруг арки. Убираем
+       и даём custom focus state через stroke. */
+    outline: none;
+    &:focus-visible {
+      stroke: #3b8bd9;
+      stroke-width: 2;
+    }
   }
 
   @keyframes arc-pop {
@@ -220,8 +229,16 @@ const Tooltip = styled.div<{ x: number; y: number }>`
   border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
-  line-height: 1.2;
-  white-space: nowrap;
+  line-height: 1.25;
+  /* Compact width + wrap — длинные labels («Перейти к детализации») не
+     вылазят за viewport и не пересекаются с соседними сегментами.
+     Symmetric: tooltip всегда одинакового макс-размера, позиция
+     полностью predictable = центр на нормали от сегмента. */
+  width: max-content;
+  max-width: 120px;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: break-word;
   pointer-events: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   z-index: 4;
