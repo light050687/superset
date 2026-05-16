@@ -153,7 +153,7 @@ function ParetoCardInner(props: ParetoCardProps) {
         className={PARETO_CARD_CLASS}
       >
         <Global styles={css`${PARETO_KEYFRAMES_CSS}`} />
-        <Card role="region" aria-labelledby={titleId} aria-busy="true">
+        <Card role="region" aria-labelledby={titleId} aria-busy="true" data-no-anim="">
           <CardHead>
             <CardTitleGroup>
               <CardTitle id={titleId}>{headerText}</CardTitle>

@@ -87,6 +87,7 @@ exports.Card = core_1.styled.div `
      При переходе loading → loaded React unmount'ит loading-Card и mount'ит
      новый → animation запускается ровно когда юзер видит контент. */
   animation: ${cardInKf} 0.5s ${EASE} both;
+  &[data-no-anim] { animation: none; }
 `;
 /* DS 2.0 §06 «Состояния» — Partial badge: данные неполные. */
 exports.PartialBadge = core_1.styled.span `

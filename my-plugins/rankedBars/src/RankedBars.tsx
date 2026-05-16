@@ -395,6 +395,7 @@ const RankedBars: React.FC<RankedBarsProps> = props => {
         role="region"
         aria-labelledby="rb-card-title"
         aria-busy="true"
+        data-no-anim=""
       >
         <CardHead>
           <TitleBlock>

@@ -186,6 +186,7 @@ exports.Card = core_1.styled.div `
   animation-duration: 0.5s;
   animation-timing-function: ${EASE};
   animation-fill-mode: both;
+  &[data-no-anim] { animation-name: none; }
   box-shadow: none !important;
   outline: none !important;
   &:hover, &:focus, &:focus-within {

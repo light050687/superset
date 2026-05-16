@@ -61,7 +61,11 @@ function buildOption(params) {
     });
     const option = {
         animation: true,
-        animationDuration: 420,
+        /* DS canonical: ECharts series animation 700ms — синхронизировано с
+           card-mount cascade (0.5s card-in + chart fade-in finish ≤ 1.0s).
+           Раньше было 420ms → linechart выглядел почти мгновенным и выбивался
+           из общего ритма остальных плагинов. */
+        animationDuration: 700,
         animationEasing: 'cubicOut',
         animationDurationUpdate: 500,
         animationEasingUpdate: 'cubicInOut',

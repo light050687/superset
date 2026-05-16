@@ -211,7 +211,7 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
         data-theme={isDarkMode ? 'dark' : 'light'}
       >
         <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_CSS }} />
-        <Card role="region" aria-label={headerText} aria-busy="true">
+        <Card role="region" aria-label={headerText} aria-busy="true" data-no-anim="">
           <CardHead>
             <TitleBlock>
               <CardTitle>{headerText}</CardTitle>

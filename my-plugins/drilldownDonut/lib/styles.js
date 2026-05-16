@@ -194,6 +194,7 @@ exports.Card = core_1.styled.div `
      fill-mode both — начальное состояние применено мгновенно,
      никакой «вспышки» уже-final state до animation start. */
   animation: ${cardInKf} 0.5s ${EASE} both;
+  &[data-no-anim] { animation: none; }
   display: flex;
   flex-direction: column;
 `;

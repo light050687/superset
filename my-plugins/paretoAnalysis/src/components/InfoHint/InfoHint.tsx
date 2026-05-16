@@ -1,4 +1,4 @@
-// @canonical-version: 3.1.0
+// @canonical-version: 3.2.0
 // @canonical-source: superset/my-plugins/_shared/info-hint/
 import {
   forwardRef,
@@ -14,6 +14,7 @@ import {
   HintOverlay,
   HintOverlayClose,
   HintOverlayBody,
+  HintOverlayTitle,
 } from './styles';
 
 function IconInfo(): JSX.Element {
@@ -74,6 +75,8 @@ export interface InfoHintProps {
   ariaLabel: string;
   children: ReactNode;
   closeOnEscape?: boolean;
+  /** Заголовок окна. DS §02: 14px UPPERCASE. Default — «Управление чартом». */
+  title?: string;
 }
 
 export interface InfoHintHandle {
@@ -83,7 +86,10 @@ export interface InfoHintHandle {
 }
 
 export const InfoHint = forwardRef<InfoHintHandle, InfoHintProps>(
-  function InfoHint({ ariaLabel, children, closeOnEscape = true }, ref) {
+  function InfoHint(
+    { ariaLabel, children, closeOnEscape = true, title = 'Управление чартом' },
+    ref,
+  ) {
     const [open, setOpen] = useState(false);
     const [container, setContainer] = useState<HTMLElement | null>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -147,6 +153,7 @@ export const InfoHint = forwardRef<InfoHintHandle, InfoHintProps>(
               >
                 <IconClose />
               </HintOverlayClose>
+              {title && <HintOverlayTitle>{title}</HintOverlayTitle>}
               <HintOverlayBody>{children}</HintOverlayBody>
             </HintOverlay>,
             container,

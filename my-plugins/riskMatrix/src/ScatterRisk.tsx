@@ -916,7 +916,7 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
   // новый → cardInKf animation запускается ровно когда юзер видит контент.
   if (dataState === 'loading') {
     return (
-      <CardRoot data-theme={themeMode} role="region" aria-busy="true">
+      <CardRoot data-theme={themeMode} role="region" aria-busy="true" data-no-anim="">
         <style>{KEYFRAMES_CSS}</style>
         <CardHead>
           <TitleBlock>

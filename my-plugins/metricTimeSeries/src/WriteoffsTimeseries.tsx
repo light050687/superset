@@ -519,7 +519,7 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
         className={CARD_CLASS}
       >
         <style>{KEYFRAMES_CSS}</style>
-        <Card>
+        <Card data-no-anim="">
           <SkeletonWrap>
             <SkeletonBlock w="40%" h={14} />
             <SkeletonBlock h={200} />
@@ -539,7 +539,7 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
         className={CARD_CLASS}
       >
         <style>{KEYFRAMES_CSS}</style>
-        <Card>
+        <Card data-no-anim="">
           <ErrorStateWrap>
             <ErrorStateIcon />
             <ErrorStateText>{errorMessage || 'Ошибка отображения'}</ErrorStateText>
@@ -559,7 +559,7 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
       >
         <style>{KEYFRAMES_CSS}</style>
         <SrLive aria-live="polite">Нет данных</SrLive>
-        <Card>
+        <Card data-no-anim="">
           <EmptyStateWrap>
             <EmptyStateIcon>—</EmptyStateIcon>
             <EmptyStateText>

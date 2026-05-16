@@ -126,6 +126,7 @@ export const VelocityRoot = styled.div `
        переходе loading → loaded React unmount'ит loading-Card и mount'ит
        новый → animation запускается ровно когда юзер видит контент. */
     animation: ${cardInKf} 0.5s ${EASE} both;
+    &[data-no-anim] { animation: none; }
   }
 
   .vd-head {

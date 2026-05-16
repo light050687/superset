@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InfoHint = void 0;
 const jsx_runtime_1 = require("react/jsx-runtime");
-// @canonical-version: 3.1.0
+// @canonical-version: 3.2.0
 // @canonical-source: superset/my-plugins/_shared/info-hint/
 const react_1 = require("react");
 const react_dom_1 = require("react-dom");
@@ -34,7 +34,7 @@ function findHintContainer(el) {
     }
     return null;
 }
-exports.InfoHint = (0, react_1.forwardRef)(function InfoHint({ ariaLabel, children, closeOnEscape = true }, ref) {
+exports.InfoHint = (0, react_1.forwardRef)(function InfoHint({ ariaLabel, children, closeOnEscape = true, title = 'Управление чартом' }, ref) {
     const [open, setOpen] = (0, react_1.useState)(false);
     const [container, setContainer] = (0, react_1.useState)(null);
     const triggerRef = (0, react_1.useRef)(null);
@@ -65,6 +65,6 @@ exports.InfoHint = (0, react_1.forwardRef)(function InfoHint({ ariaLabel, childr
                 (0, react_dom_1.createPortal)((0, jsx_runtime_1.jsxs)(styles_1.HintOverlay, { role: "dialog", "aria-modal": "true", "aria-label": ariaLabel, onClick: (e) => e.stopPropagation(), onContextMenu: (e) => {
                         e.preventDefault();
                         setOpen(false);
-                    }, children: [(0, jsx_runtime_1.jsx)(styles_1.HintOverlayClose, { type: "button", "aria-label": "\u0417\u0430\u043A\u0440\u044B\u0442\u044C", onClick: () => setOpen(false), children: (0, jsx_runtime_1.jsx)(IconClose, {}) }), (0, jsx_runtime_1.jsx)(styles_1.HintOverlayBody, { children: children })] }), container)] }));
+                    }, children: [(0, jsx_runtime_1.jsx)(styles_1.HintOverlayClose, { type: "button", "aria-label": "\u0417\u0430\u043A\u0440\u044B\u0442\u044C", onClick: () => setOpen(false), children: (0, jsx_runtime_1.jsx)(IconClose, {}) }), title && (0, jsx_runtime_1.jsx)(styles_1.HintOverlayTitle, { children: title }), (0, jsx_runtime_1.jsx)(styles_1.HintOverlayBody, { children: children })] }), container)] }));
 });
 //# sourceMappingURL=InfoHint.js.map

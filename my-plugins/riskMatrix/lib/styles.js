@@ -92,6 +92,7 @@ exports.CardRoot = core_1.styled.div `
      переходе loading → loaded React unmount'ит loading-CardRoot и mount'ит
      новый → animation запускается ровно когда юзер видит контент. */
   animation: ${cardInKf} 0.5s ${EASE} both;
+  &[data-no-anim] { animation: none; }
 
   * {
     box-sizing: border-box;

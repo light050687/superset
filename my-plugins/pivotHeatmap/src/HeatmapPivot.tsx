@@ -667,7 +667,7 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
         aria-live="polite"
       >
         <style>{KEYFRAMES_CSS}</style>
-        <Card>
+        <Card data-no-anim="">
           <Header>
             <TitleBlock>
               <Title>
@@ -690,7 +690,7 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
     return (
       <Root data-theme={theme} className={ROOT_CLASS} width={width} height={height}>
         <style>{KEYFRAMES_CSS}</style>
-        <Card>
+        <Card data-no-anim="">
           <StateOverlay role="alert">
             {errorMessage ?? 'Произошла ошибка при загрузке данных'}
           </StateOverlay>
@@ -703,7 +703,7 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
     return (
       <Root data-theme={theme} className={ROOT_CLASS} width={width} height={height}>
         <style>{KEYFRAMES_CSS}</style>
-        <Card>
+        <Card data-no-anim="">
           <Header>
             <TitleBlock>
               <Title>

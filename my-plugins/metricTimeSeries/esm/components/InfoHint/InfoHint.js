@@ -1,9 +1,9 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
-// @canonical-version: 3.1.0
+// @canonical-version: 3.2.0
 // @canonical-source: superset/my-plugins/_shared/info-hint/
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, } from 'react';
 import { createPortal } from 'react-dom';
-import { HintTrigger, HintOverlay, HintOverlayClose, HintOverlayBody, } from './styles';
+import { HintTrigger, HintOverlay, HintOverlayClose, HintOverlayBody, HintOverlayTitle, } from './styles';
 function IconInfo() {
     return (_jsxs("svg", { viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", children: [_jsx("circle", { cx: "10", cy: "10", r: "8" }), _jsx("path", { d: "M10 6.5 L10 6.5", strokeWidth: 2.2 }), _jsx("path", { d: "M10 9 L10 14" })] }));
 }
@@ -31,7 +31,7 @@ function findHintContainer(el) {
     }
     return null;
 }
-export const InfoHint = forwardRef(function InfoHint({ ariaLabel, children, closeOnEscape = true }, ref) {
+export const InfoHint = forwardRef(function InfoHint({ ariaLabel, children, closeOnEscape = true, title = 'Управление чартом' }, ref) {
     const [open, setOpen] = useState(false);
     const [container, setContainer] = useState(null);
     const triggerRef = useRef(null);
@@ -62,6 +62,6 @@ export const InfoHint = forwardRef(function InfoHint({ ariaLabel, children, clos
                 createPortal(_jsxs(HintOverlay, { role: "dialog", "aria-modal": "true", "aria-label": ariaLabel, onClick: (e) => e.stopPropagation(), onContextMenu: (e) => {
                         e.preventDefault();
                         setOpen(false);
-                    }, children: [_jsx(HintOverlayClose, { type: "button", "aria-label": "\u0417\u0430\u043A\u0440\u044B\u0442\u044C", onClick: () => setOpen(false), children: _jsx(IconClose, {}) }), _jsx(HintOverlayBody, { children: children })] }), container)] }));
+                    }, children: [_jsx(HintOverlayClose, { type: "button", "aria-label": "\u0417\u0430\u043A\u0440\u044B\u0442\u044C", onClick: () => setOpen(false), children: _jsx(IconClose, {}) }), title && _jsx(HintOverlayTitle, { children: title }), _jsx(HintOverlayBody, { children: children })] }), container)] }));
 });
 //# sourceMappingURL=InfoHint.js.map

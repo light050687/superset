@@ -393,15 +393,15 @@ const VelocityDiverging = ({ width, height, headerText, subtitleText, dataState,
     };
     /* Error state (DS 2.0 §08: иконка + текст + кнопка «Повторить»). */
     if (dataState === 'error') {
-        return (_jsx(VelocityRoot, { ...rootProps, children: _jsx("div", { className: "vd-card", "data-info-hint-container": "", children: _jsxs("div", { className: "vd-state error", role: "alert", "aria-live": "assertive", children: [_jsx(IconError, {}), _jsx("div", { className: "vd-state-message", children: errorMessage || t('Не удалось загрузить данные.') }), _jsx("button", { type: "button", className: "vd-state-action", onClick: () => window.location.reload(), children: t('Повторить') })] }) }) }));
+        return (_jsx(VelocityRoot, { ...rootProps, children: _jsx("div", { className: "vd-card", "data-info-hint-container": "", "data-no-anim": "", children: _jsxs("div", { className: "vd-state error", role: "alert", "aria-live": "assertive", children: [_jsx(IconError, {}), _jsx("div", { className: "vd-state-message", children: errorMessage || t('Не удалось загрузить данные.') }), _jsx("button", { type: "button", className: "vd-state-action", onClick: () => window.location.reload(), children: t('Повторить') })] }) }) }));
     }
     /* Loading state (DS 2.0 §08: skeleton 0.8s, aria-busy). */
     if (dataState === 'loading') {
-        return (_jsx(VelocityRoot, { ...rootProps, children: _jsxs("div", { className: "vd-card", "data-info-hint-container": "", "aria-busy": "true", "aria-live": "polite", children: [_jsx(SkeletonBlock, { variant: "title" }), _jsx(SkeletonBlock, { variant: "header" }), _jsx(SkeletonBlock, { variant: "row" }), _jsx(SkeletonBlock, { variant: "row" }), _jsx(SkeletonBlock, { variant: "row" }), _jsx(SkeletonBlock, { variant: "row" })] }) }));
+        return (_jsx(VelocityRoot, { ...rootProps, children: _jsxs("div", { className: "vd-card", "data-info-hint-container": "", "data-no-anim": "", "aria-busy": "true", "aria-live": "polite", children: [_jsx(SkeletonBlock, { variant: "title" }), _jsx(SkeletonBlock, { variant: "header" }), _jsx(SkeletonBlock, { variant: "row" }), _jsx(SkeletonBlock, { variant: "row" }), _jsx(SkeletonBlock, { variant: "row" }), _jsx(SkeletonBlock, { variant: "row" })] }) }));
     }
     /* Empty state (DS 2.0 §08: иконка 48×48 --g300 + текст + предложение). */
     if (dataState === 'empty') {
-        return (_jsx(VelocityRoot, { ...rootProps, children: _jsxs("div", { className: "vd-card", "data-info-hint-container": "", children: [_jsx("h2", { className: "vd-title", children: headerText }), _jsxs("div", { className: "vd-state", role: "status", children: [_jsx(IconEmpty, {}), _jsx("div", { className: "vd-state-message", children: t('Нет данных для отображения.') }), _jsx("div", { className: "vd-state-hint", children: t('Попробуйте изменить фильтры или расширить диапазон дат.') })] })] }) }));
+        return (_jsx(VelocityRoot, { ...rootProps, children: _jsxs("div", { className: "vd-card", "data-info-hint-container": "", "data-no-anim": "", children: [_jsx("h2", { className: "vd-title", children: headerText }), _jsxs("div", { className: "vd-state", role: "status", children: [_jsx(IconEmpty, {}), _jsx("div", { className: "vd-state-message", children: t('Нет данных для отображения.') }), _jsx("div", { className: "vd-state-hint", children: t('Попробуйте изменить фильтры или расширить диапазон дат.') })] })] }) }));
     }
     const netCls = summary.netTempo > 1.05 ? 'dn' : summary.netTempo < 0.95 ? 'up' : '';
     const netTempoText = fmtTempoText(summary.netTempo);

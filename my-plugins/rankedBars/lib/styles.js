@@ -111,6 +111,7 @@ exports.CardRoot = styled_1.default.div `
   flex-direction: column;
   /* DS 2.0 mount animation. Эмоция keyframes() — race-condition-free. */
   animation: ${cardInKf} 0.5s ${themeTokens_1.EASE} both;
+  &[data-no-anim] { animation: none; }
 `;
 /* DS 2.0 §06 — Stale bar: тонкая sky-полоса сверху Card. */
 exports.StaleBar = styled_1.default.div `

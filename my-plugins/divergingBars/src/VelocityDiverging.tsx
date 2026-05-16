@@ -630,7 +630,7 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
   if (dataState === 'error') {
     return (
       <VelocityRoot {...rootProps}>
-        <div className="vd-card" data-info-hint-container="">
+        <div className="vd-card" data-info-hint-container="" data-no-anim="">
           <div className="vd-state error" role="alert" aria-live="assertive">
             <IconError />
             <div className="vd-state-message">
@@ -653,7 +653,7 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
   if (dataState === 'loading') {
     return (
       <VelocityRoot {...rootProps}>
-        <div className="vd-card" data-info-hint-container="" aria-busy="true" aria-live="polite">
+        <div className="vd-card" data-info-hint-container="" data-no-anim="" aria-busy="true" aria-live="polite">
           <SkeletonBlock variant="title" />
           <SkeletonBlock variant="header" />
           <SkeletonBlock variant="row" />
@@ -669,7 +669,7 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
   if (dataState === 'empty') {
     return (
       <VelocityRoot {...rootProps}>
-        <div className="vd-card" data-info-hint-container="">
+        <div className="vd-card" data-info-hint-container="" data-no-anim="">
           <h2 className="vd-title">{headerText}</h2>
           <div className="vd-state" role="status">
             <IconEmpty />

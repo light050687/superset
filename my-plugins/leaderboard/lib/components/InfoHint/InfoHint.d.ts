@@ -3,6 +3,8 @@ export interface InfoHintProps {
     ariaLabel: string;
     children: ReactNode;
     closeOnEscape?: boolean;
+    /** Заголовок окна. DS §02: 14px UPPERCASE. Default — «Управление чартом». */
+    title?: string;
 }
 export interface InfoHintHandle {
     isOpen: () => boolean;

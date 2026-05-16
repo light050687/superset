@@ -153,6 +153,7 @@ export const Card = styled.div `
      Card и mount'ит новый → animation запускается ровно когда юзер видит
      реальный контент. */
   animation: ${cardInKf} 0.5s ${EASE} both;
+  &[data-no-anim] { animation: none; }
 `;
 export const Header = styled.div `
   display: flex;

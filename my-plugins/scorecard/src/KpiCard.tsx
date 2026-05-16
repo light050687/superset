@@ -452,7 +452,7 @@ const KpiCardMemo = React.memo(function KpiCardInner({
         aria-busy="true"
       >
         <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_CSS }} />
-        <Card className={CARD_CLASS}>
+        <Card className={CARD_CLASS} data-no-anim="">
           {/* IDENTICAL DOM TREE с loaded state: те же CardTitle / HeroValue /
               Subtitle / ComparisonRow components с placeholder text внутри
               SkeletonText. Браузер reserves РЕАЛЬНУЮ font-size + line-height
@@ -503,7 +503,7 @@ const KpiCardMemo = React.memo(function KpiCardInner({
         aria-label={`${headerText}: ошибка`}
       >
         <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_CSS }} />
-        <Card className={CARD_CLASS}>
+        <Card className={CARD_CLASS} data-no-anim="">
           <CardHead>
             <CardTitle>{headerText}</CardTitle>
           </CardHead>
@@ -527,7 +527,7 @@ const KpiCardMemo = React.memo(function KpiCardInner({
         role="figure"
         aria-label={`${headerText}: нет данных`}
       >
-        <Card className={CARD_CLASS}>
+        <Card className={CARD_CLASS} data-no-anim="">
           <CardHead>
             <CardTitle>{headerText}</CardTitle>
           </CardHead>
@@ -791,7 +791,7 @@ class KpiCardErrorBoundary extends React.Component<
           aria-label={`${headerText}: ошибка`}
         >
           <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_CSS }} />
-          <Card className={CARD_CLASS}>
+          <Card className={CARD_CLASS} data-no-anim="">
             <CardHead>
               <CardTitle>{headerText || 'KPI'}</CardTitle>
             </CardHead>

@@ -142,6 +142,7 @@ exports.Card = core_1.styled.div `
   transition: border-color 0.25s ${EASE};
   /* Эмоция keyframes() — race-condition-free относительно plain CSS keyframes. */
   animation: ${cardInKf} 0.5s ${EASE} both;
+  &[data-no-anim] { animation: none; }
 
   &:hover {
     border-color: var(--g300);

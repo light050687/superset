@@ -85,6 +85,7 @@ export const Card = styled.section`
   /* DS 2.0 mount animation. Эмоция keyframes() гарантирует, что
      animation-name доступен ДО commit'а — без race condition. */
   animation: ${cardInKf} 0.5s ${EASE} both;
+  &[data-no-anim] { animation: none; }
 `;
 
 export const CardHead = styled.div`

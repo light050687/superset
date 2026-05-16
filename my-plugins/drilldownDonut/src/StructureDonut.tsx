@@ -796,7 +796,7 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
         height={height}
       >
         <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_CSS }} />
-        <Card role="region" aria-labelledby="sd-title-loading" aria-busy="true">
+        <Card role="region" aria-labelledby="sd-title-loading" aria-busy="true" data-no-anim="">
           <CardHead>
             <Title>
               <HeaderText id="sd-title-loading">

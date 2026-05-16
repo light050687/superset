@@ -105,6 +105,7 @@ export const Card = styled.div `
      переходе loading → loaded React unmount'ит loading-Card и mount'ит
      новый → animation запускается ровно когда юзер видит реальный контент. */
   animation: ${cardInKf} 0.5s ${EASE} both;
+  &[data-no-anim] { animation: none; }
 `;
 export const CardHead = styled.div `
   display: flex;
