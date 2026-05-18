@@ -17,6 +17,7 @@ import { LIGHT_TOKENS, DARK_TOKENS } from './themeTokens';
 import { Breadcrumb, Card, CardHead, ChartCanvas, ChartWrap, Controls, EmptyOverlay, ErrorOverlay, Footer, HeaderText, HeroLabel, HeroOverlay, HeroValue, KEYFRAMES_CSS, MockBadge, Legend, LegendChip, SvgOverlayWrapper, PartialChip, SkeletonOverlay, StaleBadge, StructureDonutRoot, Title, UnitToggle, } from './styles';
 import { InfoHint, InfoHintTopRight } from './components/InfoHint';
 import { buildOption, computeHero, getCurrentItems, } from './utils/buildOption';
+import { getCategoriesContentKey, getCategoriesIdKey, } from './utils/categoriesContentKey';
 import { fmtRub } from './utils/formatRussian';
 /**
  * Главный компонент structure-donut. Воспроизводит прототип
@@ -312,14 +313,26 @@ function StructureDonut(props) {
        styles.ts (см. cardInKf). Это canonical solution от emotion:
        keyframes гарантированно injected в stylesheet ДО commit'а Card.
        React-driven cardMounted+RAF подход больше не нужен. */
-    // Сброс состояния при полной замене данных (другая выборка, другие категории)
-    const categoriesKey = useMemo(() => categories.map((c) => c.id).join('|'), [categories]);
+    /* Стабилизация ссылки `categories` между Superset chart re-render'ами.
+       transformProps создаёт новый массив каждый раз (groupRows + forEach
+       mutating colors) — без memo это идентичный по содержанию, но новый по
+       ref массив, который ретриггерит useEffect[deps]=setOption внутри
+       DonutChartInner → ECharts проигрывает анимацию повторно. См.
+       utils/categoriesContentKey.ts для разделения id-key vs content-key. */
+    const categoriesIdKey = useMemo(() => getCategoriesIdKey(categories), [categories]);
+    const categoriesContentKey = useMemo(() => getCategoriesContentKey(categories), [categories]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- зависимость по content-key умышленно
+    const stableCategories = useMemo(() => categories, [categoriesContentKey]);
+    // Сброс состояния при полной замене данных (другая выборка, другие категории).
+    // НЕ дёргать на theme switch / numeric refresh — поэтому id-key, не content-key.
+    // setHidden: возвращаем prev если уже пустой (избегаем новой Set-ссылки при первом
+    // mount, иначе DonutChartInner получит новый identity hidden и сделает лишний setOption).
     useEffect(() => {
         setLevel('root');
         setDrilledId(null);
         setSelectedIdx(null);
-        setHidden(new Set());
-    }, [categoriesKey]);
+        setHidden(prev => (prev.size === 0 ? prev : new Set()));
+    }, [categoriesIdKey]);
     // Токены по теме
     const tokens = isDarkMode ? DARK_TOKENS : LIGHT_TOKENS;
     // Drill handler — bumped из ECharts click через DonutChartInner callback.
@@ -328,7 +341,7 @@ function StructureDonut(props) {
         setDrilledId(id);
         setSelectedIdx(null);
     }, []);
-    const donutAriaLabel = `Структура потерь: ${fmtRub(categories.reduce((s, c) => s + c.rub, 0))} по ${categories.length} категориям`;
+    const donutAriaLabel = `Структура потерь: ${fmtRub(stableCategories.reduce((s, c) => s + c.rub, 0))} по ${stableCategories.length} категориям`;
     // ── Keyboard: Escape ──
     // InfoHint имеет свой Escape (closeOnEscape), но мы opt-out (closeOnEscape={false})
     // и проксируем через infoHintRef, чтобы сохранить приоритет: hint закрывается
@@ -367,7 +380,7 @@ function StructureDonut(props) {
     }, []);
     const clearSelection = useCallback(() => setSelectedIdx(null), []);
     // ── Текущий срез для легенды (вычисляется до toggleHidden — нужен в его closure) ──
-    const currentItems = useMemo(() => getCurrentItems({ categories, level, drilledId, hidden }), [categories, level, drilledId, hidden]);
+    const currentItems = useMemo(() => getCurrentItems({ categories: stableCategories, level, drilledId, hidden }), [stableCategories, level, drilledId, hidden]);
     const toggleHidden = useCallback((id) => {
         // Определяем направление (hide vs show) внутри setHidden, чтобы
         // setHidden оперировал свежим prev, а не устаревшим closure `hidden`.
@@ -395,7 +408,7 @@ function StructureDonut(props) {
     // ── Breadcrumb rendering ──
     const breadcrumbContent = useMemo(() => {
         if (level === 'drilled') {
-            const parent = categories.find((c) => c.id === drilledId);
+            const parent = stableCategories.find((c) => c.id === drilledId);
             return (_jsxs(_Fragment, { children: [_jsx("button", { type: "button", className: "bc-back", onClick: drillUp, "aria-label": "\u0412\u0435\u0440\u043D\u0443\u0442\u044C\u0441\u044F \u043A \u043A\u043E\u0440\u043D\u044E", title: "\u041D\u0430\u0437\u0430\u0434 (Esc)", children: "\u25C2" }), _jsxs("span", { className: "bc-cur", children: ["\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430 \u203A ", _jsx("span", { className: "bc-sel", children: parent?.name ?? '—' })] })] }));
         }
         if (selectedIdx == null) {
@@ -413,7 +426,7 @@ function StructureDonut(props) {
         drilledId,
         selectedIdx,
         currentItems,
-        categories,
+        stableCategories,
         subtitleText,
         drillUp,
     ]);
@@ -452,9 +465,9 @@ function StructureDonut(props) {
                        hero) на drill/back → donutRevealKf CSS animation re-fires
                        на mount. Это Plan C из debug doc — guaranteed visible
                        expansion animation вместо нестабильной ECharts internal. */
-                    _jsxs(ChartWrap, { children: [_jsx(DonutChartInner, { width: width, height: height, dataState: dataState, categories: categories, hasSubcategories: hasSubcategories, totalRevenue: totalRevenue, padAngle: padAngle, borderRadius: borderRadius, showOuterLabelsPct: showOuterLabelsPct, rubDecimals: rubDecimals, unit: unit, level: level, drilledId: drilledId, selectedIdx: selectedIdx, hidden: hidden, tokens: tokens, ariaLabel: donutAriaLabel, onSelect: setSelectedIdx, onDrill: handleDrill }, `donut-${level}-${drilledId ?? 'root'}`), _jsx(HeroOverlay, { "aria-hidden": "true", children: (() => {
+                    _jsxs(ChartWrap, { children: [_jsx(DonutChartInner, { width: width, height: height, dataState: dataState, categories: stableCategories, hasSubcategories: hasSubcategories, totalRevenue: totalRevenue, padAngle: padAngle, borderRadius: borderRadius, showOuterLabelsPct: showOuterLabelsPct, rubDecimals: rubDecimals, unit: unit, level: level, drilledId: drilledId, selectedIdx: selectedIdx, hidden: hidden, tokens: tokens, ariaLabel: donutAriaLabel, onSelect: setSelectedIdx, onDrill: handleDrill }, `donut-${level}-${drilledId ?? 'root'}`), _jsx(HeroOverlay, { "aria-hidden": "true", children: (() => {
                                     const h = computeHero({
-                                        categories,
+                                        categories: stableCategories,
                                         hasSubcategories,
                                         totalRevenue,
                                         unit,

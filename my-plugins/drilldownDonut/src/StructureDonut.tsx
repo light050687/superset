@@ -71,6 +71,10 @@ import {
   DisplayItem,
   getCurrentItems,
 } from './utils/buildOption';
+import {
+  getCategoriesContentKey,
+  getCategoriesIdKey,
+} from './utils/categoriesContentKey';
 import { fmtRub } from './utils/formatRussian';
 
 /**
@@ -561,17 +565,30 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
      keyframes гарантированно injected в stylesheet ДО commit'а Card.
      React-driven cardMounted+RAF подход больше не нужен. */
 
-  // Сброс состояния при полной замене данных (другая выборка, другие категории)
-  const categoriesKey = useMemo(
-    () => categories.map((c) => c.id).join('|'),
+  /* Стабилизация ссылки `categories` между Superset chart re-render'ами.
+     transformProps создаёт новый массив каждый раз (groupRows + forEach
+     mutating colors) — без memo это идентичный по содержанию, но новый по
+     ref массив, который ретриггерит useEffect[deps]=setOption внутри
+     DonutChartInner → ECharts проигрывает анимацию повторно. См.
+     utils/categoriesContentKey.ts для разделения id-key vs content-key. */
+  const categoriesIdKey = useMemo(() => getCategoriesIdKey(categories), [categories]);
+  const categoriesContentKey = useMemo(
+    () => getCategoriesContentKey(categories),
     [categories],
   );
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- зависимость по content-key умышленно
+  const stableCategories = useMemo(() => categories, [categoriesContentKey]);
+
+  // Сброс состояния при полной замене данных (другая выборка, другие категории).
+  // НЕ дёргать на theme switch / numeric refresh — поэтому id-key, не content-key.
+  // setHidden: возвращаем prev если уже пустой (избегаем новой Set-ссылки при первом
+  // mount, иначе DonutChartInner получит новый identity hidden и сделает лишний setOption).
   useEffect(() => {
     setLevel('root');
     setDrilledId(null);
     setSelectedIdx(null);
-    setHidden(new Set());
-  }, [categoriesKey]);
+    setHidden(prev => (prev.size === 0 ? prev : new Set()));
+  }, [categoriesIdKey]);
 
   // Токены по теме
   const tokens: Tokens = isDarkMode ? DARK_TOKENS : LIGHT_TOKENS;
@@ -587,8 +604,8 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
   );
 
   const donutAriaLabel = `Структура потерь: ${fmtRub(
-    categories.reduce((s, c) => s + c.rub, 0),
-  )} по ${categories.length} категориям`;
+    stableCategories.reduce((s, c) => s + c.rub, 0),
+  )} по ${stableCategories.length} категориям`;
 
   // ── Keyboard: Escape ──
   // InfoHint имеет свой Escape (closeOnEscape), но мы opt-out (closeOnEscape={false})
@@ -629,8 +646,8 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
 
   // ── Текущий срез для легенды (вычисляется до toggleHidden — нужен в его closure) ──
   const currentItems: DisplayItem[] = useMemo(
-    () => getCurrentItems({ categories, level, drilledId, hidden }),
-    [categories, level, drilledId, hidden],
+    () => getCurrentItems({ categories: stableCategories, level, drilledId, hidden }),
+    [stableCategories, level, drilledId, hidden],
   );
 
   const toggleHidden = useCallback(
@@ -663,7 +680,7 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
   // ── Breadcrumb rendering ──
   const breadcrumbContent = useMemo(() => {
     if (level === 'drilled') {
-      const parent: CategoryNode | undefined = categories.find((c) => c.id === drilledId);
+      const parent: CategoryNode | undefined = stableCategories.find((c) => c.id === drilledId);
       return (
         <>
           <button
@@ -704,7 +721,7 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
     drilledId,
     selectedIdx,
     currentItems,
-    categories,
+    stableCategories,
     subtitleText,
     drillUp,
   ]);
@@ -891,7 +908,7 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
               width={width}
               height={height}
               dataState={dataState}
-              categories={categories}
+              categories={stableCategories}
               hasSubcategories={hasSubcategories}
               totalRevenue={totalRevenue}
               padAngle={padAngle}
@@ -915,7 +932,7 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
             <HeroOverlay aria-hidden="true">
               {(() => {
                 const h = computeHero({
-                  categories,
+                  categories: stableCategories,
                   hasSubcategories,
                   totalRevenue,
                   unit,
