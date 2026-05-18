@@ -1,5 +1,6 @@
-// @canonical-version: 3.2.0
-// @canonical-source: superset/my-plugins/_shared/info-hint/
+// scorecard-local: модальная версия InfoHint. Портал в document.body +
+// backdrop + центрированная карточка. Mobile-friendly (любая ширина Card
+// не ограничивает модалку). После approval — мигрировать в canonical.
 import {
   forwardRef,
   useEffect,
@@ -11,7 +12,8 @@ import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   HintTrigger,
-  HintOverlay,
+  HintModalBackdrop,
+  HintModalCard,
   HintOverlayClose,
   HintOverlayBody,
   HintOverlayTitle,
@@ -50,27 +52,6 @@ function IconClose(): JSX.Element {
   );
 }
 
-/* Ищем контейнер для HintOverlay. Приоритет — элемент с явным маркером
-   [data-info-hint-container] (плагин помечает свой Card этим атрибутом).
-   Fallback — ближайший positioned ancestor.
-   Маркер важен потому что внутри плагина могут быть промежуточные
-   position:relative блоки (например ComparisonSection scorecard'а имеет
-   position:relative для своего ::before), и без явного маркера portal
-   попадёт в них, а не в Card. */
-function findHintContainer(el: HTMLElement): HTMLElement | null {
-  const marked = el.closest<HTMLElement>('[data-info-hint-container]');
-  if (marked) return marked;
-  let p: HTMLElement | null = el.parentElement;
-  while (p && p !== document.body) {
-    const pos = window.getComputedStyle(p).position;
-    if (pos === 'relative' || pos === 'absolute' || pos === 'fixed' || pos === 'sticky') {
-      return p;
-    }
-    p = p.parentElement;
-  }
-  return null;
-}
-
 export interface InfoHintProps {
   ariaLabel: string;
   children: ReactNode;
@@ -91,7 +72,6 @@ export const InfoHint = forwardRef<InfoHintHandle, InfoHintProps>(
     ref,
   ) {
     const [open, setOpen] = useState(false);
-    const [container, setContainer] = useState<HTMLElement | null>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
 
     useImperativeHandle(
@@ -115,9 +95,6 @@ export const InfoHint = forwardRef<InfoHintHandle, InfoHintProps>(
 
     const handleToggle = (e: React.MouseEvent): void => {
       e.stopPropagation();
-      if (!open && triggerRef.current) {
-        setContainer(findHintContainer(triggerRef.current));
-      }
       setOpen((v) => !v);
     };
 
@@ -134,29 +111,37 @@ export const InfoHint = forwardRef<InfoHintHandle, InfoHintProps>(
           <IconInfo />
         </HintTrigger>
         {open &&
-          container &&
+          typeof document !== 'undefined' &&
           createPortal(
-            <HintOverlay
-              role="dialog"
-              aria-modal="true"
-              aria-label={ariaLabel}
-              onClick={(e) => e.stopPropagation()}
+            <HintModalBackdrop
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(false);
+              }}
               onContextMenu={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 setOpen(false);
               }}
             >
-              <HintOverlayClose
-                type="button"
-                aria-label="Закрыть"
-                onClick={() => setOpen(false)}
+              <HintModalCard
+                role="dialog"
+                aria-modal="true"
+                aria-label={ariaLabel}
+                onClick={(e) => e.stopPropagation()}
               >
-                <IconClose />
-              </HintOverlayClose>
-              {title && <HintOverlayTitle>{title}</HintOverlayTitle>}
-              <HintOverlayBody>{children}</HintOverlayBody>
-            </HintOverlay>,
-            container,
+                <HintOverlayClose
+                  type="button"
+                  aria-label="Закрыть"
+                  onClick={() => setOpen(false)}
+                >
+                  <IconClose />
+                </HintOverlayClose>
+                {title && <HintOverlayTitle>{title}</HintOverlayTitle>}
+                <HintOverlayBody>{children}</HintOverlayBody>
+              </HintModalCard>
+            </HintModalBackdrop>,
+            document.body,
           )}
       </>
     );

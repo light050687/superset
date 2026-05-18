@@ -84,7 +84,7 @@ import {
 } from './styles';
 import { DrillModal } from './DrillModal';
 import { CompareModal } from './CompareModal';
-import { InfoHint, InfoHintCorner } from './components/InfoHint';
+import { InfoHint, InfoHintTopRight } from './components/InfoHint';
 
 type SortDir = 'asc' | 'desc';
 
@@ -832,6 +832,17 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
             >
               <span className="sigma" aria-hidden="true">Σ</span>
             </Chip>
+            <InfoHintTopRight>
+              <InfoHint ariaLabel="Подсказка по управлению">
+                <span className="hi"><kbd>клик</kbd> — фильтр</span>
+                <span className="hi-sep" aria-hidden="true" />
+                <span className="hi"><kbd>Ctrl</kbd>+<kbd>клик</kbd> — разложение</span>
+                <span className="hi-sep" aria-hidden="true" />
+                <span className="hi"><kbd>⇧</kbd> <kbd>клик</kbd> — сравнить</span>
+                <span className="hi-sep" aria-hidden="true" />
+                <span className="hi"><kbd>Right Click</kbd> — меню действий</span>
+              </InfoHint>
+            </InfoHintTopRight>
           </Controls>
         </Header>
 
@@ -1006,17 +1017,6 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
             <ScaleItem className="wn"><span className="sw" aria-hidden="true" /><span className="label">{STATUS_LABEL.wn} · до {thresholds.wn}</span></ScaleItem>
             <ScaleItem className="dn"><span className="sw" aria-hidden="true" /><span className="label">{STATUS_LABEL.dn} · выше {thresholds.wn}</span></ScaleItem>
             <ScaleItem className="nd"><span className="sw" aria-hidden="true" /><span className="label">{STATUS_LABEL.nd}</span></ScaleItem>
-            <InfoHintCorner>
-              <InfoHint ariaLabel="Подсказка по управлению">
-                <span className="hi"><span>клик — фильтр</span></span>
-                <span className="hi-sep" aria-hidden="true" />
-                <span className="hi"><span>Ctrl+клик — разложение</span></span>
-                <span className="hi-sep" aria-hidden="true" />
-                <span className="hi"><span>⇧ клик — сравнить</span></span>
-                <span className="hi-sep" aria-hidden="true" />
-                <span className="hi"><span>Right Click — меню действий</span></span>
-              </InfoHint>
-            </InfoHintCorner>
           </Scale>
         </Footer>
       </Card>

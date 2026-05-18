@@ -1,4 +1,5 @@
 import React, {
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -30,7 +31,7 @@ import {
   PartialBadge,
   StaleBar,
 } from './styles';
-import { InfoHint, InfoHintCorner } from './components/InfoHint';
+import { InfoHint, InfoHintTopRight } from './components/InfoHint';
 
 /* === Локальные styled-обёртки (миграция inline style → Emotion, P-011) === */
 
@@ -964,6 +965,34 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
             searchMatchesCount={searchMatches.length}
             onSearchSelect={onSearchSelect}
           />
+          <InfoHintTopRight>
+            <InfoHint ariaLabel="Подсказка по управлению">
+              <div className="hint-section">
+                <div className="hint-section-title">Управление</div>
+                {shortcutsHint.split(/\s*·\s*/).map((part, i) => {
+                  const [keysRaw, ...descParts] = part.split(/\s*—\s*/);
+                  const desc = descParts.join(' — ');
+                  const keys = keysRaw.split(/\s*\+\s*/);
+                  return (
+                    <span className="hi" key={i}>
+                      {keys.map((k, ki) => (
+                        <Fragment key={ki}>
+                          <kbd>{k}</kbd>
+                          {ki < keys.length - 1 && ' + '}
+                        </Fragment>
+                      ))}
+                      {desc && <> — {desc}</>}
+                    </span>
+                  );
+                })}
+                <span className="hi"><kbd>Right Click</kbd> — меню действий</span>
+              </div>
+              <div className="hint-section">
+                <div className="hint-section-title">Пояснения</div>
+                <span className="hi">Размер кружка = {sizeUnit}</span>
+              </div>
+            </InfoHint>
+          </InfoHintTopRight>
         </Controls>
       </CardHead>
 
@@ -1071,23 +1100,6 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
             <span>размер = {sizeUnit}</span>
           </span>
         </div>
-        <InfoHintCorner>
-          <InfoHint ariaLabel="Подсказка по управлению">
-            <div className="hint-section">
-              <div className="hint-section-title">Управление</div>
-              {shortcutsHint.split(/\s*·\s*/).map((part, i) => (
-                <span className="hi" key={i}>
-                  <span>{part}</span>
-                </span>
-              ))}
-              <span className="hi"><span>Right Click — меню действий</span></span>
-            </div>
-            <div className="hint-section">
-              <div className="hint-section-title">Пояснения</div>
-              <span className="hi"><span>Размер кружка = {sizeUnit}</span></span>
-            </div>
-          </InfoHint>
-        </InfoHintCorner>
       </Footer>
 
       <Tooltip ref={tooltipRef} role="tooltip" aria-hidden="true" />

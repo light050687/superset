@@ -36,7 +36,7 @@ import {
   RefreshBar,
 } from './styles';
 import DetailModal from './DetailModal';
-import { InfoHint, InfoHintCorner } from './components/InfoHint';
+import { InfoHint, InfoHintTopRight } from './components/InfoHint';
 
 /* ── Counter animation ──────────────────────────────────────────────
  * The integer part of the hero value counts up from 0 → target.
@@ -155,11 +155,9 @@ function ComparisonRow({
 function ViewContent({
   view,
   skipAnimation,
-  trailingInComparison,
 }: {
   view: KpiViewData;
   skipAnimation?: boolean;
-  trailingInComparison?: React.ReactNode;
 }): JSX.Element {
   return (
     <>
@@ -174,7 +172,6 @@ function ViewContent({
               skipAnimation={skipAnimation}
             />
           ))}
-          {trailingInComparison}
         </ComparisonSection>
       )}
     </>
@@ -603,27 +600,26 @@ const KpiCardMemo = React.memo(function KpiCardInner({
   const activeModeEmpty = activeView.value === '' && activeView.comparisons.length === 0;
   const hasDetail = (hasGroupby && !activeModeEmpty) || mockModeEnabled;
 
-  /* i-иконка передаётся в активный ViewContent как trailingInComparison,
-     чтобы оказаться в той же flex-row что и ComparisonRow'ы (визуальное
-     выравнивание справа на одной линии с "ПЛАН: ... / ПГ: ..."). */
-  const hintCorner = (
-    <InfoHintCorner>
+  /* i-кнопка в правом верхнем углу Card. Single source of truth для
+     управления чартом — Click/Right Click/переключатель режимов. */
+  const hintTopRight = (
+    <InfoHintTopRight>
       <InfoHint ariaLabel="Подсказка по управлению">
         {hasDetail && (
           <>
-            <span className="hi"><span>Click — детали</span></span>
+            <span className="hi"><kbd>Click</kbd> — детали</span>
             <span className="hi-sep" aria-hidden="true" />
           </>
         )}
         {isDual && (
           <>
-            <span className="hi"><span>{toggleLabelA} / {toggleLabelB} — переключатель</span></span>
+            <span className="hi"><kbd>{toggleLabelA}</kbd> / <kbd>{toggleLabelB}</kbd> — переключатель</span>
             <span className="hi-sep" aria-hidden="true" />
           </>
         )}
-        <span className="hi"><span>Right Click — меню действий</span></span>
+        <span className="hi"><kbd>Right Click</kbd> — меню действий</span>
       </InfoHint>
-    </InfoHintCorner>
+    </InfoHintTopRight>
   );
 
   return (
@@ -649,32 +645,35 @@ const KpiCardMemo = React.memo(function KpiCardInner({
         <CardHead>
           <CardTitle>{headerText}{mockModeEnabled && <MockBadge>ТЕСТ</MockBadge>}</CardTitle>
           {isPartial && <PartialBadge>Частичные данные</PartialBadge>}
-          {isDual && (
-            <ToggleGroup role="tablist" aria-label="Toggle mode A / B">
-              <ToggleButton
-                active={isA}
-                role="tab"
-                aria-selected={isA}
-                onClick={e => {
-                  e.stopPropagation();
-                  setActiveMode('a');
-                }}
-              >
-                {toggleLabelA}
-              </ToggleButton>
-              <ToggleButton
-                active={!isA}
-                role="tab"
-                aria-selected={!isA}
-                onClick={e => {
-                  e.stopPropagation();
-                  setActiveMode('b');
-                }}
-              >
-                {toggleLabelB}
-              </ToggleButton>
-            </ToggleGroup>
-          )}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 'auto', flexShrink: 0 }}>
+            {isDual && (
+              <ToggleGroup role="tablist" aria-label="Toggle mode A / B">
+                <ToggleButton
+                  active={isA}
+                  role="tab"
+                  aria-selected={isA}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setActiveMode('a');
+                  }}
+                >
+                  {toggleLabelA}
+                </ToggleButton>
+                <ToggleButton
+                  active={!isA}
+                  role="tab"
+                  aria-selected={!isA}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setActiveMode('b');
+                  }}
+                >
+                  {toggleLabelB}
+                </ToggleButton>
+              </ToggleGroup>
+            )}
+            {hintTopRight}
+          </div>
         </CardHead>
 
         <DataContainer>
@@ -683,7 +682,6 @@ const KpiCardMemo = React.memo(function KpiCardInner({
               <ViewContent
                 view={viewA}
                 skipAnimation={hasAnimated}
-                trailingInComparison={isA ? hintCorner : null}
               />
             ) : (
               <EmptyStateWrap>
@@ -698,7 +696,6 @@ const KpiCardMemo = React.memo(function KpiCardInner({
                 <ViewContent
                   view={viewB}
                   skipAnimation={hasAnimated}
-                  trailingInComparison={!isA ? hintCorner : null}
                 />
               ) : (
                 <EmptyStateWrap>

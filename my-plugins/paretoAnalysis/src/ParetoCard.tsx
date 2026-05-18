@@ -200,6 +200,7 @@ function ParetoCardInner(props: ParetoCardProps) {
               onToggleTopA={() => dispatch({ type: 'toggleTopA' })}
               onTogglePrev={() => dispatch({ type: 'togglePrev' })}
             />
+            <HintRow />
           </ControlsRow>
         </CardHead>
 
@@ -251,7 +252,6 @@ function ParetoCardInner(props: ParetoCardProps) {
               })
             }
           />
-          <HintRow />
         </CardFooter>
       </Card>
 

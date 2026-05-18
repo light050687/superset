@@ -52,7 +52,7 @@ import MultiSelectDropdown, {
 } from './components/MultiSelectDropdown';
 import SearchInput from './components/SearchInput';
 import CsvExportButton from './components/CsvExportButton';
-import FooterHints from './components/FooterHints';
+import FooterHints, { ControlsHint } from './components/FooterHints';
 import EmptyState from './components/EmptyState';
 import Tooltip from './components/Tooltip';
 import MiniSparkline from './components/MiniSparkline';
@@ -527,6 +527,7 @@ export default function RankedStoresChart(
                 onChange={v => dispatch({ type: 'SET_SEARCH', payload: v })}
               />
               <CsvExportButton stores={rankedStores} />
+              <ControlsHint />
             </Controls>
           </CardHead>
 

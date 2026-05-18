@@ -1,4 +1,4 @@
-// @canonical-version: 3.2.0
+// @canonical-version: 3.3.0
 // @canonical-source: superset/my-plugins/_shared/info-hint/
 // DS-aligned per Superset_Design_System_v2_1_RU.docx §02 (типографика),
 // §03 (цвета), §06 (анатомия контейнера), §08 (состояния/анимации).
@@ -6,47 +6,43 @@ import { styled } from '@superset-ui/core';
 
 const EASE = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
-/* InfoHintCorner — inline-flex обёртка для <InfoHint>. margin-left:auto
-   прижимает иконку к правому краю flex-контейнера (footer / legend
-   / comparison row), align-items:center выравнивает по вертикали. */
-export const InfoHintCorner = styled.div`
+/* InfoHintTopRight — inline-flex обёртка с margin-left:auto, прижимается
+   к правому краю flex-контейнера (CardHead / footer / legend row).
+   Работает универсально в любой flex-row без дополнительной настройки. */
+export const InfoHintTopRight = styled.div`
   display: inline-flex;
   align-items: center;
   margin-left: auto;
   flex-shrink: 0;
 `;
 
-/* InfoHintAbsolute — absolute-обёртка для случаев, когда i-иконка
-   должна быть в правом нижнем углу Card НЕ нарушая центрирование
-   соседнего контента (например, центрированная легенда линчарта).
-   Card должен иметь position:relative. */
-export const InfoHintAbsolute = styled.div`
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  display: inline-flex;
-  z-index: 3;
-`;
-
+/* HintTrigger — i-кнопка в форме одиночного бейджа ToggleGroup.
+   Размеры/радиус/фон 1-в-1 с ToggleGroup container (height 30, bg --g100,
+   border --g200, radius 6) чтобы визуально стоять в одной линии с
+   переключателем. На touch — 44×44 (ADR-0001). */
 export const HintTrigger = styled.button`
+  box-sizing: border-box;
   position: relative;
-  width: 24px;
-  height: 24px;
-  padding: 4px;
-  border: none;
-  background: transparent;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--g200, #dcdcdc);
+  background: var(--g100, #ebebeb);
   cursor: pointer;
-  border-radius: 50%;
+  border-radius: 6px;
   color: var(--g500, #737373);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ${EASE}, color 0.15s ${EASE};
+  flex-shrink: 0;
+  transition:
+    background 0.15s ${EASE},
+    color 0.15s ${EASE},
+    border-color 0.15s ${EASE};
 
   @media (hover: none), (pointer: coarse) {
     width: 44px;
     height: 44px;
-    padding: 12px;
   }
 
   & > svg {
@@ -61,7 +57,8 @@ export const HintTrigger = styled.button`
   }
 
   &:hover {
-    background: var(--g100, #ebebeb);
+    background: var(--s, #ffffff);
+    border-color: var(--g300, #c0c0c0);
     color: var(--ink, #0a0a0a);
   }
   &:focus-visible {
@@ -70,35 +67,48 @@ export const HintTrigger = styled.button`
   }
 `;
 
-/* HintOverlay — выдвигающееся окно ВНУТРИ Card (через portal к ближайшему
-   [data-info-hint-container]). DS §06: padding space-4 × space-6 (16×20px),
-   border-radius наследуется от Card 10px. §08: fadeIn + сдвиг 4px, 0.25s
-   ease cubic-bezier(.4,0,.2,1). */
-export const HintOverlay = styled.div`
-  position: absolute;
+/* HintModalBackdrop — fixed overlay поверх всего viewport (через portal в
+   document.body). Mobile-friendly: модалка не зависит от размеров Card. */
+export const HintModalBackdrop = styled.div`
+  position: fixed;
   inset: 0;
+  background: rgba(10, 10, 10, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+  box-sizing: border-box;
+  animation: hi-backdrop-in 0.18s ${EASE} both;
+
+  @keyframes hi-backdrop-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+`;
+
+/* HintModalCard — центрированная карточка с контентом подсказки.
+   max-width 520px на desktop, 100% width на узком viewport. */
+export const HintModalCard = styled.div`
+  position: relative;
   background: var(--s, #ffffff);
   color: var(--ink, #0a0a0a);
-  z-index: 50;
-  padding: 16px 20px;
-  box-sizing: border-box;
+  border-radius: 12px;
+  padding: 20px 24px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 80vh;
   overflow-y: auto;
-  border-radius: inherit;
+  box-sizing: border-box;
   font-family: var(--f, 'Manrope', system-ui, -apple-system, sans-serif);
   font-size: 14px;
   line-height: 1.5;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
-  animation: hi-overlay-in 0.25s ${EASE} both;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
+  animation: hi-modal-in 0.22s ${EASE} both;
 
-  @keyframes hi-overlay-in {
-    from {
-      opacity: 0;
-      transform: translateY(4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  @keyframes hi-modal-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
   }
 `;
 
@@ -207,19 +217,23 @@ export const HintOverlayBody = styled.div`
     margin: 4px 0;
   }
 
-  /* kbd-стиль для клавиш в подсказках. DS моно 11px на тинте --g100. */
+  /* kbd-стиль для клавиш в подсказках. Outlined-вариант: тонкая рамка
+     var(--g200) + фон var(--s) под скриншот 2. Пропорциональный шрифт
+     (sans-serif Manrope) — единый ритм с body 14px, weight 500. */
   kbd {
     display: inline-flex;
     align-items: center;
-    padding: 1px 6px;
-    min-height: 18px;
+    padding: 2px 8px;
+    min-height: 22px;
+    border: 1px solid var(--g200, #dcdcdc);
     border-radius: 4px;
-    background: var(--g100, #ebebeb);
+    background: var(--s, #ffffff);
     color: var(--ink, #0a0a0a);
-    font-family: var(--m, 'JetBrains Mono', ui-monospace, monospace);
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 1.4;
+    font-family: var(--f, 'Manrope', system-ui, -apple-system, sans-serif);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
     letter-spacing: 0;
+    white-space: nowrap;
   }
 `;

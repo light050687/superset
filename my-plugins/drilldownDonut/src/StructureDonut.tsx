@@ -64,7 +64,7 @@ import {
   Title,
   UnitToggle,
 } from './styles';
-import { InfoHint, type InfoHintHandle, InfoHintCorner } from './components/InfoHint';
+import { InfoHint, type InfoHintHandle, InfoHintTopRight } from './components/InfoHint';
 import {
   buildOption,
   computeHero,
@@ -714,9 +714,7 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
     /* Right-click hint показываем во всех 3 вариантах — это новая
        глобальная фича дашборда (radial menu вместо AntD Dropdown). */
     const rightClickHint = (
-      <span className="hi">
-        <span>Right Click — меню действий</span>
-      </span>
+      <span className="hi"><kbd>Right Click</kbd> — меню действий</span>
     );
     if (level === 'drilled') {
       // Drilled: «◂ или Esc — назад» (стрелка в breadcrumb тоже работает).
@@ -725,9 +723,7 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
         <>
           <span className="hi">
             <IconBack />
-            <span>
-              <span className="hi-arrow" aria-hidden="true">◂</span> или Esc — назад
-            </span>
+            <span><kbd>◂</kbd> или <kbd>Esc</kbd> — назад</span>
           </span>
           <span className="hi-sep" aria-hidden="true" />
           {rightClickHint}
@@ -741,15 +737,13 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
         <>
           {hasSubcategories && (
             <>
-              <span className="hi">
-                <span>Ctrl+Click — вглубь</span>
-              </span>
+              <span className="hi"><kbd>Ctrl</kbd>+<kbd>Click</kbd> — вглубь</span>
               <span className="hi-sep" aria-hidden="true" />
             </>
           )}
           <span className="hi">
             <IconBack />
-            <span>Esc — снять</span>
+            <span><kbd>Esc</kbd> — снять</span>
           </span>
           <span className="hi-sep" aria-hidden="true" />
           {rightClickHint}
@@ -761,14 +755,12 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
       <>
         <span className="hi">
           <IconClick />
-          <span>клик — выбрать категорию</span>
+          <span><kbd>клик</kbd> — выбрать категорию</span>
         </span>
         {hasSubcategories && (
           <>
             <span className="hi-sep" aria-hidden="true" />
-            <span className="hi">
-              <span>Ctrl+Click — вглубь</span>
-            </span>
+            <span className="hi"><kbd>Ctrl</kbd>+<kbd>Click</kbd> — вглубь</span>
           </>
         )}
         <span className="hi-sep" aria-hidden="true" />
@@ -863,6 +855,15 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
                 %
               </button>
             </UnitToggle>
+            <InfoHintTopRight>
+              <InfoHint
+                ref={infoHintRef}
+                closeOnEscape={false}
+                ariaLabel="Подсказка по управлению"
+              >
+                {hintContent}
+              </InfoHint>
+            </InfoHintTopRight>
           </Controls>
         </CardHead>
 
@@ -961,15 +962,6 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
               </LegendChip>
             ))}
           </Legend>
-          <InfoHintCorner>
-            <InfoHint
-              ref={infoHintRef}
-              closeOnEscape={false}
-              ariaLabel="Подсказка по управлению"
-            >
-              {hintContent}
-            </InfoHint>
-          </InfoHintCorner>
         </Footer>
       </Card>
     </StructureDonutRoot>

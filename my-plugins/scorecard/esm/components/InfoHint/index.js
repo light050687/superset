@@ -1,3 +1,3 @@
 export { InfoHint } from './InfoHint';
-export { InfoHintCorner, InfoHintAbsolute } from './styles';
+export { InfoHintTopRight } from './styles';
 //# sourceMappingURL=index.js.map

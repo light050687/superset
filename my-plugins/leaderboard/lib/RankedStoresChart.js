@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -21,7 +54,7 @@ const TableBody_1 = __importDefault(require("./components/TableBody"));
 const MultiSelectDropdown_1 = __importDefault(require("./components/MultiSelectDropdown"));
 const SearchInput_1 = __importDefault(require("./components/SearchInput"));
 const CsvExportButton_1 = __importDefault(require("./components/CsvExportButton"));
-const FooterHints_1 = __importDefault(require("./components/FooterHints"));
+const FooterHints_1 = __importStar(require("./components/FooterHints"));
 const EmptyState_1 = __importDefault(require("./components/EmptyState"));
 const Tooltip_1 = __importDefault(require("./components/Tooltip"));
 const MiniSparkline_1 = __importDefault(require("./components/MiniSparkline"));
@@ -399,7 +432,7 @@ function RankedStoresChart(props) {
             }
         },
     }, rootRef);
-    return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { ref: rootRef, "$width": width, "$height": height, style: cssVars, className: "leaderboard-card", children: [(0, jsx_runtime_1.jsx)(react_2.Global, { styles: (0, react_2.css)(styles_1.KEYFRAMES_CSS) }), (0, jsx_runtime_1.jsx)(styles_1.Wrap, { children: (0, jsx_runtime_1.jsxs)(styles_1.Card, { "data-info-hint-container": "", children: [(0, jsx_runtime_1.jsxs)(styles_1.CardHead, { children: [(0, jsx_runtime_1.jsxs)(styles_1.TitleBlock, { children: [(0, jsx_runtime_1.jsx)(styles_1.CardTitle, { children: "\u0420\u0435\u0439\u0442\u0438\u043D\u0433 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u043E\u0432" }), (0, jsx_runtime_1.jsxs)(styles_1.CardSub, { children: [(0, jsx_runtime_1.jsxs)("span", { children: [totalCount, " \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u043E\u0432"] }), periodLabel && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("span", { className: "dot" }), (0, jsx_runtime_1.jsx)("span", { children: periodLabel })] })), (0, jsx_runtime_1.jsx)("span", { className: "dot" }), (0, jsx_runtime_1.jsxs)("span", { children: ["\u0421\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u043A\u0430 \u2014 ", sortLabel(state.sortBy)] })] })] }), (0, jsx_runtime_1.jsxs)(styles_1.Controls, { children: [(0, jsx_runtime_1.jsx)(MultiSelectDropdown_1.default, { label: "\u0421\u0442\u0430\u0442\u0443\u0441", options: statusOptions, selected: state.statusFilters, onToggle: k => dispatch({ type: 'TOGGLE_STATUS', payload: k }) }), (0, jsx_runtime_1.jsx)(MultiSelectDropdown_1.default, { label: "\u0424\u043E\u0440\u043C\u0430\u0442\u044B", options: formatOptions, selected: state.formatFilters, onToggle: k => dispatch({ type: 'TOGGLE_FORMAT', payload: k }) }), (0, jsx_runtime_1.jsx)(SearchInput_1.default, { value: state.search, onChange: v => dispatch({ type: 'SET_SEARCH', payload: v }) }), (0, jsx_runtime_1.jsx)(CsvExportButton_1.default, { stores: rankedStores })] })] }), hasAnyFilter && ((0, jsx_runtime_1.jsx)(styles_1.FilterResetRow, { children: (0, jsx_runtime_1.jsx)(styles_1.FilterResetBtn, { type: "button", onClick: () => dispatch({ type: 'RESET_FILTERS' }), children: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0444\u0438\u043B\u044C\u0442\u0440\u044B" }) })), stores.length === 0 ? ((0, jsx_runtime_1.jsx)(EmptyState_1.default, { title: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u043E\u0432", description: 'Включите «Режим проектирования» в настройках для тестовых данных, ' +
+    return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { ref: rootRef, "$width": width, "$height": height, style: cssVars, className: "leaderboard-card", children: [(0, jsx_runtime_1.jsx)(react_2.Global, { styles: (0, react_2.css)(styles_1.KEYFRAMES_CSS) }), (0, jsx_runtime_1.jsx)(styles_1.Wrap, { children: (0, jsx_runtime_1.jsxs)(styles_1.Card, { "data-info-hint-container": "", children: [(0, jsx_runtime_1.jsxs)(styles_1.CardHead, { children: [(0, jsx_runtime_1.jsxs)(styles_1.TitleBlock, { children: [(0, jsx_runtime_1.jsx)(styles_1.CardTitle, { children: "\u0420\u0435\u0439\u0442\u0438\u043D\u0433 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u043E\u0432" }), (0, jsx_runtime_1.jsxs)(styles_1.CardSub, { children: [(0, jsx_runtime_1.jsxs)("span", { children: [totalCount, " \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u043E\u0432"] }), periodLabel && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("span", { className: "dot" }), (0, jsx_runtime_1.jsx)("span", { children: periodLabel })] })), (0, jsx_runtime_1.jsx)("span", { className: "dot" }), (0, jsx_runtime_1.jsxs)("span", { children: ["\u0421\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u043A\u0430 \u2014 ", sortLabel(state.sortBy)] })] })] }), (0, jsx_runtime_1.jsxs)(styles_1.Controls, { children: [(0, jsx_runtime_1.jsx)(MultiSelectDropdown_1.default, { label: "\u0421\u0442\u0430\u0442\u0443\u0441", options: statusOptions, selected: state.statusFilters, onToggle: k => dispatch({ type: 'TOGGLE_STATUS', payload: k }) }), (0, jsx_runtime_1.jsx)(MultiSelectDropdown_1.default, { label: "\u0424\u043E\u0440\u043C\u0430\u0442\u044B", options: formatOptions, selected: state.formatFilters, onToggle: k => dispatch({ type: 'TOGGLE_FORMAT', payload: k }) }), (0, jsx_runtime_1.jsx)(SearchInput_1.default, { value: state.search, onChange: v => dispatch({ type: 'SET_SEARCH', payload: v }) }), (0, jsx_runtime_1.jsx)(CsvExportButton_1.default, { stores: rankedStores }), (0, jsx_runtime_1.jsx)(FooterHints_1.ControlsHint, {})] })] }), hasAnyFilter && ((0, jsx_runtime_1.jsx)(styles_1.FilterResetRow, { children: (0, jsx_runtime_1.jsx)(styles_1.FilterResetBtn, { type: "button", onClick: () => dispatch({ type: 'RESET_FILTERS' }), children: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0444\u0438\u043B\u044C\u0442\u0440\u044B" }) })), stores.length === 0 ? ((0, jsx_runtime_1.jsx)(EmptyState_1.default, { title: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u043E\u0432", description: 'Включите «Режим проектирования» в настройках для тестовых данных, ' +
                                 'либо настройте Сопоставление колонок под ваш dataset. Ожидаемые поля: ' +
                                 'store_id, store_name, city, format, format_name, division, to_class, ' +
                                 'writeoff_pct, shrinkage_pct, plan_writeoff_pct, plan_shrinkage_pct, ' +

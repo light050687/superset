@@ -31,7 +31,7 @@ import BulletRow from './components/BulletRow';
 import SortMenu from './components/SortMenu';
 import BulletTooltip from './components/Tooltip';
 import DetailModal from './DetailModal';
-import { InfoHint, InfoHintCorner } from './components/InfoHint';
+import { InfoHint, InfoHintTopRight } from './components/InfoHint';
 import type {
   BulletChartProps,
   FormatRow,
@@ -263,33 +263,48 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
               ) : null}
             </CardSub>
           </TitleBlock>
-          {rows.length > 0 ? (
-            <Controls>
-              <SortMenu value={sortBy} onChange={setSortBy} />
-              <FilterPill
-                type="button"
-                active={filterBad}
-                aria-pressed={filterBad}
-                onClick={() => setFilterBad(v => !v)}
-                title="Показать только хуже плана"
-              >
-                <svg
-                  viewBox="0 0 14 14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
+          <Controls>
+            {rows.length > 0 && (
+              <>
+                <SortMenu value={sortBy} onChange={setSortBy} />
+                <FilterPill
+                  type="button"
+                  active={filterBad}
+                  aria-pressed={filterBad}
+                  onClick={() => setFilterBad(v => !v)}
+                  title="Показать только хуже плана"
                 >
-                  <path d="M7 2 L13 12 L1 12 Z" />
-                  <line x1="7" y1="6" x2="7" y2="9" />
-                  <line x1="7" y1="11" x2="7" y2="11.5" />
-                </svg>
-                <span>Хуже плана</span>
-              </FilterPill>
-            </Controls>
-          ) : null}
+                  <svg
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M7 2 L13 12 L1 12 Z" />
+                    <line x1="7" y1="6" x2="7" y2="9" />
+                    <line x1="7" y1="11" x2="7" y2="11.5" />
+                  </svg>
+                  <span>Хуже плана</span>
+                </FilterPill>
+              </>
+            )}
+            <InfoHintTopRight>
+              <InfoHint ariaLabel="Подсказка по управлению">
+                {enableDetailModal && (
+                  <>
+                    <span className="hi"><kbd>Click</kbd> bar — детали</span>
+                    <span className="hi-sep" aria-hidden="true" />
+                  </>
+                )}
+                <span className="hi">Sort / Filter — controls сверху</span>
+                <span className="hi-sep" aria-hidden="true" />
+                <span className="hi"><kbd>Right Click</kbd> — меню действий</span>
+              </InfoHint>
+            </InfoHintTopRight>
+          </Controls>
         </CardHead>
 
         {dataState === 'loading' ? (
@@ -379,19 +394,6 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
               </FootLegend>
             </>
           )}
-          <InfoHintCorner>
-            <InfoHint ariaLabel="Подсказка по управлению">
-              {enableDetailModal && (
-                <>
-                  <span className="hi"><span>Click bar — детали</span></span>
-                  <span className="hi-sep" aria-hidden="true" />
-                </>
-              )}
-              <span className="hi"><span>Sort / Filter — controls сверху</span></span>
-              <span className="hi-sep" aria-hidden="true" />
-              <span className="hi"><span>Right Click — меню действий</span></span>
-            </InfoHint>
-          </InfoHintCorner>
         </CardFooter>
       </Card>
 

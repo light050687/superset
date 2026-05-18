@@ -15,7 +15,7 @@ import {
   TooltipRoot,
   VelocityRoot,
 } from './styles';
-import { InfoHint, InfoHintCorner } from './components/InfoHint';
+import { InfoHint, InfoHintTopRight } from './components/InfoHint';
 import { DARK_TOKENS, LIGHT_TOKENS } from './themeTokens';
 import type {
   DirectionFilter,
@@ -874,6 +874,21 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
                   </svg>
                 </button>
               )}
+              <InfoHintTopRight>
+                <InfoHint ariaLabel="Подсказка по управлению">
+                  <span className="hi"><kbd>Click</kbd> — кросс-фильтр</span>
+                  {showDetailModal && (
+                    <>
+                      <span className="hi-sep" aria-hidden="true" />
+                      <span className="hi"><kbd>Ctrl</kbd>+<kbd>Click</kbd> — детализация</span>
+                    </>
+                  )}
+                  <span className="hi-sep" aria-hidden="true" />
+                  <span className="hi"><kbd>Esc</kbd> — закрыть</span>
+                  <span className="hi-sep" aria-hidden="true" />
+                  <span className="hi"><kbd>Right Click</kbd> — меню действий</span>
+                </InfoHint>
+              </InfoHintTopRight>
             </div>
           </div>
 
@@ -1100,21 +1115,6 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
               {t('из')}{' '}
               <span className="vd-total-right">{inputStores.length}</span>
             </div>
-            <InfoHintCorner>
-              <InfoHint ariaLabel="Подсказка по управлению">
-                <span className="hi"><span>Click — кросс-фильтр</span></span>
-                {showDetailModal && (
-                  <>
-                    <span className="hi-sep" aria-hidden="true" />
-                    <span className="hi"><span>Ctrl+Click — детализация</span></span>
-                  </>
-                )}
-                <span className="hi-sep" aria-hidden="true" />
-                <span className="hi"><span>Esc — закрыть</span></span>
-                <span className="hi-sep" aria-hidden="true" />
-                <span className="hi"><span>Right Click — меню действий</span></span>
-              </InfoHint>
-            </InfoHintCorner>
           </div>
         </div>
       </VelocityRoot>

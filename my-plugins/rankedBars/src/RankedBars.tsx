@@ -32,7 +32,7 @@ import { fmtRub } from './utils/formatRussian';
 import DetailModal from './components/DetailModal';
 import AllItemsModal from './components/AllItemsModal';
 import { buildTooltipContent } from './components/tooltipContent';
-import { InfoHint, InfoHintCorner } from './components/InfoHint';
+import { InfoHint, InfoHintTopRight } from './components/InfoHint';
 
 // ── Sorting helpers ─────────────────────────────────────────────────────────
 function sortRows(rows: RankedRow[], by: SortMode): RankedRow[] {
@@ -439,6 +439,15 @@ const RankedBars: React.FC<RankedBarsProps> = props => {
             deltaDisabled={!hasPrevMetric}
           />
           <UnitToggle value={unit} onChange={setUnit} />
+          <InfoHintTopRight>
+            <InfoHint ariaLabel="Подсказка по управлению">
+              <span className="hi"><kbd>Клик</kbd> — фильтр</span>
+              <span className="hi-sep" aria-hidden="true" />
+              <span className="hi"><kbd>Ctrl</kbd>+<kbd>клик</kbd> — детализация</span>
+              <span className="hi-sep" aria-hidden="true" />
+              <span className="hi"><kbd>Right Click</kbd> — меню действий</span>
+            </InfoHint>
+          </InfoHintTopRight>
         </Controls>
       </CardHead>
 
@@ -454,15 +463,6 @@ const RankedBars: React.FC<RankedBarsProps> = props => {
             Показать все {totalRowsCount} позиций →
           </button>
         )}
-        <InfoHintCorner>
-          <InfoHint ariaLabel="Подсказка по управлению">
-            <span className="hi"><span>Клик — фильтр</span></span>
-            <span className="hi-sep" aria-hidden="true" />
-            <span className="hi"><span>Ctrl+клик — детализация</span></span>
-            <span className="hi-sep" aria-hidden="true" />
-            <span className="hi"><span>Right Click — меню действий</span></span>
-          </InfoHint>
-        </InfoHintCorner>
       </CardFooter>
 
       {showHoverTooltip && <Tooltip payload={tooltip} />}

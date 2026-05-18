@@ -59,7 +59,7 @@ import {
   KEYFRAMES_CSS,
   CARD_CLASS,
 } from './styles';
-import { InfoHint, InfoHintAbsolute } from './components/InfoHint';
+import { InfoHint, InfoHintTopRight } from './components/InfoHint';
 import { ruMonthShort } from './utils/dateHelpers';
 
 /* ──────────────── Icons ──────────────── */
@@ -682,6 +682,25 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
                 %
               </UnitButton>
             </UnitToggleGroup>
+            <InfoHintTopRight>
+              <InfoHint ariaLabel="Подсказка по управлению">
+                {!isFullRange ? (
+                  <span className="hi"><kbd>◂</kbd> или <kbd>Esc</kbd> — назад</span>
+                ) : (
+                  <>
+                    {gran === 'month' && enableDrillDown && (
+                      <>
+                        <span className="hi"><kbd>клик</kbd> — месяц</span>
+                        <span className="hi-sep" aria-hidden="true" />
+                      </>
+                    )}
+                    <span className="hi">выделить — диапазон</span>
+                  </>
+                )}
+                <span className="hi-sep" aria-hidden="true" />
+                <span className="hi"><kbd>Right Click</kbd> — меню действий</span>
+              </InfoHint>
+            </InfoHintTopRight>
           </Controls>
         </CardHead>
 
@@ -801,25 +820,6 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
 
           <FooterSpacer />
         </CardFooter>
-        <InfoHintAbsolute>
-          <InfoHint ariaLabel="Подсказка по управлению">
-            {!isFullRange ? (
-              <span className="hi"><span>◂ или Esc — назад</span></span>
-            ) : (
-              <>
-                {gran === 'month' && enableDrillDown && (
-                  <>
-                    <span className="hi"><span>клик — месяц</span></span>
-                    <span className="hi-sep" aria-hidden="true" />
-                  </>
-                )}
-                <span className="hi"><span>выделить — диапазон</span></span>
-              </>
-            )}
-            <span className="hi-sep" aria-hidden="true" />
-            <span className="hi"><span>Right Click — меню действий</span></span>
-          </InfoHint>
-        </InfoHintAbsolute>
       </Card>
     </Root>
   );

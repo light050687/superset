@@ -1,18 +1,17 @@
-import { InfoHint, InfoHintCorner } from './InfoHint';
+import { InfoHint, InfoHintTopRight } from './InfoHint';
 
-/** Подсказка про управление — i-иконка в правом нижнем углу карточки.
-   InfoHintCorner: absolute positioning, должен рендериться внутри Card
-   с position:relative (parent ParetoCard). */
+/** Подсказка про управление — i-кнопка в правом нижнем углу карточки.
+   InfoHintTopRight: inline-flex обёртка, размещается внутри Footer. */
 export default function HintRow() {
   return (
-    <InfoHintCorner>
+    <InfoHintTopRight>
       <InfoHint ariaLabel="Подсказка по управлению">
-        <span className="hi"><span>клик — фильтр</span></span>
+        <span className="hi"><kbd>клик</kbd> — фильтр</span>
         <span className="hi-sep" aria-hidden="true" />
-        <span className="hi"><span>Ctrl+клик — разложение</span></span>
+        <span className="hi"><kbd>Ctrl</kbd>+<kbd>клик</kbd> — разложение</span>
         <span className="hi-sep" aria-hidden="true" />
-        <span className="hi"><span>Right Click — меню действий</span></span>
+        <span className="hi"><kbd>Right Click</kbd> — меню действий</span>
       </InfoHint>
-    </InfoHintCorner>
+    </InfoHintTopRight>
   );
 }
