@@ -64,8 +64,15 @@ export function buildOption(params) {
            из общего ритма остальных плагинов. */
         animationDuration: 700,
         animationEasing: 'cubicOut',
-        animationDurationUpdate: 500,
-        animationEasingUpdate: 'cubicInOut',
+        /* Update animation выключена — formatters в transformProps пересоздаются
+           reference каждый раз (functions), useMemo deps видит изменение → option
+           reference меняется → ReactECharts wrapper делает setOption() → ECharts
+           проигрывает 500мс update animation. Содержимое option идентично, но
+           визуально выглядит как «несколько раз рендерится». Initial 700мс
+           reveal остаётся (animation: true, animationDuration: 700).
+           См. donut: docs/debug/donut-animation.md попытка №7. */
+        animationDurationUpdate: 0,
+        animationEasingUpdate: 'linear',
         grid: { left: 10, right: 40, top: 22, bottom: 26, containLabel: true },
         toolbox: { show: false },
         tooltip: {

@@ -85,6 +85,14 @@ const ScatterRisk = (props) => {
     const panStartRef = useRef(null);
     // Флаг "первый рендер с данными" — для управления mount-анимацией bubbles.
     const hasPlayedMountAnimRef = useRef(false);
+    // Хеш последнего записанного SVG content. Защищает от лишних innerHTML
+    // rewrites, когда transformProps пересоздаёт formatX/formatY (новые function
+    // references на каждый dispatch) → renderSvg useCallback ref меняется →
+    // useEffect [renderSvg, width, height] ререндерит SVG, хотя содержимое
+    // байт-в-байт идентично. Это вызывало повторное проигрывание pt-mount
+    // анимации (fresh DOM nodes пока is-mount class активен ~550ms).
+    // Параллель с donut: prevOptionHashRef в StructureDonut.tsx.
+    const prevSvgContentRef = useRef('');
     // ── Отображаемые магазины после legend-фильтра ──
     const visibleStores = useMemo(() => stores.filter((s) => !hiddenFormats.has(s.format)), [stores, hiddenFormats]);
     // ── Auto domain ──
@@ -415,6 +423,14 @@ const ScatterRisk = (props) => {
             // рендере, см. is-mount class на ChartSvg). На pan/zoom не повторяется.
             content += `<circle class="${classes.join(' ')}" style="--anim-i:${i}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${fill}" stroke="${color}" stroke-width="1.2" data-id="${s.id}" tabindex="0" role="img" aria-label="${escapeXml(s.name)}: ${CURR_LABELS.x} ${escapeXml(formatX(s.x))}, ${CURR_LABELS.y} ${escapeXml(formatY(s.y))}"/>`;
         });
+        // Хеш-гард: если содержимое не изменилось (transformProps пересоздал
+        // formatX/Y references но значения те же) — не переписываем innerHTML.
+        // Иначе React-cycle с новыми function-refs триггерит DOM-rewrite, а пока
+        // is-mount class активен (550ms), pt-mount анимация играет повторно на
+        // свежесозданных <circle> элементах. Видится как «несколько раз рендерится».
+        if (content === prevSvgContentRef.current)
+            return;
+        prevSvgContentRef.current = content;
         svg.innerHTML = content;
     }, [
         autoDomain,
