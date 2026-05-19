@@ -5,7 +5,7 @@
  */
 import { ThemeTokens } from './themeTokens';
 /** Глобальные keyframes инжектируются через <style>-тег в компоненте. */
-export declare const KEYFRAMES_CSS = "\n  @keyframes sr-tt-fade { from { opacity: 0; transform: translateY(-2px) } to { opacity: 1; transform: translateY(0) } }\n  @keyframes sr-dd-fade { from { opacity: 0; transform: translateY(-3px) } to { opacity: 1; transform: translateY(0) } }\n  @keyframes sr-m-fade { from { opacity: 0 } to { opacity: 1 } }\n  @keyframes sr-m-pop  { from { opacity: 0; transform: translateY(8px) scale(.98) } to { opacity: 1; transform: translateY(0) scale(1) } }\n  @keyframes sr-skel-pulse { 0%, 100% { opacity: 0.45 } 50% { opacity: 0.85 } }\n";
+export declare const KEYFRAMES_CSS = "\n  @keyframes sr-tt-fade { from { opacity: 0; transform: translateY(-2px) } to { opacity: 1; transform: translateY(0) } }\n  @keyframes sr-dd-fade { from { opacity: 0; transform: translateY(-3px) } to { opacity: 1; transform: translateY(0) } }\n  /* Slide-down + \u043B\u0451\u0433\u043A\u0438\u0439 scale \u0438\u0437 top-right (\u0442\u043E\u0447\u043A\u0430 origin = trigger button),\n     \u0441\u043E\u0437\u0434\u0430\u0451\u0442 \u043E\u0449\u0443\u0449\u0435\u043D\u0438\u0435 \u0447\u0442\u043E \u043F\u0430\u043D\u0435\u043B\u044C \u00AB\u0432\u044B\u0434\u0432\u0438\u0433\u0430\u0435\u0442\u0441\u044F\u00BB \u0438\u0437-\u043F\u043E\u0434 trigger \u0442\u0443\u043B\u0431\u0430\u0440\u0430. */\n  @keyframes sr-dd-slide { from { opacity: 0; transform: translateY(-6px) scale(0.96) } to { opacity: 1; transform: translateY(0) scale(1) } }\n  @keyframes sr-m-fade { from { opacity: 0 } to { opacity: 1 } }\n  @keyframes sr-m-pop  { from { opacity: 0; transform: translateY(8px) scale(.98) } to { opacity: 1; transform: translateY(0) scale(1) } }\n  @keyframes sr-skel-pulse { 0%, 100% { opacity: 0.45 } 50% { opacity: 0.85 } }\n";
 /** CSS-переменные DS 2.0 — ставятся на корневом элементе через data-theme */
 export declare const themeVars: (t: ThemeTokens) => import("@emotion/react").SerializedStyles;
 /**
@@ -51,6 +51,10 @@ export declare const Controls: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const ToolbarRow: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
 export declare const Toolbar: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
@@ -68,6 +72,10 @@ export declare const SelectDdWrap: import("@emotion/styled").StyledComponent<{
     as?: React.ElementType;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
 export declare const SelectDd: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const SelectDdMenu: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
