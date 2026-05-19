@@ -21,6 +21,9 @@ const cardInKf = keyframes`
 export const KEYFRAMES_CSS = `
   @keyframes sr-tt-fade { from { opacity: 0; transform: translateY(-2px) } to { opacity: 1; transform: translateY(0) } }
   @keyframes sr-dd-fade { from { opacity: 0; transform: translateY(-3px) } to { opacity: 1; transform: translateY(0) } }
+  /* Slide-down + лёгкий scale из top-right (точка origin = trigger button),
+     создаёт ощущение что панель «выдвигается» из-под trigger тулбара. */
+  @keyframes sr-dd-slide { from { opacity: 0; transform: translateY(-6px) scale(0.96) } to { opacity: 1; transform: translateY(0) scale(1) } }
   @keyframes sr-m-fade { from { opacity: 0 } to { opacity: 1 } }
   @keyframes sr-m-pop  { from { opacity: 0; transform: translateY(8px) scale(.98) } to { opacity: 1; transform: translateY(0) scale(1) } }
   @keyframes sr-skel-pulse { 0%, 100% { opacity: 0.45 } 50% { opacity: 0.85 } }
@@ -231,19 +234,30 @@ export const Controls = styled.div`
   justify-content: flex-end;
 `;
 
+/* Wrapper для нескольких Toolbar-капсул в одной строке — каждая
+   функциональная группа = отдельная капсула, по pattern metricTimeSeries
+   Controls. Капсулы по визуалу одинаковые (см. Toolbar + SelectDd). */
+export const ToolbarRow = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+/* Toolbar capsule для одиночных действий (Reset, Clear). По визуалу совпадает
+   с SelectDd в закрытом состоянии: размер 30×30 (по 1 кнопке) с bg/border.
+   БЕЗ внешнего padding, кнопка fill'ит capsule. */
 export const Toolbar = styled.div`
   display: inline-flex;
+  align-items: center;
   background: var(--g100);
   border: 1px solid var(--g200);
-  border-radius: 7px;
-  padding: 3px;
-  gap: 1px;
-  height: 30px;
+  border-radius: 5px;
+  overflow: hidden;
 `;
 
 export const TbBtn = styled.button`
-  width: 26px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -294,98 +308,95 @@ export const TbDivider = styled.span`
   margin: 2px 1px;
 `;
 
+/* Dropdown по pattern metricTimeSeries (DropdownRoot+Panel):
+   Wrap фиксирует layout 30×30 (= размер trigger TbBtn). Panel абсолютно
+   позиционирован поверх Wrap и при открытии расширяется ВНИЗ за пределы
+   Wrap, оставаясь единым capsule с trigger'ом внутри. */
 export const SelectDdWrap = styled.div`
   position: relative;
-  display: inline-flex;
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  vertical-align: top;
 `;
 
 export const SelectDd = styled.div`
-  display: none;
   position: absolute;
-  top: calc(100% + 6px);
-  right: -2px;
-  background: var(--s);
-  border: 1px solid var(--g300);
-  border-radius: 9px;
-  padding: 4px;
-  min-width: 240px;
-  box-shadow: var(--dd-shadow);
-  z-index: 200;
-  animation: sr-dd-fade 0.12s var(--ease);
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--g100);
+  /* Border видим в любом состоянии — capsule одинаково выглядит с Toolbar
+     (Reset/Clear). При открытии border темнее (--g300) для подсветки. */
+  border: 1px solid var(--g200);
+  border-radius: 5px;
+  overflow: hidden;
+  transition: border-color 0.15s var(--ease);
+  z-index: 1;
 
   &[data-open='true'] {
-    display: block;
+    border-color: var(--g300);
+    z-index: 200;
   }
-
-  /* Compact icon-only variant — узкая вертикальная панель, как в Line Chart. */
-  &[data-icon-only='true'] {
-    min-width: auto;
-    padding: 4px;
+  &[data-open='true'] > button:first-child {
+    border-bottom: 1px solid var(--g200);
+    border-radius: 0;
   }
 `;
 
-export const SelectDdItem = styled.button`
+/* Stack контейнер для options inside SelectDd. Появляется только при open.
+   Fade-in анимация (короткая) — options "проявляются" внутри Panel. */
+export const SelectDdMenu = styled.div`
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
   width: 100%;
-  padding: 8px 10px;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-family: var(--f);
-  font-size: var(--fs-meta);
-  font-weight: 600;
-  color: var(--ink);
-  letter-spacing: -0.005em;
-  text-align: left;
-  transition: background 0.12s;
+  animation: sr-dd-fade 0.12s var(--ease);
+`;
 
-  &:hover,
+/* Option button внутри SelectDdMenu. Icon-only: width=trigger (30px),
+   height = trigger (30px), без отдельного border-radius (radius даёт
+   Panel сверху). По pattern metricTimeSeries — active state НЕ выделен
+   фоном, только цвет иконки (--c-sky). */
+export const SelectDdItem = styled.button`
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--g500);
+  cursor: pointer;
+  width: 100%;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 0;
+  transition: background 0.12s var(--ease), color 0.12s var(--ease);
+
+  &:hover {
+    background: var(--g200);
+    color: var(--ink);
+  }
+  /* Active option скрыта в menu — она показана в trigger вверху Panel,
+     повтор не нужен. Pattern из metricTimeSeries DropdownItem. */
   &.on {
-    background: var(--g100);
+    display: none;
   }
-  &.on .sdd-l {
-    color: var(--c-sky);
-  }
-  &:hover .sdd-icon,
-  &.on .sdd-icon {
-    color: var(--c-sky);
+  &:focus-visible {
+    outline: 2px solid var(--c-sky);
+    outline-offset: -2px;
   }
   .sdd-icon {
-    width: 20px;
-    height: 20px;
-    display: flex;
+    width: 14px;
+    height: 14px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--g500);
-    flex-shrink: 0;
-
-    svg {
-      width: 14px;
-      height: 14px;
-    }
-  }
-  .sdd-l {
-    flex: 1;
-  }
-
-  /* Icon-only вариант — компактная квадратная кнопка без подписи. */
-  [data-icon-only='true'] & {
-    width: 32px;
-    padding: 6px;
-    justify-content: center;
-    gap: 0;
+    svg { width: 100%; height: 100%; }
   }
 
   /* ADR-0001 mobile-first: touch target 44×44 на coarse pointer */
   @media (pointer: coarse) {
-    min-height: 44px;
-    [data-icon-only='true'] & {
-      width: 44px;
-      min-height: 44px;
-    }
+    height: 44px;
   }
 `;
 
@@ -506,6 +517,11 @@ export const ChartArea = styled.div`
   margin-bottom: 14px;
   user-select: none;
   cursor: grab;
+  /* Скругление углов чарта: квадрант-background, gridlines и точки
+     обрезаются по rounded corners, чтобы визуально совпадало с
+     border-radius CardRoot (10px). */
+  border-radius: 10px;
+  overflow: hidden;
 
   &.panning {
     cursor: grabbing;
@@ -806,6 +822,39 @@ export const OverlapList = styled.div`
   &[data-visible='true'] {
     display: block !important;
   }
+  /* Locked-mode (Ctrl зажат): рамка и подсветка синим (--c-sky),
+     консистентно с focus-outline InfoHint и StoreDrillModal. */
+  &[data-locked='true'] {
+    border-color: var(--c-sky, #3b8bd9);
+    box-shadow:
+      0 0 0 1px var(--c-sky, #3b8bd9),
+      var(--tooltip-shadow);
+  }
+  &[data-locked='true'] .ol-foot {
+    color: var(--c-sky, #3b8bd9);
+  }
+
+  /* Стилизованный scrollbar — тонкий, нейтральный, прозрачный track.
+     Дефолтный системный (см. скриншот) выглядит чужеродно в dark popup'е. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--g300) transparent;
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--g300);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--g400);
+    background-clip: content-box;
+  }
 
   .ol-head {
     font-family: var(--m);
@@ -897,7 +946,10 @@ export const Tooltip = styled.div`
   font-size: 11px;
   color: var(--ink);
   pointer-events: none;
-  z-index: 2000;
+  /* z-index 2002 > OverlapList 2001: при hover на строке popup'а store-tooltip
+     рендерится СПРАВА от popup'а (см. showTooltipBesidePopup в ScatterRisk.tsx);
+     более высокий z-index — страховка на случай overlap при fallback'е выше/ниже. */
+  z-index: 2002;
   min-width: 240px;
   max-width: 300px;
   display: none;

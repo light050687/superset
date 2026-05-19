@@ -86,7 +86,11 @@ import QuadrantDrillModal from './QuadrantDrillModal';
 
 // Inner padding SVG-области для axis labels. Bottom/Left больше top/right —
 // нужно место для labels осей и tick подписей (13px / 11px после DS 2.1).
-const PADDING = { top: 12, right: 16, bottom: 52, left: 60 } as const;
+// left=70: gap между Y-label (x=14, rotated) и Y-tick (x=left-10=60) ~14px,
+//   сопоставимо с X-axis tick→label spacing (раньше left=60 → gap 2px, слипалось).
+// right=0: chart inner content вплотную к правому краю ChartArea — выровнено
+//   с right-edge i-иконки (она margin-left:auto в Controls, прижата к ChartArea right).
+const PADDING = { top: 12, right: 0, bottom: 52, left: 70 } as const;
 
 /**
  * Резолвит цвет формата: если цвет из transformProps есть — берём его;
@@ -339,12 +343,12 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
     el.setAttribute('data-visible', 'false');
   }, []);
 
-  /** Позиционирует tooltip НАД заданным элементом (используется для row в overlap-popup'е,
-      чтобы тултип не перекрывал список). Если над не помещается — показываем под. */
-  const positionTooltipAboveElement = useCallback((target: HTMLElement) => {
+  /** Позиционирует tooltip СПРАВА от popup'а (priority), с fallback'ами:
+      справа → слева → над → под. Используется при hover на row внутри overlap popup. */
+  const positionTooltipBesidePopup = useCallback((popupEl: HTMLElement) => {
     const el = tooltipRef.current;
     if (!el) return;
-    const rect = target.getBoundingClientRect();
+    const popupRect = popupEl.getBoundingClientRect();
     const place = () => {
       const tw = el.offsetWidth;
       const th = el.offsetHeight;
@@ -352,26 +356,38 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
         requestAnimationFrame(place);
         return;
       }
-      let top = rect.top - th - 8;
-      if (top < 8) top = rect.bottom + 8;
-      let left = rect.left + rect.width / 2 - tw / 2;
-      if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
-      if (left < 8) left = 8;
+      const gap = 12;
+      let left = popupRect.right + gap;
+      let top = popupRect.top;
+      // Fallback 1: слева от popup
+      if (left + tw > window.innerWidth - 8) {
+        left = popupRect.left - tw - gap;
+      }
+      // Fallback 2: над popup (если ни справа, ни слева не лезет)
+      if (left < 8) {
+        left = Math.max(8, Math.min(popupRect.left, window.innerWidth - tw - 8));
+        top = popupRect.top - th - gap;
+        // Fallback 3: под popup
+        if (top < 8) top = popupRect.bottom + gap;
+      }
+      // Финальный clamp по вертикали
+      if (top + th > window.innerHeight - 8) top = window.innerHeight - th - 8;
+      if (top < 8) top = 8;
       el.style.left = `${left}px`;
       el.style.top = `${top}px`;
     };
     place();
   }, []);
 
-  const showTooltipAboveElement = useCallback(
-    (html: string, target: HTMLElement) => {
+  const showTooltipBesidePopup = useCallback(
+    (html: string, popupEl: HTMLElement) => {
       const el = tooltipRef.current;
       if (!el) return;
       el.innerHTML = html;
       el.setAttribute('data-visible', 'true');
-      requestAnimationFrame(() => positionTooltipAboveElement(target));
+      requestAnimationFrame(() => positionTooltipBesidePopup(popupEl));
     },
-    [positionTooltipAboveElement],
+    [positionTooltipBesidePopup],
   );
 
   // ── Build tooltip HTML для точки ──
@@ -468,6 +484,13 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
 
     let content = '';
 
+    // Skругление углов inner-plot: clipPath с rounded rect (rx=10) — все
+    // дочерние элементы группы (quadrants, gridlines, threshold, points)
+    // обрезаются по этому rect. Axis labels рендерятся ВНЕ группы.
+    const CLIP_R = 10;
+    content += `<defs><clipPath id="rm-inner-clip"><rect x="${PADDING.left}" y="${PADDING.top}" width="${innerW}" height="${innerH}" rx="${CLIP_R}" ry="${CLIP_R}"/></clipPath></defs>`;
+    content += `<g clip-path="url(#rm-inner-clip)">`;
+
     // Quadrant tints
     const tintTL = hexToRgba(quadrants.tl.color, 0.05);
     const tintTR = hexToRgba(quadrants.tr.color, 0.06);
@@ -481,7 +504,10 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
       content += `<rect x="${txPx}" y="${tyPx}" width="${PADDING.left + innerW - txPx}" height="${PADDING.top + innerH - tyPx}" fill="${tintBR}" data-quadrant="br" class="qa-bg-rect" style="cursor:pointer"/>`;
     }
 
-    // Gridlines X
+    // Gridlines X — линии inside clip (обрезаются по rounded inner plot).
+    // Tick labels собираем отдельно и рендерим ВНЕ clip group (они в padding
+    // zone, за пределами inner-plot rect → иначе clipped).
+    let tickLabels = '';
     const xStep = pickStep(xMax - xMin, 7);
     const xStart = Math.ceil(xMin / xStep) * xStep;
     for (let v = xStart; v <= xMax + 1e-9; v += xStep) {
@@ -489,7 +515,7 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
       if (x < PADDING.left - 1 || x > PADDING.left + innerW + 1) continue;
       content += `<line x1="${x.toFixed(1)}" y1="${PADDING.top}" x2="${x.toFixed(1)}" y2="${PADDING.top + innerH}" stroke="${g200}" stroke-width="1" stroke-dasharray="2 4" opacity="0.7"/>`;
       const label = formatStep(v, xStep) + (xUnit ? `${xUnit}` : '');
-      content += `<text x="${x.toFixed(1)}" y="${PADDING.top + innerH + 18}" font-family="JetBrains Mono, monospace" font-size="11" fill="${g500}" text-anchor="middle">${label}</text>`;
+      tickLabels += `<text x="${x.toFixed(1)}" y="${PADDING.top + innerH + 18}" font-family="JetBrains Mono, monospace" font-size="11" fill="${g500}" text-anchor="middle">${label}</text>`;
     }
     // Gridlines Y
     const yStep = pickStep(yMax - yMin, 7);
@@ -499,7 +525,7 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
       if (y < PADDING.top - 1 || y > PADDING.top + innerH + 1) continue;
       content += `<line x1="${PADDING.left}" y1="${y.toFixed(1)}" x2="${PADDING.left + innerW}" y2="${y.toFixed(1)}" stroke="${g200}" stroke-width="1" stroke-dasharray="2 4" opacity="0.7"/>`;
       const label = formatStep(v, yStep) + (yUnit ? `${yUnit}` : '');
-      content += `<text x="${PADDING.left - 10}" y="${(y + 4).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="11" fill="${g500}" text-anchor="end">${label}</text>`;
+      tickLabels += `<text x="${PADDING.left - 10}" y="${(y + 4).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="11" fill="${g500}" text-anchor="end">${label}</text>`;
     }
 
     // Threshold lines
@@ -512,10 +538,20 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
       }
     }
 
+    // Закрываем inner-plot clip group, tick labels + axis labels рендерим
+    // снаружи (они в padding-зоне за пределами clip rect — иначе clipped).
+    content += `</g>`;
+    content += tickLabels;
+
     // Axis labels
     const escapeXml = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     content += `<text x="${PADDING.left + innerW / 2}" y="${H - 10}" font-family="Manrope, sans-serif" font-size="13" font-weight="600" fill="${g600}" text-anchor="middle">${escapeXml(xLabel)}</text>`;
     content += `<text x="14" y="${PADDING.top + innerH / 2}" font-family="Manrope, sans-serif" font-size="13" font-weight="600" fill="${g600}" text-anchor="middle" transform="rotate(-90 14 ${PADDING.top + innerH / 2})">${escapeXml(yLabel)}</text>`;
+
+    // Re-open clip group для points — точки тоже должны обрезаться по rounded
+    // corners inner-plot (особенно важно при zoom/pan когда точка может
+    // оказаться у края).
+    content += `<g clip-path="url(#rm-inner-clip)">`;
 
     // Points
     const hasSearch = searchQuery.trim().length > 0;
@@ -566,6 +602,8 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
       // рендере, см. is-mount class на ChartSvg). На pan/zoom не повторяется.
       content += `<circle class="${classes.join(' ')}" style="--anim-i:${i}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${fill}" stroke="${color}" stroke-width="1.2" data-id="${s.id}" tabindex="0" role="img" aria-label="${escapeXml(s.name)}: ${CURR_LABELS.x} ${escapeXml(formatX(s.x))}, ${CURR_LABELS.y} ${escapeXml(formatY(s.y))}"/>`;
     });
+    // Закрываем clip group для points.
+    content += `</g>`;
 
     // Хеш-гард: если содержимое не изменилось (transformProps пересоздал
     // formatX/Y references но значения те же) — не переписываем innerHTML.
@@ -689,9 +727,22 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
 
   const [overlapState, setOverlapState] = useState<{
     stores: StorePoint[];
-    x: number;
-    y: number;
+    x: number; // clientX — позиционирование popup
+    y: number; // clientY
+    // SVG pixel-coords центра кластера (сохраняем на случай будущих фичей).
+    originPx: number;
+    originPy: number;
+    // Locked-mode: popup не закрывается ни при mouseleave, ни при смене hit-теста.
+    // Активируется зажатым Ctrl/Meta во время открытого popup'а; снимается Esc.
+    locked: boolean;
   } | null>(null);
+  // Ref, синхронный с overlapState — для чтения актуального значения внутри
+  // rAF-замыкания handleSvgMouseMove и keydown-листенера (closure был бы stale).
+  const overlapStateRef = useRef(overlapState);
+  useEffect(() => {
+    overlapStateRef.current = overlapState;
+  }, [overlapState]);
+  const overlapRef = useRef<HTMLDivElement | null>(null);
 
   const hoverStateRef = useRef<{
     lastId: string | null;
@@ -731,22 +782,28 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
         }
         hits.sort((a, b) => a.dist - b.dist);
 
+        // Если popup в locked-mode (Ctrl зажат) — игнорируем hit-test полностью:
+        // никаких автозакрытий и подмен на single tooltip. Юзер контролирует.
+        const op = overlapStateRef.current;
+        if (op !== null && op.locked) {
+          return;
+        }
+
         if (hits.length === 0) {
           if (state.lastId !== null) {
             state.lastId = null;
             hideTooltip();
           }
-          // Popup закрываем с задержкой — даём время курсору дойти до его строк.
           if (state.lastOverlapKey !== '') {
-            scheduleOverlapClose();
+            closeOverlap();
           }
           return;
         }
         if (hits.length === 1) {
-          // Одиночная точка → обычный tooltip + закрываем popup с задержкой
+          // Одиночная точка → обычный tooltip + закрываем popup immediate
           // (вдруг курсор просто проходит мимо overlap к одиночной точке).
           if (state.lastOverlapKey !== '') {
-            scheduleOverlapClose();
+            closeOverlap();
           }
           const s = hits[0].s;
           if (state.lastId !== s.id) {
@@ -758,8 +815,6 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
           return;
         }
         // overlap (2+) → показываем кликабельный список.
-        // Отменяем pending close (если был, например после прохода через single-hit зону).
-        cancelOverlapClose();
         if (state.lastId !== null) {
           state.lastId = null;
           hideTooltip();
@@ -769,7 +824,14 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
         if (state.lastOverlapKey !== key) {
           // Новая группа точек — фиксируем popup в текущей позиции курсора.
           state.lastOverlapKey = key;
-          setOverlapState({ stores, x: state.lastX, y: state.lastY });
+          const origin = hits[0].s;
+          const originPx = sc.xScale(origin.x);
+          const originPy = sc.yScale(origin.y);
+          setOverlapState({
+            stores, x: state.lastX, y: state.lastY,
+            originPx, originPy,
+            locked: false,
+          });
         }
         // Та же группа — popup НЕ двигаем, иначе пользователь не сможет
         // довести курсор до его строк (popup убегал бы за мышью).
@@ -778,23 +840,11 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
     [visibleStores, showTooltip, hideTooltip, positionTooltip, buildStoreTooltip],
   );
 
-  // Скрываем overlap-список с небольшой задержкой — даём шанс mouseenter
-  // самого popup'a (он в portal'е, отдельная DOM-ветка от SVG).
-  const overlapCloseTimerRef = useRef<number | null>(null);
-  const cancelOverlapClose = useCallback(() => {
-    if (overlapCloseTimerRef.current !== null) {
-      window.clearTimeout(overlapCloseTimerRef.current);
-      overlapCloseTimerRef.current = null;
-    }
+  // Immediate close — без таймера. Locked-popup закрывается только через Esc.
+  const closeOverlap = useCallback(() => {
+    setOverlapState(null);
+    hoverStateRef.current.lastOverlapKey = '';
   }, []);
-  const scheduleOverlapClose = useCallback(() => {
-    cancelOverlapClose();
-    overlapCloseTimerRef.current = window.setTimeout(() => {
-      setOverlapState(null);
-      hoverStateRef.current.lastOverlapKey = '';
-      overlapCloseTimerRef.current = null;
-    }, 1000);
-  }, [cancelOverlapClose]);
 
   const handleSvgMouseLeave = useCallback(() => {
     const state = hoverStateRef.current;
@@ -804,8 +854,32 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
     }
     state.lastId = null;
     hideTooltip();
-    scheduleOverlapClose();
-  }, [hideTooltip, scheduleOverlapClose]);
+    // Locked popup остаётся открытым при уходе курсора из SVG —
+    // юзер зафиксировал и собирается перейти к popup.
+    if (overlapStateRef.current && !overlapStateRef.current.locked) {
+      closeOverlap();
+    }
+  }, [hideTooltip, closeOverlap]);
+
+  // Ctrl/Meta зажат → lock popup (если открыт). Esc → закрыть popup.
+  // Слушаем глобально (на window), потому что курсор может быть в любом месте.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const cur = overlapStateRef.current;
+      if (!cur) return;
+      if (e.key === 'Escape') {
+        closeOverlap();
+        return;
+      }
+      // Lock на любом нажатии Control/Meta — даже если юзер просто зажал клавишу,
+      // не отпустив, для последующего Ctrl+Click drill это безвредно.
+      if (!cur.locked && (e.key === 'Control' || e.key === 'Meta')) {
+        setOverlapState({ ...cur, locked: true });
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [closeOverlap]);
 
   // ── Mouse handlers для pan + select ──
   const getMouseInArea = (e: React.MouseEvent | MouseEvent): Point2D => {
@@ -1051,13 +1125,17 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
       .map((s) => s.id);
   }, [searchQuery, visibleStores]);
 
-  const onSearchSelect = useCallback(() => {
-    if (searchMatches.length === 0) return;
-    const next = new Set(activeFilters);
-    searchMatches.forEach((id) => next.add(id));
-    commitFilters(next);
-    setSearchQuery('');
-  }, [searchMatches, activeFilters, commitFilters]);
+  // Авто-применение поиска как cross-filter с debounce 300ms — без отдельной
+  // кнопки «Выбрать N». Юзер вводит query → matches применяются автоматически
+  // как фильтр для дашборда. Очистка query фильтр НЕ сбрасывает (пользователь
+  // сбрасывает явно через Clear кнопку в тулбаре).
+  useEffect(() => {
+    if (!searchQuery.trim() || searchMatches.length === 0) return;
+    const handle = window.setTimeout(() => {
+      commitFilters(new Set(searchMatches));
+    }, 300);
+    return () => window.clearTimeout(handle);
+  }, [searchQuery, searchMatches, commitFilters]);
 
   // ── Esc → close modal cascade ──
   useEffect(() => {
@@ -1185,8 +1263,6 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
             onClear={onClearFilters}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            searchMatchesCount={searchMatches.length}
-            onSearchSelect={onSearchSelect}
           />
           <InfoHintTopRight>
             <InfoHint ariaLabel="Подсказка по управлению">
@@ -1305,7 +1381,18 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
         <LegendList
           formats={formats}
           hiddenFormats={hiddenFormats}
-          onToggle={(id) => {
+          onToggle={(id, solo) => {
+            if (solo) {
+              // Ctrl/Meta+Click: solo-mode = показать ТОЛЬКО этот формат.
+              // Если уже в solo-state для того же id (все остальные скрыты,
+              // этот видим) → reset, показать все. UX: toggle solo on/off.
+              const others = formats.map((f) => f.id).filter((x) => x !== id);
+              const inSoloForThis =
+                !hiddenFormats.has(id) &&
+                others.every((x) => hiddenFormats.has(x));
+              setHiddenFormats(inSoloForThis ? new Set() : new Set(others));
+              return;
+            }
             const next = new Set(hiddenFormats);
             if (next.has(id)) next.delete(id);
             else next.add(id);
@@ -1326,15 +1413,19 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
 
         {overlapState && (
           <OverlapList
+            ref={overlapRef}
             data-visible="true"
+            data-locked={overlapState.locked ? 'true' : 'false'}
             role="listbox"
             aria-label={`${overlapState.stores.length} магазинов в этой точке`}
             style={{
               left: Math.min(overlapState.x + 14, window.innerWidth - 240),
               top: Math.min(overlapState.y + 14, window.innerHeight - 220),
             }}
-            onMouseEnter={cancelOverlapClose}
-            onMouseLeave={scheduleOverlapClose}
+            onMouseLeave={() => {
+              // Locked-popup игнорирует mouseleave: остаётся пока юзер не нажмёт Esc.
+              if (!overlapState.locked) closeOverlap();
+            }}
           >
             <div className="ol-head">
               {overlapState.stores.length} магазинов рядом
@@ -1355,13 +1446,15 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
                       toggleFilter(s.id);
                     }
                   }}
-                  onMouseEnter={(e) => {
-                    // Hover на строке popup'а → детальный store-tooltip НАД строкой
-                    // (а не справа), чтобы не перекрывал список.
-                    showTooltipAboveElement(
-                      buildStoreTooltip(s),
-                      e.currentTarget as HTMLElement,
-                    );
+                  onMouseEnter={() => {
+                    // Hover на строке popup'а → детальный store-tooltip СПРАВА
+                    // от popup'а (fallback'и: слева → над → под).
+                    if (overlapRef.current) {
+                      showTooltipBesidePopup(
+                        buildStoreTooltip(s),
+                        overlapRef.current,
+                      );
+                    }
                   }}
                   onMouseLeave={() => {
                     hideTooltip();
@@ -1369,10 +1462,14 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
                 >
                   <span className="ol-dot" style={{ background: color }} />
                   <span className="ol-name">{s.name}</span>
-                  <span className="ol-meta">{formatX(s.x)}</span>
                 </button>
               );
             })}
+            <div className="ol-foot">
+              {overlapState.locked
+                ? 'Esc — закрыть'
+                : 'Ctrl — зафиксировать'}
+            </div>
           </OverlapList>
         )}
 

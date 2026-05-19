@@ -3,7 +3,7 @@ import { FormatMeta } from './types';
 interface LegendListProps {
     formats: FormatMeta[];
     hiddenFormats: Set<string>;
-    onToggle: (id: string) => void;
+    onToggle: (id: string, solo: boolean) => void;
 }
 declare const LegendList: React.FC<LegendListProps>;
 export default LegendList;

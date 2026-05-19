@@ -5,7 +5,9 @@ import { LegendItem } from './styles';
 interface LegendListProps {
   formats: FormatMeta[];
   hiddenFormats: Set<string>;
-  onToggle: (id: string) => void;
+  // solo=true когда зажат Ctrl/Meta — handler выбирает только этот формат
+  // (повторный Ctrl+Click на тот же id в solo-режиме → reset, показать все).
+  onToggle: (id: string, solo: boolean) => void;
 }
 
 const LegendList: React.FC<LegendListProps> = ({ formats, hiddenFormats, onToggle }) => (
@@ -16,7 +18,7 @@ const LegendList: React.FC<LegendListProps> = ({ formats, hiddenFormats, onToggl
         <LegendItem
           key={f.id}
           className={off ? 'off' : ''}
-          onClick={() => onToggle(f.id)}
+          onClick={(e) => onToggle(f.id, e.ctrlKey || e.metaKey)}
           type="button"
           aria-pressed={!off}
           aria-label={`${f.name} — ${off ? 'скрыт' : 'видим'}`}
