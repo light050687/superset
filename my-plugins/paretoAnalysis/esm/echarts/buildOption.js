@@ -188,7 +188,13 @@ export function buildEChartsOption({ computed, state, tokens, }) {
         animation: true,
         animationDuration: 450,
         animationEasing: 'cubicOut',
-        animationDurationUpdate: 300,
+        /* Update animation выключена — transformProps пересоздаёт items[] reference
+           на каждый Redux dispatch (rows.map → new array). useChartInstance вызывает
+           setOption({ notMerge: true }) → ECharts проигрывает update animation, даже
+           если данные идентичны. Initial 450ms reveal остаётся.
+           См. CLAUDE.md «Re-render guard (viz)». */
+        animationDurationUpdate: 0,
+        animationEasingUpdate: 'linear',
         tooltip: { show: false },
         grid: {
             left: 14,
