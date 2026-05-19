@@ -101,14 +101,21 @@ function buildOption(args) {
        Наши animations subtle (1s scale, 0.55s fade-in) — безопасны
        даже для motion-sensitive users. */
     return {
-        // Длительности 1:1 с ref/structure-donut-prototype.html (init 450 / update 400).
-        // animationThreshold:0 — не отключать animation для большого N (default 2000).
-        animation: true,
-        animationDuration: 450,
-        animationEasing: 'cubicOut',
-        animationDurationUpdate: 400,
-        animationEasingUpdate: 'cubicInOut',
-        animationThreshold: 0,
+        // ECharts animation полностью выключена — Plan D: visual reveal делается
+        // через SVG overlay в DonutChartInner (см. RevealSvgOverlay в
+        // StructureDonut.tsx). animationDurationUpdate: 0 + animation: false:
+        //   - animation: false → нет initial animation cycle при mount
+        //   - animationDurationUpdate: 0 → нет update animation при resize/
+        //     setOption (на SPA-navigation Superset присылает обновлённые
+        //     width/height через ParentSize → useLayoutEffect → resize() →
+        //     ECharts по умолчанию играет update animation 300мс, что
+        //     визуально выглядит как «второй expansion» после SVG reveal).
+        // См. docs/debug/donut-animation.md (попытка №7).
+        animation: false,
+        animationDuration: 0,
+        animationDurationUpdate: 0,
+        animationEasing: 'linear',
+        animationEasingUpdate: 'linear',
         // graphic убран — hero-число рендерится HTML overlay'ем поверх canvas
         // (см. StructureDonut.tsx) с CSS-переменными --fs-hero/--fs-meta как
         // в KPI scorecard. Это даёт fluid sizing через Container Queries вместо
@@ -158,6 +165,10 @@ function buildOption(args) {
                 // последовательно, затем fade out → ECharts остаётся снизу
                 // для tooltip/click/hover.
                 animation: false,
+                animationDuration: 0,
+                animationDurationUpdate: 0,
+                animationEasing: 'linear',
+                animationEasingUpdate: 'linear',
                 itemStyle: { borderRadius: state.borderRadius },
                 label: {
                     show: showOuterLabels,

@@ -49,6 +49,12 @@ function DonutChartInner({ width, height, dataState, categories, hasSubcategorie
     const chartDivRef = useRef(null);
     const chartRef = useRef(null);
     const isFirstSetOptRef = useRef(true);
+    // Hash последнего применённого `option` — guard против повторного setOption
+    // когда Superset перерендерил родителя (Redux dispatch для favorites/reports/
+    // drill_info/etc.) и transformProps пересоздал `categories` reference, но
+    // содержимое опции идентично. Без этого ECharts проигрывает pie expansion
+    // на каждый родительский re-render. См. docs/debug/donut-animation.md.
+    const prevOptionHashRef = useRef('');
     // init useEffect: создаёт chart + ResizeObserver. Запускается раз при
     // mount этого компонента. На смену level/drilledId parent заменит key
     // → component unmount → cleanup dispose → fresh mount.
@@ -71,7 +77,7 @@ function DonutChartInner({ width, height, dataState, categories, hasSubcategorie
         const w0 = el.clientWidth;
         const h0 = el.clientHeight;
         if (w0 > 0 && h0 > 0) {
-            instance.resize({ width: w0, height: h0 });
+            instance.resize({ width: w0, height: h0, silent: true });
             console.debug('[donut] init: resize done', w0, 'x', h0);
         }
         else {
@@ -101,7 +107,7 @@ function DonutChartInner({ width, height, dataState, categories, hasSubcategorie
                     return;
                 prevW = w;
                 prevH = h;
-                inst.resize({ width: w, height: h });
+                inst.resize({ width: w, height: h, silent: true });
             });
         });
         ro.observe(el);
@@ -115,7 +121,11 @@ function DonutChartInner({ width, height, dataState, categories, hasSubcategorie
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-    // re-resize при drag-resize карточки / fullscreen
+    // re-resize при drag-resize карточки / fullscreen. silent:true — иначе
+    // ECharts проигрывает update animation (~300ms default) на каждый resize,
+    // что визуально выглядит как повторная анимация после initial reveal.
+    // Plan D предполагает что вся видимая reveal делается через SVG overlay,
+    // ECharts canvas — статичный финальный кадр. См. docs/debug/donut-animation.md.
     useLayoutEffect(() => {
         const el = chartDivRef.current;
         const inst = chartRef.current;
@@ -124,7 +134,7 @@ function DonutChartInner({ width, height, dataState, categories, hasSubcategorie
         const w = el.clientWidth;
         const h = el.clientHeight;
         if (w > 0 && h > 0) {
-            inst.resize({ width: w, height: h });
+            inst.resize({ width: w, height: h, silent: true });
         }
     }, [width, height]);
     // Click handlers: select / drill (Ctrl+Click) / clear (empty space)
@@ -192,6 +202,18 @@ function DonutChartInner({ width, height, dataState, categories, hasSubcategorie
             },
             tokens,
         });
+        // Skip duplicate setOption — Superset вызывает transformProps на каждый
+        // Redux dispatch (favorites/reports/drill_info/...), при этом `categories`
+        // пересоздаётся как новый reference, даже если содержимое идентично.
+        // Без этого guard'а ECharts повторно проигрывает pie expansion на каждый
+        // родительский re-render. На drill/back DonutChartInner re-mount'ится
+        // (key prop в StructureDonut) → ref сбрасывается в '' → первый setOption
+        // отрабатывает корректно.
+        const optionHash = JSON.stringify(option);
+        if (optionHash === prevOptionHashRef.current) {
+            return;
+        }
+        prevOptionHashRef.current = optionHash;
         console.debug('[donut] setOption', 'isFirst=', isFirstSetOptRef.current, 'level=', level, 'drilledId=', drilledId, 'sectors=', option.series?.[0]?.data?.length);
         chart.setOption(option, isFirstSetOptRef.current);
         isFirstSetOptRef.current = false;
@@ -216,7 +238,14 @@ function DonutChartInner({ width, height, dataState, categories, hasSubcategorie
        visible, SVG unmounts. Это предотвращает double-render (SVG +
        ECharts блюрят друг друга через alpha-blending в fade transition). */
     const [revealing, setRevealing] = useState(true);
-    return (_jsxs(_Fragment, { children: [_jsx(ChartCanvas, { ref: chartDivRef, role: "img", "aria-label": ariaLabel, style: { visibility: revealing ? 'hidden' : 'visible' } }), revealing && (_jsx(RevealSvgOverlay, { categories: categories, hidden: hidden, level: level, drilledId: drilledId, onComplete: () => setRevealing(false) }))] }));
+    // useCallback со стабильным reference — иначе inline arrow создаётся
+    // каждый рендер DonutChartInner, передаётся в RevealSvgOverlay как
+    // onComplete, попадает в useEffect deps → useEffect срабатывает заново
+    // на каждый родительский re-render, пересоздавая Web Animation API
+    // animations и setTimeout. Это и был источник 2-3 повторных
+    // rendered/finished events ECharts на SPA-navigation.
+    const handleRevealComplete = useCallback(() => setRevealing(false), []);
+    return (_jsxs(_Fragment, { children: [_jsx(ChartCanvas, { ref: chartDivRef, role: "img", "aria-label": ariaLabel, style: { visibility: revealing ? 'hidden' : 'visible' } }), revealing && (_jsx(RevealSvgOverlay, { categories: categories, hidden: hidden, level: level, drilledId: drilledId, onComplete: handleRevealComplete }))] }));
 }
 function RevealSvgOverlay({ categories, hidden, level, drilledId, onComplete, }) {
     const svgRef = useRef(null);
