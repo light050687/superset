@@ -302,6 +302,12 @@ export default function transformProps(chartProps: ChartProps): ScatterRiskProps
   let thresholdY = 0;
   let hasThresholds = false;
 
+  // В mock-режиме у каждой точки уже есть planX/planY (см. mocks/presets.ts) —
+  // используем их как источник порогов, чтобы режим проектирования был
+  // визуально идентичен мокапу (с пунктирами/квадрантами/аннотациями).
+  const mockHasPlanX = usingMock && stores.some((s) => s.planX != null);
+  const mockHasPlanY = usingMock && stores.some((s) => s.planY != null);
+
   if (thresholdMode === 'static') {
     thresholdX = toNumber(formData.staticThresholdX) || 0;
     thresholdY = toNumber(formData.staticThresholdY) || 0;
@@ -311,23 +317,23 @@ export default function transformProps(chartProps: ChartProps): ScatterRiskProps
     thresholdY = computeAverage(stores.map((s) => s.y));
     hasThresholds = stores.length > 0;
   } else {
-    // 'metric' — средневзвешенное per-row plan
-    if (metricPlanX) {
+    // 'metric' — средневзвешенное per-row plan (если метрика задана ИЛИ это mock с planX/planY)
+    if (metricPlanX || mockHasPlanX) {
       thresholdX = computeWeightedAverage(
         stores.map((s) => s.planX ?? NaN),
         stores.map((s) => s.size),
       );
     }
-    if (metricPlanY) {
+    if (metricPlanY || mockHasPlanY) {
       thresholdY = computeWeightedAverage(
         stores.map((s) => s.planY ?? NaN),
         stores.map((s) => s.size),
       );
     }
-    hasThresholds = Boolean(metricPlanX || metricPlanY);
+    hasThresholds = Boolean(metricPlanX || metricPlanY || mockHasPlanX || mockHasPlanY);
     // Если пороги не заданы — падаем в среднее фактических значений, чтобы квадранты имели смысл
-    if (!metricPlanX) thresholdX = computeAverage(stores.map((s) => s.x));
-    if (!metricPlanY) thresholdY = computeAverage(stores.map((s) => s.y));
+    if (!metricPlanX && !mockHasPlanX) thresholdX = computeAverage(stores.map((s) => s.x));
+    if (!metricPlanY && !mockHasPlanY) thresholdY = computeAverage(stores.map((s) => s.y));
   }
 
   // ── Quadrants ──
@@ -416,8 +422,19 @@ export default function transformProps(chartProps: ChartProps): ScatterRiskProps
       : '—';
 
   // ── Labels ──
-  const xLabel = (formData.xLabel as string | undefined) || labelX || 'X';
-  const yLabel = (formData.yLabel as string | undefined) || labelY || 'Y';
+  // В mock-режиме preset.xLabel/yLabel имеют приоритет над labelX/Y от метрик
+  // (потому что mock-метрика обычно дефолтная COUNT(*) с label "count" — это не то,
+  // что хочет увидеть пользователь). Form-data всегда выигрывает у обоих.
+  const xLabel =
+    (formData.xLabel as string | undefined) ||
+    (usingMock ? mock?.xLabel : undefined) ||
+    labelX ||
+    'X';
+  const yLabel =
+    (formData.yLabel as string | undefined) ||
+    (usingMock ? mock?.yLabel : undefined) ||
+    labelY ||
+    'Y';
   const xShort = xLabel.length > 20 ? xLabel.slice(0, 18) + '…' : xLabel;
   const yShort = yLabel.length > 20 ? yLabel.slice(0, 18) + '…' : yLabel;
 

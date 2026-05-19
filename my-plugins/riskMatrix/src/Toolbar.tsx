@@ -12,11 +12,12 @@ import {
 } from './styles';
 
 type Mode = 'rect' | 'lasso' | null;
+export type SelectAction = 'rect' | 'lasso' | 'worst5' | 'best5' | 'bad' | 'good';
 
 interface ToolbarProps {
   selectMode: Mode;
   hasFilters: boolean;
-  onAction: (action: 'rect' | 'lasso' | 'worst5' | 'bad') => void;
+  onAction: (action: SelectAction) => void;
   onReset: () => void;
   onClear: () => void;
   searchQuery: string;
@@ -25,6 +26,7 @@ interface ToolbarProps {
   onSearchSelect: () => void;
 }
 
+/** Toolbar: Reset · dropdown (6 icon-only actions) · Clear · Search */
 const ToolbarBar: React.FC<ToolbarProps> = ({
   selectMode,
   hasFilters,
@@ -49,8 +51,8 @@ const ToolbarBar: React.FC<ToolbarProps> = ({
     return () => document.removeEventListener('click', onDocClick);
   }, [ddOpen]);
 
-  const onItem = useCallback(
-    (action: 'rect' | 'lasso' | 'worst5' | 'bad') => {
+  const pick = useCallback(
+    (action: SelectAction) => {
       onAction(action);
       setDdOpen(false);
     },
@@ -66,10 +68,12 @@ const ToolbarBar: React.FC<ToolbarProps> = ({
             <path d="M2 3 L2 7 L6 7" />
           </svg>
         </TbBtn>
+
         <TbDivider />
+
         <SelectDdWrap ref={ddWrapRef}>
           <TbBtn
-            className={selectMode ? 'on' : ''}
+            className={selectMode || ddOpen ? 'on' : ''}
             onClick={(e) => {
               e.stopPropagation();
               setDdOpen((v) => !v);
@@ -84,31 +88,35 @@ const ToolbarBar: React.FC<ToolbarProps> = ({
               <path d="M3 3 L3 11 L6 8.5 L7.5 12 L9 11 L7.5 8 L11 7.5 Z" />
             </svg>
           </TbBtn>
-          <SelectDd data-open={ddOpen ? 'true' : 'false'} role="menu">
+
+          <SelectDd data-open={ddOpen ? 'true' : 'false'} role="menu" data-icon-only="true">
             <SelectDdItem
               className={selectMode === 'rect' ? 'on' : ''}
               onClick={(e) => {
                 e.stopPropagation();
-                onItem('rect');
+                pick('rect');
               }}
               role="menuitem"
               type="button"
+              title="Прямоугольное выделение"
+              aria-label="Прямоугольное выделение"
             >
               <span className="sdd-icon">
                 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeDasharray="2 2">
                   <rect x="2" y="3" width="10" height="8" rx="1" />
                 </svg>
               </span>
-              <span className="sdd-l">Прямоугольное выделение</span>
             </SelectDdItem>
             <SelectDdItem
               className={selectMode === 'lasso' ? 'on' : ''}
               onClick={(e) => {
                 e.stopPropagation();
-                onItem('lasso');
+                pick('lasso');
               }}
               role="menuitem"
               type="button"
+              title="Лассо"
+              aria-label="Лассо"
             >
               <span className="sdd-icon">
                 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -116,31 +124,51 @@ const ToolbarBar: React.FC<ToolbarProps> = ({
                   <circle cx="6.5" cy="12.5" r="0.8" fill="currentColor" />
                 </svg>
               </span>
-              <span className="sdd-l">Лассо</span>
             </SelectDdItem>
+
             <div style={{ height: 1, background: 'var(--g200)', margin: '4px 6px' }} />
+
             <SelectDdItem
               onClick={(e) => {
                 e.stopPropagation();
-                onItem('worst5');
+                pick('worst5');
               }}
               role="menuitem"
               type="button"
+              title="Топ-5 худших"
+              aria-label="Выбрать топ-5 худших"
             >
               <span className="sdd-icon">
                 <svg viewBox="0 0 14 14" fill="currentColor" stroke="none">
                   <path d="M7 1 L8.8 5 L13 5.5 L9.9 8.5 L10.7 12.7 L7 10.5 L3.3 12.7 L4.1 8.5 L1 5.5 L5.2 5 Z" />
                 </svg>
               </span>
-              <span className="sdd-l">Выбрать топ-5 худших</span>
             </SelectDdItem>
             <SelectDdItem
               onClick={(e) => {
                 e.stopPropagation();
-                onItem('bad');
+                pick('best5');
               }}
               role="menuitem"
               type="button"
+              title="Топ-5 лучших"
+              aria-label="Выбрать топ-5 лучших"
+            >
+              <span className="sdd-icon">
+                <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round">
+                  <path d="M7 1 L8.8 5 L13 5.5 L9.9 8.5 L10.7 12.7 L7 10.5 L3.3 12.7 L4.1 8.5 L1 5.5 L5.2 5 Z" />
+                </svg>
+              </span>
+            </SelectDdItem>
+            <SelectDdItem
+              onClick={(e) => {
+                e.stopPropagation();
+                pick('bad');
+              }}
+              role="menuitem"
+              type="button"
+              title="Хуже плана"
+              aria-label="Выбрать магазины хуже плана"
             >
               <span className="sdd-icon">
                 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -149,10 +177,26 @@ const ToolbarBar: React.FC<ToolbarProps> = ({
                   <line x1="7" y1="11" x2="7" y2="11.5" />
                 </svg>
               </span>
-              <span className="sdd-l">Выбрать хуже плана</span>
+            </SelectDdItem>
+            <SelectDdItem
+              onClick={(e) => {
+                e.stopPropagation();
+                pick('good');
+              }}
+              role="menuitem"
+              type="button"
+              title="Лучше плана"
+              aria-label="Выбрать магазины лучше плана"
+            >
+              <span className="sdd-icon">
+                <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 8 L5.5 11 L12 4" />
+                </svg>
+              </span>
             </SelectDdItem>
           </SelectDd>
         </SelectDdWrap>
+
         {hasFilters && (
           <TbBtn
             className="clear"

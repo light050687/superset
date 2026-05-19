@@ -355,7 +355,25 @@ const StoreDrillModal: React.FC<Props> = ({
 
     const loadCauses = async () => {
       if (!detailQueryParams.datasetId || !detailQueryParams.causesDimension || !detailQueryParams.causesMetric) {
-        if (!cancelled) setCauses({ loading: false, error: null, data: [] });
+        // Fallback: синтетика 3 причины с распределением 50/30/20% от sumLoss магазина.
+        // Соответствует mockup'у (buildStoreCauses в scatter-risk-prototype.html).
+        const rng = seededRandom(hashId(storeId) + 7);
+        const causeNames = [
+          'Истечение срока',
+          'Нарушение условий хранения',
+          'Внутренние хищения',
+          'Поломка оборудования',
+          'Ошибки приёмки и выкладки',
+        ];
+        const shuffled = [...causeNames].sort(() => rng() - 0.5).slice(0, 3);
+        const distribs = [0.5, 0.3, 0.2].map((p) => p + (rng() - 0.5) * 0.1);
+        const totalP = distribs.reduce((a, b) => a + b, 0);
+        const sumLoss = store?.sumLoss ?? 1;
+        const data: CauseRow[] = shuffled.map((name, i) => ({
+          name,
+          value: +(sumLoss * (distribs[i] / totalP)).toFixed(2),
+        }));
+        if (!cancelled) setCauses({ loading: false, error: null, data });
         return;
       }
       try {
@@ -373,7 +391,30 @@ const StoreDrillModal: React.FC<Props> = ({
 
     const loadSkus = async () => {
       if (!detailQueryParams.datasetId || !detailQueryParams.skusDimension || !detailQueryParams.skusMetric) {
-        if (!cancelled) setSkus({ loading: false, error: null, data: [] });
+        // Fallback: синтетика 5 SKU. Соответствует mockup'у (buildStoreSkus).
+        const rng = seededRandom(hashId(storeId) + 29);
+        const skuPool = [
+          'Молоко «Простоквашино» 950 мл',
+          'Хлеб «Боярский» нарезка',
+          'Йогурт «Чудо» персик',
+          'Пельмени «Сибирская коллекция» 800г',
+          'Креветки тигровые королевские',
+          'Мороженое «Чистая линия»',
+          'Сёмга с/м филе',
+          'Салат «Цезарь»',
+          'Курица-гриль',
+          'Хлеб «Бородинский»',
+          'Сыры твёрдые (нарезка)',
+          'Колбаса сырокопчёная',
+          'Бананы Эквадор',
+        ];
+        const shuffled = [...skuPool].sort(() => rng() - 0.5).slice(0, 5);
+        const max = (store?.sumLoss ?? 1) * 0.2;
+        const data: SkuRow[] = shuffled.map((name, i) => ({
+          name,
+          value: +(max * (0.9 - i * 0.15 + rng() * 0.15)).toFixed(2),
+        }));
+        if (!cancelled) setSkus({ loading: false, error: null, data });
         return;
       }
       try {
@@ -556,41 +597,39 @@ const StoreDrillModal: React.FC<Props> = ({
           </div>
         </div>
 
-        {detailQueryParams.causesDimension && (
-          <div className="m-section">
-            <div className="m-section-l">
-              <span>Топ причины</span>
-            </div>
-            {causes.loading && <ListSkeleton />}
-            {!causes.loading && causes.error && (
-              <ErrorEmpty>Ошибка: {causes.error}</ErrorEmpty>
-            )}
-            {!causes.loading && !causes.error && causes.data && causes.data.length === 0 && (
-              <EmptyBlock>Нет данных о причинах</EmptyBlock>
-            )}
-            {!causes.loading && !causes.error && causes.data && causes.data.length > 0 && (
-              <CauseList rows={causes.data} formatter={formatLoss} />
-            )}
+        {/* Секция «Топ причины» — показываем ВСЕГДА: если есть dataset → реальные данные,
+            иначе синтетический fallback (см. loadCauses). Так модалка работает и в mock-режиме. */}
+        <div className="m-section">
+          <div className="m-section-l">
+            <span>Топ-3 причины списаний</span>
           </div>
-        )}
+          {causes.loading && <ListSkeleton />}
+          {!causes.loading && causes.error && (
+            <ErrorEmpty>Ошибка: {causes.error}</ErrorEmpty>
+          )}
+          {!causes.loading && !causes.error && causes.data && causes.data.length === 0 && (
+            <EmptyBlock>Нет данных о причинах</EmptyBlock>
+          )}
+          {!causes.loading && !causes.error && causes.data && causes.data.length > 0 && (
+            <CauseList rows={causes.data} formatter={formatLoss} />
+          )}
+        </div>
 
-        {detailQueryParams.skusDimension && (
-          <div className="m-section">
-            <div className="m-section-l">
-              <span>Топ SKU</span>
-            </div>
-            {skus.loading && <ListSkeleton />}
-            {!skus.loading && skus.error && (
-              <ErrorEmpty>Ошибка: {skus.error}</ErrorEmpty>
-            )}
-            {!skus.loading && !skus.error && skus.data && skus.data.length === 0 && (
-              <EmptyBlock>Нет данных о SKU</EmptyBlock>
-            )}
-            {!skus.loading && !skus.error && skus.data && skus.data.length > 0 && (
-              <SkuList rows={skus.data} formatter={formatLoss} />
-            )}
+        <div className="m-section">
+          <div className="m-section-l">
+            <span>Топ-5 SKU</span>
           </div>
-        )}
+          {skus.loading && <ListSkeleton />}
+          {!skus.loading && skus.error && (
+            <ErrorEmpty>Ошибка: {skus.error}</ErrorEmpty>
+          )}
+          {!skus.loading && !skus.error && skus.data && skus.data.length === 0 && (
+            <EmptyBlock>Нет данных о SKU</EmptyBlock>
+          )}
+          {!skus.loading && !skus.error && skus.data && skus.data.length > 0 && (
+            <SkuList rows={skus.data} formatter={formatLoss} />
+          )}
+        </div>
       </Modal>
     </StoreModalBg>
   );

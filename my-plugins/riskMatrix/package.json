@@ -23,9 +23,10 @@
   ],
   "license": "Apache-2.0",
   "scripts": {
-    "build": "npm run build-cjs && npm run build-esm",
+    "build": "npm run build-cjs && npm run build-esm && npm run build-assets",
     "build-cjs": "tsc --outDir lib --module commonjs --noImplicitAny false --strict false --skipLibCheck --noEmitOnError false --jsx react-jsx --esModuleInterop || true",
     "build-esm": "tsc --outDir esm --module esnext --noImplicitAny false --strict false --skipLibCheck --noEmitOnError false --jsx react-jsx --esModuleInterop || true",
+    "build-assets": "node -e \"const fs=require('fs');const path=require('path');for(const out of ['esm','lib']){const dst=path.join(out,'images');fs.mkdirSync(dst,{recursive:true});for(const f of fs.readdirSync('src/images')){if(f.endsWith('.png')||f.endsWith('.jpg')||f.endsWith('.svg'))fs.copyFileSync(path.join('src/images',f),path.join(dst,f))}}\"",
     "dev": "tsc --watch --outDir esm --module esnext",
     "storybook": "storybook dev -p 6013",
     "build-storybook": "storybook build",

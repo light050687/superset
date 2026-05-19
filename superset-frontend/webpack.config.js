@@ -189,11 +189,14 @@ if (!isDevMode) {
 }
 
 const PREAMBLE = [path.join(APP_DIR, '/src/preamble.ts')];
-if (isDevMode) {
+if (isDevServer) {
   // A Superset webpage normally includes two JS bundles in dev, `theme.ts` and
   // the main entrypoint. Only the main entry should have the dev server client,
   // otherwise the websocket client will initialize twice, creating two sockets.
   // Ref: https://github.com/gaearon/react-hot-loader/issues/141
+  // NB: only inject when actually running webpack-dev-server. For plain
+  // `webpack` builds (deployed to :8088 via docker cp), the client would
+  // try to reconnect to a non-existent WS and flood the console.
   PREAMBLE.unshift(
     `webpack-dev-server/client?http://localhost:${devserverPort}`,
   );
@@ -239,12 +242,19 @@ const config = {
     spa: addPreamble('/src/views/index.tsx'),
     embedded: addPreamble('/src/embedded/index.tsx'),
   },
+  // Persistent filesystem cache. Прежний snapshot-invalidation bug был
+  // вызван 330MB nested devDeps в my-plugins/riskMatrix (storybook +
+  // дубли @emotion). После cleanup (npm install --omit=dev в плагине)
+  // cache стабилен. См. PROBLEMS.md в my-plugins/riskMatrix/.
   cache: {
-    type: 'filesystem', // Enable filesystem caching
-    cacheDirectory: path.resolve(__dirname, '.temp_cache'),
-    buildDependencies: {
-      config: [__filename],
-    },
+    type: 'filesystem',
+    cacheDirectory: path.resolve(APP_DIR, '.temp_cache'),
+    buildDependencies: { config: [__filename] },
+  },
+  // Windows + npm-linked my-plugins/* требуют followSymlinks для watch-режима
+  watchOptions: {
+    followSymlinks: true,
+    ignored: /node_modules\/(?!superset-plugin-chart-)/,
   },
   output,
   stats: 'minimal',

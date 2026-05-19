@@ -1,7 +1,8 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, } from 'react';
+import { createPortal } from 'react-dom';
 import { styled } from '@superset-ui/core';
-import { CardRoot, CardHead, TitleBlock, CardTitle, CardSubtitle, Controls, ChartArea, ChartSvg, SelectionOverlay, QuadAnnot, Legend as LegendRoot, Footer, Tooltip, EmptyBlock, KEYFRAMES_CSS, PartialBadge, StaleBar, } from './styles';
+import { CardRoot, CardHead, TitleBlock, CardTitle, CardSubtitle, Controls, ChartArea, ChartSvg, SelectionOverlay, QuadAnnot, Legend as LegendRoot, Tooltip, EmptyBlock, KEYFRAMES_CSS, PartialBadge, PortalRoot, OverlapList, } from './styles';
 import { InfoHint, InfoHintTopRight } from './components/InfoHint';
 /* === Локальные styled-обёртки (миграция inline style → Emotion, P-011) === */
 /** Overlay поверх ChartArea, когда нет данных. */
@@ -39,7 +40,9 @@ import { getQuadrant, getQuadrantStats, getWorstN } from './utils/quadrants';
 import { pickStep, formatStep, radius, hexToRgba, pointInPolygon, pointInRect, } from './utils/scales';
 import StoreDrillModal from './StoreDrillModal';
 import QuadrantDrillModal from './QuadrantDrillModal';
-const PADDING = { top: 28, right: 28, bottom: 50, left: 56 };
+// Inner padding SVG-области для axis labels. Bottom/Left больше top/right —
+// нужно место для labels осей и tick подписей (13px / 11px после DS 2.1).
+const PADDING = { top: 12, right: 16, bottom: 52, left: 60 };
 /**
  * Резолвит цвет формата: если цвет из transformProps есть — берём его;
  * иначе возвращаем нейтральный серый из темы (--g500), не хардкод.
@@ -80,6 +83,8 @@ const ScatterRisk = (props) => {
     const tooltipRef = useRef(null);
     const scalesRef = useRef(null);
     const panStartRef = useRef(null);
+    // Флаг "первый рендер с данными" — для управления mount-анимацией bubbles.
+    const hasPlayedMountAnimRef = useRef(false);
     // ── Отображаемые магазины после legend-фильтра ──
     const visibleStores = useMemo(() => stores.filter((s) => !hiddenFormats.has(s.format)), [stores, hiddenFormats]);
     // ── Auto domain ──
@@ -165,21 +170,19 @@ const ScatterRisk = (props) => {
         commitFilters(next);
     }, [activeFilters, commitFilters]);
     // ── Tooltip ──
-    const showTooltip = useCallback((html, clientX, clientY) => {
-        const el = tooltipRef.current;
-        if (!el)
-            return;
-        el.innerHTML = html;
-        el.setAttribute('data-visible', 'true');
-        positionTooltip(clientX, clientY);
-    }, []);
-    const positionTooltip = (clientX, clientY) => {
+    const positionTooltip = useCallback((clientX, clientY) => {
         const el = tooltipRef.current;
         if (!el)
             return;
         const offset = 14;
         const tw = el.offsetWidth;
         const th = el.offsetHeight;
+        // Защита: пока tooltip не отрендерен (offsetWidth=0), не позиционируем —
+        // следующий rAF попробует ещё раз.
+        if (tw === 0 || th === 0) {
+            requestAnimationFrame(() => positionTooltip(clientX, clientY));
+            return;
+        }
         let x = clientX + offset;
         let y = clientY + offset;
         if (x + tw > window.innerWidth - 8)
@@ -192,13 +195,58 @@ const ScatterRisk = (props) => {
             y = 8;
         el.style.left = `${x}px`;
         el.style.top = `${y}px`;
-    };
+    }, []);
+    const showTooltip = useCallback((html, clientX, clientY) => {
+        const el = tooltipRef.current;
+        if (!el)
+            return;
+        el.innerHTML = html;
+        el.setAttribute('data-visible', 'true');
+        // Измеряем offsetWidth/Height ПОСЛЕ render — иначе они = 0 на первом
+        // показе, логика flip-у-края экрана не сработает, tooltip обрежется.
+        requestAnimationFrame(() => positionTooltip(clientX, clientY));
+    }, [positionTooltip]);
     const hideTooltip = useCallback(() => {
         const el = tooltipRef.current;
         if (!el)
             return;
         el.setAttribute('data-visible', 'false');
     }, []);
+    /** Позиционирует tooltip НАД заданным элементом (используется для row в overlap-popup'е,
+        чтобы тултип не перекрывал список). Если над не помещается — показываем под. */
+    const positionTooltipAboveElement = useCallback((target) => {
+        const el = tooltipRef.current;
+        if (!el)
+            return;
+        const rect = target.getBoundingClientRect();
+        const place = () => {
+            const tw = el.offsetWidth;
+            const th = el.offsetHeight;
+            if (tw === 0 || th === 0) {
+                requestAnimationFrame(place);
+                return;
+            }
+            let top = rect.top - th - 8;
+            if (top < 8)
+                top = rect.bottom + 8;
+            let left = rect.left + rect.width / 2 - tw / 2;
+            if (left + tw > window.innerWidth - 8)
+                left = window.innerWidth - tw - 8;
+            if (left < 8)
+                left = 8;
+            el.style.left = `${left}px`;
+            el.style.top = `${top}px`;
+        };
+        place();
+    }, []);
+    const showTooltipAboveElement = useCallback((html, target) => {
+        const el = tooltipRef.current;
+        if (!el)
+            return;
+        el.innerHTML = html;
+        el.setAttribute('data-visible', 'true');
+        requestAnimationFrame(() => positionTooltipAboveElement(target));
+    }, [positionTooltipAboveElement]);
     // ── Build tooltip HTML для точки ──
     const buildStoreTooltip = useCallback((s) => {
         const fmtColor = resolveFormatColor(formatColorMap, s.format, chartAreaRef.current);
@@ -211,7 +259,6 @@ const ScatterRisk = (props) => {
         const dyRatio = s.planY && s.planY !== 0 ? (s.y - s.planY) / s.planY : 0;
         const dxCls = dxRatio > 0.03 ? 'dn' : dxRatio < -0.03 ? 'up' : 'wn';
         const dyCls = dyRatio > 0.03 ? 'dn' : dyRatio < -0.03 ? 'up' : 'wn';
-        const isWorst = worst5.has(s.id);
         const escape = (v) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         // Усекаем длинные строки для tooltip (защита от layout overflow).
         const truncate = (v, max = 60) => v.length > max ? `${v.slice(0, max - 1)}…` : v;
@@ -225,14 +272,12 @@ const ScatterRisk = (props) => {
             ? `<div class="tt-row"><span class="tt-l">Потери</span><span class="tt-v dn">${formatLoss(s.sumLoss)}</span></div>`
             : '';
         const sizeRow = `<div class="tt-row" style="margin-top:6px;padding-top:7px;border-top:1px solid var(--g200)"><span class="tt-l">${escape(sizeUnit ? 'Размер' : 'Выручка')}</span><span class="tt-v">${formatSize(s.size)}</span></div>`;
-        const footer = drillEnabled
-            ? '<div class="tt-foot"><kbd>Click</kbd> фильтр · <kbd>Ctrl</kbd>+<kbd>Click</kbd> детализация</div>'
-            : '<div class="tt-foot"><kbd>Click</kbd> фильтр</div>';
+        // Хинты управления (Click/Ctrl+Click) — в InfoHint overlay, не дублируем в tooltip.
         return `
         <div class="tt-head">
           <div class="tt-status" style="background:${fmtColor}"></div>
           <div class="tt-titles">
-            <div class="tt-name">${escape(truncate(s.name, 60))}${isWorst ? ' ★' : ''}</div>
+            <div class="tt-name">${escape(truncate(s.name, 60))}</div>
             <div class="tt-sub">${escape(truncate(s.formatName, 30))}${s.city ? ` · ${escape(truncate(s.city, 30))}` : ''}</div>
           </div>
         </div>
@@ -245,9 +290,8 @@ const ScatterRisk = (props) => {
           ${sizeRow}
         </div>
         <div class="tt-status-text" style="color:${qColor}">Зона: ${escape(qDef.label.replace(/\s[⚠✓]$/, ''))}</div>
-        ${footer}
       `;
-    }, [formatColorMap, thresholds, quadrants, worst5, xShort, yShort, formatX, formatY, formatLoss, formatSize, sizeUnit, drillEnabled]);
+    }, [formatColorMap, thresholds, quadrants, xShort, yShort, formatX, formatY, formatLoss, formatSize, sizeUnit]);
     // ── Rendering SVG content ──
     const renderSvg = useCallback(() => {
         const svg = svgRef.current;
@@ -281,8 +325,6 @@ const ScatterRisk = (props) => {
         const g400 = css('--g400');
         const g500 = css('--g500');
         const g600 = css('--g600');
-        const dnCol = css('--dn');
-        const inkCol = css('--ink');
         let content = '';
         // Quadrant tints
         const tintTL = hexToRgba(quadrants.tl.color, 0.05);
@@ -304,7 +346,7 @@ const ScatterRisk = (props) => {
                 continue;
             content += `<line x1="${x.toFixed(1)}" y1="${PADDING.top}" x2="${x.toFixed(1)}" y2="${PADDING.top + innerH}" stroke="${g200}" stroke-width="1" stroke-dasharray="2 4" opacity="0.7"/>`;
             const label = formatStep(v, xStep) + (xUnit ? `${xUnit}` : '');
-            content += `<text x="${x.toFixed(1)}" y="${PADDING.top + innerH + 16}" font-family="JetBrains Mono, monospace" font-size="9" fill="${g500}" text-anchor="middle">${label}</text>`;
+            content += `<text x="${x.toFixed(1)}" y="${PADDING.top + innerH + 18}" font-family="JetBrains Mono, monospace" font-size="11" fill="${g500}" text-anchor="middle">${label}</text>`;
         }
         // Gridlines Y
         const yStep = pickStep(yMax - yMin, 7);
@@ -315,7 +357,7 @@ const ScatterRisk = (props) => {
                 continue;
             content += `<line x1="${PADDING.left}" y1="${y.toFixed(1)}" x2="${PADDING.left + innerW}" y2="${y.toFixed(1)}" stroke="${g200}" stroke-width="1" stroke-dasharray="2 4" opacity="0.7"/>`;
             const label = formatStep(v, yStep) + (yUnit ? `${yUnit}` : '');
-            content += `<text x="${PADDING.left - 8}" y="${(y + 3).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="9" fill="${g500}" text-anchor="end">${label}</text>`;
+            content += `<text x="${PADDING.left - 10}" y="${(y + 4).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="11" fill="${g500}" text-anchor="end">${label}</text>`;
         }
         // Threshold lines
         if (hasThresholds) {
@@ -328,8 +370,8 @@ const ScatterRisk = (props) => {
         }
         // Axis labels
         const escapeXml = (v) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        content += `<text x="${PADDING.left + innerW / 2}" y="${H - 8}" font-family="Manrope, sans-serif" font-size="10" font-weight="600" fill="${g600}" text-anchor="middle">${escapeXml(xLabel)}</text>`;
-        content += `<text x="14" y="${PADDING.top + innerH / 2}" font-family="Manrope, sans-serif" font-size="10" font-weight="600" fill="${g600}" text-anchor="middle" transform="rotate(-90 14 ${PADDING.top + innerH / 2})">${escapeXml(yLabel)}</text>`;
+        content += `<text x="${PADDING.left + innerW / 2}" y="${H - 10}" font-family="Manrope, sans-serif" font-size="13" font-weight="600" fill="${g600}" text-anchor="middle">${escapeXml(xLabel)}</text>`;
+        content += `<text x="14" y="${PADDING.top + innerH / 2}" font-family="Manrope, sans-serif" font-size="13" font-weight="600" fill="${g600}" text-anchor="middle" transform="rotate(-90 14 ${PADDING.top + innerH / 2})">${escapeXml(yLabel)}</text>`;
         // Points
         const hasSearch = searchQuery.trim().length > 0;
         const q = searchQuery.trim().toLowerCase();
@@ -337,7 +379,18 @@ const ScatterRisk = (props) => {
         // Labels для ARIA — формируем один раз за render
         const CURR_LABELS = { x: xShort, y: yShort };
         const sorted = [...visibleStores].sort((a, b) => radius(b.size, sizeRange.min, sizeRange.max) - radius(a.size, sizeRange.min, sizeRange.max));
-        sorted.forEach((s) => {
+        // Mount-анимация bubbles — играет ОДИН РАЗ при первом непустом рендере.
+        // На pan/zoom/filter — НЕ повторяется (класс is-mount уже снят).
+        if (!hasPlayedMountAnimRef.current && sorted.length > 0) {
+            hasPlayedMountAnimRef.current = true;
+            svg.classList.add('is-mount');
+            // длина = animation 550ms + max stagger (sorted.length * 3ms) + запас 100ms
+            const totalMs = 550 + sorted.length * 3 + 100;
+            setTimeout(() => {
+                svg.classList.remove('is-mount');
+            }, totalMs);
+        }
+        sorted.forEach((s, i) => {
             if (s.x < xMin || s.x > xMax || s.y < yMin || s.y > yMax)
                 return;
             const x = xScale(s.x);
@@ -353,20 +406,14 @@ const ScatterRisk = (props) => {
             const isFiltered = activeFilters.has(s.id);
             const dimByFilter = hasFilters && !isFiltered;
             const isEffectivelyDimmed = isDimmed || dimByFilter;
-            const isWorst = enableWorstStar && worst5.has(s.id);
             const classes = ['pt'];
             if (isFound || isFiltered)
                 classes.push('found');
             if (isEffectivelyDimmed)
                 classes.push('dim');
-            // role="img" + aria-label — корректная семантика для SVG-точки (не кнопки).
-            // Кликабельность и keyboard handlers (Enter/Space) установлены на SVG-контейнере.
-            content += `<circle class="${classes.join(' ')}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${fill}" stroke="${color}" stroke-width="1.2" data-id="${s.id}" tabindex="0" role="img" aria-label="${escapeXml(s.name)}: ${CURR_LABELS.x} ${escapeXml(formatX(s.x))}, ${CURR_LABELS.y} ${escapeXml(formatY(s.y))}"/>`;
-            if (isWorst) {
-                const sx = x;
-                const sy = y - r - 7;
-                content += `<g class="worst-star" transform="translate(${sx.toFixed(1)},${sy.toFixed(1)})" pointer-events="none"><path d="M0 -5 L1.5 -1.5 L5 -1 L2.3 1.3 L3 5 L0 3 L-3 5 L-2.3 1.3 L-5 -1 L-1.5 -1.5 Z" fill="${dnCol}" stroke="${inkCol}" stroke-width="0.5"/></g>`;
-            }
+            // style --anim-i — stagger для mount-анимации (играет только при первом
+            // рендере, см. is-mount class на ChartSvg). На pan/zoom не повторяется.
+            content += `<circle class="${classes.join(' ')}" style="--anim-i:${i}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${fill}" stroke="${color}" stroke-width="1.2" data-id="${s.id}" tabindex="0" role="img" aria-label="${escapeXml(s.name)}: ${CURR_LABELS.x} ${escapeXml(formatX(s.x))}, ${CURR_LABELS.y} ${escapeXml(formatY(s.y))}"/>`;
         });
         svg.innerHTML = content;
     }, [
@@ -379,13 +426,15 @@ const ScatterRisk = (props) => {
         formatColorMap,
         activeFilters,
         searchQuery,
-        worst5,
         xLabel,
         yLabel,
         xUnit,
         yUnit,
-        enableWorstStar,
         sizeRange,
+        xShort,
+        yShort,
+        formatX,
+        formatY,
     ]);
     // Rerender on relevant changes
     useEffect(() => {
@@ -396,9 +445,24 @@ const ScatterRisk = (props) => {
         const area = chartAreaRef.current;
         if (!area)
             return;
-        const ro = new ResizeObserver(() => renderSvg());
+        // rAF-throttle: при потоке resize-событий (CSS-анимации dashboard layout)
+        // вызываем renderSvg не чаще раз в кадр — иначе 400 точек × innerHTML на каждый
+        // ResizeObserver tick роняет FPS.
+        let pendingRaf = null;
+        const ro = new ResizeObserver(() => {
+            if (pendingRaf !== null)
+                return;
+            pendingRaf = requestAnimationFrame(() => {
+                pendingRaf = null;
+                renderSvg();
+            });
+        });
         ro.observe(area);
-        return () => ro.disconnect();
+        return () => {
+            if (pendingRaf !== null)
+                cancelAnimationFrame(pendingRaf);
+            ro.disconnect();
+        };
     }, [renderSvg]);
     // ── Point click (delegation) ──
     const handleSvgClick = useCallback((e) => {
@@ -455,20 +519,120 @@ const ScatterRisk = (props) => {
                 setDrillStoreId(id);
         }
     }, [drillEnabled, selectMode]);
-    // ── Hover для tooltip (delegation + mousemove) ──
+    // ── Stores map для O(1) lookup в hover ──
+    const storesById = useMemo(() => {
+        const m = new Map();
+        stores.forEach((s) => m.set(s.id, s));
+        return m;
+    }, [stores]);
+    // ── Hover для tooltip и overlap-списка ──
+    // Radius hit-test: проверяем расстояние от курсора до КАЖДОГО visible store в pixel-coords.
+    // Если 1 store ≤ HIT_RADIUS — обычный tooltip. Если 2+ — overlap popup (clickable list).
+    const HIT_RADIUS = 18;
+    const [overlapState, setOverlapState] = useState(null);
+    const hoverStateRef = useRef({ lastId: null, lastOverlapKey: '', rafId: null, lastX: 0, lastY: 0 });
     const handleSvgMouseMove = useCallback((e) => {
-        const target = e.target;
-        if (target.classList.contains('pt')) {
-            const id = target.getAttribute('data-id');
-            const s = stores.find((x) => x.id === id);
-            if (s) {
-                showTooltip(buildStoreTooltip(s), e.clientX, e.clientY);
+        const cx = e.clientX;
+        const cy = e.clientY;
+        const state = hoverStateRef.current;
+        state.lastX = cx;
+        state.lastY = cy;
+        // Throttle через requestAnimationFrame — не более 1 update/frame
+        if (state.rafId !== null)
+            return;
+        state.rafId = requestAnimationFrame(() => {
+            state.rafId = null;
+            const area = chartAreaRef.current;
+            const sc = scalesRef.current;
+            if (!area || !sc)
+                return;
+            const rect = area.getBoundingClientRect();
+            const px = state.lastX - rect.left;
+            const py = state.lastY - rect.top;
+            // Hit-test всех видимых store: distance в pixel-coords от их центров.
+            const hits = [];
+            for (const s of visibleStores) {
+                if (s.x < sc.xMin || s.x > sc.xMax || s.y < sc.yMin || s.y > sc.yMax)
+                    continue;
+                const sx = sc.xScale(s.x);
+                const sy = sc.yScale(s.y);
+                const dist = Math.hypot(sx - px, sy - py);
+                if (dist <= HIT_RADIUS)
+                    hits.push({ s, dist });
+            }
+            hits.sort((a, b) => a.dist - b.dist);
+            if (hits.length === 0) {
+                if (state.lastId !== null) {
+                    state.lastId = null;
+                    hideTooltip();
+                }
+                // Popup закрываем с задержкой — даём время курсору дойти до его строк.
+                if (state.lastOverlapKey !== '') {
+                    scheduleOverlapClose();
+                }
                 return;
             }
+            if (hits.length === 1) {
+                // Одиночная точка → обычный tooltip + закрываем popup с задержкой
+                // (вдруг курсор просто проходит мимо overlap к одиночной точке).
+                if (state.lastOverlapKey !== '') {
+                    scheduleOverlapClose();
+                }
+                const s = hits[0].s;
+                if (state.lastId !== s.id) {
+                    state.lastId = s.id;
+                    showTooltip(buildStoreTooltip(s), state.lastX, state.lastY);
+                }
+                else {
+                    positionTooltip(state.lastX, state.lastY);
+                }
+                return;
+            }
+            // overlap (2+) → показываем кликабельный список.
+            // Отменяем pending close (если был, например после прохода через single-hit зону).
+            cancelOverlapClose();
+            if (state.lastId !== null) {
+                state.lastId = null;
+                hideTooltip();
+            }
+            const stores = hits.map((h) => h.s);
+            const key = stores.map((x) => x.id).join('|');
+            if (state.lastOverlapKey !== key) {
+                // Новая группа точек — фиксируем popup в текущей позиции курсора.
+                state.lastOverlapKey = key;
+                setOverlapState({ stores, x: state.lastX, y: state.lastY });
+            }
+            // Та же группа — popup НЕ двигаем, иначе пользователь не сможет
+            // довести курсор до его строк (popup убегал бы за мышью).
+        });
+    }, [visibleStores, showTooltip, hideTooltip, positionTooltip, buildStoreTooltip]);
+    // Скрываем overlap-список с небольшой задержкой — даём шанс mouseenter
+    // самого popup'a (он в portal'е, отдельная DOM-ветка от SVG).
+    const overlapCloseTimerRef = useRef(null);
+    const cancelOverlapClose = useCallback(() => {
+        if (overlapCloseTimerRef.current !== null) {
+            window.clearTimeout(overlapCloseTimerRef.current);
+            overlapCloseTimerRef.current = null;
         }
+    }, []);
+    const scheduleOverlapClose = useCallback(() => {
+        cancelOverlapClose();
+        overlapCloseTimerRef.current = window.setTimeout(() => {
+            setOverlapState(null);
+            hoverStateRef.current.lastOverlapKey = '';
+            overlapCloseTimerRef.current = null;
+        }, 1000);
+    }, [cancelOverlapClose]);
+    const handleSvgMouseLeave = useCallback(() => {
+        const state = hoverStateRef.current;
+        if (state.rafId !== null) {
+            cancelAnimationFrame(state.rafId);
+            state.rafId = null;
+        }
+        state.lastId = null;
         hideTooltip();
-    }, [stores, showTooltip, hideTooltip, buildStoreTooltip]);
-    const handleSvgMouseLeave = useCallback(() => hideTooltip(), [hideTooltip]);
+        scheduleOverlapClose();
+    }, [hideTooltip, scheduleOverlapClose]);
     // ── Mouse handlers для pan + select ──
     const getMouseInArea = (e) => {
         const area = chartAreaRef.current;
@@ -629,6 +793,20 @@ const ScatterRisk = (props) => {
         area.addEventListener('wheel', handleWheel, { passive: false });
         return () => area.removeEventListener('wheel', handleWheel);
     }, [handleWheel]);
+    // ── Best-5 (best mirror of worst5) ──
+    const best5 = useMemo(() => {
+        const list = visibleStores
+            .filter((s) => s.planX != null && s.planY != null)
+            .map((s) => ({
+            id: s.id,
+            // goodness = насколько лучше плана. Чем БОЛЬШЕ положительное отклонение plan → x — тем лучше.
+            goodness: (s.planX - s.x) / Math.max(s.planX, 1e-9) +
+                Math.max(0, (s.planY - s.y) / Math.max(s.planY, 1e-9)),
+        }))
+            .sort((a, b) => b.goodness - a.goodness)
+            .slice(0, 5);
+        return new Set(list.map((x) => x.id));
+    }, [visibleStores]);
     // ── Select actions ──
     const onSelectAction = useCallback((action) => {
         if (action === 'rect' || action === 'lasso') {
@@ -636,9 +814,13 @@ const ScatterRisk = (props) => {
             return;
         }
         if (action === 'worst5') {
-            const next = new Set(worst5);
             setSelectMode(null);
-            commitFilters(next);
+            commitFilters(new Set(worst5));
+            return;
+        }
+        if (action === 'best5') {
+            setSelectMode(null);
+            commitFilters(new Set(best5));
             return;
         }
         if (action === 'bad') {
@@ -651,8 +833,21 @@ const ScatterRisk = (props) => {
             });
             setSelectMode(null);
             commitFilters(next);
+            return;
         }
-    }, [worst5, visibleStores, thresholds, commitFilters]);
+        if (action === 'good') {
+            // Лучше плана по ОБЕИМ осям (зеркало bad, но требование строже — оба меньше).
+            const next = new Set();
+            visibleStores.forEach((s) => {
+                const underX = s.planX != null ? s.x < s.planX : s.x < thresholds.x;
+                const underY = s.planY != null ? s.y < s.planY : s.y < thresholds.y;
+                if (underX && underY)
+                    next.add(s.id);
+            });
+            setSelectMode(null);
+            commitFilters(next);
+        }
+    }, [worst5, best5, visibleStores, thresholds, commitFilters]);
     const onReset = useCallback(() => {
         setViewDomain(null);
         setSelectMode(null);
@@ -743,45 +938,65 @@ const ScatterRisk = (props) => {
     if (dataState === 'loading') {
         return (_jsxs(CardRoot, { "data-theme": themeMode, role: "region", "aria-busy": "true", "data-no-anim": "", children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsx(CardHead, { children: _jsx(TitleBlock, { children: _jsx(CardTitle, { children: title }) }) }), _jsx("div", { role: "status", "aria-label": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430", style: { flex: 1 } })] }));
     }
-    return (_jsxs(CardRoot, { "data-theme": themeMode, role: "region", "aria-labelledby": "sr-card-title", "data-info-hint-container": "", children: [_jsx("style", { children: KEYFRAMES_CSS }), dataState === 'stale' && _jsx(StaleBar, { "aria-hidden": "true" }), _jsxs(CardHead, { children: [_jsxs(TitleBlock, { children: [_jsxs(CardTitle, { id: "sr-card-title", children: [title, dataState === 'partial' && (_jsx(PartialBadge, { title: "\u0427\u0430\u0441\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0445 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430", children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u043E" }))] }), _jsxs(CardSubtitle, { children: [subtitle && _jsx("span", { children: subtitle }), subtitle && _jsx("span", { className: "dot" }), _jsxs("span", { className: "strong", children: [formatCount(stores.length), " \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u0432"] }), activeFilters.size > 0 && (_jsxs(_Fragment, { children: [_jsx("span", { className: "dot" }), _jsxs("span", { children: [formatCount(activeFilters.size), " \u0432\u044B\u0431\u0440\u0430\u043D\u043E"] })] }))] })] }), _jsxs(Controls, { children: [_jsx(ToolbarBar, { selectMode: selectMode, hasFilters: activeFilters.size > 0, onAction: onSelectAction, onReset: onReset, onClear: onClearFilters, searchQuery: searchQuery, onSearchChange: setSearchQuery, searchMatchesCount: searchMatches.length, onSearchSelect: onSearchSelect }), _jsx(InfoHintTopRight, { children: _jsxs(InfoHint, { ariaLabel: "\u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430 \u043F\u043E \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u044E", children: [_jsxs("div", { className: "hint-section", children: [_jsx("div", { className: "hint-section-title", children: "\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435" }), shortcutsHint.split(/\s*·\s*/).map((part, i) => {
-                                                    const [keysRaw, ...descParts] = part.split(/\s*—\s*/);
-                                                    const desc = descParts.join(' — ');
-                                                    const keys = keysRaw.split(/\s*\+\s*/);
-                                                    return (_jsxs("span", { className: "hi", children: [keys.map((k, ki) => (_jsxs(Fragment, { children: [_jsx("kbd", { children: k }), ki < keys.length - 1 && ' + '] }, ki))), desc && _jsxs(_Fragment, { children: [" \u2014 ", desc] })] }, i));
-                                                }), _jsxs("span", { className: "hi", children: [_jsx("kbd", { children: "Right Click" }), " \u2014 \u043C\u0435\u043D\u044E \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0439"] })] }), _jsxs("div", { className: "hint-section", children: [_jsx("div", { className: "hint-section-title", children: "\u041F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u044F" }), _jsxs("span", { className: "hi", children: ["\u0420\u0430\u0437\u043C\u0435\u0440 \u043A\u0440\u0443\u0436\u043A\u0430 = ", sizeUnit] })] })] }) })] })] }), _jsxs(ChartArea, { ref: chartAreaRef, className: [selectMode ? 'mode-select' : '', panActive ? 'panning' : ''].join(' ').trim(), onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseLeave, children: [stores.length === 0 && (_jsxs(EmptyOverlay, { role: "status", "aria-live": "polite", children: [_jsx(EmptyTitle, { children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445" }), _jsx(EmptyHint, { children: "\u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043C\u0435\u0442\u0440\u0438\u043A\u0438 X/Y \u0438 \u0438\u0437\u043C\u0435\u0440\u0435\u043D\u0438\u0435 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u0430 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445" })] })), _jsx(ChartSvg, { ref: svgRef, onClick: handleSvgClick, onDoubleClick: handleSvgDoubleClick, onMouseMove: handleSvgMouseMove, onMouseLeave: handleSvgMouseLeave, onKeyDown: handleSvgKeyDown }), _jsxs(SelectionOverlay, { children: [selectMode === 'rect' && selectionStart && selectionPath.length > 0 && (_jsx("div", { className: "selection-rect", style: {
-                                    left: Math.min(selectionStart.x, selectionPath[selectionPath.length - 1].x),
-                                    top: Math.min(selectionStart.y, selectionPath[selectionPath.length - 1].y),
-                                    width: Math.abs(selectionPath[selectionPath.length - 1].x - selectionStart.x),
-                                    height: Math.abs(selectionPath[selectionPath.length - 1].y - selectionStart.y),
-                                } })), selectMode === 'lasso' && selectionPath.length > 1 && (_jsx(LassoSvg, { width: "100%", height: "100%", children: _jsx("path", { className: "selection-lasso", d: selectionPath
-                                        .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(0)} ${p.y.toFixed(0)}`)
-                                        .join(' ') + ' Z' }) }))] }), quadrantStats &&
-                        enableQuadrantAnnotations &&
-                        annotationPositions &&
-                        Object.keys(quadrants).map((key) => {
-                            const pos = annotationPositions[key];
-                            const q = quadrants[key];
-                            const stat = quadrantStats[key];
-                            // color достаточно для стилизации .qa-label/border — CSS caret-color
-                            // не нужен, дополнительная CSS-переменная --qa-color упразднена.
-                            const style = { color: q.color };
-                            if ('left' in pos && pos.left !== undefined)
-                                style.left = pos.left;
-                            if ('right' in pos && pos.right !== undefined)
-                                style.right = pos.right;
-                            if ('top' in pos && pos.top !== undefined)
-                                style.top = pos.top;
-                            if ('bottom' in pos && pos.bottom !== undefined)
-                                style.bottom = pos.bottom;
-                            return (_jsxs(QuadAnnot, { side: pos.side, style: style, children: [_jsx("div", { className: "qa-label", style: { color: q.color }, children: q.label }), _jsxs("div", { className: "qa-count", children: [formatCount(stat.count), _jsx("span", { className: "u", children: "\u043E\u0431\u044A\u0435\u043A\u0442\u043E\u0432" })] }), stat.loss > 0 && (_jsxs("div", { className: "qa-loss", children: [formatLoss(stat.loss), " \u043F\u043E\u0442\u0435\u0440\u044C"] }))] }, key));
-                        })] }), _jsx(LegendRoot, { children: _jsx(LegendList, { formats: formats, hiddenFormats: hiddenFormats, onToggle: (id) => {
-                        const next = new Set(hiddenFormats);
-                        if (next.has(id))
-                            next.delete(id);
-                        else
-                            next.add(id);
-                        setHiddenFormats(next);
-                    } }) }), _jsx(Footer, { children: _jsx("div", { className: "hint", children: _jsxs("span", { className: "hi", children: [_jsx("svg", { viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "1.5", children: _jsx("circle", { cx: "8", cy: "8", r: "5" }) }), _jsxs("span", { children: ["\u0440\u0430\u0437\u043C\u0435\u0440 = ", sizeUnit] })] }) }) }), _jsx(Tooltip, { ref: tooltipRef, role: "tooltip", "aria-hidden": "true" }), drillEnabled && drillStoreId && (_jsx(StoreDrillModal, { storeId: drillStoreId, stores: stores, quadrants: quadrants, thresholds: thresholds, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatSize: formatSize, formatLoss: formatLoss, xShort: xShort, yShort: yShort, sizeUnit: sizeUnit, detailQueryParams: detailQueryParams, onClose: () => setDrillStoreId(null) })), drillEnabled && drillQuadrant && (_jsx(QuadrantDrillModal, { quadrantKey: drillQuadrant, quadrants: quadrants, thresholds: thresholds, stores: visibleStores, allStoresTotal: stores.length, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatLoss: formatLoss, formatCount: formatCount, xShort: xShort, yShort: yShort, onClose: () => setDrillQuadrant(null), onOpenStore: (id) => setDrillStoreId(id) }))] }));
+    return (_jsxs(_Fragment, { children: [_jsxs(CardRoot, { "data-theme": themeMode, role: "region", "aria-labelledby": "sr-card-title", "data-info-hint-container": "", children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsxs(CardHead, { children: [_jsxs(TitleBlock, { children: [_jsxs(CardTitle, { id: "sr-card-title", children: [title, dataState === 'partial' && (_jsx(PartialBadge, { title: "\u0427\u0430\u0441\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0445 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430", children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u043E" }))] }), _jsxs(CardSubtitle, { children: [subtitle && _jsx("span", { children: subtitle }), subtitle && _jsx("span", { className: "dot" }), _jsxs("span", { className: "strong", children: [formatCount(stores.length), " \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u0432"] }), activeFilters.size > 0 && (_jsxs(_Fragment, { children: [_jsx("span", { className: "dot" }), _jsxs("span", { children: [formatCount(activeFilters.size), " \u0432\u044B\u0431\u0440\u0430\u043D\u043E"] })] }))] })] }), _jsxs(Controls, { children: [_jsx(ToolbarBar, { selectMode: selectMode, hasFilters: activeFilters.size > 0, onAction: onSelectAction, onReset: onReset, onClear: onClearFilters, searchQuery: searchQuery, onSearchChange: setSearchQuery, searchMatchesCount: searchMatches.length, onSearchSelect: onSearchSelect }), _jsx(InfoHintTopRight, { children: _jsxs(InfoHint, { ariaLabel: "\u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430 \u043F\u043E \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u044E", children: [_jsxs("div", { className: "hint-section", children: [_jsx("div", { className: "hint-section-title", children: "\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435" }), shortcutsHint.split(/\s*·\s*/).map((part, i) => {
+                                                            const [keysRaw, ...descParts] = part.split(/\s*—\s*/);
+                                                            const desc = descParts.join(' — ');
+                                                            const keys = keysRaw.split(/\s*\+\s*/);
+                                                            return (_jsxs("span", { className: "hi", children: [keys.map((k, ki) => (_jsxs(Fragment, { children: [_jsx("kbd", { children: k }), ki < keys.length - 1 && ' + '] }, ki))), desc && _jsxs(_Fragment, { children: [" \u2014 ", desc] })] }, i));
+                                                        }), _jsxs("span", { className: "hi", children: [_jsx("kbd", { children: "Right Click" }), " \u2014 \u043C\u0435\u043D\u044E \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0439"] })] }), _jsxs("div", { className: "hint-section", children: [_jsx("div", { className: "hint-section-title", children: "\u041F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u044F" }), _jsxs("span", { className: "hi", children: ["\u0420\u0430\u0437\u043C\u0435\u0440 \u043A\u0440\u0443\u0436\u043A\u0430 = ", sizeUnit] })] })] }) })] })] }), _jsxs(ChartArea, { ref: chartAreaRef, className: [selectMode ? 'mode-select' : '', panActive ? 'panning' : ''].join(' ').trim(), onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseLeave, children: [stores.length === 0 && (_jsxs(EmptyOverlay, { role: "status", "aria-live": "polite", children: [_jsx(EmptyTitle, { children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445" }), _jsx(EmptyHint, { children: "\u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043C\u0435\u0442\u0440\u0438\u043A\u0438 X/Y \u0438 \u0438\u0437\u043C\u0435\u0440\u0435\u043D\u0438\u0435 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u0430 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445" })] })), _jsx(ChartSvg, { ref: svgRef, onClick: handleSvgClick, onDoubleClick: handleSvgDoubleClick, onMouseMove: handleSvgMouseMove, onMouseLeave: handleSvgMouseLeave, onKeyDown: handleSvgKeyDown }), _jsxs(SelectionOverlay, { children: [selectMode === 'rect' && selectionStart && selectionPath.length > 0 && (_jsx("div", { className: "selection-rect", style: {
+                                            left: Math.min(selectionStart.x, selectionPath[selectionPath.length - 1].x),
+                                            top: Math.min(selectionStart.y, selectionPath[selectionPath.length - 1].y),
+                                            width: Math.abs(selectionPath[selectionPath.length - 1].x - selectionStart.x),
+                                            height: Math.abs(selectionPath[selectionPath.length - 1].y - selectionStart.y),
+                                        } })), selectMode === 'lasso' && selectionPath.length > 1 && (_jsx(LassoSvg, { width: "100%", height: "100%", children: _jsx("path", { className: "selection-lasso", d: selectionPath
+                                                .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(0)} ${p.y.toFixed(0)}`)
+                                                .join(' ') + ' Z' }) }))] }), quadrantStats &&
+                                enableQuadrantAnnotations &&
+                                annotationPositions &&
+                                Object.keys(quadrants).map((key) => {
+                                    const pos = annotationPositions[key];
+                                    const q = quadrants[key];
+                                    const stat = quadrantStats[key];
+                                    // color достаточно для стилизации .qa-label/border — CSS caret-color
+                                    // не нужен, дополнительная CSS-переменная --qa-color упразднена.
+                                    const style = { color: q.color };
+                                    if ('left' in pos && pos.left !== undefined)
+                                        style.left = pos.left;
+                                    if ('right' in pos && pos.right !== undefined)
+                                        style.right = pos.right;
+                                    if ('top' in pos && pos.top !== undefined)
+                                        style.top = pos.top;
+                                    if ('bottom' in pos && pos.bottom !== undefined)
+                                        style.bottom = pos.bottom;
+                                    return (_jsxs(QuadAnnot, { side: pos.side, style: style, children: [_jsx("div", { className: "qa-label", style: { color: q.color }, children: q.label }), _jsxs("div", { className: "qa-count", children: [formatCount(stat.count), _jsx("span", { className: "u", children: "\u043E\u0431\u044A\u0435\u043A\u0442\u043E\u0432" })] }), stat.loss > 0 && (_jsxs("div", { className: "qa-loss", children: [formatLoss(stat.loss), " \u043F\u043E\u0442\u0435\u0440\u044C"] }))] }, key));
+                                })] }), _jsx(LegendRoot, { children: _jsx(LegendList, { formats: formats, hiddenFormats: hiddenFormats, onToggle: (id) => {
+                                const next = new Set(hiddenFormats);
+                                if (next.has(id))
+                                    next.delete(id);
+                                else
+                                    next.add(id);
+                                setHiddenFormats(next);
+                            } }) })] }), createPortal(_jsxs(PortalRoot, { "data-theme": themeMode, children: [_jsx(Tooltip, { ref: tooltipRef, role: "tooltip", "aria-hidden": "true" }), overlapState && (_jsxs(OverlapList, { "data-visible": "true", role: "listbox", "aria-label": `${overlapState.stores.length} магазинов в этой точке`, style: {
+                            left: Math.min(overlapState.x + 14, window.innerWidth - 240),
+                            top: Math.min(overlapState.y + 14, window.innerHeight - 220),
+                        }, onMouseEnter: cancelOverlapClose, onMouseLeave: scheduleOverlapClose, children: [_jsxs("div", { className: "ol-head", children: [overlapState.stores.length, " \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u043E\u0432 \u0440\u044F\u0434\u043E\u043C"] }), overlapState.stores.map((s) => {
+                                const color = formatColorMap.get(s.format) || 'var(--g500)';
+                                return (_jsxs("button", { type: "button", className: "ol-row", role: "option", "aria-selected": activeFilters.has(s.id), onClick: (e) => {
+                                        if (e.ctrlKey || e.metaKey) {
+                                            if (drillEnabled)
+                                                setDrillStoreId(s.id);
+                                        }
+                                        else {
+                                            toggleFilter(s.id);
+                                        }
+                                    }, onMouseEnter: (e) => {
+                                        // Hover на строке popup'а → детальный store-tooltip НАД строкой
+                                        // (а не справа), чтобы не перекрывал список.
+                                        showTooltipAboveElement(buildStoreTooltip(s), e.currentTarget);
+                                    }, onMouseLeave: () => {
+                                        hideTooltip();
+                                    }, children: [_jsx("span", { className: "ol-dot", style: { background: color } }), _jsx("span", { className: "ol-name", children: s.name }), _jsx("span", { className: "ol-meta", children: formatX(s.x) })] }, s.id));
+                            })] })), drillEnabled && drillStoreId && (_jsx(StoreDrillModal, { storeId: drillStoreId, stores: stores, quadrants: quadrants, thresholds: thresholds, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatSize: formatSize, formatLoss: formatLoss, xShort: xShort, yShort: yShort, sizeUnit: sizeUnit, detailQueryParams: detailQueryParams, onClose: () => setDrillStoreId(null) })), drillEnabled && drillQuadrant && (_jsx(QuadrantDrillModal, { quadrantKey: drillQuadrant, quadrants: quadrants, thresholds: thresholds, stores: visibleStores, allStoresTotal: stores.length, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatLoss: formatLoss, formatCount: formatCount, xShort: xShort, yShort: yShort, onClose: () => setDrillQuadrant(null), onOpenStore: (id) => setDrillStoreId(id) }))] }), document.body)] }));
 };
 export default ScatterRisk;
 //# sourceMappingURL=ScatterRisk.js.map

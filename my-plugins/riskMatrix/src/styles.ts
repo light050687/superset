@@ -27,7 +27,7 @@ export const KEYFRAMES_CSS = `
 `;
 
 /** CSS-переменные DS 2.0 — ставятся на корневом элементе через data-theme */
-const themeVars = (t: ThemeTokens) => css`
+export const themeVars = (t: ThemeTokens) => css`
   --bg: ${t.bg};
   --s: ${t.s};
   --ink: ${t.ink};
@@ -64,6 +64,23 @@ const themeVars = (t: ThemeTokens) => css`
   --ease: ${EASE};
 `;
 
+/**
+ * Обёртка для portal-рендера (tooltip / drill-modals) в document.body.
+ * Прокидывает CSS-переменные темы — иначе var(--g100) etc. внутри portal'a
+ * будут unset (они объявлены только на CardRoot). НЕ создаёт containing
+ * block (нет transform / container-type) — поэтому position:fixed внутри
+ * работает относительно viewport, а не CardRoot.
+ */
+export const PortalRoot = styled.div`
+  &[data-theme='dark'] {
+    ${themeVars(DARK_TOKENS)}
+  }
+  &[data-theme='light'] {
+    ${themeVars(LIGHT_TOKENS)}
+  }
+  font-family: var(--f);
+`;
+
 export const CardRoot = styled.div`
   &[data-theme='dark'] {
     ${themeVars(DARK_TOKENS)}
@@ -77,8 +94,9 @@ export const CardRoot = styled.div`
   color: var(--ink);
   background: var(--s);
   border: 1px solid var(--g200);
+  /* DS 2.1 §06 Контейнер: radius 10px, padding space-4 × space-6 (16×20px). */
   border-radius: 10px;
-  padding: 18px 22px 16px;
+  padding: 16px 20px;
   box-shadow: var(--sh);
   width: 100%;
   height: 100%;
@@ -154,8 +172,9 @@ export const CardHead = styled.div`
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 18px;
+  gap: 16px;
+  /* DS 2.1 §06: «Отступ после заголовка контейнера: space-3 (12px)». */
+  margin-bottom: 12px;
   flex-shrink: 0;
 `;
 
@@ -167,13 +186,16 @@ export const TitleBlock = styled.div`
 `;
 
 export const CardTitle = styled.div`
-  /* DS v2.0 fluid: --fs-micro UPPER моно для card title */
-  font-family: var(--m);
-  font-size: var(--fs-micro);
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  /* DS v2.0 canonical Card title (как в scorecard / metricTimeSeries / donut):
+     sans-serif, 14px, 700, UPPERCASE. Раньше был mono 11px 800 — не совпадало
+     с остальными плагинами. */
+  font-family: var(--f);
+  font-size: var(--fs-body, 14px);
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink);
+  line-height: 1.25;
 `;
 
 export const CardSubtitle = styled.div`
@@ -213,7 +235,7 @@ export const Toolbar = styled.div`
   display: inline-flex;
   background: var(--g100);
   border: 1px solid var(--g200);
-  border-radius: 6px;
+  border-radius: 7px;
   padding: 3px;
   gap: 1px;
   height: 30px;
@@ -227,7 +249,7 @@ export const TbBtn = styled.button`
   justify-content: center;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 5px;
   color: var(--g500);
   cursor: pointer;
   transition: 0.12s;
@@ -255,6 +277,15 @@ export const TbBtn = styled.button`
     height: 14px;
     display: block;
   }
+
+  /* ADR-0001 mobile-first: touch target 44×44 на coarse pointer (тач) */
+  @media (pointer: coarse) {
+    min-width: 44px;
+    min-height: 44px;
+    width: auto;
+    height: auto;
+    padding: 10px;
+  }
 `;
 
 export const TbDivider = styled.span`
@@ -275,7 +306,7 @@ export const SelectDd = styled.div`
   right: -2px;
   background: var(--s);
   border: 1px solid var(--g300);
-  border-radius: 6px;
+  border-radius: 9px;
   padding: 4px;
   min-width: 240px;
   box-shadow: var(--dd-shadow);
@@ -284,6 +315,12 @@ export const SelectDd = styled.div`
 
   &[data-open='true'] {
     display: block;
+  }
+
+  /* Compact icon-only variant — узкая вертикальная панель, как в Line Chart. */
+  &[data-icon-only='true'] {
+    min-width: auto;
+    padding: 4px;
   }
 `;
 
@@ -333,6 +370,23 @@ export const SelectDdItem = styled.button`
   .sdd-l {
     flex: 1;
   }
+
+  /* Icon-only вариант — компактная квадратная кнопка без подписи. */
+  [data-icon-only='true'] & {
+    width: 32px;
+    padding: 6px;
+    justify-content: center;
+    gap: 0;
+  }
+
+  /* ADR-0001 mobile-first: touch target 44×44 на coarse pointer */
+  @media (pointer: coarse) {
+    min-height: 44px;
+    [data-icon-only='true'] & {
+      width: 44px;
+      min-height: 44px;
+    }
+  }
 `;
 
 export const SearchWrap = styled.div`
@@ -375,6 +429,12 @@ export const SearchWrap = styled.div`
       color: var(--ink);
       background: var(--g200);
     }
+
+    /* ADR-0001 mobile-first: расширяем кликабельную зону на touch */
+    @media (pointer: coarse) {
+      width: 32px;
+      height: 32px;
+    }
   }
   &.has-value .search-clear {
     display: flex;
@@ -385,7 +445,7 @@ export const SearchInput = styled.input`
   width: 100%;
   background: var(--g100);
   border: 1px solid var(--g200);
-  border-radius: 6px;
+  border-radius: 7px;
   padding: 7px 10px 7px 28px;
   height: 30px;
   color: var(--ink);
@@ -414,7 +474,7 @@ export const SearchSelectBtn = styled.button`
   background: var(--c-sky);
   border: 1px solid var(--c-sky);
   color: var(--on-accent);
-  border-radius: 6px;
+  border-radius: 7px;
   padding: 0 10px;
   height: 30px;
   font-family: var(--m);
@@ -464,6 +524,31 @@ export const ChartSvg = styled.svg`
   width: 100%;
   height: 100%;
 
+  /* Bubble mount animation — играет ОДИН раз при первом появлении точек.
+     SVG-specific: transform-box: fill-box + transform-origin центр круга,
+     иначе scale идёт от SVG (0,0). Easing с лёгким overshoot (back-out) —
+     soft "pop" эффект, в стиле проекта. */
+  @keyframes pt-mount {
+    0% {
+      opacity: 0;
+      transform: scale(0);
+    }
+    60% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  &.is-mount .pt {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: pt-mount 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+    animation-delay: calc(var(--anim-i, 0) * 3ms);
+  }
+
   .pt {
     cursor: pointer;
     transition: opacity 0.15s var(--ease), stroke-width 0.15s var(--ease);
@@ -482,6 +567,13 @@ export const ChartSvg = styled.svg`
     stroke-width: 2;
     pointer-events: auto !important;
   }
+  /* .pt.bad — зарезервированный стиль (как в мокапе). На точках сейчас не
+     применяется; селекция «хуже плана» работает через activeFilters → .found.
+     Сохранён 1:1 с прототипом для возможного будущего использования. */
+  .pt.bad {
+    stroke: var(--dn);
+    stroke-width: 2;
+  }
   .pt.worst-mark {
     stroke: var(--ink);
     stroke-width: 1.5;
@@ -498,7 +590,7 @@ export const SelectionOverlay = styled.div`
     position: absolute;
     border: 1.5px dashed var(--c-sky);
     background: var(--selection-tint);
-    border-radius: 6px;
+    border-radius: 2px;
   }
 
   .selection-lasso {
@@ -518,7 +610,7 @@ export const QuadAnnot = styled.div<{ side: 'left' | 'right' }>`
   background: var(--annot-bg);
   backdrop-filter: blur(4px);
   border: 1px solid var(--g300);
-  border-radius: 6px;
+  border-radius: 7px;
   padding: 7px 10px 8px;
   min-width: 90px;
   text-align: ${(p) => (p.side === 'right' ? 'right' : 'left')};
@@ -603,10 +695,16 @@ export const LegendItem = styled.button`
     font-size: var(--fs-meta);
     font-weight: 600;
     color: var(--g600);
-    letter-spacing: 0.01em;
+    letter-spacing: 0.03em;
   }
   &:hover .lg-l {
     color: var(--ink);
+  }
+
+  /* ADR-0001 mobile-first: touch target 44×44 на coarse pointer */
+  @media (pointer: coarse) {
+    min-height: 44px;
+    padding: 8px 10px;
   }
 `;
 
@@ -622,7 +720,7 @@ export const Footer = styled.div`
   font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--g500);
-  letter-spacing: 0.01em;
+  letter-spacing: 0.03em;
   flex-shrink: 0;
   flex-wrap: wrap;
 
@@ -669,7 +767,7 @@ export const Footer = styled.div`
     display: inline-block;
     background: var(--g100);
     border: 1px solid var(--g300);
-    border-radius: 6px;
+    border-radius: 3px;
     padding: 1px 5px;
     font-family: var(--m);
     font-size: var(--fs-nano);
@@ -682,7 +780,113 @@ export const Footer = styled.div`
   }
 `;
 
+/**
+ * Popup при ховере на «кучу» магазинов (overlap >1 в радиусе курсора).
+ * Кликабельный (pointer-events: auto), в отличие от Tooltip.
+ * Click по строке = cross-filter, Ctrl+Click = детализация магазина.
+ */
+export const OverlapList = styled.div`
+  position: fixed;
+  background: var(--s);
+  border: 1px solid var(--g300);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: var(--tooltip-shadow);
+  font-family: var(--f);
+  color: var(--ink);
+  pointer-events: auto;
+  z-index: 2001;
+  min-width: 220px;
+  max-width: 320px;
+  max-height: 320px;
+  overflow-y: auto;
+  display: none;
+  animation: sr-tt-fade 0.12s var(--ease);
+
+  &[data-visible='true'] {
+    display: block !important;
+  }
+
+  .ol-head {
+    font-family: var(--m);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--g500);
+    padding: 4px 8px 6px;
+    border-bottom: 1px solid var(--g200);
+    margin-bottom: 4px;
+  }
+  .ol-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    color: var(--ink);
+    font-family: var(--f);
+    font-size: 12px;
+  }
+  .ol-row:hover,
+  .ol-row:focus-visible {
+    background: var(--g100);
+    outline: none;
+  }
+  .ol-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .ol-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+  .ol-meta {
+    font-family: var(--m);
+    font-size: 10px;
+    color: var(--g500);
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+  }
+  .ol-foot {
+    font-family: var(--m);
+    font-size: 9px;
+    color: var(--g500);
+    letter-spacing: 0.02em;
+    padding: 4px 8px 2px;
+    margin-top: 4px;
+    border-top: 1px solid var(--g200);
+  }
+  .ol-foot kbd {
+    display: inline-block;
+    background: var(--g100);
+    border: 1px solid var(--g300);
+    border-radius: 3px;
+    padding: 1px 4px;
+    font-family: var(--m);
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--g700);
+    line-height: 1;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+`;
+
 export const Tooltip = styled.div`
+  /* Tooltip = position: fixed → рендерится в body, ВНЕ container query scope
+     CardRoot. CSS-переменные --fs-* недоступны, поэтому используем fixed px. */
   position: fixed;
   background: var(--g100);
   border: 1px solid var(--g300);
@@ -690,7 +894,7 @@ export const Tooltip = styled.div`
   padding: 12px 14px 10px;
   box-shadow: var(--tooltip-shadow);
   font-family: var(--f);
-  font-size: var(--fs-micro);
+  font-size: 11px;
   color: var(--ink);
   pointer-events: none;
   z-index: 2000;
@@ -699,8 +903,10 @@ export const Tooltip = styled.div`
   display: none;
   animation: sr-tt-fade 0.12s var(--ease);
 
+  /* !important — защита от перебивания глобальными стилями Superset
+     (тематические [role="tooltip"] правила) */
   &[data-visible='true'] {
-    display: block;
+    display: block !important;
   }
 
   .tt-head {
@@ -713,7 +919,7 @@ export const Tooltip = styled.div`
   }
   .tt-status {
     width: 8px;
-    border-radius: 6px;
+    border-radius: 3px;
     flex-shrink: 0;
     align-self: stretch;
   }
@@ -722,7 +928,7 @@ export const Tooltip = styled.div`
     min-width: 0;
   }
   .tt-name {
-    font-size: var(--fs-interactive);
+    font-size: 13px;
     font-weight: 700;
     color: var(--ink);
     line-height: 1.25;
@@ -730,11 +936,11 @@ export const Tooltip = styled.div`
     letter-spacing: -0.005em;
   }
   .tt-sub {
-    font-size: var(--fs-micro);
+    font-size: 11px;
     font-weight: 500;
     color: var(--g500);
     font-family: var(--m);
-    letter-spacing: 0.01em;
+    letter-spacing: 0.02em;
   }
   .tt-rows {
     display: flex;
@@ -749,14 +955,14 @@ export const Tooltip = styled.div`
     font-family: var(--m);
   }
   .tt-l {
-    font-size: var(--fs-micro);
+    font-size: 11px;
     font-weight: 600;
     color: var(--g500);
-    letter-spacing: 0.06em;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
   }
   .tt-v {
-    font-size: var(--fs-meta);
+    font-size: 12px;
     font-weight: 700;
     color: var(--ink);
     letter-spacing: -0.005em;
@@ -778,7 +984,7 @@ export const Tooltip = styled.div`
     background: var(--g50);
     border: 1px solid var(--g200);
     border-radius: 6px;
-    font-size: var(--fs-meta);
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: -0.005em;
   }
@@ -787,10 +993,10 @@ export const Tooltip = styled.div`
     padding-top: 9px;
     border-top: 1px solid var(--g200);
     font-family: var(--m);
-    font-size: var(--fs-micro);
+    font-size: 11px;
     font-weight: 500;
     color: var(--g500);
-    letter-spacing: 0.01em;
+    letter-spacing: 0.02em;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -800,10 +1006,10 @@ export const Tooltip = styled.div`
     display: inline-block;
     background: var(--g200);
     border: 1px solid var(--g300);
-    border-radius: 6px;
+    border-radius: 3px;
     padding: 1px 4px;
     font-family: var(--m);
-    font-size: var(--fs-nano);
+    font-size: 10px;
     font-weight: 700;
     color: var(--g700);
     line-height: 1;
@@ -853,7 +1059,7 @@ export const Modal = styled.div`
   }
   .m-status {
     width: 8px;
-    border-radius: 6px;
+    border-radius: 3px;
     flex-shrink: 0;
     align-self: stretch;
     min-height: 40px;
@@ -881,7 +1087,7 @@ export const Modal = styled.div`
   .m-close {
     background: transparent;
     border: 1px solid var(--g300);
-    border-radius: 6px;
+    border-radius: 7px;
     width: 30px;
     height: 30px;
     display: flex;
@@ -899,6 +1105,12 @@ export const Modal = styled.div`
     svg {
       width: 14px;
       height: 14px;
+    }
+
+    /* ADR-0001 mobile-first: touch target 44×44 на coarse pointer */
+    @media (pointer: coarse) {
+      width: 44px;
+      height: 44px;
     }
   }
   .m-summary {
@@ -1026,7 +1238,7 @@ export const BulletRow = styled.div`
     top: 0;
     bottom: 0;
     left: 0;
-    border-radius: 6px;
+    border-radius: 3px;
   }
   .m-br-band-1 {
     background: var(--g100);
@@ -1044,7 +1256,7 @@ export const BulletRow = styled.div`
     transform: translateY(-50%);
     left: 0;
     height: 6px;
-    border-radius: 6px;
+    border-radius: 2px;
     z-index: 2;
   }
   .m-br-target {
@@ -1054,7 +1266,7 @@ export const BulletRow = styled.div`
     width: 2.5px;
     background: var(--ink);
     z-index: 3;
-    border-radius: 6px;
+    border-radius: 1.5px;
 
     &::before,
     &::after {
@@ -1065,7 +1277,7 @@ export const BulletRow = styled.div`
       width: 8px;
       height: 2px;
       background: var(--ink);
-      border-radius: 6px;
+      border-radius: 1px;
     }
     &::before {
       top: -2px;
@@ -1154,7 +1366,7 @@ export const StoreRow = styled.div`
   .mini-bullet {
     height: 7px;
     background: var(--g200);
-    border-radius: 6px;
+    border-radius: 2px;
     position: relative;
   }
   .mini-bar {
@@ -1163,7 +1375,7 @@ export const StoreRow = styled.div`
     top: 50%;
     transform: translateY(-50%);
     height: 5px;
-    border-radius: 6px;
+    border-radius: 1px;
   }
   .mini-bar.mini-bar--x {
     background: var(--c-tangerine);
@@ -1177,7 +1389,7 @@ export const StoreRow = styled.div`
     bottom: -2px;
     width: 2px;
     background: var(--ink);
-    border-radius: 6px;
+    border-radius: 1px;
   }
 `;
 

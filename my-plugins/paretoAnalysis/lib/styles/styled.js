@@ -470,6 +470,10 @@ exports.Lg = core_1.styled.div `
     outline-offset: 2px;
     border-radius: 4px;
   }
+
+  &:hover [data-lg-label] {
+    color: var(--ink);
+  }
 `;
 exports.LgSwatch = core_1.styled.span `
   width: 14px;
@@ -491,11 +495,8 @@ exports.LgLabel = core_1.styled.span `
   color: var(--g600);
   letter-spacing: 0.01em;
   white-space: nowrap;
-
-  ${exports.Lg}:hover & {
-    color: var(--ink);
-  }
 `;
+exports.LgLabel.defaultProps = { 'data-lg-label': '' };
 exports.ZoneChipBtn = core_1.styled.button `
   display: inline-flex;
   align-items: center;

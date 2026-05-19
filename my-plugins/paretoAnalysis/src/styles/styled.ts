@@ -502,6 +502,10 @@ export const Lg = styled.div<{ off?: boolean }>`
     outline-offset: 2px;
     border-radius: 4px;
   }
+
+  &:hover [data-lg-label] {
+    color: var(--ink);
+  }
 `;
 
 export const LgSwatch = styled.span<{ color: string }>`
@@ -526,11 +530,8 @@ export const LgLabel = styled.span`
   color: var(--g600);
   letter-spacing: 0.01em;
   white-space: nowrap;
-
-  ${Lg}:hover & {
-    color: var(--ink);
-  }
 `;
+LgLabel.defaultProps = { 'data-lg-label': '' } as any;
 
 export const ZoneChipBtn = styled.button<{ active: boolean }>`
   display: inline-flex;
