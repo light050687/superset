@@ -7,6 +7,9 @@ interface ToolbarProps {
     onAction: (action: SelectAction) => void;
     onReset: () => void;
     onClear: () => void;
+    /** Открыть модальное окно со списком выделенных магазинов. undefined =
+        кнопка не показывается (drillEnabled=false). */
+    onShowSelection?: () => void;
     searchQuery: string;
     onSearchChange: (q: string) => void;
 }

@@ -182,6 +182,9 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
   const [panActive, setPanActive] = useState(false);
   const [drillStoreId, setDrillStoreId] = useState<string | null>(null);
   const [drillQuadrant, setDrillQuadrant] = useState<QuadrantKey | null>(null);
+  /** Selection-drill-modal: показать список ВЫДЕЛЕННЫХ магазинов (activeFilters)
+      в том же UI что QuadrantDrillModal. Открывается из toolbar-кнопки при hasFilters. */
+  const [drillSelection, setDrillSelection] = useState(false);
 
   // ── Refs (mutable state, без перерендера) ──
   const chartAreaRef = useRef<HTMLDivElement | null>(null);
@@ -679,26 +682,12 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
         }
         return;
       }
-      // Квадрант
-      if (target.classList.contains('qa-bg-rect')) {
-        const qKey = target.getAttribute('data-quadrant') as QuadrantKey | null;
-        if (!qKey) return;
-        if (e.ctrlKey || e.metaKey) {
-          if (drillEnabled) setDrillQuadrant(qKey);
-        } else {
-          const inQuad = visibleStores
-            .filter((s) => getQuadrant(s, thresholds) === qKey)
-            .map((s) => s.id);
-          if (inQuad.length === 0) return;
-          const allSelected = inQuad.every((id) => activeFilters.has(id));
-          const next = new Set(activeFilters);
-          if (allSelected) inQuad.forEach((id) => next.delete(id));
-          else inQuad.forEach((id) => next.add(id));
-          commitFilters(next);
-        }
-      }
+      // Quadrant background больше не реагирует на click — выделение
+      // квадранта теперь идёт через клик на «плашку» QuadAnnot, см. JSX ниже.
+      // Drill квадранта (через Ctrl+click) тоже удалён — список выделенных
+      // открывается из toolbar list-кнопки, единый flow для любой selection.
     },
-    [selectMode, drillEnabled, toggleFilter, visibleStores, thresholds, activeFilters, commitFilters],
+    [selectMode, toggleFilter],
   );
 
   const handleSvgDoubleClick = useCallback(
@@ -752,6 +741,13 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
     lastY: number;
   }>({ lastId: null, lastOverlapKey: '', rafId: null, lastX: 0, lastY: 0 });
 
+  // Immediate close popup — без таймера. Locked-popup закрывается только через Esc.
+  // Объявлено ДО handleSvgMouseMove, т.к. handleSvgMouseMove ссылается на него.
+  const closeOverlap = useCallback(() => {
+    setOverlapState(null);
+    hoverStateRef.current.lastOverlapKey = '';
+  }, []);
+
   const handleSvgMouseMove = useCallback(
     (e: React.MouseEvent<SVGSVGElement>) => {
       const cx = e.clientX;
@@ -764,6 +760,18 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
       if (state.rafId !== null) return;
       state.rafId = requestAnimationFrame(() => {
         state.rafId = null;
+        // Во время lasso/rect-выделения скрываем hover-tooltip и закрываем
+        // overlap popup — они мешают плавно вести курсор по точкам.
+        if (selectMode) {
+          if (state.lastId !== null) {
+            state.lastId = null;
+            hideTooltip();
+          }
+          if (state.lastOverlapKey !== '') {
+            closeOverlap();
+          }
+          return;
+        }
         const area = chartAreaRef.current;
         const sc = scalesRef.current;
         if (!area || !sc) return;
@@ -837,14 +845,8 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
         // довести курсор до его строк (popup убегал бы за мышью).
       });
     },
-    [visibleStores, showTooltip, hideTooltip, positionTooltip, buildStoreTooltip],
+    [visibleStores, showTooltip, hideTooltip, positionTooltip, buildStoreTooltip, selectMode, closeOverlap],
   );
-
-  // Immediate close — без таймера. Locked-popup закрывается только через Esc.
-  const closeOverlap = useCallback(() => {
-    setOverlapState(null);
-    hoverStateRef.current.lastOverlapKey = '';
-  }, []);
 
   const handleSvgMouseLeave = useCallback(() => {
     const state = hoverStateRef.current;
@@ -1143,12 +1145,13 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
       if (e.key === 'Escape') {
         if (drillStoreId) setDrillStoreId(null);
         else if (drillQuadrant) setDrillQuadrant(null);
+        else if (drillSelection) setDrillSelection(false);
         else if (selectMode) setSelectMode(null);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [drillStoreId, drillQuadrant, selectMode]);
+  }, [drillStoreId, drillQuadrant, drillSelection, selectMode]);
 
   // ── Keyboard navigation на точках (Enter toggles, Space opens modal) ──
   const handleSvgKeyDown = useCallback(
@@ -1261,6 +1264,7 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
             onAction={onSelectAction}
             onReset={onReset}
             onClear={onClearFilters}
+            onShowSelection={drillEnabled ? () => setDrillSelection(true) : undefined}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
           />
@@ -1345,7 +1349,9 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
           )}
         </SelectionOverlay>
 
-        {/* Quadrant annotations */}
+        {/* Quadrant annotations — кликабельные плашки, bulk select stores
+            этого quadrant'a (toggle). Раньше выделение шло через клик на
+            quadrant background rect, теперь только через эти плашки. */}
         {quadrantStats &&
           enableQuadrantAnnotations &&
           annotationPositions &&
@@ -1353,15 +1359,39 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
             const pos = annotationPositions[key];
             const q = quadrants[key];
             const stat = quadrantStats[key];
-            // color достаточно для стилизации .qa-label/border — CSS caret-color
-            // не нужен, дополнительная CSS-переменная --qa-color упразднена.
+            const inQuad = visibleStores
+              .filter((s) => getQuadrant(s, thresholds) === key)
+              .map((s) => s.id);
+            const allSelected =
+              inQuad.length > 0 && inQuad.every((id) => activeFilters.has(id));
             const style: React.CSSProperties = { color: q.color };
             if ('left' in pos && pos.left !== undefined) style.left = pos.left;
             if ('right' in pos && pos.right !== undefined) style.right = pos.right;
             if ('top' in pos && pos.top !== undefined) style.top = pos.top;
             if ('bottom' in pos && pos.bottom !== undefined) style.bottom = pos.bottom;
             return (
-              <QuadAnnot key={key} side={pos.side} style={style}>
+              <QuadAnnot
+                key={key}
+                side={pos.side}
+                style={style}
+                className={allSelected ? 'on' : ''}
+                type="button"
+                aria-pressed={allSelected}
+                aria-label={`${q.label}: ${stat.count} объектов, ${allSelected ? 'снять выделение' : 'выделить'}`}
+                title={allSelected ? 'Снять выделение квадранта' : 'Выделить все объекты квадранта'}
+                onClick={() => {
+                  // В режиме lasso/rect нажатия на плашки игнорируем —
+                  // иначе click bubble съедает selection (mousedown→mouseup
+                  // на плашке = и lasso end, и button click → bulk select,
+                  // конфликт). В selection-mode плашки неактивны.
+                  if (selectMode) return;
+                  if (inQuad.length === 0) return;
+                  const next = new Set(activeFilters);
+                  if (allSelected) inQuad.forEach((id) => next.delete(id));
+                  else inQuad.forEach((id) => next.add(id));
+                  commitFilters(next);
+                }}
+              >
                 <div className="qa-label" style={{ color: q.color }}>
                   {q.label}
                 </div>
@@ -1512,6 +1542,42 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
             xShort={xShort}
             yShort={yShort}
             onClose={() => setDrillQuadrant(null)}
+            onOpenStore={(id) => setDrillStoreId(id)}
+          />
+        )}
+
+        {/* Selection-drill: тот же компонент в selection-режиме (selectionIds).
+            Открывается из toolbar-кнопки. Если есть selection (activeFilters) →
+            показываем только выделенные; иначе → все visible магазины (fallback,
+            чтобы юзер мог просмотреть весь график списком). */}
+        {drillEnabled && drillSelection && (
+          <QuadrantDrillModal
+            quadrantKey={null}
+            quadrants={quadrants}
+            thresholds={thresholds}
+            stores={stores}
+            allStoresTotal={stores.length}
+            formatColorMap={formatColorMap}
+            formatX={formatX}
+            formatY={formatY}
+            formatLoss={formatLoss}
+            formatCount={formatCount}
+            xShort={xShort}
+            yShort={yShort}
+            selectionIds={
+              activeFilters.size > 0
+                ? Array.from(activeFilters)
+                : visibleStores.map((s) => s.id)
+            }
+            selectionTitle={
+              activeFilters.size > 0 ? 'Выбранные магазины' : 'Все магазины'
+            }
+            selectionSubtitle={
+              activeFilters.size > 0
+                ? 'Магазины, применённые как cross-filter'
+                : 'Все объекты, показанные на графике'
+            }
+            onClose={() => setDrillSelection(false)}
             onOpenStore={(id) => setDrillStoreId(id)}
           />
         )}

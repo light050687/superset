@@ -588,9 +588,12 @@ export const SelectionOverlay = styled.div `
     stroke-dasharray: 5 4;
   }
 `;
-export const QuadAnnot = styled.div `
+export const QuadAnnot = styled.button `
+  /* Плашка теперь кликабельная (button) — клик = bulk select stores quadrant'a.
+     Раньше выделение шло через клик на background quadrant rect (qa-bg-rect),
+     теперь только через эту плашку (по запросу юзера). */
+  appearance: none;
   position: absolute;
-  pointer-events: none;
   font-family: var(--m);
   letter-spacing: 0.02em;
   z-index: 5;
@@ -601,9 +604,22 @@ export const QuadAnnot = styled.div `
   padding: 7px 10px 8px;
   min-width: 90px;
   text-align: ${(p) => (p.side === 'right' ? 'right' : 'left')};
+  cursor: pointer;
+  transition: border-color 0.15s var(--ease), transform 0.12s var(--ease);
 
   [data-theme='light'] & {
     border-color: var(--g200);
+  }
+  &:hover {
+    border-color: currentColor;
+  }
+  &:focus-visible {
+    outline: 2px solid var(--c-sky);
+    outline-offset: 2px;
+  }
+  &.on {
+    border-color: currentColor;
+    box-shadow: 0 0 0 1px currentColor;
   }
 
   /* DS v2.0 P0: 8.5px → --fs-nano (10) UPPER. Минимум 10 для UPPER quadrant labels */
@@ -1054,10 +1070,14 @@ export const ModalBg = styled.div `
   }
 `;
 export const Modal = styled.div `
+  /* DS v2.1 §06: контейнер = bg --s, border 1px --g200, radius 10px,
+     padding 16×20. Для модали увеличиваем radius до 12 (визуальная
+     иерархия — modal крупнее card) и padding до 20×24 (комфортные
+     отступы для нескольких секций stat-cards/list/footer). */
   background: var(--s);
-  border: 1px solid var(--g300);
-  border-radius: 16px;
-  padding: 24px 28px;
+  border: 1px solid var(--g200);
+  border-radius: 12px;
+  padding: 20px 24px;
   width: 100%;
   max-width: 880px;
   max-height: 90vh;
@@ -1146,11 +1166,13 @@ export const Modal = styled.div `
     padding: 12px 14px;
   }
   .m-stat-l {
+    /* DS v2.1 §10: <14px текст — только --ink/--g700/--g600, --g500 запрещён.
+       Был --g500, поднят до --g600 для контраста. */
     font-size: var(--fs-micro);
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--g500);
+    color: var(--g600);
     font-family: var(--m);
     margin-bottom: 6px;
   }
@@ -1193,11 +1215,12 @@ export const Modal = styled.div `
     margin-bottom: 0;
   }
   .m-section-l {
+    /* DS v2.1 §10: <14px текст — минимум --g600 для контраста. */
     font-size: var(--fs-micro);
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--g500);
+    color: var(--g600);
     font-family: var(--m);
     margin-bottom: 10px;
     display: flex;
@@ -1321,7 +1344,7 @@ export const BulletRow = styled.div `
 `;
 export const StoreRow = styled.div `
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) 60px minmax(120px, 180px) 60px minmax(120px, 180px);
+  grid-template-columns: minmax(0, 1fr) 60px minmax(120px, 180px) 60px minmax(120px, 180px);
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
@@ -1343,13 +1366,26 @@ export const StoreRow = styled.div `
     text-align: center;
   }
   .name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: var(--fs-meta);
     font-weight: 600;
     color: var(--ink);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    min-width: 0;
 
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
     .city {
       color: var(--g500);
       font-weight: 500;
