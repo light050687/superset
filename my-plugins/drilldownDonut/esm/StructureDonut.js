@@ -397,7 +397,25 @@ function StructureDonut(props) {
     const clearSelection = useCallback(() => setSelectedIdx(null), []);
     // ── Текущий срез для легенды (вычисляется до toggleHidden — нужен в его closure) ──
     const currentItems = useMemo(() => getCurrentItems({ categories, level, drilledId, hidden }), [categories, level, drilledId, hidden]);
-    const toggleHidden = useCallback((id) => {
+    const toggleHidden = useCallback((id, solo = false) => {
+        // solo=true (Ctrl/Meta+Click) — показать ТОЛЬКО этот пул, остальные hide.
+        // Повторный Ctrl+Click на тот же id в solo-state → reset, показать все.
+        // Паттерн скопирован из riskMatrix/ScatterRisk.tsx (LegendList onToggle).
+        if (solo) {
+            const others = currentItems.map((c) => c.id).filter((x) => x !== id);
+            const inSoloForThis = !hidden.has(id) && others.every((x) => hidden.has(x));
+            const next = inSoloForThis ? new Set() : new Set(others);
+            setHidden(next);
+            // Selected slice мог попасть в hidden — снимаем selection.
+            if (!inSoloForThis && selectedIdx != null) {
+                const selectedItem = currentItems[selectedIdx];
+                if (selectedItem && selectedItem.id !== id) {
+                    setSelectedIdx(null);
+                }
+            }
+            return;
+        }
+        // Обычный click — toggle одного пула.
         // Определяем направление (hide vs show) внутри setHidden, чтобы
         // setHidden оперировал свежим prev, а не устаревшим closure `hidden`.
         let isHiding = false;
@@ -420,7 +438,7 @@ function StructureDonut(props) {
                 setSelectedIdx(null);
             }
         }
-    }, [currentItems, selectedIdx]);
+    }, [currentItems, selectedIdx, hidden]);
     // ── Breadcrumb rendering ──
     const breadcrumbContent = useMemo(() => {
         if (level === 'drilled') {
@@ -497,10 +515,10 @@ function StructureDonut(props) {
                                         rubDecimals,
                                     });
                                     return (_jsxs(_Fragment, { children: [_jsx(HeroValue, { children: h.value }), _jsx(HeroLabel, { children: h.label })] }));
-                                })() })] }, `chart-${level}-${drilledId ?? 'root'}`)), _jsx(Footer, { children: _jsx(Legend, { role: "group", "aria-label": "\u041B\u0435\u0433\u0435\u043D\u0434\u0430", children: currentItems.map((it) => (_jsxs(LegendChip, { className: hidden.has(it.id) ? 'off' : '', tabIndex: 0, role: "button", "aria-pressed": !hidden.has(it.id), "aria-label": `${hidden.has(it.id) ? 'Показать' : 'Скрыть'} ${it.name}`, onClick: () => toggleHidden(it.id), onKeyDown: (e) => {
+                                })() })] }, `chart-${level}-${drilledId ?? 'root'}`)), _jsx(Footer, { children: _jsx(Legend, { role: "group", "aria-label": "\u041B\u0435\u0433\u0435\u043D\u0434\u0430", children: currentItems.map((it) => (_jsxs(LegendChip, { className: hidden.has(it.id) ? 'off' : '', tabIndex: 0, role: "button", "aria-pressed": !hidden.has(it.id), "aria-label": `${hidden.has(it.id) ? 'Показать' : 'Скрыть'} ${it.name}${currentItems.length > 1 ? ' (Ctrl+Click — оставить только этот)' : ''}`, onClick: (e) => toggleHidden(it.id, e.ctrlKey || e.metaKey), onKeyDown: (e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                         e.preventDefault();
-                                        toggleHidden(it.id);
+                                        toggleHidden(it.id, e.ctrlKey || e.metaKey);
                                     }
                                 }, children: [_jsx("span", { className: "lg-dot", style: { background: it.color } }), _jsx("span", { className: "lg-l", children: it.name })] }, it.id))) }) })] })] }));
 }

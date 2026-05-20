@@ -399,7 +399,25 @@ function StructureDonut(props) {
     const clearSelection = (0, react_1.useCallback)(() => setSelectedIdx(null), []);
     // ── Текущий срез для легенды (вычисляется до toggleHidden — нужен в его closure) ──
     const currentItems = (0, react_1.useMemo)(() => (0, buildOption_1.getCurrentItems)({ categories, level, drilledId, hidden }), [categories, level, drilledId, hidden]);
-    const toggleHidden = (0, react_1.useCallback)((id) => {
+    const toggleHidden = (0, react_1.useCallback)((id, solo = false) => {
+        // solo=true (Ctrl/Meta+Click) — показать ТОЛЬКО этот пул, остальные hide.
+        // Повторный Ctrl+Click на тот же id в solo-state → reset, показать все.
+        // Паттерн скопирован из riskMatrix/ScatterRisk.tsx (LegendList onToggle).
+        if (solo) {
+            const others = currentItems.map((c) => c.id).filter((x) => x !== id);
+            const inSoloForThis = !hidden.has(id) && others.every((x) => hidden.has(x));
+            const next = inSoloForThis ? new Set() : new Set(others);
+            setHidden(next);
+            // Selected slice мог попасть в hidden — снимаем selection.
+            if (!inSoloForThis && selectedIdx != null) {
+                const selectedItem = currentItems[selectedIdx];
+                if (selectedItem && selectedItem.id !== id) {
+                    setSelectedIdx(null);
+                }
+            }
+            return;
+        }
+        // Обычный click — toggle одного пула.
         // Определяем направление (hide vs show) внутри setHidden, чтобы
         // setHidden оперировал свежим prev, а не устаревшим closure `hidden`.
         let isHiding = false;
@@ -422,7 +440,7 @@ function StructureDonut(props) {
                 setSelectedIdx(null);
             }
         }
-    }, [currentItems, selectedIdx]);
+    }, [currentItems, selectedIdx, hidden]);
     // ── Breadcrumb rendering ──
     const breadcrumbContent = (0, react_1.useMemo)(() => {
         if (level === 'drilled') {
@@ -499,10 +517,10 @@ function StructureDonut(props) {
                                         rubDecimals,
                                     });
                                     return ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)(styles_1.HeroValue, { children: h.value }), (0, jsx_runtime_1.jsx)(styles_1.HeroLabel, { children: h.label })] }));
-                                })() })] }, `chart-${level}-${drilledId ?? 'root'}`)), (0, jsx_runtime_1.jsx)(styles_1.Footer, { children: (0, jsx_runtime_1.jsx)(styles_1.Legend, { role: "group", "aria-label": "\u041B\u0435\u0433\u0435\u043D\u0434\u0430", children: currentItems.map((it) => ((0, jsx_runtime_1.jsxs)(styles_1.LegendChip, { className: hidden.has(it.id) ? 'off' : '', tabIndex: 0, role: "button", "aria-pressed": !hidden.has(it.id), "aria-label": `${hidden.has(it.id) ? 'Показать' : 'Скрыть'} ${it.name}`, onClick: () => toggleHidden(it.id), onKeyDown: (e) => {
+                                })() })] }, `chart-${level}-${drilledId ?? 'root'}`)), (0, jsx_runtime_1.jsx)(styles_1.Footer, { children: (0, jsx_runtime_1.jsx)(styles_1.Legend, { role: "group", "aria-label": "\u041B\u0435\u0433\u0435\u043D\u0434\u0430", children: currentItems.map((it) => ((0, jsx_runtime_1.jsxs)(styles_1.LegendChip, { className: hidden.has(it.id) ? 'off' : '', tabIndex: 0, role: "button", "aria-pressed": !hidden.has(it.id), "aria-label": `${hidden.has(it.id) ? 'Показать' : 'Скрыть'} ${it.name}${currentItems.length > 1 ? ' (Ctrl+Click — оставить только этот)' : ''}`, onClick: (e) => toggleHidden(it.id, e.ctrlKey || e.metaKey), onKeyDown: (e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                         e.preventDefault();
-                                        toggleHidden(it.id);
+                                        toggleHidden(it.id, e.ctrlKey || e.metaKey);
                                     }
                                 }, children: [(0, jsx_runtime_1.jsx)("span", { className: "lg-dot", style: { background: it.color } }), (0, jsx_runtime_1.jsx)("span", { className: "lg-l", children: it.name })] }, it.id))) }) })] })] }));
 }
