@@ -664,7 +664,26 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
   );
 
   const toggleHidden = useCallback(
-    (id: string): void => {
+    (id: string, solo = false): void => {
+      // solo=true (Ctrl/Meta+Click) — показать ТОЛЬКО этот пул, остальные hide.
+      // Повторный Ctrl+Click на тот же id в solo-state → reset, показать все.
+      // Паттерн скопирован из riskMatrix/ScatterRisk.tsx (LegendList onToggle).
+      if (solo) {
+        const others = currentItems.map((c) => c.id).filter((x) => x !== id);
+        const inSoloForThis =
+          !hidden.has(id) && others.every((x) => hidden.has(x));
+        const next = inSoloForThis ? new Set<string>() : new Set(others);
+        setHidden(next);
+        // Selected slice мог попасть в hidden — снимаем selection.
+        if (!inSoloForThis && selectedIdx != null) {
+          const selectedItem = currentItems[selectedIdx];
+          if (selectedItem && selectedItem.id !== id) {
+            setSelectedIdx(null);
+          }
+        }
+        return;
+      }
+      // Обычный click — toggle одного пула.
       // Определяем направление (hide vs show) внутри setHidden, чтобы
       // setHidden оперировал свежим prev, а не устаревшим closure `hidden`.
       let isHiding = false;
@@ -687,7 +706,7 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
         }
       }
     },
-    [currentItems, selectedIdx],
+    [currentItems, selectedIdx, hidden],
   );
 
   // ── Breadcrumb rendering ──
@@ -978,12 +997,14 @@ function StructureDonut(props: StructureDonutProps): JSX.Element {
                 tabIndex={0}
                 role="button"
                 aria-pressed={!hidden.has(it.id)}
-                aria-label={`${hidden.has(it.id) ? 'Показать' : 'Скрыть'} ${it.name}`}
-                onClick={() => toggleHidden(it.id)}
+                aria-label={`${hidden.has(it.id) ? 'Показать' : 'Скрыть'} ${it.name}${
+                  currentItems.length > 1 ? ' (Ctrl+Click — оставить только этот)' : ''
+                }`}
+                onClick={(e) => toggleHidden(it.id, e.ctrlKey || e.metaKey)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    toggleHidden(it.id);
+                    toggleHidden(it.id, e.ctrlKey || e.metaKey);
                   }
                 }}
               >

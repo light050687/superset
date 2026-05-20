@@ -537,7 +537,14 @@ export const LegendChip = styled.div `
   &:nth-of-type(7) { animation-delay: 0.88s; }
   &:nth-of-type(n+8) { animation-delay: 0.91s; }
 
-  &.off {
+  /* iter 8.11: opacity применяется к ДЕТЯМ (.lg-dot + .lg-l), не к chip'у.
+     Почему: на LegendChip висит animation legendChipInKf с fill-mode both,
+     который фиксирует opacity 1 из последнего keyframe permanently,
+     перекрывая правило .off { opacity: 0.35 } на parent. Дети без animation —
+     наследуют parent opacity (=1) и сами применяют 0.35 → effective 0.35.
+     Точное визуальное соответствие riskMatrix LegendItem. */
+  &.off .lg-dot,
+  &.off .lg-l {
     opacity: 0.35;
   }
   &:hover .lg-l {
