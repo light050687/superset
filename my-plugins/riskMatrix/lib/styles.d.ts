@@ -112,7 +112,7 @@ export declare const QuadAnnot: import("@emotion/styled").StyledComponent<{
     as?: React.ElementType;
 } & {
     side: "left" | "right";
-}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+}, import("react").DetailedHTMLProps<import("react").ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, {}>;
 export declare const Legend: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;

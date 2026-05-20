@@ -150,6 +150,17 @@ export declare const ModalHead: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+/** iter 8.3+8.6: блок «Title-row + counter».
+   TitleRow — flex-row с Title и Value inline (на одной baseline'е).
+   ResultsCount — на второй строке под title-row. */
+export declare const TitleBlock: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const TitleRow: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
 export declare const ModalTitle: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
@@ -241,7 +252,11 @@ export declare const PageInput: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
 }, import("react").DetailedHTMLProps<import("react").InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>, {}>;
-/** Scrollable table area — both axes scroll when content overflows */
+/** Scrollable table area — both axes scroll when content overflows.
+   iter 8.9: TableWrap padding 24px ровно = «линеечка» ModalHead/Toolbar/Foot.
+   Поэтому THead-bg и row-borders НЕ выходят за линеечку. Cell-padding 12px
+   внутри сместит text content на 36px от края модалки — допустимо (юзер: «что
+   внутри если сместиться не страшно»). Mobile: 14px = mobile linееchka. */
 export declare const TableWrap: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;

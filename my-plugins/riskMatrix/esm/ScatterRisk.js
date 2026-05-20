@@ -81,6 +81,9 @@ const ScatterRisk = (props) => {
     const [panActive, setPanActive] = useState(false);
     const [drillStoreId, setDrillStoreId] = useState(null);
     const [drillQuadrant, setDrillQuadrant] = useState(null);
+    /** Selection-drill-modal: показать список ВЫДЕЛЕННЫХ магазинов (activeFilters)
+        в том же UI что QuadrantDrillModal. Открывается из toolbar-кнопки при hasFilters. */
+    const [drillSelection, setDrillSelection] = useState(false);
     // ── Refs (mutable state, без перерендера) ──
     const chartAreaRef = useRef(null);
     const svgRef = useRef(null);
@@ -535,31 +538,11 @@ const ScatterRisk = (props) => {
             }
             return;
         }
-        // Квадрант
-        if (target.classList.contains('qa-bg-rect')) {
-            const qKey = target.getAttribute('data-quadrant');
-            if (!qKey)
-                return;
-            if (e.ctrlKey || e.metaKey) {
-                if (drillEnabled)
-                    setDrillQuadrant(qKey);
-            }
-            else {
-                const inQuad = visibleStores
-                    .filter((s) => getQuadrant(s, thresholds) === qKey)
-                    .map((s) => s.id);
-                if (inQuad.length === 0)
-                    return;
-                const allSelected = inQuad.every((id) => activeFilters.has(id));
-                const next = new Set(activeFilters);
-                if (allSelected)
-                    inQuad.forEach((id) => next.delete(id));
-                else
-                    inQuad.forEach((id) => next.add(id));
-                commitFilters(next);
-            }
-        }
-    }, [selectMode, drillEnabled, toggleFilter, visibleStores, thresholds, activeFilters, commitFilters]);
+        // Quadrant background больше не реагирует на click — выделение
+        // квадранта теперь идёт через клик на «плашку» QuadAnnot, см. JSX ниже.
+        // Drill квадранта (через Ctrl+click) тоже удалён — список выделенных
+        // открывается из toolbar list-кнопки, единый flow для любой selection.
+    }, [selectMode, toggleFilter]);
     const handleSvgDoubleClick = useCallback((e) => {
         if (!drillEnabled || selectMode)
             return;
@@ -589,6 +572,12 @@ const ScatterRisk = (props) => {
     }, [overlapState]);
     const overlapRef = useRef(null);
     const hoverStateRef = useRef({ lastId: null, lastOverlapKey: '', rafId: null, lastX: 0, lastY: 0 });
+    // Immediate close popup — без таймера. Locked-popup закрывается только через Esc.
+    // Объявлено ДО handleSvgMouseMove, т.к. handleSvgMouseMove ссылается на него.
+    const closeOverlap = useCallback(() => {
+        setOverlapState(null);
+        hoverStateRef.current.lastOverlapKey = '';
+    }, []);
     const handleSvgMouseMove = useCallback((e) => {
         const cx = e.clientX;
         const cy = e.clientY;
@@ -600,6 +589,18 @@ const ScatterRisk = (props) => {
             return;
         state.rafId = requestAnimationFrame(() => {
             state.rafId = null;
+            // Во время lasso/rect-выделения скрываем hover-tooltip и закрываем
+            // overlap popup — они мешают плавно вести курсор по точкам.
+            if (selectMode) {
+                if (state.lastId !== null) {
+                    state.lastId = null;
+                    hideTooltip();
+                }
+                if (state.lastOverlapKey !== '') {
+                    closeOverlap();
+                }
+                return;
+            }
             const area = chartAreaRef.current;
             const sc = scalesRef.current;
             if (!area || !sc)
@@ -673,12 +674,7 @@ const ScatterRisk = (props) => {
             // Та же группа — popup НЕ двигаем, иначе пользователь не сможет
             // довести курсор до его строк (popup убегал бы за мышью).
         });
-    }, [visibleStores, showTooltip, hideTooltip, positionTooltip, buildStoreTooltip]);
-    // Immediate close — без таймера. Locked-popup закрывается только через Esc.
-    const closeOverlap = useCallback(() => {
-        setOverlapState(null);
-        hoverStateRef.current.lastOverlapKey = '';
-    }, []);
+    }, [visibleStores, showTooltip, hideTooltip, positionTooltip, buildStoreTooltip, selectMode, closeOverlap]);
     const handleSvgMouseLeave = useCallback(() => {
         const state = hoverStateRef.current;
         if (state.rafId !== null) {
@@ -966,13 +962,15 @@ const ScatterRisk = (props) => {
                     setDrillStoreId(null);
                 else if (drillQuadrant)
                     setDrillQuadrant(null);
+                else if (drillSelection)
+                    setDrillSelection(false);
                 else if (selectMode)
                     setSelectMode(null);
             }
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [drillStoreId, drillQuadrant, selectMode]);
+    }, [drillStoreId, drillQuadrant, drillSelection, selectMode]);
     // ── Keyboard navigation на точках (Enter toggles, Space opens modal) ──
     const handleSvgKeyDown = useCallback((e) => {
         const target = e.target;
@@ -1022,7 +1020,7 @@ const ScatterRisk = (props) => {
     if (dataState === 'loading') {
         return (_jsxs(CardRoot, { "data-theme": themeMode, role: "region", "aria-busy": "true", "data-no-anim": "", children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsx(CardHead, { children: _jsx(TitleBlock, { children: _jsx(CardTitle, { children: title }) }) }), _jsx("div", { role: "status", "aria-label": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430", style: { flex: 1 } })] }));
     }
-    return (_jsxs(_Fragment, { children: [_jsxs(CardRoot, { "data-theme": themeMode, role: "region", "aria-labelledby": "sr-card-title", "data-info-hint-container": "", children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsxs(CardHead, { children: [_jsxs(TitleBlock, { children: [_jsxs(CardTitle, { id: "sr-card-title", children: [title, dataState === 'partial' && (_jsx(PartialBadge, { title: "\u0427\u0430\u0441\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0445 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430", children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u043E" }))] }), _jsxs(CardSubtitle, { children: [subtitle && _jsx("span", { children: subtitle }), subtitle && _jsx("span", { className: "dot" }), _jsxs("span", { className: "strong", children: [formatCount(stores.length), " \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u0432"] }), activeFilters.size > 0 && (_jsxs(_Fragment, { children: [_jsx("span", { className: "dot" }), _jsxs("span", { children: [formatCount(activeFilters.size), " \u0432\u044B\u0431\u0440\u0430\u043D\u043E"] })] }))] })] }), _jsxs(Controls, { children: [_jsx(ToolbarBar, { selectMode: selectMode, hasFilters: activeFilters.size > 0, onAction: onSelectAction, onReset: onReset, onClear: onClearFilters, searchQuery: searchQuery, onSearchChange: setSearchQuery }), _jsx(InfoHintTopRight, { children: _jsxs(InfoHint, { ariaLabel: "\u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430 \u043F\u043E \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u044E", children: [_jsxs("div", { className: "hint-section", children: [_jsx("div", { className: "hint-section-title", children: "\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435" }), shortcutsHint.split(/\s*·\s*/).map((part, i) => {
+    return (_jsxs(_Fragment, { children: [_jsxs(CardRoot, { "data-theme": themeMode, role: "region", "aria-labelledby": "sr-card-title", "data-info-hint-container": "", children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsxs(CardHead, { children: [_jsxs(TitleBlock, { children: [_jsxs(CardTitle, { id: "sr-card-title", children: [title, dataState === 'partial' && (_jsx(PartialBadge, { title: "\u0427\u0430\u0441\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0445 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430", children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u043E" }))] }), _jsxs(CardSubtitle, { children: [subtitle && _jsx("span", { children: subtitle }), subtitle && _jsx("span", { className: "dot" }), _jsxs("span", { className: "strong", children: [formatCount(stores.length), " \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u0432"] }), activeFilters.size > 0 && (_jsxs(_Fragment, { children: [_jsx("span", { className: "dot" }), _jsxs("span", { children: [formatCount(activeFilters.size), " \u0432\u044B\u0431\u0440\u0430\u043D\u043E"] })] }))] })] }), _jsxs(Controls, { children: [_jsx(ToolbarBar, { selectMode: selectMode, hasFilters: activeFilters.size > 0, onAction: onSelectAction, onReset: onReset, onClear: onClearFilters, onShowSelection: drillEnabled ? () => setDrillSelection(true) : undefined, searchQuery: searchQuery, onSearchChange: setSearchQuery }), _jsx(InfoHintTopRight, { children: _jsxs(InfoHint, { ariaLabel: "\u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430 \u043F\u043E \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u044E", children: [_jsxs("div", { className: "hint-section", children: [_jsx("div", { className: "hint-section-title", children: "\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435" }), shortcutsHint.split(/\s*·\s*/).map((part, i) => {
                                                             const [keysRaw, ...descParts] = part.split(/\s*—\s*/);
                                                             const desc = descParts.join(' — ');
                                                             const keys = keysRaw.split(/\s*\+\s*/);
@@ -1041,8 +1039,10 @@ const ScatterRisk = (props) => {
                                     const pos = annotationPositions[key];
                                     const q = quadrants[key];
                                     const stat = quadrantStats[key];
-                                    // color достаточно для стилизации .qa-label/border — CSS caret-color
-                                    // не нужен, дополнительная CSS-переменная --qa-color упразднена.
+                                    const inQuad = visibleStores
+                                        .filter((s) => getQuadrant(s, thresholds) === key)
+                                        .map((s) => s.id);
+                                    const allSelected = inQuad.length > 0 && inQuad.every((id) => activeFilters.has(id));
                                     const style = { color: q.color };
                                     if ('left' in pos && pos.left !== undefined)
                                         style.left = pos.left;
@@ -1052,7 +1052,22 @@ const ScatterRisk = (props) => {
                                         style.top = pos.top;
                                     if ('bottom' in pos && pos.bottom !== undefined)
                                         style.bottom = pos.bottom;
-                                    return (_jsxs(QuadAnnot, { side: pos.side, style: style, children: [_jsx("div", { className: "qa-label", style: { color: q.color }, children: q.label }), _jsxs("div", { className: "qa-count", children: [formatCount(stat.count), _jsx("span", { className: "u", children: "\u043E\u0431\u044A\u0435\u043A\u0442\u043E\u0432" })] }), stat.loss > 0 && (_jsxs("div", { className: "qa-loss", children: [formatLoss(stat.loss), " \u043F\u043E\u0442\u0435\u0440\u044C"] }))] }, key));
+                                    return (_jsxs(QuadAnnot, { side: pos.side, style: style, className: allSelected ? 'on' : '', type: "button", "aria-pressed": allSelected, "aria-label": `${q.label}: ${stat.count} объектов, ${allSelected ? 'снять выделение' : 'выделить'}`, title: allSelected ? 'Снять выделение квадранта' : 'Выделить все объекты квадранта', onClick: () => {
+                                            // В режиме lasso/rect нажатия на плашки игнорируем —
+                                            // иначе click bubble съедает selection (mousedown→mouseup
+                                            // на плашке = и lasso end, и button click → bulk select,
+                                            // конфликт). В selection-mode плашки неактивны.
+                                            if (selectMode)
+                                                return;
+                                            if (inQuad.length === 0)
+                                                return;
+                                            const next = new Set(activeFilters);
+                                            if (allSelected)
+                                                inQuad.forEach((id) => next.delete(id));
+                                            else
+                                                inQuad.forEach((id) => next.add(id));
+                                            commitFilters(next);
+                                        }, children: [_jsx("div", { className: "qa-label", style: { color: q.color }, children: q.label }), _jsxs("div", { className: "qa-count", children: [formatCount(stat.count), _jsx("span", { className: "u", children: "\u043E\u0431\u044A\u0435\u043A\u0442\u043E\u0432" })] }), stat.loss > 0 && (_jsxs("div", { className: "qa-loss", children: [formatLoss(stat.loss), " \u043F\u043E\u0442\u0435\u0440\u044C"] }))] }, key));
                                 })] }), _jsx(LegendRoot, { children: _jsx(LegendList, { formats: formats, hiddenFormats: hiddenFormats, onToggle: (id, solo) => {
                                 if (solo) {
                                     // Ctrl/Meta+Click: solo-mode = показать ТОЛЬКО этот формат.
@@ -1098,7 +1113,11 @@ const ScatterRisk = (props) => {
                                     }, children: [_jsx("span", { className: "ol-dot", style: { background: color } }), _jsx("span", { className: "ol-name", children: s.name })] }, s.id));
                             }), _jsx("div", { className: "ol-foot", children: overlapState.locked
                                     ? 'Esc — закрыть'
-                                    : 'Ctrl — зафиксировать' })] })), drillEnabled && drillStoreId && (_jsx(StoreDrillModal, { storeId: drillStoreId, stores: stores, quadrants: quadrants, thresholds: thresholds, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatSize: formatSize, formatLoss: formatLoss, xShort: xShort, yShort: yShort, sizeUnit: sizeUnit, detailQueryParams: detailQueryParams, onClose: () => setDrillStoreId(null) })), drillEnabled && drillQuadrant && (_jsx(QuadrantDrillModal, { quadrantKey: drillQuadrant, quadrants: quadrants, thresholds: thresholds, stores: visibleStores, allStoresTotal: stores.length, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatLoss: formatLoss, formatCount: formatCount, xShort: xShort, yShort: yShort, onClose: () => setDrillQuadrant(null), onOpenStore: (id) => setDrillStoreId(id) }))] }), document.body)] }));
+                                    : 'Ctrl — зафиксировать' })] })), drillEnabled && drillStoreId && (_jsx(StoreDrillModal, { storeId: drillStoreId, stores: stores, quadrants: quadrants, thresholds: thresholds, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatSize: formatSize, formatLoss: formatLoss, xShort: xShort, yShort: yShort, sizeUnit: sizeUnit, detailQueryParams: detailQueryParams, onClose: () => setDrillStoreId(null) })), drillEnabled && drillQuadrant && (_jsx(QuadrantDrillModal, { quadrantKey: drillQuadrant, quadrants: quadrants, thresholds: thresholds, stores: visibleStores, allStoresTotal: stores.length, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatLoss: formatLoss, formatCount: formatCount, xShort: xShort, yShort: yShort, onClose: () => setDrillQuadrant(null), onOpenStore: (id) => setDrillStoreId(id) })), drillEnabled && drillSelection && (_jsx(QuadrantDrillModal, { quadrantKey: null, quadrants: quadrants, thresholds: thresholds, stores: stores, allStoresTotal: stores.length, formatColorMap: formatColorMap, formatX: formatX, formatY: formatY, formatLoss: formatLoss, formatCount: formatCount, xShort: xShort, yShort: yShort, selectionIds: activeFilters.size > 0
+                            ? Array.from(activeFilters)
+                            : visibleStores.map((s) => s.id), selectionTitle: activeFilters.size > 0 ? 'Выбранные магазины' : 'Все магазины', selectionSubtitle: activeFilters.size > 0
+                            ? 'Магазины, применённые как cross-filter'
+                            : 'Все объекты, показанные на графике', onClose: () => setDrillSelection(false), onOpenStore: (id) => setDrillStoreId(id) }))] }), document.body)] }));
 };
 export default ScatterRisk;
 //# sourceMappingURL=ScatterRisk.js.map

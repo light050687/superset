@@ -638,7 +638,15 @@ const KpiCardMemo = React.memo(function KpiCardInner({
       <Card
         className={CARD_CLASS}
         clickable={hasDetail}
-        onClick={hasDetail ? () => setIsModalOpen(true) : undefined}
+        onClick={
+          hasDetail
+            ? (e: React.MouseEvent) => {
+                // Открывать модал только по Ctrl/Meta+Click. Обычный click —
+                // no-op (юзер: ctrl+click — открыть детализацию).
+                if (e.ctrlKey || e.metaKey) setIsModalOpen(true);
+              }
+            : undefined
+        }
         data-info-hint-container=""
       >
         {isStale && <RefreshBar />}

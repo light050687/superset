@@ -20,6 +20,9 @@ interface ToolbarProps {
   onAction: (action: SelectAction) => void;
   onReset: () => void;
   onClear: () => void;
+  /** Открыть модальное окно со списком выделенных магазинов. undefined =
+      кнопка не показывается (drillEnabled=false). */
+  onShowSelection?: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
 }
@@ -34,6 +37,7 @@ const ToolbarBar: React.FC<ToolbarProps> = ({
   onAction,
   onReset,
   onClear,
+  onShowSelection,
   searchQuery,
   onSearchChange,
 }) => {
@@ -251,6 +255,34 @@ const ToolbarBar: React.FC<ToolbarProps> = ({
               )}
             </SelectDd>
           </SelectDdWrap>
+
+        {onShowSelection && (
+          <Toolbar role="toolbar" aria-label="Список магазинов">
+            <TbBtn
+              onClick={onShowSelection}
+              title={
+                hasFilters
+                  ? 'Список выделенных магазинов'
+                  : 'Список всех магазинов на графике'
+              }
+              type="button"
+              aria-label={
+                hasFilters
+                  ? 'Открыть список выделенных магазинов'
+                  : 'Открыть список всех магазинов'
+              }
+            >
+              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                <line x1="3" y1="4" x2="11" y2="4" />
+                <line x1="3" y1="7" x2="11" y2="7" />
+                <line x1="3" y1="10" x2="11" y2="10" />
+                <circle cx="1.5" cy="4" r="0.5" fill="currentColor" stroke="none" />
+                <circle cx="1.5" cy="7" r="0.5" fill="currentColor" stroke="none" />
+                <circle cx="1.5" cy="10" r="0.5" fill="currentColor" stroke="none" />
+              </svg>
+            </TbBtn>
+          </Toolbar>
+        )}
 
         {hasFilters && (
           <Toolbar role="toolbar" aria-label="Сбросить выделение">

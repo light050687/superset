@@ -30,6 +30,8 @@ import {
   Overlay,
   Modal,
   ModalHead,
+  TitleBlock,
+  TitleRow,
   ModalTitle,
   ModalValue,
   CloseButton,
@@ -41,7 +43,6 @@ import {
   SearchScopeButton,
   ExactMatchLabel,
   FlipButton,
-  FlipIcon,
   FlipLabel,
   ResultsCount,
   TableWrap,
@@ -203,8 +204,15 @@ function GroupRowView({
   showDelta2?: boolean;
 }): JSX.Element {
   const { summary } = group;
+  // Раскрытие строки — обычный click (по умолчанию). Ctrl/Meta+Click
+  // зарезервирован для drill-открытия модалки (на уровне KpiCard), внутри
+  // строки таблицы Ctrl+Click намеренно игнорируется чтобы не дублировать.
+  const handleClick = (e: React.MouseEvent) => {
+    if (e.ctrlKey || e.metaKey) return;
+    onToggle();
+  };
   return (
-    <GroupRow onClick={onToggle}>
+    <GroupRow onClick={handleClick}>
       <td>
         {isLoadingChildren ? (
           <InlineSpinnerSmall aria-label="Загрузка" />
@@ -760,10 +768,12 @@ function DetailModalInner({
     return () => document.removeEventListener('keydown', onKey);
   }, [isOpen, handleClose]);
 
-  /* ── Focus management ── */
+  /* ── Focus management ── iter 8.10: фокусируем сам Modal, не CloseButton,
+     чтобы не было визуального focus-ring на крестике при открытии. Modal
+     имеет tabIndex={-1} + outline:none. Esc работает через document listener. */
 
   useEffect(() => {
-    if (isOpen) closeRef.current?.focus();
+    if (isOpen) modalRef.current?.focus();
   }, [isOpen]);
 
   /* ── Focus trap ── */
@@ -907,13 +917,22 @@ function DetailModalInner({
         role="dialog"
         aria-modal="true"
         aria-label={`${title} — детализация`}
+        tabIndex={-1}
         onClick={e => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
-        {/* ── Header ── */}
+        {/* ── Header ── iter 8.6: TitleRow inline (Title + Value), counter под.
+            iter 8.5: CloseButton 28×28 (см. styles.ts). */}
         <ModalHead>
-          <ModalTitle>{title}</ModalTitle>
-          <ModalValue>{headerValue}</ModalValue>
+          <TitleBlock>
+            <TitleRow>
+              <ModalTitle>{title}</ModalTitle>
+              <ModalValue>{headerValue}</ModalValue>
+            </TitleRow>
+            <ResultsCount>
+              {groupLabel}: {totalCount != null ? totalCount : `${groups.length}${hasNextPage ? '+' : ''}`}
+            </ResultsCount>
+          </TitleBlock>
           <CloseButton
             ref={closeRef}
             onClick={handleClose}
@@ -964,15 +983,14 @@ function DetailModalInner({
             onClick={flipHierarchy}
             aria-label="Сменить иерархию"
           >
-            <FlipIcon flipped={!isPrimary} aria-hidden="true">⇅</FlipIcon>
+            {/* iter 8.4: FlipIcon (⇅) убран по запросу юзера. */}
             <FlipLabel>
               {isPrimary
                 ? `${hierarchyLabelPrimary}\u00A0→\u00A0${hierarchyLabelSecondary}`
                 : `${hierarchyLabelSecondary}\u00A0→\u00A0${hierarchyLabelPrimary}`}
             </FlipLabel>
           </FlipButton>
-
-          <ResultsCount>{groupLabel}: {totalCount != null ? totalCount : `${groups.length}${hasNextPage ? '+' : ''}`}</ResultsCount>
+          {/* iter 8.3: ResultsCount перенесён в ModalHead (TitleBlock). */}
         </ModalToolbar>
 
         {/* ── Table — dynamic columns ── */}

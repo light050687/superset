@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PageBtn = exports.PaginationWrap = exports.ResultsCount = exports.FlipLabel = exports.FlipIcon = exports.FlipButton = exports.ModeButton = exports.ModeToggle = exports.ExactMatchLabel = exports.SearchScopeButton = exports.SearchScopeToggle = exports.SearchInput = exports.SearchIcon = exports.SearchBox = exports.ModalToolbar = exports.CloseButton = exports.ModalValue = exports.ModalTitle = exports.ModalHead = exports.Modal = exports.Overlay = exports.DeltaPill = exports.ComparisonValue = exports.ComparisonLabel = exports.ComparisonItem = exports.ComparisonSection = exports.Subtitle = exports.HeroUnit = exports.HeroValue = exports.DataLayer = exports.DataContainer = exports.ToggleButton = exports.ToggleGroup = exports.CardTitle = exports.CardHead = exports.PartialBadge = exports.SkeletonWrap = exports.SkeletonText = exports.SkeletonBlock = exports.ErrorStateIcon = exports.EmptyStateText = exports.EmptyStateIcon = exports.EmptyStateWrap = exports.MockBadge = exports.Card = exports.KpiCardRoot = exports.KEYFRAMES_CSS = exports.CARD_CLASS = exports.refreshSlideKf = exports.spinKf = void 0;
-exports.FooterHintIcon = exports.SortableTh = exports.RetryButton = exports.ErrorRowInner = exports.LoaderRowInner = exports.InlineSpinnerLarge = exports.InlineSpinnerSmall = exports.RefreshBar = exports.ExportButton = exports.FooterHint = exports.ModalFoot = exports.TablePill = exports.EmptyRow = exports.Chevron = exports.ChildRow = exports.GroupRow = exports.THRow = exports.THead = exports.DetailTable = exports.TableWrap = exports.PageInput = exports.PageEllipsis = void 0;
+exports.ResultsCount = exports.FlipLabel = exports.FlipIcon = exports.FlipButton = exports.ModeButton = exports.ModeToggle = exports.ExactMatchLabel = exports.SearchScopeButton = exports.SearchScopeToggle = exports.SearchInput = exports.SearchIcon = exports.SearchBox = exports.ModalToolbar = exports.CloseButton = exports.ModalValue = exports.ModalTitle = exports.TitleRow = exports.TitleBlock = exports.ModalHead = exports.Modal = exports.Overlay = exports.DeltaPill = exports.ComparisonValue = exports.ComparisonLabel = exports.ComparisonItem = exports.ComparisonSection = exports.Subtitle = exports.HeroUnit = exports.HeroValue = exports.DataLayer = exports.DataContainer = exports.ToggleButton = exports.ToggleGroup = exports.CardTitle = exports.CardHead = exports.PartialBadge = exports.SkeletonWrap = exports.SkeletonText = exports.SkeletonBlock = exports.ErrorStateIcon = exports.EmptyStateText = exports.EmptyStateIcon = exports.EmptyStateWrap = exports.MockBadge = exports.Card = exports.KpiCardRoot = exports.KEYFRAMES_CSS = exports.CARD_CLASS = exports.refreshSlideKf = exports.spinKf = void 0;
+exports.FooterHintIcon = exports.SortableTh = exports.RetryButton = exports.ErrorRowInner = exports.LoaderRowInner = exports.InlineSpinnerLarge = exports.InlineSpinnerSmall = exports.RefreshBar = exports.ExportButton = exports.FooterHint = exports.ModalFoot = exports.TablePill = exports.EmptyRow = exports.Chevron = exports.ChildRow = exports.GroupRow = exports.THRow = exports.THead = exports.DetailTable = exports.TableWrap = exports.PageInput = exports.PageEllipsis = exports.PageBtn = exports.PaginationWrap = void 0;
 const core_1 = require("@superset-ui/core");
 const react_1 = require("@emotion/react");
 const themeTokens_1 = require("./themeTokens");
@@ -661,7 +661,13 @@ exports.Overlay = core_1.styled.div `
 exports.Modal = core_1.styled.div `
   background: var(--s);
   border: 1px solid var(--g200);
-  border-radius: 10px;
+  /* iter 8.10: tabIndex={-1} получает программный focus при mount, чтобы
+     визуальный focus-ring НЕ оказался на крестике. outline:none скрывает
+     ring на самом Modal (фокус нужен только для Tab-trap и a11y). */
+  outline: none;
+  /* DS v2.1 §06: Modal — radius 12 (визуальная иерархия выше базового
+     контейнера 10). На мобиле fallback 10 (компактнее на узких экранах). */
+  border-radius: 12px;
   /* Fluid width: 320px min, 92% of viewport, 1200px max — smooth on every pixel */
   width: clamp(320px, 92vw, 1200px);
   max-height: clamp(260px, 88vh, 85vh);
@@ -682,7 +688,8 @@ exports.ModalHead = core_1.styled.div `
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 20px;
+  /* DS v2.1 §06: Modal padding 20×24 (увеличено с базовых 16×20). */
+  padding: 20px 24px;
   border-bottom: 1px solid var(--g100);
   flex-shrink: 0;
 
@@ -690,6 +697,22 @@ exports.ModalHead = core_1.styled.div `
     padding: 12px 14px;
     gap: 8px;
   }
+`;
+/** iter 8.3+8.6: блок «Title-row + counter».
+   TitleRow — flex-row с Title и Value inline (на одной baseline'е).
+   ResultsCount — на второй строке под title-row. */
+exports.TitleBlock = core_1.styled.div `
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+`;
+exports.TitleRow = core_1.styled.div `
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
 `;
 exports.ModalTitle = core_1.styled.span `
   /* DS v2.0: заголовок модалки — sans, --fs-subtitle (16-20), bold, без UPPER */
@@ -712,9 +735,10 @@ exports.ModalValue = core_1.styled.span `
 `;
 exports.CloseButton = core_1.styled.button `
   margin-left: auto;
-  /* DS v2.0: touch target 40×40 desktop / 48×48 mobile */
-  width: 40px;
-  height: 40px;
+  /* DS v2.1: compact close — 28×28 desktop (визуальная компактность как у
+     нативного AntD/Superset Linechart modal), 44×44 mobile (touch target). */
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--g200);
   border-radius: 6px;
   background: transparent;
@@ -722,9 +746,10 @@ exports.CloseButton = core_1.styled.button `
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--fs-body);
+  /* × glyph: явный px, чтобы не зависел от --fs-* (которые fluid). */
+  font-size: 16px;
   line-height: 1;
-  color: var(--g500);
+  color: var(--g600);
   transition: border-color 0.15s ${EASE}, color 0.15s ${EASE};
 
   &:hover {
@@ -738,8 +763,9 @@ exports.CloseButton = core_1.styled.button `
   }
 
   @media (max-width: 768px) {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
   }
 `;
 /** Toolbar with search, mode toggles, hierarchy flip */
@@ -747,10 +773,16 @@ exports.ModalToolbar = core_1.styled.div `
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
+  /* iter 8.8: horizontal padding 24px — единая «линеечка» с ModalHead (24)
+     и table-content (TableWrap 12 + cell 12 = 24). */
+  padding: 10px 24px;
   border-bottom: 1px solid var(--g100);
   flex-shrink: 0;
   flex-wrap: wrap;
+
+  @media (max-width: 428px) {
+    padding: 10px 14px;
+  }
 `;
 exports.SearchBox = core_1.styled.div `
   display: flex;
@@ -772,7 +804,9 @@ exports.SearchBox = core_1.styled.div `
 exports.SearchIcon = core_1.styled.svg `
   flex-shrink: 0;
   display: block;
-  color: var(--g500);
+  /* DS v2.1: иконка-индикатор поиска — --g600 для контраста (consistency
+     с UI-иконками в фильтрах). */
+  color: var(--g600);
 `;
 exports.SearchInput = core_1.styled.input `
   /* DS v2.0 fluid: --fs-meta (12-14) для inputs (читаемость > UPPER-сжатие) */
@@ -831,7 +865,8 @@ exports.ExactMatchLabel = core_1.styled.label `
   gap: 4px;
   font-family: var(--m);
   font-size: var(--fs-meta);
-  color: var(--g500);
+  /* DS v2.1 §10: --g500 запрещён для <14px текста (--fs-meta = 12-14). */
+  color: var(--g600);
   cursor: pointer;
   flex-shrink: 0;
   user-select: none;
@@ -919,13 +954,15 @@ exports.FlipLabel = core_1.styled.span `
   color: var(--g600);
 `;
 exports.ResultsCount = core_1.styled.span `
-  margin-left: auto;
+  /* iter 8.3: counter «Магазины: 10» теперь под ModalTitle (в TitleBlock).
+     Убран margin-left:auto, добавлен компактный вид: --fs-micro, секондари. */
   font-family: var(--m);
-  font-size: var(--fs-meta);
-  color: var(--g500);
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--g600);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  flex-shrink: 0;
 `;
 /* ── Pagination ── */
 exports.PaginationWrap = core_1.styled.div `
@@ -933,11 +970,16 @@ exports.PaginationWrap = core_1.styled.div `
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 8px 20px;
+  /* iter 8.8: 24px = единая «линеечка» (см. ModalToolbar). */
+  padding: 8px 24px;
   border-top: 1px solid var(--g100);
   font-family: var(--m);
   font-size: var(--fs-interactive);
   font-variant-numeric: tabular-nums;
+
+  @media (max-width: 428px) {
+    padding: 8px 14px;
+  }
 `;
 exports.PageBtn = core_1.styled.button `
   /* DS v2.0: touch target 40×40 desktop / 48×48 mobile */
@@ -969,7 +1011,9 @@ exports.PageBtn = core_1.styled.button `
 exports.PageEllipsis = core_1.styled.span `
   width: 28px;
   text-align: center;
-  color: var(--g400);
+  /* DS v2.1 §10: --g400 запрещён для <14px (контраст 3:1 только для ≥18px bold).
+     --g500 — компромисс для второстепенного UI-символа (ellipsis). */
+  color: var(--g500);
   user-select: none;
 `;
 exports.PageInput = core_1.styled.input `
@@ -1002,13 +1046,22 @@ exports.PageInput = core_1.styled.input `
   }
   -moz-appearance: textfield;
 `;
-/** Scrollable table area — both axes scroll when content overflows */
+/** Scrollable table area — both axes scroll when content overflows.
+   iter 8.9: TableWrap padding 24px ровно = «линеечка» ModalHead/Toolbar/Foot.
+   Поэтому THead-bg и row-borders НЕ выходят за линеечку. Cell-padding 12px
+   внутри сместит text content на 36px от края модалки — допустимо (юзер: «что
+   внутри если сместиться не страшно»). Mobile: 14px = mobile linееchka. */
 exports.TableWrap = core_1.styled.div `
   flex: 1;
   overflow-y: auto;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   position: relative;
+  padding: 0 24px;
+
+  @media (max-width: 428px) {
+    padding: 0 14px;
+  }
 `;
 exports.DetailTable = core_1.styled.table `
   width: 100%;
@@ -1024,7 +1077,8 @@ exports.THead = core_1.styled.thead `
 `;
 exports.THRow = core_1.styled.tr `
   & > th {
-    /* DS v2.0 fluid: --fs-micro для table-header UPPER */
+    /* DS v2.0 fluid: --fs-micro для table-header UPPER. iter 8.7: cell padding
+       12px + TableWrap padding 12px = 24px от края модалки (как ModalHead). */
     padding: 10px 12px;
     font-family: var(--m);
     font-size: var(--fs-micro);
@@ -1044,11 +1098,13 @@ exports.THRow = core_1.styled.tr `
 
   @media (max-width: 428px) {
     & > th {
-      padding: 8px 8px;
+      padding: 8px 12px;
     }
   }
 `;
 exports.GroupRow = core_1.styled.tr `
+  /* Обычный click → expand. cursor:pointer + hover-feedback — стандартный
+     interactive feedback для раскрывающейся строки. */
   cursor: pointer;
   user-select: none;
   transition: background 0.1s ${EASE};
@@ -1058,11 +1114,13 @@ exports.GroupRow = core_1.styled.tr `
   }
 
   & > td {
-    /* DS v2.0 fluid: --fs-body для group-row */
+    /* DS v2.1 iter 8: --fs-meta (12-14) — ещё компактнее, юзер жалуется что
+       строки крупноваты. Вес 600 сохраняем (выделяет группу против child). */
     font-family: var(--f);
-    font-size: var(--fs-body);
+    font-size: var(--fs-meta);
     line-height: 1.5;
-    padding: 12px 12px;
+    /* iter 8.7: cell 12px + TableWrap 12px = 24px от края модалки. */
+    padding: 10px 12px;
     font-weight: 600;
     color: var(--ink);
     border-bottom: 1px solid var(--g100);
@@ -1072,14 +1130,14 @@ exports.GroupRow = core_1.styled.tr `
   & > td.r {
     text-align: right;
     font-family: var(--m);
-    font-size: var(--fs-body);
+    font-size: var(--fs-meta);
     font-weight: 500;
     font-variant-numeric: tabular-nums;
   }
 
   @media (max-width: 428px) {
     & > td {
-      padding: 8px 8px;
+      padding: 8px 12px;
     }
   }
 `;
@@ -1091,32 +1149,33 @@ exports.ChildRow = core_1.styled.tr `
   }
 
   & > td {
-    /* DS v2.0 fluid: --fs-interactive (13-15) для child-row */
+    /* DS v2.1 iter 8: child --fs-meta. iter 8.7: cell 12px + wrap 12px = 24px. */
     font-family: var(--f);
-    font-size: var(--fs-interactive);
+    font-size: var(--fs-meta);
     line-height: 1.5;
-    padding: 12px 12px;
-    color: var(--g600);
+    padding: 8px 12px;
+    color: var(--g700);
     font-weight: 400;
     border-bottom: 1px solid var(--g100);
     vertical-align: middle;
   }
 
   & > td:first-of-type {
+    /* Inset chevron-индентация — +24 к base 12 = 36px от внутр.края (60 от Modal). */
     padding-left: 36px;
   }
 
   & > td.r {
     text-align: right;
     font-family: var(--m);
-    font-size: var(--fs-interactive);
+    font-size: var(--fs-meta);
     font-weight: 500;
     font-variant-numeric: tabular-nums;
   }
 
   @media (max-width: 428px) {
     & > td {
-      padding: 8px 8px;
+      padding: 8px 12px;
     }
     & > td:first-of-type {
       padding-left: 28px;
@@ -1140,7 +1199,8 @@ exports.EmptyRow = core_1.styled.tr `
     text-align: center;
     font-family: var(--f);
     font-size: var(--fs-interactive);
-    color: var(--g500);
+    /* DS v2.1 §10: --g500 запрещён для <14px текста. */
+    color: var(--g700);
   }
 `;
 /** Small delta pill for table cells */
@@ -1177,7 +1237,8 @@ exports.ModalFoot = core_1.styled.div `
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 20px;
+  /* iter 8.8: 24px = единая «линеечка» (см. ModalToolbar). */
+  padding: 10px 24px;
   border-top: 1px solid var(--g100);
   flex-shrink: 0;
 
