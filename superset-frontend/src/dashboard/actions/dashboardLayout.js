@@ -24,6 +24,8 @@ import {
   DASHBOARD_ROOT_ID,
   NEW_COMPONENTS_SOURCE_ID,
   DASHBOARD_HEADER_ID,
+  GRID_COLUMN_COUNT,
+  GRID_MIN_COLUMN_COUNT,
 } from 'src/dashboard/util/constants';
 import dropOverflowsParent from 'src/dashboard/util/dropOverflowsParent';
 import findParentId from 'src/dashboard/util/findParentId';
@@ -229,6 +231,226 @@ export function resizeComponent({
         [id]: { ...component, meta: nextMeta },
       }),
     );
+  };
+}
+
+/**
+ * Push-shrink resize для col-mode и sub-mode. Когда юзер тащит resize
+ * handle вправо за пределы свободного места в Row — соседи справа
+ * сжимаются (ближайший первым) до GRID_MIN_COLUMN_COUNT.
+ *
+ * Все расчёты ведутся внутренне в col-units; sub-mode конвертирует
+ * widthSub ↔ col через subdivisionsUsed. Mixed-mode соседи (col-saved
+ * + sub-saved в одной Row) корректно учитываются: widthOfInCols читает
+ * .widthSub / .freePxWidth / .width в зависимости от того что сохранено.
+ *
+ * Если parent — не Row, fallback к resizeComponent.
+ *
+ * Все обновления (текущий чарт + сжатые соседи) идут одной batch
+ * UPDATE_COMPONENTS action → undo/redo откатывает атомарно.
+ *
+ * @param {{
+ *   id: string,
+ *   width?: number,                 // col-mode: 1..12
+ *   widthSub?: number,              // sub-mode: 1..12*sub
+ *   height?: number,
+ *   heightSub?: number,
+ *   layoutMode?: 'col' | 'sub',
+ *   subdivisionsUsed?: number,      // sub-mode only, default 1
+ *   parentId: string,
+ * }} payload
+ */
+export function resizeComponentWithShrinkingNeighbors({
+  id,
+  width,
+  widthSub,
+  height,
+  heightSub,
+  layoutMode = 'col',
+  subdivisionsUsed = 1,
+  parentId,
+}) {
+  return (dispatch, getState) => {
+    const { dashboardLayout: undoableLayout } = getState();
+    const { present: layout } = undoableLayout;
+    const component = layout[id];
+    const parent = parentId ? layout[parentId] : null;
+    if (!component) return;
+    /* Fallback к single-component update если parent не Row. */
+    if (!parent || parent.type !== ROW_TYPE) {
+      if (layoutMode === 'sub') {
+        dispatch(
+          resizeComponent({
+            id,
+            layoutMode: 'sub',
+            widthSub,
+            heightSub,
+            subdivisionsUsed,
+          }),
+        );
+      } else {
+        dispatch(resizeComponent({ id, width, height, layoutMode: 'col' }));
+      }
+      return;
+    }
+    const siblingIds = parent.children || [];
+    const idx = siblingIds.indexOf(id);
+    if (idx < 0) {
+      if (layoutMode === 'sub') {
+        dispatch(
+          resizeComponent({
+            id,
+            layoutMode: 'sub',
+            widthSub,
+            heightSub,
+            subdivisionsUsed,
+          }),
+        );
+      } else {
+        dispatch(resizeComponent({ id, width, height, layoutMode: 'col' }));
+      }
+      return;
+    }
+    const leftSiblings = siblingIds.slice(0, idx);
+    const rightSiblings = siblingIds.slice(idx + 1);
+
+    /* widthOfInCols — mixed-mode safe: читает .widthSub / .freePxWidth /
+       .width в зависимости от того в каком режиме был сохранён сосед.
+       free-mode сосед не сжимается через grid logic (treat as fixed
+       минимальной col-ширины). */
+    const widthOfInCols = sibId => {
+      const m = layout[sibId]?.meta;
+      if (!m) return 0;
+      if (m.freePxWidth != null) return GRID_MIN_COLUMN_COUNT;
+      if (m.widthSub != null && m.subdivisionsUsed) {
+        return Math.ceil(m.widthSub / m.subdivisionsUsed);
+      }
+      return m.width || 0;
+    };
+
+    const widthLeftCols = leftSiblings.reduce(
+      (s, sId) => s + widthOfInCols(sId),
+      0,
+    );
+    const currentRightTotalCols = rightSiblings.reduce(
+      (s, sId) => s + widthOfInCols(sId),
+      0,
+    );
+
+    /* Конвертируем входящую ширину в col-units (внутреннее представление).
+       Sub-mode: widthSub / subdivisionsUsed = col-equivalent. */
+    const incomingWidthCols =
+      layoutMode === 'sub'
+        ? Math.max(1, Math.ceil((widthSub || 1) / subdivisionsUsed))
+        : width || GRID_MIN_COLUMN_COUNT;
+
+    /* Clamp в допустимый диапазон с учётом push-shrink:
+       max_cols = GRID_COLUMN_COUNT - widthLeft - rightSiblings * MIN. */
+    const maxWidthCols = Math.max(
+      GRID_MIN_COLUMN_COUNT,
+      GRID_COLUMN_COUNT -
+        widthLeftCols -
+        rightSiblings.length * GRID_MIN_COLUMN_COUNT,
+    );
+    const clampedWidthCols = Math.min(
+      Math.max(GRID_MIN_COLUMN_COUNT, incomingWidthCols),
+      maxWidthCols,
+    );
+    const availableRightCols =
+      GRID_COLUMN_COUNT - widthLeftCols - clampedWidthCols;
+
+    /* Конвертируем clampedWidthCols обратно в native units для записи. */
+    const nextMeta = { ...component.meta };
+    if (layoutMode === 'sub') {
+      /* sub-mode: сохраняем widthSub в native sub-cells текущего sub'а.
+         Если входящий widthSub был сжат → конвертация col → sub:
+         sub = col * subdivisionsUsed. */
+      const clampedWidthSub =
+        clampedWidthCols === incomingWidthCols
+          ? widthSub || clampedWidthCols * subdivisionsUsed
+          : clampedWidthCols * subdivisionsUsed;
+      nextMeta.widthSub = Math.max(GRID_MIN_COLUMN_COUNT, clampedWidthSub);
+      if (heightSub !== undefined) nextMeta.heightSub = heightSub;
+      nextMeta.subdivisionsUsed = subdivisionsUsed;
+      nextMeta.layoutMode = 'sub';
+      delete nextMeta.freePxWidth;
+      delete nextMeta.freePxHeight;
+    } else {
+      nextMeta.width = clampedWidthCols;
+      if (height !== undefined) nextMeta.height = height;
+      nextMeta.layoutMode = 'col';
+      delete nextMeta.widthSub;
+      delete nextMeta.heightSub;
+      delete nextMeta.subdivisionsUsed;
+      delete nextMeta.freePxWidth;
+      delete nextMeta.freePxHeight;
+    }
+
+    const updates = {
+      [id]: { ...component, meta: nextMeta },
+    };
+
+    if (currentRightTotalCols > availableRightCols) {
+      /* Greedy shrink в col-units: ближайший сосед справа сжимается первым.
+         Записываем результат в режиме каждого соседа (col-saved → meta.width,
+         sub-saved → meta.widthSub в его собственных subdivisionsUsed). */
+      let needToShrinkCols = currentRightTotalCols - availableRightCols;
+      for (
+        let i = 0;
+        i < rightSiblings.length && needToShrinkCols > 0;
+        i += 1
+      ) {
+        const sibId = rightSiblings[i];
+        const sib = layout[sibId];
+        if (!sib) continue;
+        const sibMeta = sib.meta || {};
+        if (sibMeta.freePxWidth != null) continue; // free-mode не сжимаем
+        const currentCols = widthOfInCols(sibId);
+        const canShrinkBy = Math.max(0, currentCols - GRID_MIN_COLUMN_COUNT);
+        if (canShrinkBy <= 0) continue;
+        const shrinkBy = Math.min(canShrinkBy, needToShrinkCols);
+        const newCols = currentCols - shrinkBy;
+        if (sibMeta.widthSub != null && sibMeta.subdivisionsUsed) {
+          /* sub-saved сосед — пересчитываем widthSub пропорционально его
+             собственному subdivisionsUsed. */
+          updates[sibId] = {
+            ...sib,
+            meta: {
+              ...sibMeta,
+              widthSub: Math.max(
+                GRID_MIN_COLUMN_COUNT,
+                newCols * sibMeta.subdivisionsUsed,
+              ),
+            },
+          };
+        } else {
+          updates[sibId] = {
+            ...sib,
+            meta: { ...sibMeta, width: newCols },
+          };
+        }
+        needToShrinkCols -= shrinkBy;
+      }
+    }
+
+    /* Diff guard: если ни у кого ничего не изменилось — не диспатчим. */
+    const changedSomething = Object.keys(updates).some(uid => {
+      const before = layout[uid];
+      const after = updates[uid];
+      const bm = before?.meta || {};
+      const am = after?.meta || {};
+      return (
+        (bm.width || 0) !== (am.width || 0) ||
+        (bm.widthSub || 0) !== (am.widthSub || 0) ||
+        (bm.height || 0) !== (am.height || 0) ||
+        (bm.heightSub || 0) !== (am.heightSub || 0) ||
+        (bm.subdivisionsUsed || 0) !== (am.subdivisionsUsed || 0) ||
+        bm.layoutMode !== am.layoutMode
+      );
+    });
+    if (!changedSomething) return;
+
+    dispatch(updateComponents(updates));
   };
 }
 

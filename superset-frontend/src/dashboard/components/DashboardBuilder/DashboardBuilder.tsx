@@ -191,7 +191,7 @@ const DashboardContentWrapper = styled.div`
           .dashboard-chart {
             .chart-container {
               cursor: move;
-              opacity: 0.2;
+              opacity: 0.7;
             }
 
             .slice_container {
@@ -201,7 +201,7 @@ const DashboardContentWrapper = styled.div`
           }
 
           &:hover .dashboard-chart .chart-container {
-            opacity: 0.7;
+            opacity: 1;
           }
         }
 

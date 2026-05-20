@@ -26,6 +26,7 @@ import {
   memo,
 } from 'react';
 import PropTypes from 'prop-types';
+import { shallowEqual, useSelector } from 'react-redux';
 import cx from 'classnames';
 import {
   css,
@@ -248,6 +249,18 @@ const Row = props => {
     [rowComponent.children],
   );
 
+  /* Ширины детей нужны чтобы посчитать widthLeft / rightSiblingsCount для
+     push-shrink resize в col-mode (см. resizeComponentWithShrinkingNeighbors).
+     shallowEqual чтобы массив не вызывал лишних перерендеров — useSelector
+     re-fire'ит только при изменении одной из ширин. */
+  const rowChildWidths = useSelector(
+    state =>
+      rowItems.map(
+        childId => state.dashboardLayout.present[childId]?.meta?.width || 0,
+      ),
+    shallowEqual,
+  );
+
   const backgroundStyle = backgroundStyleOptions.find(
     opt =>
       opt.value === (rowComponent.meta.background || BACKGROUND_TRANSPARENT),
@@ -329,24 +342,36 @@ const Row = props => {
             <div css={emptyRowContentStyles}>{t('Empty row')}</div>
           )}
           {rowItems.length > 0 &&
-            rowItems.map((componentId, itemIndex) => (
-              <Fragment key={componentId}>
-                <DashboardComponent
-                  key={componentId}
-                  id={componentId}
-                  parentId={rowComponent.id}
-                  depth={depth + 1}
-                  index={itemIndex}
-                  availableColumnCount={remainColumnCount}
-                  columnWidth={columnWidth}
-                  onResizeStart={onResizeStart}
-                  onResize={onResize}
-                  onResizeStop={onResizeStop}
-                  isComponentVisible={isComponentVisible}
-                  onChangeTab={onChangeTab}
-                  isInView={isInView}
-                />
-                {editMode && (
+            rowItems.map((componentId, itemIndex) => {
+              /* widthLeft = сумма ширин ВСЕХ соседей слева;
+                 rightSiblingsCount = число соседей справа.
+                 Используются ChartHolder'ом для расчёта maxWidthMultiple
+                 (push-shrink) и для нового thunk при onResizeStop. */
+              let widthLeft = 0;
+              for (let i = 0; i < itemIndex; i += 1) {
+                widthLeft += rowChildWidths[i] || 0;
+              }
+              const rightSiblingsCount = rowItems.length - itemIndex - 1;
+              return (
+                <Fragment key={componentId}>
+                  <DashboardComponent
+                    key={componentId}
+                    id={componentId}
+                    parentId={rowComponent.id}
+                    depth={depth + 1}
+                    index={itemIndex}
+                    availableColumnCount={remainColumnCount}
+                    columnWidth={columnWidth}
+                    widthLeft={widthLeft}
+                    rightSiblingsCount={rightSiblingsCount}
+                    onResizeStart={onResizeStart}
+                    onResize={onResize}
+                    onResizeStop={onResizeStop}
+                    isComponentVisible={isComponentVisible}
+                    onChangeTab={onChangeTab}
+                    isInView={isInView}
+                  />
+                  {editMode && (
                   <Droppable
                     component={rowItems}
                     parentComponent={rowComponent}
@@ -373,8 +398,9 @@ const Row = props => {
                     }
                   </Droppable>
                 )}
-              </Fragment>
-            ))}
+                </Fragment>
+              );
+            })}
         </GridRow>
       </WithPopoverMenu>
     ),
@@ -399,6 +425,7 @@ const Row = props => {
       onResizeStart,
       onResizeStop,
       remainColumnCount,
+      rowChildWidths,
       rowComponent,
       rowItems,
     ],

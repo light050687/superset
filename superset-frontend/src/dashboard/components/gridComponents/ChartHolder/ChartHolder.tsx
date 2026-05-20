@@ -23,7 +23,10 @@ import { ResizeCallback, ResizeStartCallback } from 're-resizable';
 import cx from 'classnames';
 import { useDispatch, useSelector } from 'react-redux';
 import { css, useTheme } from '@superset-ui/core';
-import { resizeComponent } from 'src/dashboard/actions/dashboardLayout';
+import {
+  resizeComponent,
+  resizeComponentWithShrinkingNeighbors,
+} from 'src/dashboard/actions/dashboardLayout';
 import { useGridGuides } from 'src/dashboard/components/GridGuides/GridGuidesContext';
 import { LayoutItem, RootState } from 'src/dashboard/types';
 import AnchorLink from 'src/dashboard/components/AnchorLink';
@@ -40,6 +43,7 @@ import { COLUMN_TYPE, ROW_TYPE } from 'src/dashboard/util/componentTypes';
 import { VIZ_SHAPE_SKELETONS } from './skeletonRegistry';
 import {
   GRID_BASE_UNIT,
+  GRID_COLUMN_COUNT,
   GRID_GUTTER_SIZE,
   GRID_MIN_COLUMN_COUNT,
   GRID_MIN_ROW_UNITS,
@@ -64,6 +68,11 @@ interface ChartHolderProps {
   // grid related
   availableColumnCount: number;
   columnWidth: number;
+  /* widthLeft/rightSiblingsCount — для push-shrink resize в col-mode.
+     Передаются из Row.jsx; defaults безопасны (Chart вне Row, например
+     внутри Column, ведёт себя как раньше). */
+  widthLeft?: number;
+  rightSiblingsCount?: number;
   onResizeStart: ResizeStartCallback;
   onResize: ResizeCallback;
   onResizeStop: ResizeCallback;
@@ -85,6 +94,8 @@ const ChartHolder = ({
   depth,
   availableColumnCount,
   columnWidth,
+  widthLeft = 0,
+  rightSiblingsCount = 0,
   onResizeStart,
   onResize,
   onResizeStop,
@@ -368,6 +379,15 @@ const ChartHolder = ({
       const subStepY = subCellWidth + rowGap;
       const startSubW = Math.max(1, Math.round((metaOuter.w + colGap) / subStepX));
       const startSubH = Math.max(1, Math.round((metaOuter.h + rowGap) / subStepY));
+      /* Push-shrink maxWidth для sub-mode: зеркально col-mode, но в
+         sub-cells. widthLeft (в col-units) умножаем на sub чтобы перейти
+         в sub-cells текущего effectiveSub. */
+      const pushShrinkMaxSub =
+        parentComponent.type === ROW_TYPE
+          ? GRID_COLUMN_COUNT * sub -
+            widthLeft * sub -
+            rightSiblingsCount * GRID_MIN_COLUMN_COUNT
+          : (availableColumnCount + widthMultiple) * sub;
       return {
         widthStep: subCellWidth,
         gutterWidth: colGap,
@@ -376,7 +396,7 @@ const ChartHolder = ({
         heightGutter: rowGap,
         heightMultipleResolved: startSubH,
         minWidthMultiple: GRID_MIN_COLUMN_COUNT,
-        maxWidthMultiple: (availableColumnCount + widthMultiple) * sub,
+        maxWidthMultiple: Math.max(GRID_MIN_COLUMN_COUNT, pushShrinkMaxSub),
         minHeightMultiple: 1,
         effectiveMode: 'sub' as const,
       };
@@ -395,6 +415,17 @@ const ChartHolder = ({
       1,
       Math.round(metaOuter.h / GRID_BASE_UNIT),
     );
+    /* Push-shrink maxWidth: чарт может расшириться вправо до края Row,
+       сжимая соседей справа до GRID_MIN_COLUMN_COUNT каждый. Когда
+       rightSiblingsCount=0 (один чарт в Row или последний справа), формула
+       сводится к старому поведению (GRID_COLUMN_COUNT - widthLeft = available
+       + widthMultiple). */
+    const pushShrinkMax =
+      parentComponent.type === ROW_TYPE
+        ? GRID_COLUMN_COUNT -
+          widthLeft -
+          rightSiblingsCount * GRID_MIN_COLUMN_COUNT
+        : availableColumnCount + widthMultiple;
     return {
       widthStep: columnWidth,
       gutterWidth: GRID_GUTTER_SIZE,
@@ -402,7 +433,7 @@ const ChartHolder = ({
       heightStep: GRID_BASE_UNIT,
       heightMultipleResolved: startColH,
       minWidthMultiple: GRID_MIN_COLUMN_COUNT,
-      maxWidthMultiple: availableColumnCount + widthMultiple,
+      maxWidthMultiple: Math.max(GRID_MIN_COLUMN_COUNT, pushShrinkMax),
       effectiveMode: 'col' as const,
     };
   }, [
@@ -416,6 +447,9 @@ const ChartHolder = ({
     widthMultiple,
     component.meta.height,
     availableColumnCount,
+    parentComponent.type,
+    widthLeft,
+    rightSiblingsCount,
   ]);
 
   /* Dynamic minHeightMultiple для viz_type='ext-kpi-card'. Зависит от
@@ -537,33 +571,69 @@ const ChartHolder = ({
           }),
         );
       } else if (effectiveMode === 'sub') {
-        dispatch(
-          resizeComponent({
-            id: component.id,
-            layoutMode: 'sub',
-            widthSub: adjW
-              ? (payload as any).width
-              : meta.widthSub || resizeConfig.widthMultiple,
-            heightSub:
-              (payload as any).height || meta.heightSub || component.meta.height,
-            subdivisionsUsed: effectiveSub,
-          }),
-        );
+        /* sub-mode. Push-shrink через новый thunk когда parent — Row.
+           thunk сам конвертирует widthSub ↔ col-units и сжимает соседей
+           с учётом их режима (col-saved / sub-saved). */
+        const nextWidthSub = adjW
+          ? (payload as any).width
+          : meta.widthSub || resizeConfig.widthMultiple;
+        const nextHeightSub =
+          (payload as any).height ||
+          meta.heightSub ||
+          component.meta.height;
+        if (adjW && parentComponent.type === ROW_TYPE) {
+          dispatch(
+            resizeComponentWithShrinkingNeighbors({
+              id: component.id,
+              widthSub: nextWidthSub,
+              heightSub: nextHeightSub,
+              layoutMode: 'sub',
+              subdivisionsUsed: effectiveSub,
+              parentId,
+            }),
+          );
+        } else {
+          dispatch(
+            resizeComponent({
+              id: component.id,
+              layoutMode: 'sub',
+              widthSub: nextWidthSub,
+              heightSub: nextHeightSub,
+              subdivisionsUsed: effectiveSub,
+            }),
+          );
+        }
       } else {
-        /* col-mode (default). */
-        dispatch(
-          resizeComponent({
-            id: component.id,
-            layoutMode: 'col',
-            width: adjW
-              ? (payload as any).width
-              : meta.width || resizeConfig.widthMultiple,
-            height:
-              (payload as any).height ||
-              meta.height ||
-              resizeConfig.heightMultipleResolved,
-          }),
-        );
+        /* col-mode (default). Push-shrink через новый thunk: соседи справа
+           сжимаются до GRID_MIN_COLUMN_COUNT когда текущий чарт растёт за
+           границу свободного места. Для chart-в-Column (parentId не Row)
+           thunk сам деградирует к resizeComponent. */
+        const nextWidth = adjW
+          ? (payload as any).width
+          : meta.width || resizeConfig.widthMultiple;
+        const nextHeight =
+          (payload as any).height ||
+          meta.height ||
+          resizeConfig.heightMultipleResolved;
+        if (adjW && parentComponent.type === ROW_TYPE) {
+          dispatch(
+            resizeComponentWithShrinkingNeighbors({
+              id: component.id,
+              width: nextWidth,
+              height: nextHeight,
+              parentId,
+            }),
+          );
+        } else {
+          dispatch(
+            resizeComponent({
+              id: component.id,
+              layoutMode: 'col',
+              width: nextWidth,
+              height: nextHeight,
+            }),
+          );
+        }
       }
     },
     [
@@ -575,6 +645,7 @@ const ChartHolder = ({
       component.id,
       component.meta,
       parentComponent.type,
+      parentId,
     ],
   );
 
