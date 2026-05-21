@@ -34,7 +34,9 @@ type RemovedFilterProps = {
   onClick: OnClickHandler;
 };
 
-const RemovedFilter: FC<React.PropsWithChildren<RemovedFilterProps>> = ({ onClick }) => (
+const RemovedFilter: FC<React.PropsWithChildren<RemovedFilterProps>> = ({
+  onClick,
+}) => (
   <RemovedContent>
     <p>{t('You have removed this filter.')}</p>
     <div>

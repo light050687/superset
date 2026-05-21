@@ -123,7 +123,7 @@ export function useChoropleth() {
       }
 
       const values = paired.map(p => p.val);
-      const colors = PALETTES[state.palette].colors;
+      const { colors } = PALETTES[state.palette];
       const breaks = computeQuantileBreaks(values, colors.length);
 
       for (const { fid, val } of paired) {

@@ -1,6 +1,11 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useCallback, useMemo } from 'react';
 import { styled, useTheme } from '@superset-ui/core';
+/* @superset-ui/core/components subpath не имеет TypeScript types, но
+   resolves в runtime через Superset webpack aliases. Без @ts-ignore
+   tsc выбрасывает TS2307. Подмена на 'antd' ломает runtime потому что
+   antd не зарегистрирован как dep плагина. */
+// @ts-ignore — subpath resolves в runtime
 import { Input, Select, Button } from '@superset-ui/core/components';
 import { ACCENT_PALETTE } from '../types';
 import { LIGHT_TOKENS, DARK_TOKENS } from '../themeTokens';

@@ -77,8 +77,7 @@ const ImportPresetModal = ({
       };
       // Accept both camelCase and snake_case from export
       const filterData = data.filterData ?? data.filter_data;
-      const includedFilters =
-        data.includedFilters ?? data.included_filters;
+      const includedFilters = data.includedFilters ?? data.included_filters;
       if (!data.version || !data.name || !filterData) {
         setParseError(t('Неверный формат JSON пресета'));
         return;
@@ -134,10 +133,15 @@ const ImportPresetModal = ({
       okButtonProps={{ disabled: !parsed }}
       destroyOnClose
       centered
-      width={typeof window !== 'undefined' && window.innerWidth <= 570 ? '95vw' : 520}
+      width={
+        typeof window !== 'undefined' && window.innerWidth <= 570 ? '95vw' : 520
+      }
       styles={{
         body: {
-          maxHeight: typeof window !== 'undefined' && window.innerWidth <= 570 ? '60vh' : 'none',
+          maxHeight:
+            typeof window !== 'undefined' && window.innerWidth <= 570
+              ? '60vh'
+              : 'none',
           overflowY: 'auto',
         },
       }}

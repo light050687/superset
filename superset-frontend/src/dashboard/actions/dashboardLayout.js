@@ -19,7 +19,11 @@
 import { ActionCreators as UndoActionCreators } from 'redux-undo';
 import { t } from '@superset-ui/core';
 import { addWarningToast } from 'src/components/MessageToasts/actions';
-import { TABS_TYPE, ROW_TYPE, PAGES_TYPE } from 'src/dashboard/util/componentTypes';
+import {
+  TABS_TYPE,
+  ROW_TYPE,
+  PAGES_TYPE,
+} from 'src/dashboard/util/componentTypes';
 import {
   DASHBOARD_ROOT_ID,
   NEW_COMPONENTS_SOURCE_ID,
@@ -199,7 +203,9 @@ export function resizeComponent({
     if (layoutMode !== undefined) nextMeta.layoutMode = layoutMode;
     if (widthSub !== undefined) nextMeta.widthSub = widthSub;
     if (heightSub !== undefined) nextMeta.heightSub = heightSub;
-    if (subdivisionsUsed !== undefined) nextMeta.subdivisionsUsed = subdivisionsUsed;
+    if (subdivisionsUsed !== undefined) {
+      nextMeta.subdivisionsUsed = subdivisionsUsed;
+    }
     if (freePxWidth !== undefined) nextMeta.freePxWidth = freePxWidth;
     if (freePxHeight !== undefined) nextMeta.freePxHeight = freePxHeight;
     /* При переходе в col-mode чистим sub/free поля чтобы старая мета
@@ -221,8 +227,14 @@ export function resizeComponent({
     }
     /* Diff: меняем только если что-то реально изменилось. */
     const keys = [
-      'width', 'height', 'layoutMode', 'widthSub', 'heightSub',
-      'subdivisionsUsed', 'freePxWidth', 'freePxHeight',
+      'width',
+      'height',
+      'layoutMode',
+      'widthSub',
+      'heightSub',
+      'subdivisionsUsed',
+      'freePxWidth',
+      'freePxHeight',
     ];
     const changed = keys.some(k => nextMeta[k] !== component.meta[k]);
     if (!changed) return;

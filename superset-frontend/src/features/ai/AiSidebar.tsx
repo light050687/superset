@@ -14,11 +14,7 @@
 import { styled, t } from '@superset-ui/core';
 import { type FC, useMemo, useState } from 'react';
 import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
-import type {
-  AiActiveTask,
-  AiChatFolder,
-  AiChatSession,
-} from './types';
+import type { AiActiveTask, AiChatFolder, AiChatSession } from './types';
 
 interface AiSidebarProps {
   folders: AiChatFolder[];
@@ -326,7 +322,8 @@ function groupSessionsByDate(sessions: AiChatSession[]): {
     else buckets.older.push(s);
   });
   const out: { label: string; sessions: AiChatSession[] }[] = [];
-  if (buckets.today.length) out.push({ label: t('Сегодня'), sessions: buckets.today });
+  if (buckets.today.length)
+    out.push({ label: t('Сегодня'), sessions: buckets.today });
   if (buckets.yesterday.length)
     out.push({ label: t('Вчера'), sessions: buckets.yesterday });
   if (buckets.week.length)
@@ -409,7 +406,11 @@ export const AiSidebar: FC<React.PropsWithChildren<AiSidebarProps>> = ({
   return (
     <Root $collapsed={collapsed} aria-label={t('История чатов')}>
       <Head>
-        <NewChatBtn type="button" onClick={onNewChat} aria-label={t('Новый чат')}>
+        <NewChatBtn
+          type="button"
+          onClick={onNewChat}
+          aria-label={t('Новый чат')}
+        >
           <IconPlus />
           {t('Новый чат')}
         </NewChatBtn>

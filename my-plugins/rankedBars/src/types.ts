@@ -12,6 +12,7 @@ export type DataState =
   | 'error'
   | 'empty'
   | 'partial'
+  | 'stale'
   | 'populated';
 
 export type IconName =

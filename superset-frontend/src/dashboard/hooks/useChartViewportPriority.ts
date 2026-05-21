@@ -69,8 +69,9 @@ interface ChartViewportContextValue {
   version: number;
 }
 
-const ViewportPriorityContext =
-  createContext<ChartViewportContextValue | null>(null);
+const ViewportPriorityContext = createContext<ChartViewportContextValue | null>(
+  null,
+);
 
 interface ViewportPriorityProviderProps {
   children: ReactNode;
@@ -117,6 +118,17 @@ export function ViewportPriorityProvider({
             }
           } else if (visibleIdsRef.current.delete(id)) {
             // priority поменялся (visible→not), но render не должен mount/unmount
+            changed = true;
+          }
+          /* Initial IO snapshot: eager mark ВСЕ observed charts как rendered
+             (включая offscreen). Это decouple render-gate от priority — chart
+             mounts upfront, но fetch lazy через chartFetchQueue (offscreen
+             charts получают low priority и грузятся когда concurrency slot
+             освобождается). Без этого charts далеко offscreen никогда не
+             получают entry.isIntersecting=true → never в everSeenRef → render
+             навсегда <Loading/> пока user не scroll. */
+          if (!initialReceivedRef.current && !everSeenRef.current.has(id)) {
+            everSeenRef.current.add(id);
             changed = true;
           }
         });
@@ -179,11 +191,7 @@ export function ViewportPriorityProvider({
     [observe, unobserve, isVisible, getPriority, enabled, version],
   );
 
-  return createElement(
-    ViewportPriorityContext.Provider,
-    { value },
-    children,
-  );
+  return createElement(ViewportPriorityContext.Provider, { value }, children);
 }
 
 interface UseChartViewportPriorityResult {

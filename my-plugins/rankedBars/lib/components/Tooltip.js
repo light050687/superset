@@ -53,7 +53,7 @@ const Tooltip = ({ payload }) => {
     }, [payload]);
     if (!host)
         return null;
-    return (0, react_dom_1.createPortal)((0, jsx_runtime_1.jsx)(styles_1.TooltipBox, { ref: boxRef, role: "tooltip", "aria-hidden": payload == null, "$visible": payload != null, children: payload?.element }), host);
+    return (0, react_dom_1.createPortal)((0, jsx_runtime_1.jsx)(styles_1.TooltipBox, { ref: boxRef, role: "tooltip", "aria-hidden": payload == null, "$visible": payload != null, "data-theme": payload?.themeMode ?? 'light', children: payload?.element }), host);
 };
 exports.default = Tooltip;
 //# sourceMappingURL=Tooltip.js.map

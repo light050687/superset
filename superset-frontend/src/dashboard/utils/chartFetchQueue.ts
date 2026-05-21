@@ -61,8 +61,7 @@ function dequeue(): QueueTask | undefined {
   if (state.tasks.length === 0) return undefined;
   // Sort by priority ASC (меньше = раньше), затем FIFO внутри priority
   state.tasks.sort(
-    (a, b) =>
-      a.priority - b.priority || a.enqueueOrder - b.enqueueOrder,
+    (a, b) => a.priority - b.priority || a.enqueueOrder - b.enqueueOrder,
   );
   return state.tasks.shift();
 }

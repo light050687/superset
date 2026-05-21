@@ -32,14 +32,12 @@ export function useTooltip() {
     }
 
     const onMove = (e: MapMouseEvent) => {
-      const features = (
-        e as MapMouseEvent & {
-          features?: Array<{
-            id: number;
-            properties: Record<string, string>;
-          }>;
-        }
-      ).features;
+      const { features } = e as MapMouseEvent & {
+        features?: Array<{
+          id: number;
+          properties: Record<string, string>;
+        }>;
+      };
       if (!features || features.length === 0) {
         setTooltip(INITIAL);
         return;

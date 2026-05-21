@@ -26,10 +26,9 @@ interface PublishedLabelProps {
   onClick?: () => void; // Optional click handler
 }
 
-export const PublishedLabel: React.FC<React.PropsWithChildren<PublishedLabelProps>> = ({
-  isPublished,
-  onClick,
-}) => {
+export const PublishedLabel: React.FC<
+  React.PropsWithChildren<PublishedLabelProps>
+> = ({ isPublished, onClick }) => {
   const theme = useTheme();
   const label = isPublished ? t('Published') : t('Draft');
   const icon = isPublished ? (

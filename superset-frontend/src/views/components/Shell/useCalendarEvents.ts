@@ -171,18 +171,14 @@ export function useCalendarEvents(
 
   const moveEvent = useCallback<UseCalendarEventsResult['moveEvent']>(
     (id, newDate) => {
-      persist(
-        events.map(ev => (ev.id === id ? { ...ev, date: newDate } : ev)),
-      );
+      persist(events.map(ev => (ev.id === id ? { ...ev, date: newDate } : ev)));
     },
     [events, persist],
   );
 
   const updateEvent = useCallback<UseCalendarEventsResult['updateEvent']>(
     (id, patch) => {
-      persist(
-        events.map(ev => (ev.id === id ? { ...ev, ...patch } : ev)),
-      );
+      persist(events.map(ev => (ev.id === id ? { ...ev, ...patch } : ev)));
     },
     [events, persist],
   );
@@ -227,16 +223,26 @@ export function useCalendarEvents(
  */
 
 const WEEKDAY_KEYWORDS: Record<string, number> = {
-  пн: 1, понедельник: 1,
-  вт: 2, вторник: 2,
-  ср: 3, среда: 3,
-  чт: 4, четверг: 4,
-  пт: 5, пятница: 5,
-  сб: 6, суббота: 6,
-  вс: 0, воскресенье: 0,
+  пн: 1,
+  понедельник: 1,
+  вт: 2,
+  вторник: 2,
+  ср: 3,
+  среда: 3,
+  чт: 4,
+  четверг: 4,
+  пт: 5,
+  пятница: 5,
+  сб: 6,
+  суббота: 6,
+  вс: 0,
+  воскресенье: 0,
 };
 
-const CATEGORY_KEYWORDS: Record<string, NonNullable<CalendarEvent['category']>> = {
+const CATEGORY_KEYWORDS: Record<
+  string,
+  NonNullable<CalendarEvent['category']>
+> = {
   созвон: 'meeting',
   митинг: 'meeting',
   встреча: 'meeting',

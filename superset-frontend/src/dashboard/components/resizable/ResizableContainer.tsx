@@ -223,7 +223,9 @@ export default function ResizableContainer({
      точке когда ближе. Это даёт плавный drag без jitter.
 
      col/free mode используют простой `grid` prop (snap не передаётся). */
-  const snapPositions = useMemo<{ x: number[]; y: number[] } | undefined>(() => {
+  const snapPositions = useMemo<
+    { x: number[]; y: number[] } | undefined
+  >(() => {
     if (gridGuides.freeMode) return undefined;
     const sub = Math.max(1, gridGuides.subdivisions || 1);
     if (sub <= 1) return undefined;
@@ -382,14 +384,14 @@ export default function ResizableContainer({
   const size = useMemo(
     () => ({
       width: adjustableWidth
-        ? outerWidthOverride ??
-          (widthStep + gutterWidth) * widthMultiple - gutterWidth
+        ? (outerWidthOverride ??
+          (widthStep + gutterWidth) * widthMultiple - gutterWidth)
         : (staticWidthMultiple && staticWidthMultiple * widthStep) ||
           staticWidth ||
           undefined,
       height: adjustableHeight
-        ? outerHeightOverride ??
-          (heightStep + heightGutter) * heightMultiple - heightGutter
+        ? (outerHeightOverride ??
+          (heightStep + heightGutter) * heightMultiple - heightGutter)
         : (staticHeightMultiple && staticHeightMultiple * heightStep) ||
           staticHeight ||
           undefined,

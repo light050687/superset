@@ -81,8 +81,6 @@ describe('useDashboardDatasets', () => {
         },
       },
     ];
-    await waitFor(() =>
-      expect(result.current.result).toEqual(expectedContent),
-    );
+    await waitFor(() => expect(result.current.result).toEqual(expectedContent));
   });
 });

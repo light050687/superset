@@ -21,7 +21,11 @@ import { type FC, useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 import { AiInlineChart } from './AiInlineChart';
-import { parseSsActions, stripSsActionsFromMarkdown, type SsAction } from './parseSsActions';
+import {
+  parseSsActions,
+  stripSsActionsFromMarkdown,
+  type SsAction,
+} from './parseSsActions';
 import type { AiAnswerBlocks } from './types';
 
 const MsgUser = styled.div`
@@ -645,9 +649,7 @@ const SsActionsRow: FC<{ actions: SsAction[] }> = ({ actions }) => {
             </SsActionBtn>
             {isOpen ? (
               <SsActionPreview>
-                {a.payload
-                  ? JSON.stringify(a.payload, null, 2)
-                  : a.raw}
+                {a.payload ? JSON.stringify(a.payload, null, 2) : a.raw}
                 {'\n\n'}
                 <button
                   type="button"
@@ -787,16 +789,10 @@ export const AiMessage: FC<React.PropsWithChildren<AiMessageProps>> = ({
         ) : null}
         {ssActions.length > 0 ? <SsActionsRow actions={ssActions} /> : null}
         {b.table && b.table.rows.length > 0 ? (
-          <AiInlineChart
-            cubeQuery={b.cubeQuery}
-            rawData={b.table.rows}
-          />
+          <AiInlineChart cubeQuery={b.cubeQuery} rawData={b.table.rows} />
         ) : null}
         {b.table && b.table.rows.length > 0 ? (
-          <DataTable
-            rows={b.table.rows}
-            title={b.table.title ?? t('Данные')}
-          />
+          <DataTable rows={b.table.rows} title={b.table.title ?? t('Данные')} />
         ) : null}
 
         {b.kpi && b.kpi.length > 0 ? (
@@ -823,7 +819,7 @@ export const AiMessage: FC<React.PropsWithChildren<AiMessageProps>> = ({
             </ChartHead>
             {b.chart.svg ? (
               // eslint-disable-next-line react/no-danger
-              (<div dangerouslySetInnerHTML={{ __html: b.chart.svg }} />)
+              <div dangerouslySetInnerHTML={{ __html: b.chart.svg }} />
             ) : (
               <ChartSubtitle>
                 {t('(график будет отрисован через ECharts)')}

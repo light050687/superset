@@ -223,9 +223,22 @@ export default function transformProps(chartProps: ChartProps): RankedBarsProps 
       decimalsShare,
       enableDrillModal,
       enableAllItemsModal,
-      enableCrossFilter: false,
+      /* В моке cross-filter — чисто visual highlight через local state
+         в RankedBars (setDataMask не вызывается). */
+      enableCrossFilter: true,
       hasPrevMetric: true,
-      drillQueryParams: null,
+      /* Stub в моке: DetailModal внутри сам строит buildMockDrill(row).
+         Реальные значения не используются — нужны только чтобы guard
+         в RankedBars пропустил рендер модалки и чтобы renderTopList
+         не упал в "Измерение не настроено". */
+      drillQueryParams: {
+        datasource: 'mock',
+        groupbyCol: 'mock',
+        storeDim: 'mock_store',
+        skuDim: 'mock_sku',
+        metric: 'count' as unknown as DrillQueryParams['metric'],
+        detailTopN: 5,
+      },
       setDataMask: hooks?.setDataMask,
       filterState,
       isMockMode: true,

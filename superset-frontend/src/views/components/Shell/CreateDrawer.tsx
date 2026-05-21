@@ -263,9 +263,7 @@ export const CreateDrawer: FC<React.PropsWithChildren<unknown>> = () => {
                 }}
                 aria-label={item.label}
                 aria-disabled={item.disabled}
-                title={
-                  item.disabled ? t('Скоро будет доступно') : item.label
-                }
+                title={item.disabled ? t('Скоро будет доступно') : item.label}
               >
                 <TileIcon $accent={item.accent} $disabled={item.disabled}>
                   {item.icon}

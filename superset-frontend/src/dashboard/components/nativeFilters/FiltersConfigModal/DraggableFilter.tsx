@@ -65,12 +65,9 @@ interface DragItem {
   type: string;
 }
 
-export const DraggableFilter: FC<React.PropsWithChildren<FilterTabTitleProps>> = ({
-  index,
-  onRearrange,
-  filterIds,
-  children,
-}) => {
+export const DraggableFilter: FC<
+  React.PropsWithChildren<FilterTabTitleProps>
+> = ({ index, onRearrange, filterIds, children }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [{ isDragging }, drag] = useDrag({
     type: FILTER_TYPE,

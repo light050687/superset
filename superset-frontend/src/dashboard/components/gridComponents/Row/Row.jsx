@@ -372,32 +372,32 @@ const Row = props => {
                     isInView={isInView}
                   />
                   {editMode && (
-                  <Droppable
-                    component={rowItems}
-                    parentComponent={rowComponent}
-                    depth={depth}
-                    index={itemIndex + 1}
-                    orientation="row"
-                    onDrop={handleComponentDrop}
-                    className={cx(
-                      'empty-droptarget',
-                      'empty-droptarget--vertical',
-                      remainColumnCount === 0 &&
-                        itemIndex === rowItems.length - 1 &&
-                        'droptarget-side',
-                    )}
-                    editMode
-                    style={{
-                      height: containerHeight,
-                      ...(remainColumnCount === 0 &&
-                        itemIndex === rowItems.length - 1 && { width: 16 }),
-                    }}
-                  >
-                    {({ dropIndicatorProps }) =>
-                      dropIndicatorProps && <div {...dropIndicatorProps} />
-                    }
-                  </Droppable>
-                )}
+                    <Droppable
+                      component={rowItems}
+                      parentComponent={rowComponent}
+                      depth={depth}
+                      index={itemIndex + 1}
+                      orientation="row"
+                      onDrop={handleComponentDrop}
+                      className={cx(
+                        'empty-droptarget',
+                        'empty-droptarget--vertical',
+                        remainColumnCount === 0 &&
+                          itemIndex === rowItems.length - 1 &&
+                          'droptarget-side',
+                      )}
+                      editMode
+                      style={{
+                        height: containerHeight,
+                        ...(remainColumnCount === 0 &&
+                          itemIndex === rowItems.length - 1 && { width: 16 }),
+                      }}
+                    >
+                      {({ dropIndicatorProps }) =>
+                        dropIndicatorProps && <div {...dropIndicatorProps} />
+                      }
+                    </Droppable>
+                  )}
                 </Fragment>
               );
             })}

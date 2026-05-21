@@ -269,7 +269,11 @@ const DetailModal: React.FC<DetailModalProps> = ({
           )}
           {state.status === 'success' &&
             (state.data.trend.length >= 2 ? (
-              <TrendChart data={state.data.trend} color={colorVar} />
+              <TrendChart
+                data={state.data.trend}
+                color={colorVar}
+                unitSuffix={sumParts.unit}
+              />
             ) : (
               <EmptyLine text="Нет данных для тренда" />
             ))}

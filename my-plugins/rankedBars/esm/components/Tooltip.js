@@ -51,7 +51,7 @@ const Tooltip = ({ payload }) => {
     }, [payload]);
     if (!host)
         return null;
-    return createPortal(_jsx(TooltipBox, { ref: boxRef, role: "tooltip", "aria-hidden": payload == null, "$visible": payload != null, children: payload?.element }), host);
+    return createPortal(_jsx(TooltipBox, { ref: boxRef, role: "tooltip", "aria-hidden": payload == null, "$visible": payload != null, "data-theme": payload?.themeMode ?? 'light', children: payload?.element }), host);
 };
 export default Tooltip;
 //# sourceMappingURL=Tooltip.js.map

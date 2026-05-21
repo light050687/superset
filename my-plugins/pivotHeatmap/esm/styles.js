@@ -12,9 +12,13 @@ const EASE = 'cubic-bezier(0.4, 0, 0.2, 1)';
 export const ROOT_CLASS = 'heatmap-pivot';
 // DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
 // race-condition-free относительно <style dangerouslySetInnerHTML> (см. donut).
+/* Только opacity — transform убран намеренно: Superset dashboard drag-drop
+   управляет transform на chart-cell ancestor'е. Конфликт двух transform
+   приводил к тому что после перестановки чарт оставался смещённым/невидимым
+   до hard refresh. */
 const cardInKf = keyframes `
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 `;
 /*
  * Keyframes injected via <style> in component. DS 2.0 §08:
@@ -825,26 +829,30 @@ export const Tooltip = styled.div `
   position: fixed;
   z-index: 200;
   pointer-events: none;
-  background: var(--ink);
-  color: var(--s);
+  /* DS 2.1 §08 «Тултипы»: tooltip того же тона что Card surface (НЕ инверт). */
+  background: var(--s);
+  color: var(--ink);
+  border: 1px solid rgba(128, 128, 128, 0.25);
   border-radius: 6px;
-  padding: 8px 12px 9px;
+  padding: 8px 12px;
   box-shadow: var(--sh);
   font-family: var(--f);
-  font-size: var(--fs-micro);
-  max-width: 280px;
+  font-size: 11px;
+  max-width: 240px;
   opacity: 0;
-  transform: translateY(-4px);
-  transition: opacity 0.12s ${EASE}, transform 0.12s ${EASE};
+  transition: opacity 0.12s ${EASE};
 
   &.show {
     opacity: 1;
-    transform: translateY(0);
   }
+  /* Header 13px Manrope 700 — крупнее DS-минимума для читаемости. */
   .tt-title {
-    font-weight: 600;
-    font-size: var(--fs-micro);
-    margin-bottom: 4px;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--ink);
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.25);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -856,15 +864,24 @@ export const Tooltip = styled.div `
   }
   .tt-row {
     font-family: var(--m);
-    font-size: var(--fs-micro);
+    font-size: 12px;
     font-weight: 500;
-    line-height: 1.55;
+    line-height: 1.5;
     display: flex;
     justify-content: space-between;
-    gap: 14px;
+    gap: 12px;
+  }
+  .tt-row > span:first-of-type {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--g500);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
   .tt-row b {
+    font-size: 12px;
     font-weight: 600;
+    color: var(--ink);
     font-variant-numeric: tabular-nums;
   }
 `;

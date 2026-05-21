@@ -44,7 +44,15 @@ export const BaseIconComponent = forwardRef<
   React.PropsWithChildren<BaseIconProps & Omit<IconType, 'component'>>
 >(
   (
-    { component: Component, iconColor, iconSize, viewBox, customIcons, fileName, ...rest },
+    {
+      component: Component,
+      iconColor,
+      iconSize,
+      viewBox,
+      customIcons,
+      fileName,
+      ...rest
+    },
     ref,
   ) => {
     const theme = useTheme();

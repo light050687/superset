@@ -22,21 +22,13 @@
  *
  * Read-only для viewer'ов без dash_edit_perm.
  */
-import {
-  type FC,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Button, Switch, Slider, Select } from 'antd';
 import { styled, t } from '@superset-ui/core';
 import { DS2_VARS } from 'src/theme/ds2';
-import {
-  DRAWER_FOOTER_SLOT_ID,
-} from 'src/views/components/Shell/Drawer';
+import { DRAWER_FOOTER_SLOT_ID } from 'src/views/components/Shell/Drawer';
 import { useShell } from 'src/views/components/Shell/ShellContext';
 import {
   DEFAULT_FETCH_STRATEGY,
@@ -203,10 +195,7 @@ export const DashboardSettingsDrawer: FC = () => {
       (s.dashboardInfo as any)?.common?.conf
         ?.SUPERSET_DASHBOARD_PERIODICAL_REFRESH_WARNING_MESSAGE ?? null,
   );
-  const refreshIntervalOptions = useSelector<
-    RootState,
-    [number, string][]
-  >(
+  const refreshIntervalOptions = useSelector<RootState, [number, string][]>(
     s =>
       (s.dashboardInfo as any)?.common?.conf
         ?.DASHBOARD_AUTO_REFRESH_INTERVALS ?? [],
@@ -414,9 +403,7 @@ export const DashboardSettingsDrawer: FC = () => {
               <WarningHelper>{t(refreshWarning as string)}</WarningHelper>
             )}
             <Helper id="rf-interval-help">
-              {t(
-                '«Не обновлять» — авто-обновление выключено. По умолчанию.',
-              )}
+              {t('«Не обновлять» — авто-обновление выключено. По умолчанию.')}
             </Helper>
           </Field>
         </Section>

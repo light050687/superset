@@ -21,7 +21,13 @@ import shouldWrapChildInRow from './shouldWrapChildInRow';
 import newComponentFactory from './newComponentFactory';
 import getComponentWidthFromDrop from './getComponentWidthFromDrop';
 
-import { ROW_TYPE, TABS_TYPE, TAB_TYPE, PAGES_TYPE, PAGE_TYPE } from './componentTypes';
+import {
+  ROW_TYPE,
+  TABS_TYPE,
+  TAB_TYPE,
+  PAGES_TYPE,
+  PAGE_TYPE,
+} from './componentTypes';
 
 export default function newEntitiesFromDrop({ dropResult, layout }) {
   const { dragging, destination } = dropResult;

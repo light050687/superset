@@ -68,7 +68,10 @@ const propTypes = {
   dragPreviewRef: PropTypes.func,
 
   // Test-only override — forces the internal dropIndicator state.
-  dropIndicatorOverride: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]),
+  dropIndicatorOverride: PropTypes.oneOfType([
+    PropTypes.bool,
+    PropTypes.string,
+  ]),
 };
 
 const DragDroppableStyles = styled.div`
@@ -323,30 +326,33 @@ export function Draggable(props) {
   const [proxyRef, nodeRef] = useComponentProxy();
   proxyRef.current.props = props;
 
-  const [{ isDragging, dragComponentId, dragComponentType }, dragRef, dragPreviewRef] =
-    useDrag(
-      () => ({
-        type: TYPE,
-        canDrag: () => !props.disableDragDrop,
-        item: () => {
-          const { component, index, parentComponent } = proxyRef.current.props;
-          return {
-            type: component?.type,
-            id: component?.id,
-            meta: component?.meta,
-            index,
-            parentId: parentComponent?.id,
-            parentType: parentComponent?.type,
-          };
-        },
-        collect: monitor => ({
-          isDragging: monitor.isDragging(),
-          dragComponentId: monitor.getItem()?.id,
-          dragComponentType: monitor.getItem()?.type,
-        }),
+  const [
+    { isDragging, dragComponentId, dragComponentType },
+    dragRef,
+    dragPreviewRef,
+  ] = useDrag(
+    () => ({
+      type: TYPE,
+      canDrag: () => !props.disableDragDrop,
+      item: () => {
+        const { component, index, parentComponent } = proxyRef.current.props;
+        return {
+          type: component?.type,
+          id: component?.id,
+          meta: component?.meta,
+          index,
+          parentId: parentComponent?.id,
+          parentType: parentComponent?.type,
+        };
+      },
+      collect: monitor => ({
+        isDragging: monitor.isDragging(),
+        dragComponentId: monitor.getItem()?.id,
+        dragComponentType: monitor.getItem()?.type,
       }),
-      [props.disableDragDrop],
-    );
+    }),
+    [props.disableDragDrop],
+  );
 
   return (
     <UnwrappedDragDroppable
@@ -426,30 +432,33 @@ export function DragDroppable(props) {
     }
   };
 
-  const [{ isDragging, dragComponentId, dragComponentType }, dragRef, dragPreviewRef] =
-    useDrag(
-      () => ({
-        type: TYPE,
-        canDrag: () => !props.disableDragDrop,
-        item: () => {
-          const { component, index, parentComponent } = proxyRef.current.props;
-          return {
-            type: component?.type,
-            id: component?.id,
-            meta: component?.meta,
-            index,
-            parentId: parentComponent?.id,
-            parentType: parentComponent?.type,
-          };
-        },
-        collect: monitor => ({
-          isDragging: monitor.isDragging(),
-          dragComponentId: monitor.getItem()?.id,
-          dragComponentType: monitor.getItem()?.type,
-        }),
+  const [
+    { isDragging, dragComponentId, dragComponentType },
+    dragRef,
+    dragPreviewRef,
+  ] = useDrag(
+    () => ({
+      type: TYPE,
+      canDrag: () => !props.disableDragDrop,
+      item: () => {
+        const { component, index, parentComponent } = proxyRef.current.props;
+        return {
+          type: component?.type,
+          id: component?.id,
+          meta: component?.meta,
+          index,
+          parentId: parentComponent?.id,
+          parentType: parentComponent?.type,
+        };
+      },
+      collect: monitor => ({
+        isDragging: monitor.isDragging(),
+        dragComponentId: monitor.getItem()?.id,
+        dragComponentType: monitor.getItem()?.type,
       }),
-      [props.disableDragDrop],
-    );
+    }),
+    [props.disableDragDrop],
+  );
 
   const [{ isDraggingOver, isDraggingOverShallow }, dropRef] = useDrop(
     () => ({

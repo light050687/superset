@@ -61,7 +61,9 @@ const StyledContainer = styled.div`
   `}
 `;
 
-export const ImportModal: FunctionComponent<React.PropsWithChildren<ImportModelsModalProps>> = ({
+export const ImportModal: FunctionComponent<
+  React.PropsWithChildren<ImportModelsModalProps>
+> = ({
   resourceName,
   resourceLabel,
   passwordsNeededMessage,

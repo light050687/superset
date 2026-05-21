@@ -17,7 +17,10 @@ import {
   useCatalogColumnLabels,
 } from 'src/features/catalog/useCatalogColumnLabels';
 import { DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
-import type { User, UserWithPermissionsAndRoles } from 'src/types/bootstrapTypes';
+import type {
+  User,
+  UserWithPermissionsAndRoles,
+} from 'src/types/bootstrapTypes';
 import { toggleFavorite } from './api';
 import { BentoCard } from './BentoCard';
 import {
@@ -87,11 +90,7 @@ const Pill = styled.button<{ $active: boolean; $disabled?: boolean }>`
     border-color: ${({ $active, $disabled }) =>
       $disabled ? DS2_VARS.g200 : $active ? DS2_VARS.cSky : DS2_VARS.g400};
     color: ${({ $active, $disabled }) =>
-      $disabled
-        ? DS2_VARS.g500
-        : $active
-          ? DS2_VARS.cSky
-          : DS2_VARS.ink};
+      $disabled ? DS2_VARS.g500 : $active ? DS2_VARS.cSky : DS2_VARS.ink};
   }
 
   &:focus-visible {
@@ -153,16 +152,24 @@ export interface HomeBentoProps {
  *  на главной они не нужны — чтобы не засорять визуальный скан. */
 function isAdminUser(user?: User): boolean {
   if (!user) return false;
-  const roles = (user as UserWithPermissionsAndRoles).roles;
+  const { roles } = user as UserWithPermissionsAndRoles;
   if (!roles) return false;
   return Object.keys(roles).some(
     r => r === 'Admin' || r.toLowerCase() === 'admin',
   );
 }
 
-export const HomeBento: FC<React.PropsWithChildren<HomeBentoProps>> = ({ user }) => {
-  const { favorites, recents, loadingFavorites, loadingRecents, error, refresh } =
-    useBentoData(user?.userId);
+export const HomeBento: FC<React.PropsWithChildren<HomeBentoProps>> = ({
+  user,
+}) => {
+  const {
+    favorites,
+    recents,
+    loadingFavorites,
+    loadingRecents,
+    error,
+    refresh,
+  } = useBentoData(user?.userId);
   const [activePill, setActivePill] = useState<PillKind>('all');
   const isAdmin = useMemo(() => isAdminUser(user), [user]);
   const { itemFolderMap } = useItemToFolderMap();
@@ -242,15 +249,17 @@ export const HomeBento: FC<React.PropsWithChildren<HomeBentoProps>> = ({ user })
     items: BentoItem[],
     sizeFn: (index: number) => BentoCardSize,
   ) =>
-    items.map(enrichWithFolder).map((item, i) => (
-      <BentoCard
-        key={`${item.objectType}-${item.id}-${i}`}
-        item={item}
-        size={sizeFn(i)}
-        showDepartment={!!item.department}
-        onToggleStar={handleToggleStar}
-      />
-    ));
+    items
+      .map(enrichWithFolder)
+      .map((item, i) => (
+        <BentoCard
+          key={`${item.objectType}-${item.id}-${i}`}
+          item={item}
+          size={sizeFn(i)}
+          showDepartment={!!item.department}
+          onToggleStar={handleToggleStar}
+        />
+      ));
 
   /* Порядок pill'ов. 'geo' убран — у нас нет отдельного geo-виза в bento,
      гео-чарты шли тем же kind='geo' что и обычные chart'ы, создавая
@@ -305,30 +314,28 @@ export const HomeBento: FC<React.PropsWithChildren<HomeBentoProps>> = ({ user })
 
       <SectionLabel title={t('Избранное')} />
       <BentoGrid>
-        {loadingFavorites
-          ? renderSkeletons(3)
-          : favoritesFiltered.length === 0
-            ? (
-              <EmptyBlock>
-                {t(
-                  'В избранном пока пусто. Нажмите ★ на любой карточке — она появится здесь.',
-                )}
-              </EmptyBlock>
-            )
-            : renderBentoItems(favoritesFiltered, favoriteSize)}
+        {loadingFavorites ? (
+          renderSkeletons(3)
+        ) : favoritesFiltered.length === 0 ? (
+          <EmptyBlock>
+            {t(
+              'В избранном пока пусто. Нажмите ★ на любой карточке — она появится здесь.',
+            )}
+          </EmptyBlock>
+        ) : (
+          renderBentoItems(favoritesFiltered, favoriteSize)
+        )}
       </BentoGrid>
 
       <SectionLabel title={t('Недавние')} />
       <BentoGrid>
-        {loadingRecents
-          ? renderSkeletons(3)
-          : recentsFiltered.length === 0
-            ? (
-              <EmptyBlock>
-                {t('Недавних просмотров нет.')}
-              </EmptyBlock>
-            )
-            : renderBentoItems(recentsFiltered, () => 'medium')}
+        {loadingRecents ? (
+          renderSkeletons(3)
+        ) : recentsFiltered.length === 0 ? (
+          <EmptyBlock>{t('Недавних просмотров нет.')}</EmptyBlock>
+        ) : (
+          renderBentoItems(recentsFiltered, () => 'medium')
+        )}
       </BentoGrid>
     </Page>
   );

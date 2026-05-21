@@ -27,9 +27,9 @@ interface DatasetTypeLabelProps {
 
 const SIZE = 's'; // Define the size as a constant
 
-export const DatasetTypeLabel: React.FC<React.PropsWithChildren<DatasetTypeLabelProps>> = ({
-  datasetType,
-}) => {
+export const DatasetTypeLabel: React.FC<
+  React.PropsWithChildren<DatasetTypeLabelProps>
+> = ({ datasetType }) => {
   const theme = useTheme();
   const label: string =
     datasetType === 'physical' ? t('Physical') : t('Virtual');

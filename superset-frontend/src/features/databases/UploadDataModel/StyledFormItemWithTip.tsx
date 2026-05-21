@@ -29,13 +29,9 @@ interface StyledFormItemWithTipProps {
   rules?: any[];
 }
 
-const StyledFormItemWithTip: FC<React.PropsWithChildren<StyledFormItemWithTipProps>> = ({
-  label,
-  tip,
-  children,
-  name,
-  rules,
-}) => (
+const StyledFormItemWithTip: FC<
+  React.PropsWithChildren<StyledFormItemWithTipProps>
+> = ({ label, tip, children, name, rules }) => (
   <StyledFormItem
     label={
       <div>

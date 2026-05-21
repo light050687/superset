@@ -12,12 +12,14 @@ import type {
   UnitMode,
 } from './types';
 import {
-  CardFooter,
   CardHead,
   CardRoot,
   CardSub,
   CardTitle,
   Controls,
+  MockBadge,
+  OpenAllBtn,
+  OpenAllToolbar,
   RankList,
   SkeletonRow,
   StaleBar,
@@ -118,8 +120,30 @@ const RankedBars: React.FC<RankedBarsProps> = props => {
     drillQueryParams,
     filterState,
     isMockMode,
-    themeMode,
+    themeMode: themeFromProps,
   } = props;
+
+  /* Superset runtime может переключить тему без re-mount чарта (ChartProps
+     theme prop приходит stale). Следим за html[data-theme] напрямую через
+     MutationObserver — это работает и при HMR, и при ручном toggle темы. */
+  const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof document === 'undefined') return themeFromProps;
+    const t = document.documentElement.getAttribute('data-theme');
+    return t === 'dark' ? 'dark' : t === 'light' ? 'light' : themeFromProps;
+  });
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const html = document.documentElement;
+    const read = (): void => {
+      const t = html.getAttribute('data-theme');
+      if (t === 'dark' || t === 'light') setEffectiveTheme(t);
+    };
+    read();
+    const observer = new MutationObserver(read);
+    observer.observe(html, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
+  const themeMode = effectiveTheme;
 
   // ── Local state ─────────────────────────────────────────────────────────
   const [sortBy, setSortBy] = useState<SortMode>(defaultSort);
@@ -127,6 +151,9 @@ const RankedBars: React.FC<RankedBarsProps> = props => {
   const [drillRow, setDrillRow] = useState<RankedRow | null>(null);
   const [allOpen, setAllOpen] = useState(false);
   const [tooltip, setTooltip] = useState<TooltipPayload | null>(null);
+  /* Mock cross-filter: local state вместо filterState из props (которого в
+     моке нет). Используется только когда isMockMode. */
+  const [mockActiveIds, setMockActiveIds] = useState<Set<string>>(new Set());
 
   // Keep state in sync with controlPanel defaults if they change.
   useEffect(() => {
@@ -164,10 +191,11 @@ const RankedBars: React.FC<RankedBarsProps> = props => {
   }, [rows, visible.length, unit]);
 
   const activeIds = useMemo<Set<string>>(() => {
+    if (isMockMode) return mockActiveIds;
     const raw = filterState?.value;
     if (Array.isArray(raw)) return new Set(raw.map(String));
     return new Set();
-  }, [filterState]);
+  }, [isMockMode, mockActiveIds, filterState]);
 
   const hasFilter = activeIds.size > 0;
 
@@ -182,13 +210,17 @@ const RankedBars: React.FC<RankedBarsProps> = props => {
         return;
       }
       if (!enableCrossFilter) return;
-      if (isMockMode || !drillQueryParams) return;
       const next = new Set(activeIds);
       if (next.has(row.id)) {
         next.delete(row.id);
       } else {
         next.add(row.id);
       }
+      if (isMockMode) {
+        setMockActiveIds(next);
+        return;
+      }
+      if (!drillQueryParams) return;
       applyFilter(props, drillQueryParams.groupbyCol, Array.from(next));
     },
     [
@@ -399,7 +431,15 @@ const RankedBars: React.FC<RankedBarsProps> = props => {
       >
         <CardHead>
           <TitleBlock>
-            <CardTitle id="rb-card-title">{headerText}</CardTitle>
+            <CardTitle id="rb-card-title">
+            {headerText}
+            {isMockMode && (
+              <>
+                {' '}
+                <MockBadge>ТЕСТ</MockBadge>
+              </>
+            )}
+          </CardTitle>
           </TitleBlock>
         </CardHead>
         <RankList $hasFilter={false} role="list" aria-busy="true">
@@ -429,7 +469,15 @@ const RankedBars: React.FC<RankedBarsProps> = props => {
       {dataState === 'stale' && <StaleBar aria-hidden="true" />}
       <CardHead>
         <TitleBlock>
-          <CardTitle id="rb-card-title">{headerText}</CardTitle>
+          <CardTitle id="rb-card-title">
+            {headerText}
+            {isMockMode && (
+              <>
+                {' '}
+                <MockBadge>ТЕСТ</MockBadge>
+              </>
+            )}
+          </CardTitle>
           {subtitleBits.length > 0 && <CardSub>{subtitleBits}</CardSub>}
         </TitleBlock>
         <Controls>
@@ -438,6 +486,25 @@ const RankedBars: React.FC<RankedBarsProps> = props => {
             onChange={setSortBy}
             deltaDisabled={!hasPrevMetric}
           />
+          {enableAllItemsModal && totalRowsCount > topNVisible && (
+            <OpenAllToolbar role="toolbar" aria-label="Все позиции">
+              <OpenAllBtn
+                type="button"
+                onClick={() => setAllOpen(true)}
+                title={`Показать все ${totalRowsCount} позиций`}
+                aria-label={`Открыть список всех ${totalRowsCount} позиций`}
+              >
+                <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                  <line x1="3" y1="4" x2="11" y2="4" />
+                  <line x1="3" y1="7" x2="11" y2="7" />
+                  <line x1="3" y1="10" x2="11" y2="10" />
+                  <circle cx="1.5" cy="4" r="0.5" fill="currentColor" stroke="none" />
+                  <circle cx="1.5" cy="7" r="0.5" fill="currentColor" stroke="none" />
+                  <circle cx="1.5" cy="10" r="0.5" fill="currentColor" stroke="none" />
+                </svg>
+              </OpenAllBtn>
+            </OpenAllToolbar>
+          )}
           <UnitToggle value={unit} onChange={setUnit} />
           <InfoHintTopRight>
             <InfoHint ariaLabel="Подсказка по управлению">
@@ -452,18 +519,6 @@ const RankedBars: React.FC<RankedBarsProps> = props => {
       </CardHead>
 
       {renderBody()}
-
-      <CardFooter>
-        {enableAllItemsModal && totalRowsCount > topNVisible && (
-          <button
-            type="button"
-            className="more"
-            onClick={() => setAllOpen(true)}
-          >
-            Показать все {totalRowsCount} позиций →
-          </button>
-        )}
-      </CardFooter>
 
       {showHoverTooltip && <Tooltip payload={tooltip} />}
 

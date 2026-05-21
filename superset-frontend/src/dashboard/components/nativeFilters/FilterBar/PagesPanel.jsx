@@ -234,7 +234,9 @@ export default function PagesPanel({ topLevelPages, editMode, onClose }) {
                 <input
                   value={editingName}
                   onChange={e =>
-                    setEditingName(e.target.value.slice(0, PAGE_NAME_MAX_LENGTH))
+                    setEditingName(
+                      e.target.value.slice(0, PAGE_NAME_MAX_LENGTH),
+                    )
                   }
                   onBlur={handleFinishRename}
                   onKeyDown={handleKeyDown}
@@ -257,9 +259,7 @@ export default function PagesPanel({ topLevelPages, editMode, onClose }) {
                   css={css`
                     font-size: var(--fs-interactive);
                     font-weight: ${isActive ? 600 : 400};
-                    color: ${isActive
-                      ? theme.colorPrimary
-                      : theme.colorText};
+                    color: ${isActive ? theme.colorPrimary : theme.colorText};
                     flex: 1;
                     overflow: hidden;
                     text-overflow: ellipsis;

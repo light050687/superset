@@ -390,7 +390,8 @@ export const AiFullView: FC<React.PropsWithChildren<AiFullViewProps>> = ({
         msgs.map(m => ({
           role: m.role === 'system' ? 'bot' : (m.role as ChatItem['role']),
           text: m.role === 'user' ? safeText(m.content_json) : undefined,
-          blocks: m.role === 'bot' ? parseBotContent(m.content_json) : undefined,
+          blocks:
+            m.role === 'bot' ? parseBotContent(m.content_json) : undefined,
           messageId: m.id,
         })),
       );
@@ -524,10 +525,7 @@ export const AiFullView: FC<React.PropsWithChildren<AiFullViewProps>> = ({
 
   return (
     <>
-      <Scrim
-        aria-hidden="true"
-        onClick={onClose}
-      />
+      <Scrim aria-hidden="true" onClick={onClose} />
       {/* Side panel — пристройка СНАРУЖИ overlay, слева. position:fixed
           рендерится рядом с overlay'ем, с нахлёстом 2px на overlay для
           бесшовного стыка (тень обрезана clip-path на правой стороне). */}
@@ -542,66 +540,66 @@ export const AiFullView: FC<React.PropsWithChildren<AiFullViewProps>> = ({
         onChanged={refresh}
       />
       <Panel role="dialog" aria-modal="true" aria-label={t('ИИ-аналитик')}>
-      <SidePanelTab
-        type="button"
-        onClick={toggleSidePanel}
-        aria-label={t('История чатов')}
-        aria-pressed={sidePanelOpen}
-        title={t('История чатов')}
-      >
-        <IconSidePanel />
-      </SidePanelTab>
-      <Main>
-        <CloseBtn
+        <SidePanelTab
           type="button"
-          onClick={onClose}
-          aria-label={t('Закрыть ИИ-аналитика')}
-          title={t('Esc')}
+          onClick={toggleSidePanel}
+          aria-label={t('История чатов')}
+          aria-pressed={sidePanelOpen}
+          title={t('История чатов')}
         >
-          <IconClose />
-        </CloseBtn>
-        <Body ref={bodyRef}>
-          {empty ? (
-            <AiEmpty
-              userFirstName={userFirstName}
-              prompts={DEFAULT_PROMPTS}
-              onPrompt={handlePrompt}
-            />
-          ) : (
-            items.map((msg, i) => (
-              <AiMessage
-                key={`${msg.role}-${i}`}
-                role={msg.role}
-                text={msg.text}
-                blocks={msg.blocks}
-                meta={msg.meta}
-                onFollowup={handleFollowup}
+          <IconSidePanel />
+        </SidePanelTab>
+        <Main>
+          <CloseBtn
+            type="button"
+            onClick={onClose}
+            aria-label={t('Закрыть ИИ-аналитика')}
+            title={t('Esc')}
+          >
+            <IconClose />
+          </CloseBtn>
+          <Body ref={bodyRef}>
+            {empty ? (
+              <AiEmpty
+                userFirstName={userFirstName}
+                prompts={DEFAULT_PROMPTS}
+                onPrompt={handlePrompt}
               />
-            ))
-          )}
-        </Body>
-        {/*
-         * Нижний input убран (мокап analytics-floating-dock.html): ввод
-         * идёт через CentralPill в dock'е, которая парит над overlay-ем.
-         * Quick-chips после чата остаются как быстрый способ продолжить диалог.
-         */}
-        {!empty ? (
-          <InputZone>
-            <InputInner>
-              <QuickChips>
-                {QUICK_CHIPS_AFTER_CHAT.map(chip => (
-                  <Chip
-                    key={chip}
-                    type="button"
-                    onClick={() => handlePrompt(chip)}
-                  >
-                    {chip}
-                  </Chip>
-                ))}
-              </QuickChips>
-            </InputInner>
-          </InputZone>
-        ) : null}
+            ) : (
+              items.map((msg, i) => (
+                <AiMessage
+                  key={`${msg.role}-${i}`}
+                  role={msg.role}
+                  text={msg.text}
+                  blocks={msg.blocks}
+                  meta={msg.meta}
+                  onFollowup={handleFollowup}
+                />
+              ))
+            )}
+          </Body>
+          {/*
+           * Нижний input убран (мокап analytics-floating-dock.html): ввод
+           * идёт через CentralPill в dock'е, которая парит над overlay-ем.
+           * Quick-chips после чата остаются как быстрый способ продолжить диалог.
+           */}
+          {!empty ? (
+            <InputZone>
+              <InputInner>
+                <QuickChips>
+                  {QUICK_CHIPS_AFTER_CHAT.map(chip => (
+                    <Chip
+                      key={chip}
+                      type="button"
+                      onClick={() => handlePrompt(chip)}
+                    >
+                      {chip}
+                    </Chip>
+                  ))}
+                </QuickChips>
+              </InputInner>
+            </InputZone>
+          ) : null}
         </Main>
       </Panel>
     </>

@@ -58,8 +58,7 @@ export const ControlBtn = styled.button<{ isActive?: boolean }>`
   color: ${({ theme, isActive }) =>
     isActive ? theme.colorBgContainer : theme.colorText};
   border: 1px solid
-    ${({ theme, isActive }) =>
-      isActive ? theme.colorText : theme.colorBorder};
+    ${({ theme, isActive }) => (isActive ? theme.colorText : theme.colorBorder)};
   border-radius: ${({ theme }) => theme.borderRadius}px;
   padding: 6px 14px;
   font-size: ${({ theme }) => theme.fontSizeSM}px;

@@ -21,7 +21,9 @@ export type CatalogObjectType =
 
 /** Счётчик элементов папки с разбивкой по типу объекта. Ключи —
  *  CatalogObjectType (dashboard/chart/dataset/saved_query/ai_document/...). */
-export type CatalogItemCountsByType = Partial<Record<CatalogObjectType, number>>;
+export type CatalogItemCountsByType = Partial<
+  Record<CatalogObjectType, number>
+>;
 
 /** Scope папки — ограничивает видимость по типу объекта. Добавлено
  *  миграцией d4e5f6a7b8c9. NULL/undefined = shared (дефолтная папка

@@ -144,9 +144,7 @@ const FilterKanban: FC<FilterKanbanProps> = ({
       const f = filters[id];
       if (!f) return false;
       if (isFilterDivider(f)) return false;
-      return ((f as Filter).name || '')
-        .toLowerCase()
-        .includes(normalizedQuery);
+      return ((f as Filter).name || '').toLowerCase().includes(normalizedQuery);
     });
   };
 

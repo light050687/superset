@@ -24,10 +24,7 @@ export interface ObjectInfo {
 }
 
 /** Endpoint по типу объекта. Возвращает null для неподдерживаемых типов. */
-function endpointFor(
-  type: CatalogObjectType,
-  id: number,
-): string | null {
+function endpointFor(type: CatalogObjectType, id: number): string | null {
   switch (type) {
     case 'dashboard':
       return `/api/v1/dashboard/${id}`;
@@ -65,7 +62,7 @@ function typeLabel(type: CatalogObjectType): string {
 /** Извлекает человекочитаемое имя из ответа API различных endpoint'ов. */
 function extractName(type: CatalogObjectType, body: unknown): string {
   if (typeof body !== 'object' || body === null) return '';
-  const result = (body as { result?: Record<string, unknown> }).result;
+  const { result } = body as { result?: Record<string, unknown> };
   if (!result) return '';
   if (type === 'dashboard') {
     return String(result.dashboard_title ?? result.slug ?? '');
@@ -96,7 +93,9 @@ export function useCatalogObjectNames(
   useEffect(() => {
     let cancelled = false;
 
-    const missing = items.filter(it => !cache.has(key(it.object_type, it.object_id)));
+    const missing = items.filter(
+      it => !cache.has(key(it.object_type, it.object_id)),
+    );
     if (missing.length === 0) {
       // Собираем уже закэшированные
       const out: Record<string, ObjectInfo> = {};
@@ -122,7 +121,7 @@ export function useCatalogObjectNames(
         }
         try {
           const res = await SupersetClient.get({ endpoint });
-          const json = (res as { json?: unknown }).json;
+          const { json } = res as { json?: unknown };
           const name = extractName(it.object_type, json);
           const info: ObjectInfo = {
             title: name || `${typeLabel(it.object_type)} #${it.object_id}`,
@@ -156,9 +155,6 @@ export function useCatalogObjectNames(
   return map;
 }
 
-export function objectKey(
-  type: CatalogObjectType,
-  id: number,
-): string {
+export function objectKey(type: CatalogObjectType, id: number): string {
   return key(type, id);
 }

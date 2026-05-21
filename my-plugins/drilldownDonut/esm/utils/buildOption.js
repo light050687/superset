@@ -116,12 +116,14 @@ export function buildOption(args) {
         // hardcoded fontSize.
         tooltip: {
             trigger: 'item',
-            backgroundColor: t.ink,
-            borderColor: 'transparent',
-            borderWidth: 0,
-            padding: [8, 12, 9, 12],
-            extraCssText: 'pointer-events:none;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:260px',
-            textStyle: { color: t.s, fontFamily: FONTS.text, fontSize: 11 },
+            /* DS 2.1 §08 «Тултипы»: tooltip того же тона что Card surface
+               (НЕ инверт). В light theme — white, в dark — dark. */
+            backgroundColor: t.s,
+            borderColor: 'rgba(128,128,128,0.25)',
+            borderWidth: 1,
+            padding: [8, 12, 8, 12],
+            extraCssText: 'pointer-events:none;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:240px',
+            textStyle: { color: t.ink, fontFamily: FONTS.text, fontSize: 11 },
             formatter: (p) => {
                 const item = p?.data?._item;
                 if (!item || item.hidden)
@@ -131,14 +133,17 @@ export function buildOption(args) {
                 const pctStr = fmtPct((item.rub / total) * 100);
                 const cntStr = item.count == null ? null : fmtCnt(item.count);
                 const dot = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${item.color};margin-right:6px;vertical-align:middle"></span>`;
-                const lineStyle = `font:500 11px ${FONTS.mono};color:${t.s};line-height:1.6;display:flex;justify-content:space-between;gap:14px`;
+                const headerStyle = `font:700 13px ${FONTS.text};color:${t.ink};margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(128,128,128,0.25);line-height:1.3`;
+                const rowStyle = `font-family:${FONTS.mono};line-height:1.5;display:flex;justify-content:space-between;gap:12px`;
+                const labelStyle = `font-size:11px;font-weight:600;color:${t.g500};letter-spacing:0.06em;text-transform:uppercase`;
+                const valueStyle = `font-size:12px;font-weight:600;color:${t.ink};font-variant-numeric:tabular-nums`;
                 const cntLine = cntStr
-                    ? `<div style="${lineStyle}"><span>Операций</span><span style="font-variant-numeric:tabular-nums;font-weight:600">${cntStr}</span></div>`
+                    ? `<div style="${rowStyle}"><span style="${labelStyle}">Операций</span><span style="${valueStyle}">${cntStr}</span></div>`
                     : '';
                 return `
-          <div style="font:600 12px ${FONTS.text};color:${t.s};margin-bottom:4px">${dot}${item.name}</div>
-          <div style="${lineStyle}"><span>Сумма</span><span style="font-variant-numeric:tabular-nums;font-weight:600">${rubStr}</span></div>
-          <div style="${lineStyle}"><span>Доля</span><span style="font-variant-numeric:tabular-nums;font-weight:600">${pctStr}</span></div>
+          <div style="${headerStyle}">${dot}${item.name}</div>
+          <div style="${rowStyle}"><span style="${labelStyle}">Сумма</span><span style="${valueStyle}">${rubStr}</span></div>
+          <div style="${rowStyle}"><span style="${labelStyle}">Доля</span><span style="${valueStyle}">${pctStr}</span></div>
           ${cntLine}
         `;
             },

@@ -156,14 +156,9 @@ function computeAbovePosition(
   return { top, left };
 }
 
-export const ContextPopover: FC<React.PropsWithChildren<ContextPopoverProps>> = ({
-  anchor,
-  open,
-  onClose,
-  contexts,
-  currentContextId,
-  onSelect,
-}) => {
+export const ContextPopover: FC<
+  React.PropsWithChildren<ContextPopoverProps>
+> = ({ anchor, open, onClose, contexts, currentContextId, onSelect }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<Position>({ top: 12, left: 12 });
 

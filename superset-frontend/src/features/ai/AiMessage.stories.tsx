@@ -76,7 +76,12 @@ export const BotWithKpi = () => (
       text: SAMPLE_MARKDOWN,
       kpi: [
         { label: 'СЫРЬЕ', value: '34 159 528 руб.', deltaKind: 'dn' },
-        { label: 'Доля', value: '63,5%', deltaLabel: '+5,2 пп', deltaKind: 'dn' },
+        {
+          label: 'Доля',
+          value: '63,5%',
+          deltaLabel: '+5,2 пп',
+          deltaKind: 'dn',
+        },
         { label: 'Категорий в топе', value: '10' },
       ],
     }}
@@ -96,7 +101,7 @@ export const BotWithTable = () => (
           { 'losses.category_name': 'СЫРЬЕ', 'losses.total': 34159528.27 },
           { 'losses.category_name': 'ОВОЩИ', 'losses.total': 21354158.25 },
           { 'losses.category_name': 'ЦИТРУСОВЫЕ', 'losses.total': 13106821.86 },
-          { 'losses.category_name': 'СЕМЕЧКОВЫЕ', 'losses.total': 11639633.40 },
+          { 'losses.category_name': 'СЕМЕЧКОВЫЕ', 'losses.total': 11639633.4 },
         ],
         title: 'Потери по категориям',
       },
@@ -113,7 +118,10 @@ export const BotWithChart = () => (
       text: '## Динамика потерь по месяцам',
       cubeQuery: {
         timeDimensions: [
-          { dimension: 'losses.report_date', dateRange: ['2026-01-01', '2026-12-31'] },
+          {
+            dimension: 'losses.report_date',
+            dateRange: ['2026-01-01', '2026-12-31'],
+          },
         ],
         measures: ['losses.total'],
       },

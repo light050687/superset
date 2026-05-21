@@ -27,9 +27,9 @@ export interface UseDockCollapseResult {
   collapse: () => void;
 }
 
-export function useDockCollapse(
-  { pinned = false }: UseDockCollapseOptions = {},
-): UseDockCollapseResult {
+export function useDockCollapse({
+  pinned = false,
+}: UseDockCollapseOptions = {}): UseDockCollapseResult {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const expand = useCallback(() => {

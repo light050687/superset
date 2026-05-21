@@ -117,9 +117,9 @@ const RunQueryActionButton = ({
   // QueryButtonProps is a union (DropdownButtonProps | ButtonProps); TSX spread
   // narrowing across the two component variants fails, so widen to a generic
   // FC that forwards all spread props to the selected variant at runtime.
-  const ButtonComponent = (
-    overlayCreateAsMenu ? DropdownButton : Button
-  ) as FC<React.PropsWithChildren<Record<string, unknown>>>;
+  const ButtonComponent = (overlayCreateAsMenu ? DropdownButton : Button) as FC<
+    React.PropsWithChildren<Record<string, unknown>>
+  >;
 
   const sqlContent = selectedText || sql || '';
   const isDisabled = !sqlContent

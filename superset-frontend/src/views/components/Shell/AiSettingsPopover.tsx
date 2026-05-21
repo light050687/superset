@@ -16,13 +16,7 @@
  *   - read-only параметры справа (значения температуры, языка, глубины)
  */
 import { styled, t } from '@superset-ui/core';
-import {
-  type FC,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import { type FC, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 
@@ -169,14 +163,9 @@ function computePosition(
   return { top, left };
 }
 
-export const AiSettingsPopover: FC<React.PropsWithChildren<AiSettingsPopoverProps>> = ({
-  anchor,
-  open,
-  onClose,
-  tools,
-  onToolsChange,
-  params,
-}) => {
+export const AiSettingsPopover: FC<
+  React.PropsWithChildren<AiSettingsPopoverProps>
+> = ({ anchor, open, onClose, tools, onToolsChange, params }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<Position>({ top: 12, left: 12 });
 

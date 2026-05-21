@@ -20,10 +20,6 @@ const TTIcon = styled.div<{ $bg: string }>`
   background: ${({ $bg }) => $bg};
 `;
 
-const TTFootSep = styled.span`
-  color: var(--g400);
-`;
-
 interface TooltipConfig {
   invertDeltaGood: boolean;
   decimalsValue: number;
@@ -124,15 +120,6 @@ export function buildTooltipContent(
             </span>
           </div>
         )}
-      </div>
-      <div className="tt-foot">
-        <span>
-          <kbd>Click</kbd> фильтр
-        </span>
-        <TTFootSep aria-hidden="true">·</TTFootSep>
-        <span>
-          <kbd>Ctrl</kbd>+<kbd>Click</kbd> детализация
-        </span>
       </div>
     </>
   );

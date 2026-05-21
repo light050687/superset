@@ -29,12 +29,7 @@
  * «deleted» папок как они выглядели бы ПОСЛЕ применения очереди, но
  * без реального сетевого вызова. UI использует derived state.
  */
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useSyncExternalStore,
-} from 'react';
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 import {
   assignCatalogItems,
   createCatalogFolder,
@@ -145,7 +140,10 @@ export interface CatalogDraftApplied {
   /** Множество id папок, помеченных к удалению (включая каскадных потомков). */
   deletedFolderIds: Set<number>;
   /** Функция «какие items будут в папке N после применения draft-ops». */
-  itemsInFolder: (folderId: number, baseline: CatalogFolderItem[]) => CatalogFolderItem[];
+  itemsInFolder: (
+    folderId: number,
+    baseline: CatalogFolderItem[],
+  ) => CatalogFolderItem[];
 }
 
 export interface CatalogDraft {
@@ -258,10 +256,7 @@ export function useCatalogDraft(options: {
         const filtered = prev.filter(
           o => !(o.kind === 'move_folder' && o.id === id),
         );
-        return [
-          ...filtered,
-          { kind: 'move_folder', id, parent_id, position },
-        ];
+        return [...filtered, { kind: 'move_folder', id, parent_id, position }];
       });
     },
     [],
@@ -538,9 +533,7 @@ export function useCatalogDraft(options: {
           } else if (op.toFolderId === folderId) {
             added.push({
               id: -Math.abs(
-                Math.round(
-                  op.objectId * 31 + op.objectType.charCodeAt(0),
-                ),
+                Math.round(op.objectId * 31 + op.objectType.charCodeAt(0)),
               ),
               folder_id: folderId,
               object_type: op.objectType,

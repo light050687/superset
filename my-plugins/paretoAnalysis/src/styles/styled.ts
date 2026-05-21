@@ -13,9 +13,13 @@ export const PARETO_CARD_CLASS = 'pareto-card';
 
 // DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
 // race-condition-free относительно <style dangerouslySetInnerHTML> (см. donut).
+/* Только opacity — transform убран намеренно: Superset dashboard drag-drop
+   управляет transform на chart-cell ancestor'е. Конфликт двух transform
+   приводил к тому что после перестановки чарт оставался смещённым/невидимым
+   до hard refresh. */
 const cardInKf = keyframes`
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 `;
 
 // ═══════════════════════════════════════
@@ -566,20 +570,26 @@ export const TooltipEl = styled.div`
   position: absolute;
   z-index: 10;
   pointer-events: none;
-  background: var(--ink);
-  color: var(--s);
+  /* DS 2.1 §08 «Тултипы»: tooltip того же тона что Card surface (НЕ инверт). */
+  background: var(--s);
+  color: var(--ink);
+  border: 1px solid rgba(128, 128, 128, 0.25);
   border-radius: 6px;
-  padding: 9px 13px 10px;
+  padding: 8px 12px;
   box-shadow: var(--sh);
   font-family: var(--f);
-  font-size: var(--fs-micro);
-  max-width: 300px;
+  font-size: 11px;
+  max-width: 240px;
   animation: pareto-tooltip-in 0.12s ${EASE};
 
+  /* Header 13px Manrope 700 — крупнее DS-минимума для читаемости. */
   .tt-title {
     font-weight: 700;
-    font-size: var(--fs-micro);
-    margin-bottom: 5px;
+    font-size: 13px;
+    color: var(--ink);
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.25);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -590,40 +600,43 @@ export const TooltipEl = styled.div`
     border-radius: 2px;
   }
   .tt-title .zone {
-    /* DS v2.0 fluid: --fs-nano UPPER для zone tag */
     font-family: var(--m);
-    font-size: var(--fs-nano);
-    font-weight: 700;
+    font-size: 10px;
+    font-weight: 600;
     margin-left: auto;
     padding: 1px 5px;
     border-radius: 3px;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
   }
   .tt-row {
     font-family: var(--m);
-    font-size: var(--fs-micro);
+    font-size: 12px;
     font-weight: 500;
-    line-height: 1.6;
+    line-height: 1.5;
     display: flex;
     justify-content: space-between;
-    gap: 16px;
+    gap: 12px;
+  }
+  .tt-row > span:first-of-type {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--g500);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
   .tt-row b {
+    font-size: 12px;
     font-weight: 600;
+    color: var(--ink);
     font-variant-numeric: tabular-nums;
   }
-  .tt-row b.up {
-    color: var(--up);
-  }
-  .tt-row b.dn {
-    color: var(--dn);
-  }
+  .tt-row b.up { color: var(--up); }
+  .tt-row b.dn { color: var(--dn); }
   .tt-divider {
     height: 1px;
-    background: var(--g400);
-    margin: 5px 0;
-    opacity: 0.3;
+    background: rgba(128, 128, 128, 0.25);
+    margin: 6px 0;
   }
 `;
 

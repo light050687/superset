@@ -53,8 +53,7 @@ export const DropdownButton = ({
 
   // Preserve the v5 `overlay` prop by wiring it to v6 `popupRender`.
   const effectivePopupRender =
-    popupRender ??
-    (overlay ? () => overlay as ReactElement : undefined);
+    popupRender ?? (overlay ? () => overlay as ReactElement : undefined);
 
   const triggerButton = (
     <AntdButton

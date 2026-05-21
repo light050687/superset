@@ -15,8 +15,11 @@ function DriversCellInner({ data, tokens }) {
     if (data.isSegment) {
         return ((0, jsx_runtime_1.jsx)(styles_1.Cell, { "$align": "left", children: (0, jsx_runtime_1.jsxs)(styles_1.DriversCellEl, { children: [causeRow, woRow] }) }));
     }
-    const dCls3 = (0, formatRussian_1.deltaClass)(data.mainSegmentDelta, true);
-    return ((0, jsx_runtime_1.jsx)(styles_1.Cell, { "$align": "left", children: (0, jsx_runtime_1.jsxs)(styles_1.DriversCellEl, { children: [causeRow, woRow, (0, jsx_runtime_1.jsxs)("span", { className: "driver-row", children: [(0, jsx_runtime_1.jsxs)("span", { className: "driver-name", children: [(0, jsx_runtime_1.jsx)("span", { className: "type-dot", style: { background: tokens.g500 } }), data.mainSegment] }), (0, jsx_runtime_1.jsxs)("span", { className: "driver-pct", children: [(0, formatRussian_1.nf0)(data.mainSegmentPct), "%"] }), (0, jsx_runtime_1.jsx)("span", { className: `driver-delta ${dCls3}`, children: (0, formatRussian_1.fmtDelta)(data.mainSegmentDelta) })] })] }) }));
+    /* После early-return на isSegment, data — это Store. Явный cast потому что
+       --strict false в этом плагине не сужает discriminated union. */
+    const store = data;
+    const dCls3 = (0, formatRussian_1.deltaClass)(store.mainSegmentDelta, true);
+    return ((0, jsx_runtime_1.jsx)(styles_1.Cell, { "$align": "left", children: (0, jsx_runtime_1.jsxs)(styles_1.DriversCellEl, { children: [causeRow, woRow, (0, jsx_runtime_1.jsxs)("span", { className: "driver-row", children: [(0, jsx_runtime_1.jsxs)("span", { className: "driver-name", children: [(0, jsx_runtime_1.jsx)("span", { className: "type-dot", style: { background: tokens.g500 } }), store.mainSegment] }), (0, jsx_runtime_1.jsxs)("span", { className: "driver-pct", children: [(0, formatRussian_1.nf0)(store.mainSegmentPct), "%"] }), (0, jsx_runtime_1.jsx)("span", { className: `driver-delta ${dCls3}`, children: (0, formatRussian_1.fmtDelta)(store.mainSegmentDelta) })] })] }) }));
 }
 exports.default = (0, react_1.memo)(DriversCellInner);
 //# sourceMappingURL=DriversCell.js.map

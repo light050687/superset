@@ -17,9 +17,13 @@ const EASE = 'cubic-bezier(0.2, 0.8, 0.25, 1)';
 exports.ROOT_CLASS = 'bullet-chart-root';
 // DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
 // race-condition-free относительно <style dangerouslySetInnerHTML> (см. donut).
+/* Только opacity — transform убран намеренно: Superset dashboard drag-drop
+   управляет transform на chart-cell ancestor'е. Конфликт двух transform
+   приводил к тому что после перестановки чарт оставался смещённым/невидимым
+   до hard refresh. */
 const cardInKf = (0, react_1.keyframes) `
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 `;
 /* ──────────────────────────────────────────────────────────
    Keyframes (инжектятся в <style dangerouslySetInnerHTML>)
@@ -537,73 +541,73 @@ exports.Kbd = core_1.styled.kbd `
 exports.Tooltip = core_1.styled.div `
   --status-color: ${({ statusColor }) => statusColor};
   position: fixed;
-  background: var(--g100);
-  border: 1px solid var(--g300);
-  border-radius: 10px;
-  padding: 12px 14px 10px;
+  /* DS 2.1 §08 «Тултипы»: tooltip того же тона что Card surface (НЕ инверт).
+     light: white, dark: dark — текст --ink. Border + shadow отделяют от Card. */
+  background: var(--s);
+  color: var(--ink);
+  border: 1px solid rgba(128, 128, 128, 0.25);
+  border-radius: 6px;
+  padding: 8px 12px;
   box-shadow: var(--sh);
   font-family: var(--f);
-  font-size: var(--fs-meta);
-  color: var(--ink);
+  font-size: 11px;
   pointer-events: none;
   z-index: 500;
-  min-width: 240px;
-  max-width: 300px;
+  max-width: 240px;
   animation: bc-tt-fade 0.12s ${EASE};
 `;
 exports.TtHead = core_1.styled.div `
   display: flex;
   align-items: flex-start;
-  gap: 9px;
-  padding-bottom: 9px;
-  margin-bottom: 9px;
-  border-bottom: 1px solid var(--g200);
+  gap: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.25);
 `;
 exports.TtStatus = core_1.styled.div `
-  width: 8px;
-  border-radius: 0;
+  width: 4px;
+  border-radius: 2px;
   flex-shrink: 0;
   align-self: stretch;
   background: var(--status-color);
 `;
 exports.TtName = core_1.styled.div `
-  font-size: var(--fs-body);
+  /* Header 13px Manrope 700 — крупнее DS-минимума 11px для читаемости. */
+  font-size: 13px;
   font-weight: 700;
   color: var(--ink);
-  line-height: 1.25;
-  margin-bottom: 2px;
-  letter-spacing: -0.005em;
+  line-height: 1.3;
+  margin-bottom: 1px;
 `;
 exports.TtSub = core_1.styled.div `
-  font-size: var(--fs-meta);
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 400;
   color: var(--g500);
   font-family: var(--m);
-  letter-spacing: 0.01em;
+  line-height: 1.4;
 `;
 exports.TtRows = core_1.styled.div `
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 `;
 exports.TtRow = core_1.styled.div `
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
   font-family: var(--m);
 `;
 exports.TtL = core_1.styled.div `
-  font-size: var(--fs-micro);
+  font-size: 11px;
   font-weight: 600;
   color: var(--g500);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 `;
 exports.TtV = core_1.styled.div `
-  font-size: var(--fs-meta);
-  font-weight: 700;
-  letter-spacing: -0.005em;
+  font-size: 12px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: ${({ tone }) => tone === 'up'
     ? 'var(--up)'
@@ -615,11 +619,10 @@ exports.TtV = core_1.styled.div `
 `;
 exports.TtStatusText = core_1.styled.div `
   margin-top: 8px;
-  padding: 7px 9px;
-  background: var(--g50);
-  border: 1px solid var(--g200);
-  border-radius: 6px;
-  font-size: var(--fs-meta);
+  padding: 6px 8px;
+  background: rgba(128, 128, 128, 0.15);
+  border-radius: 5px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--status-color);
 `;

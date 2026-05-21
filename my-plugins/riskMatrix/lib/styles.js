@@ -12,9 +12,13 @@ const themeTokens_1 = require("./themeTokens");
 const EASE = 'cubic-bezier(.2, .8, .25, 1)';
 // DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
 // race-condition-free относительно <style dangerouslySetInnerHTML> (см. donut).
+/* Только opacity — transform убран намеренно: Superset dashboard drag-drop
+   управляет transform на chart-cell ancestor'е. Конфликт двух transform
+   приводил к тому что после перестановки чарт оставался смещённым/невидимым
+   до hard refresh. */
 const cardInKf = (0, react_1.keyframes) `
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 `;
 /** Глобальные keyframes инжектируются через <style>-тег в компоненте. */
 exports.KEYFRAMES_CSS = `
@@ -923,21 +927,19 @@ exports.Tooltip = core_1.styled.div `
   /* Tooltip = position: fixed → рендерится в body, ВНЕ container query scope
      CardRoot. CSS-переменные --fs-* недоступны, поэтому используем fixed px. */
   position: fixed;
-  background: var(--g100);
-  border: 1px solid var(--g300);
-  border-radius: 10px;
-  padding: 12px 14px 10px;
+  /* DS 2.1 §08 «Тултипы»: tooltip того же тона что Card surface (НЕ инверт). */
+  background: var(--s);
+  color: var(--ink);
+  border: 1px solid rgba(128, 128, 128, 0.25);
+  border-radius: 6px;
+  padding: 8px 12px;
   box-shadow: var(--tooltip-shadow);
   font-family: var(--f);
   font-size: 11px;
-  color: var(--ink);
   pointer-events: none;
-  /* z-index 2002 > OverlapList 2001: при hover на строке popup'а store-tooltip
-     рендерится СПРАВА от popup'а (см. showTooltipBesidePopup в ScatterRisk.tsx);
-     более высокий z-index — страховка на случай overlap при fallback'е выше/ниже. */
+  /* z-index 2002 > OverlapList 2001 (см. showTooltipBesidePopup). */
   z-index: 2002;
-  min-width: 240px;
-  max-width: 300px;
+  max-width: 240px;
   display: none;
   animation: sr-tt-fade 0.12s var(--ease);
 
@@ -950,60 +952,52 @@ exports.Tooltip = core_1.styled.div `
   .tt-head {
     display: flex;
     align-items: flex-start;
-    gap: 9px;
-    padding-bottom: 9px;
-    margin-bottom: 9px;
-    border-bottom: 1px solid var(--g200);
+    gap: 8px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.25);
   }
   .tt-status {
-    width: 8px;
-    border-radius: 3px;
+    width: 4px;
+    border-radius: 2px;
     flex-shrink: 0;
     align-self: stretch;
   }
-  .tt-titles {
-    flex: 1;
-    min-width: 0;
-  }
+  .tt-titles { flex: 1; min-width: 0; }
+  /* Header 13px Manrope 700 — крупнее DS-минимума для читаемости. */
   .tt-name {
     font-size: 13px;
     font-weight: 700;
     color: var(--ink);
-    line-height: 1.25;
-    margin-bottom: 2px;
-    letter-spacing: -0.005em;
+    line-height: 1.3;
+    margin-bottom: 1px;
   }
   .tt-sub {
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 400;
     color: var(--g500);
     font-family: var(--m);
-    letter-spacing: 0.02em;
+    line-height: 1.4;
   }
-  .tt-rows {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
+  .tt-rows { display: flex; flex-direction: column; gap: 4px; }
   .tt-row {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 14px;
+    gap: 12px;
     font-family: var(--m);
   }
   .tt-l {
     font-size: 11px;
     font-weight: 600;
     color: var(--g500);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
   .tt-v {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--ink);
-    letter-spacing: -0.005em;
     font-variant-numeric: tabular-nums;
 
     &.up {

@@ -28,12 +28,7 @@ export const GenericLink = forwardRef<HTMLAnchorElement, LinkProps>(
   ({ to, component, replace, innerRef, children, ...rest }, ref) => {
     if (typeof to === 'string' && isUrlExternal(to)) {
       return (
-        <a
-          data-test="external-link"
-          href={parseUrl(to)}
-          ref={ref}
-          {...rest}
-        >
+        <a data-test="external-link" href={parseUrl(to)} ref={ref} {...rest}>
           {children}
         </a>
       );

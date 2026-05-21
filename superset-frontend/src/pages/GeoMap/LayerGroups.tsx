@@ -1,13 +1,22 @@
 import { FC } from 'react';
 import type { LayerGroupState } from './hooks/useLayerGroups';
-import { GroupWrapper, GroupRow, GroupIcon, GroupLabel, ToggleSwitch } from './styles';
+import {
+  GroupWrapper,
+  GroupRow,
+  GroupIcon,
+  GroupLabel,
+  ToggleSwitch,
+} from './styles';
 
 interface LayerGroupsProps {
   groups: LayerGroupState[];
   onToggle: (groupId: string) => void;
 }
 
-const LayerGroups: FC<React.PropsWithChildren<LayerGroupsProps>> = ({ groups, onToggle }) => (
+const LayerGroups: FC<React.PropsWithChildren<LayerGroupsProps>> = ({
+  groups,
+  onToggle,
+}) => (
   <>
     {groups.map(group => (
       <GroupWrapper key={group.id}>

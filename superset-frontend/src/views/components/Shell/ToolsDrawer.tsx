@@ -251,9 +251,7 @@ export const ToolsDrawer: FC<React.PropsWithChildren<unknown>> = () => {
                 }}
                 aria-label={tool.label}
                 aria-disabled={tool.disabled}
-                title={
-                  tool.disabled ? t('Скоро будет доступно') : tool.label
-                }
+                title={tool.disabled ? t('Скоро будет доступно') : tool.label}
               >
                 <TileIcon $accent={tool.accent} $disabled={tool.disabled}>
                   {tool.icon}

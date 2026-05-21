@@ -70,10 +70,7 @@ describe('buildCatalogTree', () => {
   });
 
   it('сироты с несуществующим parent_id игнорируются (не в корне)', () => {
-    const flat = [
-      node(1, null, 'A'),
-      node(99, 777, 'сирота'),
-    ];
+    const flat = [node(1, null, 'A'), node(99, 777, 'сирота')];
     const tree = buildCatalogTree(flat);
     // Только A в корне; сирота не попадает в корень.
     expect(tree).toHaveLength(1);

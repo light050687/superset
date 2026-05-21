@@ -35,11 +35,14 @@
  */
 type RawCallback = ResizeObserverCallback;
 
-const NativeRO: typeof ResizeObserver | undefined = (
-  typeof window !== 'undefined' ? window.ResizeObserver : undefined
-);
+const NativeRO: typeof ResizeObserver | undefined =
+  typeof window !== 'undefined' ? window.ResizeObserver : undefined;
 
-if (NativeRO && !(NativeRO as unknown as { __supersetThrottled?: boolean }).__supersetThrottled) {
+if (
+  NativeRO &&
+  !(NativeRO as unknown as { __supersetThrottled?: boolean })
+    .__supersetThrottled
+) {
   class RafThrottledResizeObserver extends NativeRO {
     constructor(callback: RawCallback) {
       let rafHandle: number | null = null;
@@ -60,7 +63,9 @@ if (NativeRO && !(NativeRO as unknown as { __supersetThrottled?: boolean }).__su
           const o = pendingObserver as ResizeObserver;
           pendingEntries = [];
           pendingObserver = null;
-          try { callback(e, o); } catch (err) {
+          try {
+            callback(e, o);
+          } catch (err) {
             // eslint-disable-next-line no-console
             console.error('[RO throttled callback]', err);
           }
@@ -69,8 +74,12 @@ if (NativeRO && !(NativeRO as unknown as { __supersetThrottled?: boolean }).__su
     }
   }
 
-  (RafThrottledResizeObserver as unknown as { __supersetThrottled: boolean }).__supersetThrottled = true;
-  (window as unknown as { ResizeObserver: typeof ResizeObserver }).ResizeObserver =
+  (
+    RafThrottledResizeObserver as unknown as { __supersetThrottled: boolean }
+  ).__supersetThrottled = true;
+  (
+    window as unknown as { ResizeObserver: typeof ResizeObserver }
+  ).ResizeObserver =
     RafThrottledResizeObserver as unknown as typeof ResizeObserver;
 }
 

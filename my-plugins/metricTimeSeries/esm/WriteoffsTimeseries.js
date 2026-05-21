@@ -94,6 +94,58 @@ function WriteoffsTimeseriesInner(props) {
     useEffect(() => setGran(defaultGranularity), [defaultGranularity]);
     useEffect(() => setUnit(defaultUnit), [defaultUnit]);
     const echartsRef = useRef(null);
+    /* Ref на основной Card div — нужен для IntersectionObserver (resilience-эффект ниже). */
+    const cardContainerRef = useRef(null);
+    /* Resize/resilience для echarts-for-react wrapper.
+       Wrapper НЕ имеет встроенного ResizeObserver — без force-resize chart
+       остаётся 0×0 если первый mount произошёл до CSS layout finalize.
+       Также покрываем canvas context loss (long offscreen, tab switch). */
+    useEffect(() => {
+        const card = cardContainerRef.current;
+        if (!card)
+            return undefined;
+        const safeResize = () => {
+            const inst = echartsRef.current?.getEchartsInstance();
+            if (!inst)
+                return;
+            const w = card.clientWidth;
+            const h = card.clientHeight;
+            if (w <= 0 || h <= 0)
+                return;
+            inst.resize();
+        };
+        /* ResizeObserver — основной механизм: container size меняется
+           (CSS layout, window resize, drag-resize в dashboard) → resize.
+           rAF throttle: дашборд может выдать burst resize-событий. */
+        let ro = null;
+        let rafId;
+        if (typeof ResizeObserver !== 'undefined') {
+            ro = new ResizeObserver(() => {
+                if (rafId !== undefined)
+                    cancelAnimationFrame(rafId);
+                rafId = requestAnimationFrame(safeResize);
+            });
+            ro.observe(card);
+        }
+        /* IO: при возврате в viewport (long offscreen → canvas context lost). */
+        let io = null;
+        if (typeof IntersectionObserver !== 'undefined') {
+            io = new IntersectionObserver(entries => { if (entries.some(e => e.isIntersecting))
+                safeResize(); }, { threshold: 0.01 });
+            io.observe(card);
+        }
+        /* visibilitychange: при возврате tab-active (browser suspended). */
+        const onVisibility = () => { if (!document.hidden)
+            safeResize(); };
+        document.addEventListener('visibilitychange', onVisibility);
+        return () => {
+            if (rafId !== undefined)
+                cancelAnimationFrame(rafId);
+            ro?.disconnect();
+            io?.disconnect();
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
+    }, []);
     // ── Option build ──
     const { option, buckets } = useMemo(() => buildOption({
         timePoints,
@@ -293,7 +345,7 @@ function WriteoffsTimeseriesInner(props) {
             : isStale
                 ? 'Данные устарели'
                 : '';
-    return (_jsxs(Root, { width: props.width, height: props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: CARD_CLASS, role: "figure", "aria-label": headerText, children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsx(SrLive, { "aria-live": "polite", "aria-atomic": "true", children: liveMessage }), _jsxs(Card, { "data-info-hint-container": "", children: [isStale && _jsx(StaleBar, { "aria-hidden": "true" }), _jsxs(CardHead, { children: [_jsxs(TitleWrap, { children: [_jsxs(Title, { children: [headerText, mockModeEnabled && (_jsxs(_Fragment, { children: [' ', _jsx(MockBadge, { children: "\u0422\u0415\u0421\u0422" })] })), isPartial && (_jsxs(_Fragment, { children: [' ', _jsx(PartialBadge, { title: "\u0427\u0430\u0441\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0445 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430", children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u043E" })] }))] }), _jsxs(Breadcrumb, { children: [!isFullRange && (_jsx(BreadcrumbBack, { type: "button", "aria-label": "\u0412\u0435\u0440\u043D\u0443\u0442\u044C\u0441\u044F \u043A\u043E \u0432\u0441\u0435\u043C\u0443 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D\u0443", title: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u044B\u0434\u0435\u043B\u0435\u043D\u0438\u0435 (Esc)", onClick: resetSelection, children: "\u25C2" })), _jsxs("span", { children: [subtitleText && `${subtitleText} · `, hierarchyText, " \u00B7 ", rangeText] })] })] }), _jsxs(Controls, { children: [_jsx(Dropdown, { ariaLabel: "\u0413\u0440\u0430\u043D\u0443\u043B\u044F\u0440\u043D\u043E\u0441\u0442\u044C", value: gran, onChange: (v) => {
+    return (_jsxs(Root, { width: props.width, height: props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: CARD_CLASS, role: "figure", "aria-label": headerText, children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsx(SrLive, { "aria-live": "polite", "aria-atomic": "true", children: liveMessage }), _jsxs(Card, { "data-info-hint-container": "", ref: cardContainerRef, children: [isStale && _jsx(StaleBar, { "aria-hidden": "true" }), _jsxs(CardHead, { children: [_jsxs(TitleWrap, { children: [_jsxs(Title, { children: [headerText, mockModeEnabled && (_jsxs(_Fragment, { children: [' ', _jsx(MockBadge, { children: "\u0422\u0415\u0421\u0422" })] })), isPartial && (_jsxs(_Fragment, { children: [' ', _jsx(PartialBadge, { title: "\u0427\u0430\u0441\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0445 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430", children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u043E" })] }))] }), _jsxs(Breadcrumb, { children: [!isFullRange && (_jsx(BreadcrumbBack, { type: "button", "aria-label": "\u0412\u0435\u0440\u043D\u0443\u0442\u044C\u0441\u044F \u043A\u043E \u0432\u0441\u0435\u043C\u0443 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D\u0443", title: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u044B\u0434\u0435\u043B\u0435\u043D\u0438\u0435 (Esc)", onClick: resetSelection, children: "\u25C2" })), _jsxs("span", { children: [subtitleText && `${subtitleText} · `, hierarchyText, " \u00B7 ", rangeText] })] })] }), _jsxs(Controls, { children: [_jsx(Dropdown, { ariaLabel: "\u0413\u0440\u0430\u043D\u0443\u043B\u044F\u0440\u043D\u043E\u0441\u0442\u044C", value: gran, onChange: (v) => {
                                             setGran(v);
                                             if (v === 'year' || v === 'month') {
                                                 if (selection.from === selection.to) {
@@ -314,7 +366,28 @@ function WriteoffsTimeseriesInner(props) {
                                             { value: 'stack-area', label: 'Стек-площадь', icon: _jsx(IconStackArea, {}) },
                                         ] }), _jsxs(UnitToggleGroup, { role: "group", "aria-label": "\u0415\u0434\u0438\u043D\u0438\u0446\u044B \u0438\u0437\u043C\u0435\u0440\u0435\u043D\u0438\u044F", children: [_jsx(UnitButton, { type: "button", active: unit === 'rub', "aria-pressed": unit === 'rub', onClick: () => setUnit('rub'), children: "\u20BD" }), _jsx(UnitButton, { type: "button", active: unit === 'pct', "aria-pressed": unit === 'pct', onClick: () => setUnit('pct'), children: "%" })] }), _jsx(InfoHintTopRight, { children: _jsxs(InfoHint, { ariaLabel: "\u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430 \u043F\u043E \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u044E", children: [!isFullRange ? (_jsxs("span", { className: "hi", children: [_jsx("kbd", { children: "\u25C2" }), " \u0438\u043B\u0438 ", _jsx("kbd", { children: "Esc" }), " \u2014 \u043D\u0430\u0437\u0430\u0434"] })) : (_jsxs(_Fragment, { children: [gran === 'month' && enableDrillDown && (_jsxs(_Fragment, { children: [_jsxs("span", { className: "hi", children: [_jsx("kbd", { children: "\u043A\u043B\u0438\u043A" }), " \u2014 \u043C\u0435\u0441\u044F\u0446"] }), _jsx("span", { className: "hi-sep", "aria-hidden": "true" })] })), _jsx("span", { className: "hi", children: "\u0432\u044B\u0434\u0435\u043B\u0438\u0442\u044C \u2014 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D" })] })), _jsx("span", { className: "hi-sep", "aria-hidden": "true" }), _jsxs("span", { className: "hi", children: [_jsx("kbd", { children: "Right Click" }), " \u2014 \u043C\u0435\u043D\u044E \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0439"] })] }) })] })] }), _jsxs(ChartWrap, { drillable: enableDrillDown && gran !== 'day' && mode === 'line' && !hidden.fact, brushActive: brushActive, children: [_jsx(ChartInner, { children: _jsx(ReactECharts, { ref: (inst) => {
                                         echartsRef.current = inst;
-                                    }, option: option, notMerge: true, lazyUpdate: true, onEvents: onEvents }) }), showBrushButton && (_jsx(BrushButton, { type: "button", active: brushActive, "aria-label": "\u0412\u044B\u0434\u0435\u043B\u0438\u0442\u044C \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D", "aria-pressed": brushActive, title: "\u0412\u044B\u0434\u0435\u043B\u0438\u0442\u044C \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D (Shift-drag)", onClick: toggleBrush, children: _jsx(IconBrush, {}) }))] }), _jsxs(CardFooter, { children: [_jsx(LegendRow, { children: mode === 'line' ? (_jsxs(_Fragment, { children: [_jsxs(LegendItem, { type: "button", off: hidden.fact, "aria-pressed": hidden.fact, onClick: () => toggleSeries('fact'), children: [_jsx(LegendMark, { children: _jsx(LineMark, { color: "var(--c-sky)", type: "solid" }) }), _jsx(LegendLabel, { children: seriesLabels.fact })] }), _jsxs(LegendItem, { type: "button", off: hidden.plan, "aria-pressed": hidden.plan, onClick: () => toggleSeries('plan'), children: [_jsx(LegendMark, { children: _jsx(LineMark, { color: "var(--g600)", type: "ring" }) }), _jsx(LegendLabel, { children: seriesLabels.plan })] }), _jsxs(LegendItem, { type: "button", off: hidden.py, "aria-pressed": hidden.py, onClick: () => toggleSeries('py'), children: [_jsx(LegendMark, { children: _jsx(LineMark, { color: "var(--c-violet)", type: "dashed" }) }), _jsx(LegendLabel, { children: seriesLabels.py })] })] })) : (_jsxs(_Fragment, { children: [categories.map(cat => (_jsxs(LegendItem, { type: "button", off: Boolean(hiddenCats[cat.id]), "aria-pressed": Boolean(hiddenCats[cat.id]), onClick: () => toggleCategory(cat.id), children: [_jsx(LegendMark, { children: _jsx(SquareMark, { color: `var(${cat.colorToken})` }) }), _jsx(LegendLabel, { children: cat.name })] }, cat.id))), _jsx(LegendSeparator, {}), _jsxs(LegendItem, { type: "button", off: hidden.plan, "aria-pressed": hidden.plan, onClick: () => toggleSeries('plan'), children: [_jsx(LegendMark, { children: _jsx(LineMark, { color: "var(--g600)", type: "ring" }) }), _jsx(LegendLabel, { children: seriesLabels.plan })] }), _jsxs(LegendItem, { type: "button", off: hidden.py, "aria-pressed": hidden.py, onClick: () => toggleSeries('py'), children: [_jsx(LegendMark, { children: mode === 'stack-bar' ? (_jsx(GhostBarMark, { color: "var(--c-violet)" })) : (_jsx(LineMark, { color: "var(--c-violet)", type: "dashed" })) }), _jsx(LegendLabel, { children: seriesLabels.py })] })] })) }), _jsx(FooterSpacer, {})] })] })] }));
+                                        /* Force initial resize когда wrapper готов.
+                                           ReactECharts создаёт ECharts instance АСИНХРОННО после mount —
+                                           мой useEffect наверху уже отработал, но в момент его выполнения
+                                           getEchartsInstance() возвращал null. ResizeObserver fires только
+                                           на изменение размера, не на ready-state. Без этого hooka после
+                                           late mount (chart scrolled into view) ECharts инициализируется
+                                           с 0×0 → canvas blank навсегда. rAF гарантирует layout finalized. */
+                                        if (inst && cardContainerRef.current) {
+                                            const chart = inst.getEchartsInstance();
+                                            const c = cardContainerRef.current;
+                                            if (chart) {
+                                                requestAnimationFrame(() => {
+                                                    if (c.clientWidth > 0 && c.clientHeight > 0) {
+                                                        chart.resize();
+                                                    }
+                                                });
+                                            }
+                                        }
+                                    }, option: option, notMerge: true, 
+                                    /* lazyUpdate УБРАН: при mount с initial 0×0 container
+                                       wrapper может skip setOption полностью → canvas blank. */
+                                    onEvents: onEvents }) }), showBrushButton && (_jsx(BrushButton, { type: "button", active: brushActive, "aria-label": "\u0412\u044B\u0434\u0435\u043B\u0438\u0442\u044C \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D", "aria-pressed": brushActive, title: "\u0412\u044B\u0434\u0435\u043B\u0438\u0442\u044C \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D (Shift-drag)", onClick: toggleBrush, children: _jsx(IconBrush, {}) }))] }), _jsxs(CardFooter, { children: [_jsx(LegendRow, { children: mode === 'line' ? (_jsxs(_Fragment, { children: [_jsxs(LegendItem, { type: "button", off: hidden.fact, "aria-pressed": hidden.fact, onClick: () => toggleSeries('fact'), children: [_jsx(LegendMark, { children: _jsx(LineMark, { color: "var(--c-sky)", type: "solid" }) }), _jsx(LegendLabel, { children: seriesLabels.fact })] }), _jsxs(LegendItem, { type: "button", off: hidden.plan, "aria-pressed": hidden.plan, onClick: () => toggleSeries('plan'), children: [_jsx(LegendMark, { children: _jsx(LineMark, { color: "var(--g600)", type: "ring" }) }), _jsx(LegendLabel, { children: seriesLabels.plan })] }), _jsxs(LegendItem, { type: "button", off: hidden.py, "aria-pressed": hidden.py, onClick: () => toggleSeries('py'), children: [_jsx(LegendMark, { children: _jsx(LineMark, { color: "var(--c-violet)", type: "dashed" }) }), _jsx(LegendLabel, { children: seriesLabels.py })] })] })) : (_jsxs(_Fragment, { children: [categories.map(cat => (_jsxs(LegendItem, { type: "button", off: Boolean(hiddenCats[cat.id]), "aria-pressed": Boolean(hiddenCats[cat.id]), onClick: () => toggleCategory(cat.id), children: [_jsx(LegendMark, { children: _jsx(SquareMark, { color: `var(${cat.colorToken})` }) }), _jsx(LegendLabel, { children: cat.name })] }, cat.id))), _jsx(LegendSeparator, {}), _jsxs(LegendItem, { type: "button", off: hidden.plan, "aria-pressed": hidden.plan, onClick: () => toggleSeries('plan'), children: [_jsx(LegendMark, { children: _jsx(LineMark, { color: "var(--g600)", type: "ring" }) }), _jsx(LegendLabel, { children: seriesLabels.plan })] }), _jsxs(LegendItem, { type: "button", off: hidden.py, "aria-pressed": hidden.py, onClick: () => toggleSeries('py'), children: [_jsx(LegendMark, { children: mode === 'stack-bar' ? (_jsx(GhostBarMark, { color: "var(--c-violet)" })) : (_jsx(LineMark, { color: "var(--c-violet)", type: "dashed" })) }), _jsx(LegendLabel, { children: seriesLabels.py })] })] })) }), _jsx(FooterSpacer, {})] })] })] }));
 }
 /** Shallow comparison that skips functions (formatters are recreated each transformProps call). */
 function arePropsEqual(prev, next) {

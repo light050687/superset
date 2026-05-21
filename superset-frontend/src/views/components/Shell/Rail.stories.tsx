@@ -11,10 +11,7 @@
  */
 import { MemoryRouter } from 'react-router-dom';
 import { Rail } from './Rail';
-import {
-  DEFAULT_AI_CONTEXT,
-  DEFAULT_AI_MODEL,
-} from './CentralPillTypes';
+import { DEFAULT_AI_CONTEXT, DEFAULT_AI_MODEL } from './CentralPillTypes';
 import { ShellProvider } from './ShellContext';
 
 const pillProps = {

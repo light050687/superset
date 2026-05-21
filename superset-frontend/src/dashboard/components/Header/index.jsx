@@ -193,7 +193,6 @@ const headerContainerStyle = theme => css`
     font-weight: 800 !important;
     letter-spacing: -0.02em !important;
   }
-
 `;
 
 const editButtonStyle = theme => css`
@@ -613,8 +612,7 @@ const Header = () => {
     typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT,
   );
   useEffect(() => {
-    const onResize = () =>
-      setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+    const onResize = () => setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
@@ -817,9 +815,7 @@ const Header = () => {
              юзер управлял редактированием через единую нижнюю панель
              вместе с Обновить/Полноэкранный. Здесь оставлен только
              NavExtension (расширения от плагинов). */
-          <div css={actionButtonsStyle}>
-            {NavExtension && <NavExtension />}
-          </div>
+          <div css={actionButtonsStyle}>{NavExtension && <NavExtension />}</div>
         )}
       </div>
     ),

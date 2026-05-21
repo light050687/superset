@@ -18,9 +18,7 @@ export function rewriteUrl(url: string): string {
  * We only need to rewrite the initial source.url (TileJSON endpoint)
  * to go through /geo-tileserver/ proxy for the first fetch.
  */
-export async function loadStyle(
-  theme: ThemeMode,
-): Promise<StyleSpecification> {
+export async function loadStyle(theme: ThemeMode): Promise<StyleSpecification> {
   const styleName = theme === 'dark' ? 'samberi-dark' : 'samberi';
   const styleUrl = `${TILE_BASE}/styles/${styleName}/style.json`;
   const res = await fetch(styleUrl);

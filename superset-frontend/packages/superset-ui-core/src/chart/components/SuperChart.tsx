@@ -66,7 +66,9 @@ export type Props = Omit<SuperChartCoreProps, 'chartProps'> &
     /** enable "No Results" message if empty result set */
     enableNoResults?: boolean;
     /** Component to render when there are unexpected errors */
-    FallbackComponent?: ComponentType<React.PropsWithChildren<FallbackPropsWithDimension>>;
+    FallbackComponent?: ComponentType<
+      React.PropsWithChildren<FallbackPropsWithDimension>
+    >;
     /** Event listener for unexpected errors from chart */
     onErrorBoundary?: ErrorBoundaryProps['onError'];
     /** Prop for form plugins using superchart */

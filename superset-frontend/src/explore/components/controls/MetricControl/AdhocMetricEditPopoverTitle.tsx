@@ -49,11 +49,9 @@ export interface AdhocMetricEditPopoverTitleProps {
   onChange: ChangeEventHandler<HTMLInputElement>;
 }
 
-const AdhocMetricEditPopoverTitle: FC<React.PropsWithChildren<AdhocMetricEditPopoverTitleProps>> = ({
-  title,
-  isEditDisabled,
-  onChange,
-}) => {
+const AdhocMetricEditPopoverTitle: FC<
+  React.PropsWithChildren<AdhocMetricEditPopoverTitleProps>
+> = ({ title, isEditDisabled, onChange }) => {
   const theme = useTheme();
   const [isHovered, setIsHovered] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);

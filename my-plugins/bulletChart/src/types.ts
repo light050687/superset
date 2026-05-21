@@ -34,6 +34,7 @@ export type DataState =
   | 'partial'
   | 'stale'
   | 'populated';
+// Note: BulletChart.tsx использует dataState === 'loading' для skeleton overlay.
 
 // ═══════════════════════════════════════
 // Domain data

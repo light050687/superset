@@ -13,8 +13,11 @@ function DriversCellInner({ data, tokens }) {
     if (data.isSegment) {
         return (_jsx(Cell, { "$align": "left", children: _jsxs(DriversCellEl, { children: [causeRow, woRow] }) }));
     }
-    const dCls3 = deltaClass(data.mainSegmentDelta, true);
-    return (_jsx(Cell, { "$align": "left", children: _jsxs(DriversCellEl, { children: [causeRow, woRow, _jsxs("span", { className: "driver-row", children: [_jsxs("span", { className: "driver-name", children: [_jsx("span", { className: "type-dot", style: { background: tokens.g500 } }), data.mainSegment] }), _jsxs("span", { className: "driver-pct", children: [nf0(data.mainSegmentPct), "%"] }), _jsx("span", { className: `driver-delta ${dCls3}`, children: fmtDelta(data.mainSegmentDelta) })] })] }) }));
+    /* После early-return на isSegment, data — это Store. Явный cast потому что
+       --strict false в этом плагине не сужает discriminated union. */
+    const store = data;
+    const dCls3 = deltaClass(store.mainSegmentDelta, true);
+    return (_jsx(Cell, { "$align": "left", children: _jsxs(DriversCellEl, { children: [causeRow, woRow, _jsxs("span", { className: "driver-row", children: [_jsxs("span", { className: "driver-name", children: [_jsx("span", { className: "type-dot", style: { background: tokens.g500 } }), store.mainSegment] }), _jsxs("span", { className: "driver-pct", children: [nf0(store.mainSegmentPct), "%"] }), _jsx("span", { className: `driver-delta ${dCls3}`, children: fmtDelta(store.mainSegmentDelta) })] })] }) }));
 }
 export default memo(DriversCellInner);
 //# sourceMappingURL=DriversCell.js.map

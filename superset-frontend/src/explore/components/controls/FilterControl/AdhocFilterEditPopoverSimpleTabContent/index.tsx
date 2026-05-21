@@ -255,7 +255,9 @@ export const useSimpleTabFilterProps = (props: Props) => {
   };
 };
 
-const AdhocFilterEditPopoverSimpleTabContent: FC<React.PropsWithChildren<Props>> = props => {
+const AdhocFilterEditPopoverSimpleTabContent: FC<
+  React.PropsWithChildren<Props>
+> = props => {
   const {
     onSubjectChange,
     onOperatorChange,

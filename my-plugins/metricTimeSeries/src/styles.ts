@@ -16,9 +16,13 @@ export const CARD_CLASS = 'wo-ts-card';
 
 // DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
 // race-condition-free относительно <style dangerouslySetInnerHTML> (см. donut).
+/* Только opacity — transform убран намеренно: Superset dashboard drag-drop
+   управляет transform на chart-cell ancestor'е. Конфликт двух transform
+   приводил к тому что после перестановки чарт оставался смещённым/невидимым
+   до hard refresh. */
 const cardInKf = keyframes`
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 `;
 
 /* ── Keyframes injected via <style> in WriteoffsTimeseries.tsx ── */
@@ -424,6 +428,9 @@ export const ChartWrap = styled.div<{ drillable?: boolean; brushActive?: boolean
 export const ChartInner = styled.div`
   width: 100%;
   height: 100%;
+  /* min-height 1px чтобы echarts-for-react не инициализировался с 0×0
+     при mount до CSS layout finalize. ResizeObserver затем подгонит к 100%. */
+  min-height: 1px;
 
   & > div {
     width: 100% !important;

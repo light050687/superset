@@ -11,10 +11,15 @@ interface Props {
   visible: boolean;
   pos: TooltipPos | null;
   children: ReactNode;
+  /** ink/s/g700 цвета для tooltip — нужны inline т.к. portal вне CSS-vars
+      scope CardRoot и cascade переменных не работает. */
+  ink: string;
+  surface: string;
+  border: string;
 }
 
 /** Portal-tooltip. Позиционируется относительно курсора, «прилипает» к границам окна. */
-function TooltipInner({ visible, pos, children }: Props) {
+function TooltipInner({ visible, pos, children, ink, surface, border }: Props) {
   const [portalRoot] = useState(() =>
     typeof document !== 'undefined' ? document.body : null,
   );
@@ -39,7 +44,7 @@ function TooltipInner({ visible, pos, children }: Props) {
     <TooltipEl
       id="rs-tooltip"
       $visible={visible}
-      style={{ left: x, top: y }}
+      style={{ left: x, top: y, background: ink, color: surface, borderColor: border }}
       role="tooltip"
     >
       {children}

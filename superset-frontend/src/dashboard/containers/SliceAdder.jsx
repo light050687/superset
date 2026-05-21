@@ -37,7 +37,7 @@ function getSelectedSliceIds({ dashboardState, dashboardLayout }) {
     return dashboardState.sliceIds;
   }
   const layout = dashboardLayout?.present;
-  const activePagePath = dashboardState.activePagePath;
+  const { activePagePath } = dashboardState;
   // activePagePath: ['ROOT_ID', 'PAGES-...', 'PAGE-...'] — последний элемент
   // это id активной страницы. Если страниц нет (top-level layout без PAGES),
   // fallback на полный список — поведение апстрима.

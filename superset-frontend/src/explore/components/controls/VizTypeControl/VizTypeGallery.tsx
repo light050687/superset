@@ -391,14 +391,16 @@ const ThumbnailGallery: FC<React.PropsWithChildren<ThumbnailGalleryProps>> = ({
   </IconsPane>
 );
 
-const Selector: FC<React.PropsWithChildren<{
-  selector: string;
-  sectionId: string;
-  icon: ReactElement;
-  isSelected: boolean;
-  onClick: (selector: string, sectionId: string) => void;
-  className?: string;
-}>> = ({ selector, sectionId, icon, isSelected, onClick, className }) => {
+const Selector: FC<
+  React.PropsWithChildren<{
+    selector: string;
+    sectionId: string;
+    icon: ReactElement;
+    isSelected: boolean;
+    onClick: (selector: string, sectionId: string) => void;
+    className?: string;
+  }>
+> = ({ selector, sectionId, icon, isSelected, onClick, className }) => {
   const btnRef = useRef<HTMLButtonElement>(null);
 
   // see Element.scrollIntoViewIfNeeded()

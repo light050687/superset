@@ -50,27 +50,138 @@ export const STRIPPED_LAYERS = [
 // ─── Layer groups ───────────────────────────────────────────────────────────
 
 export const LAYER_GROUPS: LayerGroupDefinition[] = [
-  { id: 'medical', icon: '🏥', label: 'Медицина', on: true, layers: ['poi-hospital', 'landuse-hospital'] },
-  { id: 'education', icon: '🏫', label: 'Образование', on: true, layers: ['poi-school', 'landuse-school'] },
-  { id: 'shops', icon: '🛒', label: 'Магазины и кафе', on: true, layers: ['poi-shop', 'poi-food'] },
-  { id: 'transport', icon: '🚌', label: 'Транспорт', on: true, layers: ['poi-bus', 'poi-metro-entrance', 'poi-railway', 'transit-metro', 'transit-tram'] },
-  { id: 'tourism', icon: '🏨', label: 'Туризм и отели', on: true, layers: ['poi-tourism', 'poi-lodging'] },
-  { id: 'religion', icon: '⛪', label: 'Религия', on: true, layers: ['poi-worship'] },
-  { id: 'nature', icon: '🌳', label: 'Природа', on: true, layers: ['landcover-wood', 'landcover-grass', 'landcover-farm', 'landuse-park', 'park-fill'] },
-  { id: 'buildings', icon: '🏗️', label: 'Здания', on: true, layers: ['building', 'building-ln'] },
-  { id: 'roads', icon: '🛣️', label: 'Дороги', on: true, layers: ['road-trunk', 'road-pri', 'road-sec', 'road-tertiary', 'road-minor', 'road-service', 'road-path', 'road-surface-unpaved', 'road-casing', 'road-oneway', 'railway', 'aeroway-runway', 'aeroway-taxiway', 'lbl-road-major', 'lbl-road-sec', 'lbl-road-minor', 'lbl-transit'] },
-  { id: 'industry', icon: '🏭', label: 'Промзоны', on: true, layers: ['landuse-ind', 'landuse-military', 'landuse-stadium'] },
-  { id: 'housenumbers', icon: '🔢', label: 'Номера домов', on: false, layers: ['lbl-housenumber'] },
+  {
+    id: 'medical',
+    icon: '🏥',
+    label: 'Медицина',
+    on: true,
+    layers: ['poi-hospital', 'landuse-hospital'],
+  },
+  {
+    id: 'education',
+    icon: '🏫',
+    label: 'Образование',
+    on: true,
+    layers: ['poi-school', 'landuse-school'],
+  },
+  {
+    id: 'shops',
+    icon: '🛒',
+    label: 'Магазины и кафе',
+    on: true,
+    layers: ['poi-shop', 'poi-food'],
+  },
+  {
+    id: 'transport',
+    icon: '🚌',
+    label: 'Транспорт',
+    on: true,
+    layers: [
+      'poi-bus',
+      'poi-metro-entrance',
+      'poi-railway',
+      'transit-metro',
+      'transit-tram',
+    ],
+  },
+  {
+    id: 'tourism',
+    icon: '🏨',
+    label: 'Туризм и отели',
+    on: true,
+    layers: ['poi-tourism', 'poi-lodging'],
+  },
+  {
+    id: 'religion',
+    icon: '⛪',
+    label: 'Религия',
+    on: true,
+    layers: ['poi-worship'],
+  },
+  {
+    id: 'nature',
+    icon: '🌳',
+    label: 'Природа',
+    on: true,
+    layers: [
+      'landcover-wood',
+      'landcover-grass',
+      'landcover-farm',
+      'landuse-park',
+      'park-fill',
+    ],
+  },
+  {
+    id: 'buildings',
+    icon: '🏗️',
+    label: 'Здания',
+    on: true,
+    layers: ['building', 'building-ln'],
+  },
+  {
+    id: 'roads',
+    icon: '🛣️',
+    label: 'Дороги',
+    on: true,
+    layers: [
+      'road-trunk',
+      'road-pri',
+      'road-sec',
+      'road-tertiary',
+      'road-minor',
+      'road-service',
+      'road-path',
+      'road-surface-unpaved',
+      'road-casing',
+      'road-oneway',
+      'railway',
+      'aeroway-runway',
+      'aeroway-taxiway',
+      'lbl-road-major',
+      'lbl-road-sec',
+      'lbl-road-minor',
+      'lbl-transit',
+    ],
+  },
+  {
+    id: 'industry',
+    icon: '🏭',
+    label: 'Промзоны',
+    on: true,
+    layers: ['landuse-ind', 'landuse-military', 'landuse-stadium'],
+  },
+  {
+    id: 'housenumbers',
+    icon: '🔢',
+    label: 'Номера домов',
+    on: false,
+    layers: ['lbl-housenumber'],
+  },
 ];
 
 // ─── Color palettes ─────────────────────────────────────────────────────────
 
 export const PALETTES: Record<PaletteKey, Palette> = {
-  blue: { name: 'Синяя', colors: ['#E8F0FE', '#A8CCE8', '#5B9BD5', '#2B6CB0', '#1A3D6D'] },
-  green: { name: 'Зелёная', colors: ['#E8F8E8', '#8FD88F', '#4CAF50', '#2E7D32', '#1B5E20'] },
-  orange: { name: 'Оранжевая', colors: ['#FFF3E0', '#FFCC80', '#FF9800', '#E65100', '#BF360C'] },
-  red: { name: 'Красная', colors: ['#FFEBEE', '#EF9A9A', '#F44336', '#C62828', '#7F0000'] },
-  purple: { name: 'Фиолетовая', colors: ['#F3E5F5', '#CE93D8', '#9C27B0', '#6A1B9A', '#4A148C'] },
+  blue: {
+    name: 'Синяя',
+    colors: ['#E8F0FE', '#A8CCE8', '#5B9BD5', '#2B6CB0', '#1A3D6D'],
+  },
+  green: {
+    name: 'Зелёная',
+    colors: ['#E8F8E8', '#8FD88F', '#4CAF50', '#2E7D32', '#1B5E20'],
+  },
+  orange: {
+    name: 'Оранжевая',
+    colors: ['#FFF3E0', '#FFCC80', '#FF9800', '#E65100', '#BF360C'],
+  },
+  red: {
+    name: 'Красная',
+    colors: ['#FFEBEE', '#EF9A9A', '#F44336', '#C62828', '#7F0000'],
+  },
+  purple: {
+    name: 'Фиолетовая',
+    colors: ['#F3E5F5', '#CE93D8', '#9C27B0', '#6A1B9A', '#4A148C'],
+  },
 };
 
 // ─── Language expressions ───────────────────────────────────────────────────

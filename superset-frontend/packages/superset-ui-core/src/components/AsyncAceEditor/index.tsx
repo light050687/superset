@@ -100,7 +100,9 @@ export type AsyncAceEditorOptions = {
   defaultTheme?: AceEditorTheme;
   defaultTabSize?: number;
   fontFamily?: string;
-  placeholder?: ComponentType<React.PropsWithChildren<PlaceholderProps & Partial<IAceEditorProps>>> | null;
+  placeholder?: ComponentType<
+    React.PropsWithChildren<PlaceholderProps & Partial<IAceEditorProps>>
+  > | null;
 };
 
 /**

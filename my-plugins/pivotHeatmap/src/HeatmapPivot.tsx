@@ -266,17 +266,25 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
   const [tooltip, setTooltip] = useState<TooltipState>(INITIAL_TOOLTIP);
   const [profile, setProfile] = useState<ProfileState>(INITIAL_PROFILE);
 
-  // Theme (follow Superset body attribute if present)
+  /* Theme: следим за html[data-theme] (Superset 6 ставит туда, не на body).
+     Default 'light' — соответствует поведению Superset до явного переключения.
+     Реагируем только на конкретные значения 'light'/'dark', чтобы не упасть
+     в dark при отсутствии атрибута. */
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    if (typeof document === 'undefined') return 'dark';
-    return document.body.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    if (typeof document === 'undefined') return 'light';
+    const v = document.documentElement.getAttribute('data-theme');
+    return v === 'dark' ? 'dark' : 'light';
   });
   useEffect(() => {
-    const obs = new MutationObserver(() => {
-      const v = document.body.getAttribute('data-theme');
-      setTheme(v === 'light' ? 'light' : 'dark');
-    });
-    obs.observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
+    if (typeof document === 'undefined') return undefined;
+    const html = document.documentElement;
+    const read = (): void => {
+      const v = html.getAttribute('data-theme');
+      if (v === 'dark' || v === 'light') setTheme(v);
+    };
+    read();
+    const obs = new MutationObserver(read);
+    obs.observe(html, { attributes: true, attributeFilter: ['data-theme'] });
     return () => obs.disconnect();
   }, []);
 
@@ -872,11 +880,9 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
                       onMouseLeave={onHeaderLeave}
                       onMouseMove={onHeaderMove}
                       tabIndex={0}
-                      title={
-                        wasTruncated
-                          ? `${col.name} — клик: сортировка, дв. клик: фильтр, ⇧ клик: сравнить`
-                          : 'Клик — сортировка · дв. клик — фильтр · ⇧ клик — сравнить'
-                      }
+                      /* Native title убран — дублирует наш custom tooltip с
+                         данными. Full name на truncated header читается в
+                         основном tooltip при hover на ячейку. */
                       aria-label={col.name}
                     >
                       {shortLabel}
@@ -906,11 +912,6 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
                           onMouseLeave={onHeaderLeave}
                           onMouseMove={onHeaderMove}
                           tabIndex={0}
-                          title={
-                            rowTruncated
-                              ? `${row.name} — клик: фильтр, ⇧: сравнить`
-                              : 'Клик — фильтр · ⇧ — сравнить'
-                          }
                           aria-label={row.name}
                         >
                           {shortRowLabel}

@@ -28,11 +28,9 @@ interface DuplicateDatasetModalProps {
   onDuplicate: (newDatasetName: string) => void;
 }
 
-const DuplicateDatasetModal: FunctionComponent<React.PropsWithChildren<DuplicateDatasetModalProps>> = ({
-  dataset,
-  onHide,
-  onDuplicate,
-}) => {
+const DuplicateDatasetModal: FunctionComponent<
+  React.PropsWithChildren<DuplicateDatasetModalProps>
+> = ({ dataset, onHide, onDuplicate }) => {
   const [show, setShow] = useState<boolean>(false);
   const [disableSave, setDisableSave] = useState<boolean>(false);
   const [newDuplicateDatasetName, setNewDuplicateDatasetName] =

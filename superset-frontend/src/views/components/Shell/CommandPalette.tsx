@@ -173,8 +173,7 @@ const Row = styled.div<{ $selected: boolean; $accent?: string }>`
   font-size: var(--fs-interactive);
   color: ${({ $accent }) => $accent ?? DS2_VARS.g700};
   cursor: pointer;
-  background: ${({ $selected }) =>
-    $selected ? DS2_VARS.g100 : 'transparent'};
+  background: ${({ $selected }) => ($selected ? DS2_VARS.g100 : 'transparent')};
   transition: background 0.08s ${DS2_VARS.ease};
 
   &:hover {
@@ -230,9 +229,7 @@ function detectQuestion(text: string): boolean {
   return /[?]|как |сколько |покажи |построй |создай |найди /i.test(text);
 }
 
-async function searchApi(
-  query: string,
-): Promise<{
+async function searchApi(query: string): Promise<{
   dashboards: PaletteRow[];
   charts: PaletteRow[];
   datasets: PaletteRow[];
@@ -259,9 +256,7 @@ async function searchApi(
       }),
     ]);
 
-    const extract = <T,>(
-      res: PromiseSettledResult<{ json: unknown }>,
-    ): T[] => {
+    const extract = <T,>(res: PromiseSettledResult<{ json: unknown }>): T[] => {
       if (res.status !== 'fulfilled') return [];
       const body = res.value.json as { result?: T[] };
       return body.result ?? [];
@@ -287,7 +282,9 @@ async function searchApi(
       datasets: extract<DsRow>(dsRes).map(r => ({
         key: `ds-${r.id}`,
         label: r.table_name,
-        url: r.explore_url ?? `/explore/?datasource_id=${r.id}&datasource_type=table`,
+        url:
+          r.explore_url ??
+          `/explore/?datasource_id=${r.id}&datasource_type=table`,
         kind: 'dataset',
       })),
     };
@@ -346,11 +343,9 @@ interface GroupedRows {
   rows: PaletteRow[];
 }
 
-export const CommandPalette: FC<React.PropsWithChildren<CommandPaletteProps>> = ({
-  open,
-  onClose,
-  onAskAi,
-}) => {
+export const CommandPalette: FC<
+  React.PropsWithChildren<CommandPaletteProps>
+> = ({ open, onClose, onAskAi }) => {
   const history = useHistory();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
@@ -411,8 +406,7 @@ export const CommandPalette: FC<React.PropsWithChildren<CommandPaletteProps>> = 
     if (dashboards.length)
       groups.push({ label: t('Дашборды'), rows: dashboards });
     if (charts.length) groups.push({ label: t('Чарты'), rows: charts });
-    if (datasets.length)
-      groups.push({ label: t('Датасеты'), rows: datasets });
+    if (datasets.length) groups.push({ label: t('Датасеты'), rows: datasets });
     if (groups.length === 0 && !onAskAi) {
       groups.push({
         label: t('Ничего не найдено'),

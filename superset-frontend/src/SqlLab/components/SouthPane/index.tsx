@@ -133,7 +133,10 @@ const SouthPane = ({
     dispatch(setActiveSouthPaneTab(id));
   };
   const removeTable = useCallback(
-    (key: React.MouseEvent | React.KeyboardEvent | string, action: 'add' | 'remove') => {
+    (
+      key: React.MouseEvent | React.KeyboardEvent | string,
+      action: 'add' | 'remove',
+    ) => {
       if (action === 'remove' && typeof key === 'string') {
         const table = pinnedTables.find(
           ({ dbId, catalog, schema, name }) =>

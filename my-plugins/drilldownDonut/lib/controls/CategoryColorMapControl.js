@@ -3,6 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = require("react");
 const core_1 = require("@superset-ui/core");
+/* @superset-ui/core/components subpath не имеет TypeScript types, но
+   resolves в runtime через Superset webpack aliases. Без @ts-ignore
+   tsc выбрасывает TS2307. Подмена на 'antd' ломает runtime потому что
+   antd не зарегистрирован как dep плагина. */
+// @ts-ignore — subpath resolves в runtime
 const components_1 = require("@superset-ui/core/components");
 const types_1 = require("../types");
 const themeTokens_1 = require("../themeTokens");

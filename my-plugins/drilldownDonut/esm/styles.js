@@ -13,9 +13,13 @@ import { LIGHT_TOKENS as L, DARK_TOKENS as D, FONTS } from './themeTokens';
 
    Каскад: Card 0s → ChartWrap 0.2s → Breadcrumb 0.3s → Controls 0.4s
    → Footer 0.6s → LegendChip 0.7s+stagger → Hint 0.85s. */
+/* Только opacity — transform убран намеренно: Superset dashboard drag-drop
+   управляет transform на chart-cell ancestor'е. Конфликт двух transform
+   приводил к тому что после перестановки чарт оставался смещённым/невидимым
+   до hard refresh. */
 const cardInKf = keyframes `
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 `;
 const breadcrumbInKf = keyframes `
   from { opacity: 0; transform: translateX(-8px); }
@@ -63,10 +67,11 @@ export const KEYFRAMES_CSS = `
   to{opacity:1}
 }
 @keyframes sd-card-in{
-  /* DS 2.0: первое появление карточки — fade + slight rise (4px),
-     0.45s — заметно, но не раздражает. */
-  from{opacity:0;transform:translateY(6px)}
-  to{opacity:1;transform:translateY(0)}
+  /* Только opacity — transform убран намеренно: Superset dashboard drag-drop
+     управляет transform на chart-cell ancestor'е. Конфликт двух transform
+     приводил к тому что после перестановки чарт оставался смещённым. */
+  from{opacity:0}
+  to{opacity:1}
 }
 `;
 /* ── Root container с токенами в обеих темах ── */
@@ -156,11 +161,11 @@ export const Card = styled.div `
   height: 100%;
   width: 100%;
   background: var(--s);
-  /* DS 2.0: рамка и тень убраны на ВСЕХ состояниях. !important чтобы
-     перебить outer Superset chart-holder hover (он добавлял outline и
-     box-shadow при наведении). В light/dark одинаковое поведение,
+  /* DS 2.0: 1px рамка как у остальных my-plugins. !important чтобы перебить
+     outer Superset chart-holder hover (он добавлял outline и box-shadow при
+     наведении и мог убрать наш border). В light/dark одинаковое поведение,
      только background меняется. */
-  border: 1px solid transparent !important;
+  border: 1px solid var(--g200) !important;
   border-radius: 10px;
   /* Mobile-first (ADR-0001): base xs, расширение на больших breakpoints. */
   padding: 12px 14px;

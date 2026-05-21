@@ -59,11 +59,14 @@ const FilterKanbanCard: FC<FilterKanbanCardProps> = ({
   filterId,
   children,
 }) => {
-  const [{ isDragging }, dragRef] = useDrag(() => ({
-    type: FILTER_CARD_DND_TYPE,
-    item: { filterId },
-    collect: monitor => ({ isDragging: monitor.isDragging() }),
-  }), [filterId]);
+  const [{ isDragging }, dragRef] = useDrag(
+    () => ({
+      type: FILTER_CARD_DND_TYPE,
+      item: { filterId },
+      collect: monitor => ({ isDragging: monitor.isDragging() }),
+    }),
+    [filterId],
+  );
 
   return (
     <Card ref={dragRef as any} $dragging={isDragging}>

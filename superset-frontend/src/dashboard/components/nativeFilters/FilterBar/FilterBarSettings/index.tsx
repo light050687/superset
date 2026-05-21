@@ -60,8 +60,7 @@ const FilterBarSettings = () => {
     typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT,
   );
   useEffect(() => {
-    const onResize = () =>
-      setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+    const onResize = () => setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);

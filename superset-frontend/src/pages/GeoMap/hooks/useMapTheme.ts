@@ -9,11 +9,7 @@ import { loadStyle } from '../utils/styleLoader';
  */
 export function useMapTheme() {
   const swapTheme = useCallback(
-    async (
-      map: MaplibreMap,
-      newTheme: ThemeMode,
-      onStyleReady: () => void,
-    ) => {
+    async (map: MaplibreMap, newTheme: ThemeMode, onStyleReady: () => void) => {
       const center = map.getCenter();
       const zoom = map.getZoom();
       const style = await loadStyle(newTheme);

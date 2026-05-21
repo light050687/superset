@@ -43,15 +43,16 @@ const PY_BLOCK_RE =
  *
  * При любой ошибке парсинга возвращает null.
  */
-function pythonArgsToJson(
-  argsString: string,
-): Record<string, unknown> | null {
+function pythonArgsToJson(argsString: string): Record<string, unknown> | null {
   try {
     let s = argsString.trim();
     if (s === '') return {};
 
     // Python single quotes → JSON double (с базовой защитой от вложенности).
-    s = s.replace(/'((?:[^'\\]|\\.)*?)'/g, (_, inner) => `"${inner.replace(/"/g, '\\"')}"`);
+    s = s.replace(
+      /'((?:[^'\\]|\\.)*?)'/g,
+      (_, inner) => `"${inner.replace(/"/g, '\\"')}"`,
+    );
 
     // True/False/None → true/false/null.
     s = s
@@ -85,7 +86,9 @@ export function parseSsActions(md: string): SsAction[] {
   // eslint-disable-next-line no-cond-assign
   while ((m = PY_BLOCK_RE.exec(md))) {
     const [, fnName, kindRaw, args] = m;
-    const kind = (kindRaw === 'dashboard' ? 'dashboard' : 'chart') as SsActionKind;
+    const kind = (
+      kindRaw === 'dashboard' ? 'dashboard' : 'chart'
+    ) as SsActionKind;
     const payload = pythonArgsToJson(args);
     out.push({
       kind,
@@ -101,5 +104,8 @@ export function parseSsActions(md: string): SsAction[] {
  * не дублировал их между code-block'ами и actionable buttons.
  */
 export function stripSsActionsFromMarkdown(md: string): string {
-  return md.replace(PY_BLOCK_RE, '').replace(/\n{3,}/g, '\n\n').trim();
+  return md
+    .replace(PY_BLOCK_RE, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }

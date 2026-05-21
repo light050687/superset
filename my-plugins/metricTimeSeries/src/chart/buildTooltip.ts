@@ -16,6 +16,7 @@ interface TooltipBuildParams {
   gran: Granularity;
   buckets: Bucket[];
   tokens: TokenMap;
+  isDark: boolean;
   fontText: string;
   fontMono: string;
   valueFormatter: ValueFormatter;
@@ -34,6 +35,8 @@ interface TooltipBuildParams {
  */
 export function buildTooltipFormatter(params: TooltipBuildParams) {
   const { mode, gran, buckets, tokens, fontText, fontMono, valueFormatter, seriesLabels, totalLabel } = params;
+  /* Tooltip того же тона что Card surface (НЕ инверт). Text — tokens.ink. */
+  const ttText = tokens.ink;
 
   return (rawParams: EChartsTooltipParam | EChartsTooltipParam[]): string => {
     const list = Array.isArray(rawParams) ? rawParams : [rawParams];
@@ -53,7 +56,9 @@ export function buildTooltipFormatter(params: TooltipBuildParams) {
       title = `${b.day} ${b.monthShort} ${b.year}`;
     }
 
-    let html = `<div style="font:600 11px ${fontText};color:${tokens.s};margin-bottom:4px">${title}</div>`;
+    /* DS 2.1 §08: header 11px Manrope/600, строки 12px Mono.
+       Header имеет border-bottom + padding-bottom 8px (визуально отделить). */
+    let html = `<div style="font:700 13px ${fontText};color:${ttText};margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(128,128,128,0.25);line-height:1.3">${title}</div>`;
 
     if (mode === 'line') {
       const byId = new Map<string, EChartsTooltipParam>();
@@ -70,7 +75,7 @@ export function buildTooltipFormatter(params: TooltipBuildParams) {
         if (!p) return;
         const dot = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${p.color};margin-right:6px;vertical-align:middle"></span>`;
         const val = valueFormatter(p.value ?? null);
-        html += `<div style="font:500 11px ${fontMono};color:${tokens.s};line-height:1.55;display:flex;justify-content:space-between;gap:14px">
+        html += `<div style="font:500 12px ${fontMono};color:${ttText};line-height:1.5;display:flex;justify-content:space-between;gap:12px">
           <span>${dot}${label}</span>
           <span style="font-variant-numeric:tabular-nums;font-weight:600">${val}</span>
         </div>`;
@@ -90,13 +95,13 @@ export function buildTooltipFormatter(params: TooltipBuildParams) {
         total += p.value;
         hasAny = true;
       }
-      html += `<div style="font:500 11px ${fontMono};color:${tokens.s};line-height:1.55;display:flex;justify-content:space-between;gap:14px">
+      html += `<div style="font:500 12px ${fontMono};color:${ttText};line-height:1.5;display:flex;justify-content:space-between;gap:12px">
         <span>${dot}${p.seriesName ?? ''}</span>
         <span style="font-variant-numeric:tabular-nums;font-weight:600">${val}</span>
       </div>`;
     });
     if (hasAny) {
-      html += `<div style="margin-top:5px;padding-top:5px;border-top:1px solid ${toRgba(tokens.g400, 0.4)};font:600 11px ${fontMono};color:${tokens.s};display:flex;justify-content:space-between;gap:14px">
+      html += `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(128,128,128,0.25);font:600 12px ${fontMono};color:${ttText};display:flex;justify-content:space-between;gap:12px">
         <span>${totalLabel}</span>
         <span style="font-variant-numeric:tabular-nums;font-weight:700">${valueFormatter(total)}</span>
       </div>`;
@@ -123,7 +128,7 @@ export function buildTooltipFormatter(params: TooltipBuildParams) {
       } else {
         mark = `<span style="display:inline-block;width:14px;margin-right:6px;vertical-align:middle"><svg width="14" height="6"><line x1="0" y1="3" x2="14" y2="3" stroke="${tokens.cViolet}" stroke-width="1.6" stroke-dasharray="6 5"/></svg></span>`;
       }
-      html += `<div style="font:500 11px ${fontMono};color:${toRgba(tokens.s, 0.75)};line-height:1.55;display:flex;justify-content:space-between;gap:14px">
+      html += `<div style="font:500 12px ${fontMono};color:${toRgba(ttText, 0.75)};line-height:1.5;display:flex;justify-content:space-between;gap:12px">
         <span>${mark}${label}</span>
         <span style="font-variant-numeric:tabular-nums;font-weight:500">${valueFormatter(p.value)}</span>
       </div>`;

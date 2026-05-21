@@ -52,7 +52,10 @@ import {
   Checkbox,
   type CronError,
 } from '@superset-ui/core/components';
-import { Radio, type RadioChangeEvent } from '@superset-ui/core/components/Radio';
+import {
+  Radio,
+  type RadioChangeEvent,
+} from '@superset-ui/core/components/Radio';
 import { Select as AntdSelect } from 'antd';
 import TimezoneSelector from '@superset-ui/core/components/TimezoneSelector';
 import { Typography } from '@superset-ui/core/components/Typography';
@@ -799,7 +802,9 @@ export const ReportDrawer: FC<ReportDrawerProps> = ({
                 )}
 
                 <div>
-                  <FieldLabel>{t('Сохранить текущий список как группу')}</FieldLabel>
+                  <FieldLabel>
+                    {t('Сохранить текущий список как группу')}
+                  </FieldLabel>
                   <GroupActionsRow>
                     <Input
                       style={{ maxWidth: 320 }}

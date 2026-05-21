@@ -43,7 +43,8 @@ import CrossFiltersVertical from './CrossFilters/Vertical';
 import PagesPanel from './PagesPanel';
 
 const BarWrapper = styled.div<{ width: number; isMobile?: boolean }>`
-  width: ${({ theme, isMobile }) => (isMobile ? '100%' : `${theme.sizeUnit * 8}px`)};
+  width: ${({ theme, isMobile }) =>
+    isMobile ? '100%' : `${theme.sizeUnit * 8}px`};
 
   & .ant-tabs-top > .ant-tabs-nav {
     margin: 0;
@@ -284,12 +285,12 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
             <div
               role="button"
               tabIndex={0}
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation();
                 setPagesOpen(false);
                 openFiltersBar();
               }}
-              onKeyDown={(e) => e.key === 'Enter' && openFiltersBar()}
+              onKeyDown={e => e.key === 'Enter' && openFiltersBar()}
               css={{
                 cursor: 'pointer',
                 marginBottom: `${theme.sizeUnit * 3}px`,
@@ -308,12 +309,12 @@ const VerticalFilterBar: FC<React.PropsWithChildren<VerticalBarProps>> = ({
               <div
                 role="button"
                 tabIndex={0}
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation();
                   setPagesOpen(true);
                   toggleFiltersBar(true);
                 }}
-                onKeyDown={(e) => {
+                onKeyDown={e => {
                   if (e.key === 'Enter') {
                     setPagesOpen(true);
                     toggleFiltersBar(true);

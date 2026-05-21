@@ -134,9 +134,10 @@ const ThinSkeleton = styled(Skeleton)`
 
 const paragraphConfig = { rows: 1, width: 150 };
 
-const AnchorLink: FC<React.PropsWithChildren<LinkProps>> = ({ to, children }) => (
-  <a href={to}>{children}</a>
-);
+const AnchorLink: FC<React.PropsWithChildren<LinkProps>> = ({
+  to,
+  children,
+}) => <a href={to}>{children}</a>;
 
 function ListViewCard({
   title,

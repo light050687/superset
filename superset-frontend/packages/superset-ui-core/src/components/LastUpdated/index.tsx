@@ -41,10 +41,9 @@ const TextStyles = styled.span`
   color: ${({ theme }) => theme.colorText};
 `;
 
-export const LastUpdated: FunctionComponent<React.PropsWithChildren<LastUpdatedProps>> = ({
-  updatedAt,
-  update,
-}) => {
+export const LastUpdated: FunctionComponent<
+  React.PropsWithChildren<LastUpdatedProps>
+> = ({ updatedAt, update }) => {
   const theme = useTheme();
   const [timeSince, setTimeSince] = useState<dayjs.Dayjs>(
     extendedDayjs(updatedAt),

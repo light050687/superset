@@ -64,12 +64,7 @@ interface CatalogDeleteModalProps {
 }
 
 const DangerIconSvg = (): JSX.Element => (
-  <svg
-    viewBox="0 0 20 20"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.6}
-  >
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.6}>
     <circle cx="10" cy="10" r="8.2" />
     <path d="M10 6v5M10 13.5v.5" />
   </svg>
@@ -122,8 +117,7 @@ export const CatalogDeleteModal: FC<
       if (itemCount === 0) {
         return (
           <>
-            {t('Папка')} <strong>«{folderName}»</strong>{' '}
-            {t('будет удалена.')}
+            {t('Папка')} <strong>«{folderName}»</strong> {t('будет удалена.')}
           </>
         );
       }
@@ -144,8 +138,7 @@ export const CatalogDeleteModal: FC<
     }
     return (
       <>
-        {t('Всё содержимое сохранится в папке')}{' '}
-        <strong>«{targetName}»</strong>{' '}
+        {t('Всё содержимое сохранится в папке')} <strong>«{targetName}»</strong>{' '}
         {t('— подпапки и объекты переедут вместе.')}
       </>
     );
@@ -156,21 +149,14 @@ export const CatalogDeleteModal: FC<
   if (hasSubfolders) {
     metaLines.push(`${t('Подпапок (прямых):')} ${subfolderCount}`);
   }
-  if (
-    totalDescendantFolders > subfolderCount &&
-    totalDescendantFolders > 0
-  ) {
-    metaLines.push(
-      `${t('Всего вложенных папок:')} ${totalDescendantFolders}`,
-    );
+  if (totalDescendantFolders > subfolderCount && totalDescendantFolders > 0) {
+    metaLines.push(`${t('Всего вложенных папок:')} ${totalDescendantFolders}`);
   }
   if (itemCount > 0) {
     metaLines.push(`${t('Объектов в папке:')} ${itemCount}`);
   }
   if (totalDescendantItems > 0) {
-    metaLines.push(
-      `${t('Объектов в подпапках:')} ${totalDescendantItems}`,
-    );
+    metaLines.push(`${t('Объектов в подпапках:')} ${totalDescendantItems}`);
   }
 
   return (
@@ -202,9 +188,7 @@ export const CatalogDeleteModal: FC<
             aria-describedby="catalog-delete-cascade-hint"
           />
           <span id="catalog-delete-cascade-hint">
-            {t(
-              'Оставить внутри только объекты (удалить структуру подпапок)',
-            )}
+            {t('Оставить внутри только объекты (удалить структуру подпапок)')}
           </span>
         </ModalCheck>
       ) : null}

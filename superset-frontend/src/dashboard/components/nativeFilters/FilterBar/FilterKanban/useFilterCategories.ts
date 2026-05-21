@@ -148,7 +148,7 @@ export function useFilterCategories(
   const renameSpecial = useCallback(
     (kind: 'uncategorized' | 'presets', name: string): void => {
       const trimmed = name.trim();
-      const value = trimmed ? trimmed : null;
+      const value = trimmed || null;
       if (kind === 'uncategorized') setUncategorizedName(value);
       else setPresetsName(value);
     },

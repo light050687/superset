@@ -84,13 +84,9 @@ function buildExtraJsonObject(
   });
 }
 
-const DatasourceModal: FunctionComponent<React.PropsWithChildren<DatasourceModalProps>> = ({
-  addSuccessToast,
-  datasource,
-  onDatasourceSave,
-  onHide,
-  show,
-}) => {
+const DatasourceModal: FunctionComponent<
+  React.PropsWithChildren<DatasourceModalProps>
+> = ({ addSuccessToast, datasource, onDatasourceSave, onHide, show }) => {
   const theme = useTheme();
   const [currentDatasource, setCurrentDatasource] = useState(datasource);
   const [syncColumns, setSyncColumns] = useState(false);

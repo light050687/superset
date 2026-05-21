@@ -30,13 +30,7 @@
  *  DndBody — пустая тело колонки, только drop-target (для случаев
  *            когда user дропает на пустую область).
  */
-import {
-  type FC,
-  type ReactNode,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { type FC, type ReactNode, useEffect, useRef, useState } from 'react';
 import {
   type DragSourceMonitor,
   type DropTargetMonitor,
@@ -177,7 +171,14 @@ export const DndRow: FC<DndRowProps> = ({
        payload меняется (например, folder.parent_id изменился после
        move). Без этого dragPayload в item'е остался бы навсегда
        тот, каким был при первом mount'е DndRow. */
-    [dragPayload?.kind, dragPayload?.kind === 'folder' ? dragPayload.folderId : null, dragPayload?.kind === 'folder' ? dragPayload.parentId : null, dragPayload?.kind === 'folder' ? dragPayload.level : null, dragPayload?.kind === 'item' ? dragPayload.objectId : null, dragPayload?.kind === 'item' ? dragPayload.fromFolderId : null],
+    [
+      dragPayload?.kind,
+      dragPayload?.kind === 'folder' ? dragPayload.folderId : null,
+      dragPayload?.kind === 'folder' ? dragPayload.parentId : null,
+      dragPayload?.kind === 'folder' ? dragPayload.level : null,
+      dragPayload?.kind === 'item' ? dragPayload.objectId : null,
+      dragPayload?.kind === 'item' ? dragPayload.fromFolderId : null,
+    ],
   );
 
   /* dropZone — одновременно state (для re-render визуальной подсветки)

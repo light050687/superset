@@ -34,7 +34,11 @@ export type Props = {
 
 const DEFAULT_CHART_ERROR = 'Data error';
 
-export const ChartErrorMessage: FC<React.PropsWithChildren<Props>> = ({ chartId, error, ...props }) => {
+export const ChartErrorMessage: FC<React.PropsWithChildren<Props>> = ({
+  chartId,
+  error,
+  ...props
+}) => {
   // fetches the chart owners and adds them to the extra data of the error message
   const { result: owners } = useChartOwnerNames(chartId);
 

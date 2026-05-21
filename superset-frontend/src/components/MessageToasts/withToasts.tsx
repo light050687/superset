@@ -44,7 +44,9 @@ export const toasters = {
 };
 
 // To work properly the redux state must have a `messageToasts` subtree
-export default function withToasts(BaseComponent: ComponentType<React.PropsWithChildren<any>>) {
+export default function withToasts(
+  BaseComponent: ComponentType<React.PropsWithChildren<any>>,
+) {
   return connect(null, dispatch => bindActionCreators(toasters, dispatch))(
     BaseComponent,
   ) as any;

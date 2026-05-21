@@ -163,14 +163,13 @@ exports.KpiCardRoot = core_1.styled.div `
 `;
 /* ── Card ── */
 exports.Card = core_1.styled.div `
-  /* DS v2.0: визуал заполняет ResizableContainer (синяя рамка в edit-mode).
-     Card без своего border — outer outline = единственная рамка.
-     Background var(--s) визуально отделяет KPI от bg-фона дашборда. */
+  /* DS v2.0: визуал заполняет ResizableContainer. Background var(--s) +
+     1px g200 border — единый стиль с остальными my-plugins. */
   background: var(--s);
-  /* DS 2.0: рамка и тень убраны на ВСЕХ состояниях. !important чтобы
-     перебить outer Superset chart-holder hover (он добавлял outline и
-     box-shadow при наведении). */
-  border: 1px solid transparent !important;
+  /* DS 2.0: 1px рамка как у остальных my-plugins. !important чтобы перебить
+     outer Superset chart-holder hover (он добавлял outline и box-shadow при
+     наведении и мог убрать наш border). */
+  border: 1px solid var(--g200) !important;
   border-radius: 10px;
   padding: 16px 20px;
   overflow: hidden;

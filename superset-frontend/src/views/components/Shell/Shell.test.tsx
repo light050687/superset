@@ -72,7 +72,9 @@ describe('<Rail>', () => {
   it('CentralPill Enter с текстом вызывает onOpenAi(query, meta)', () => {
     const onOpenAi = jest.fn();
     renderRail({ onOpenAi });
-    const input = screen.getByLabelText('Запрос ИИ или поиск') as HTMLInputElement;
+    const input = screen.getByLabelText(
+      'Запрос ИИ или поиск',
+    ) as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'Какая маржа?' } });
     fireEvent.submit(input.closest('form') as HTMLFormElement);
     expect(onOpenAi).toHaveBeenCalledTimes(1);
@@ -88,7 +90,9 @@ describe('<Rail>', () => {
   it('CentralPill Enter с пустым текстом НЕ вызывает onOpenAi', () => {
     const onOpenAi = jest.fn();
     renderRail({ onOpenAi });
-    const input = screen.getByLabelText('Запрос ИИ или поиск') as HTMLInputElement;
+    const input = screen.getByLabelText(
+      'Запрос ИИ или поиск',
+    ) as HTMLInputElement;
     fireEvent.submit(input.closest('form') as HTMLFormElement);
     expect(onOpenAi).not.toHaveBeenCalled();
   });
@@ -119,7 +123,9 @@ describe('<Drawer>', () => {
       </ShellProvider>,
       { useRouter: true, useTheme: true },
     );
-    expect(screen.queryByText('Содержимое появится в следующем этапе.')).toBeNull();
+    expect(
+      screen.queryByText('Содержимое появится в следующем этапе.'),
+    ).not.toBeInTheDocument();
   });
 
   it('открывается при toggleDrawer через ShellContext', () => {
@@ -134,7 +140,7 @@ describe('<Drawer>', () => {
     expect(
       screen.getByText('Содержимое появится в следующем этапе.'),
     ).toBeInTheDocument();
-    expect(container.textContent).toContain('Каталог');
+    expect(container).toHaveTextContent(/Каталог/);
   });
 
   it('закрывается при повторном клике по той же кнопке rail', () => {
@@ -150,7 +156,9 @@ describe('<Drawer>', () => {
       screen.getByText('Содержимое появится в следующем этапе.'),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText('Каталог'));
-    expect(screen.queryByText('Содержимое появится в следующем этапе.')).toBeNull();
+    expect(
+      screen.queryByText('Содержимое появится в следующем этапе.'),
+    ).not.toBeInTheDocument();
   });
 
   it('Escape закрывает открытый drawer', () => {
@@ -166,7 +174,9 @@ describe('<Drawer>', () => {
       screen.getByText('Содержимое появится в следующем этапе.'),
     ).toBeInTheDocument();
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(screen.queryByText('Содержимое появится в следующем этапе.')).toBeNull();
+    expect(
+      screen.queryByText('Содержимое появится в следующем этапе.'),
+    ).not.toBeInTheDocument();
   });
 
   it('рендерит переданный content вместо placeholder', () => {
@@ -198,7 +208,9 @@ describe('<Shell> embedded-режим', () => {
       { useRouter: true, useTheme: true },
     );
     expect(screen.getByText('Дашборд без shell')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Главная навигация')).toBeNull();
+    expect(
+      screen.queryByLabelText('Главная навигация'),
+    ).not.toBeInTheDocument();
   });
 
   it('при hideNav=false рендерит Rail + children', () => {

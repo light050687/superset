@@ -81,7 +81,6 @@ import { PivotTableChartPlugin as PivotTableChartPluginV2 } from '@superset-ui/p
 import { HandlebarsChartPlugin } from '@superset-ui/plugin-chart-handlebars';
 import { FilterPlugins } from 'src/constants';
 import AgGridTableChartPlugin from '@superset-ui/plugin-chart-ag-grid-table';
-import TimeTableChartPlugin from '../TimeTable';
 import { SupersetPluginChartScorecard } from 'superset-plugin-chart-scorecard';
 import { SupersetPluginChartParetoAnalysis } from 'superset-plugin-chart-pareto-analysis';
 import { SupersetPluginChartDrilldownDonut } from 'superset-plugin-chart-drilldown-donut';
@@ -92,6 +91,7 @@ import { SupersetPluginChartPivotHeatmap } from 'superset-plugin-chart-pivot-hea
 import { SupersetPluginChartRiskMatrix } from 'superset-plugin-chart-risk-matrix';
 import { SupersetPluginChartMetricTimeSeries } from 'superset-plugin-chart-metric-time-series';
 import { SupersetPluginChartLeaderboard } from 'superset-plugin-chart-leaderboard';
+import TimeTableChartPlugin from '../TimeTable';
 
 export default class MainPreset extends Preset {
   constructor() {
@@ -118,7 +118,9 @@ export default class MainPreset extends Preset {
           key: VizType.BigNumberTotal,
         }),
         new SupersetPluginChartScorecard().configure({ key: 'ext-kpi-card' }),
-        new SupersetPluginChartParetoAnalysis().configure({ key: 'ext-pareto-card' }),
+        new SupersetPluginChartParetoAnalysis().configure({
+          key: 'ext-pareto-card',
+        }),
         new SupersetPluginChartDrilldownDonut().configure({
           key: 'ext-structure-donut',
         }),

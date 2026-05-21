@@ -100,7 +100,9 @@ const selectDashboardContextForExplore = createSelector(
   },
 );
 
-const SyncDashboardState: FC<React.PropsWithChildren<Props>> = ({ dashboardPageId }) => {
+const SyncDashboardState: FC<React.PropsWithChildren<Props>> = ({
+  dashboardPageId,
+}) => {
   const dashboardContextForExplore = useSelector<
     RootState,
     DashboardContextForExplore

@@ -154,11 +154,7 @@ const Header = styled.div`
   padding: 14px 16px 12px;
   flex-shrink: 0;
   border-bottom: 1px solid ${DS2_VARS.g100};
-  background: linear-gradient(
-    135deg,
-    rgba(59, 139, 217, 0.08),
-    transparent
-  );
+  background: linear-gradient(135deg, rgba(59, 139, 217, 0.08), transparent);
 `;
 
 const HeaderLeft = styled.div`
@@ -379,7 +375,7 @@ const TodayDot = styled.button`
   transition: all 0.12s ${DS2_VARS.ease};
 
   &:hover {
-    background: rgba(59, 139, 217, 0.20);
+    background: rgba(59, 139, 217, 0.2);
     border-color: ${DS2_VARS.cSky};
   }
 
@@ -487,17 +483,17 @@ const Cell = styled.button<{
     $isDragOver
       ? 'rgba(220, 38, 38, 0.10)'
       : $isSelected
-      ? 'rgba(59, 139, 217, 0.10)'
-      : 'transparent'};
+        ? 'rgba(59, 139, 217, 0.10)'
+        : 'transparent'};
   border: 1px solid
     ${({ $isSelected, $isToday, $isDragOver }) =>
       $isDragOver
         ? DS2_VARS.dn
         : $isSelected
-        ? DS2_VARS.cSky
-        : $isToday
-        ? DS2_VARS.cSky
-        : 'transparent'};
+          ? DS2_VARS.cSky
+          : $isToday
+            ? DS2_VARS.cSky
+            : 'transparent'};
   border-radius: 6px;
   padding: 4px 6px;
   cursor: pointer;
@@ -507,12 +503,13 @@ const Cell = styled.button<{
     !$isCurrentMonth
       ? DS2_VARS.g400
       : $isWeekend
-      ? DS2_VARS.g500
-      : DS2_VARS.ink};
+        ? DS2_VARS.g500
+        : DS2_VARS.ink};
   opacity: ${({ $isCurrentMonth }) => ($isCurrentMonth ? 1 : 0.45)};
   overflow: hidden;
-  transition: background 0.1s ${DS2_VARS.ease}, border-color 0.1s
-    ${DS2_VARS.ease};
+  transition:
+    background 0.1s ${DS2_VARS.ease},
+    border-color 0.1s ${DS2_VARS.ease};
 
   &:hover {
     background: ${({ $isSelected }) =>
@@ -520,7 +517,10 @@ const Cell = styled.button<{
   }
 `;
 
-const DayNumber = styled.span<{ $isToday?: boolean; $isCurrentMonth?: boolean }>`
+const DayNumber = styled.span<{
+  $isToday?: boolean;
+  $isCurrentMonth?: boolean;
+}>`
   font-size: var(--fs-meta);
   font-weight: ${({ $isToday }) => ($isToday ? 700 : 500)};
   color: ${({ $isToday, $isCurrentMonth }) =>
@@ -850,7 +850,10 @@ const WeekStickyHead = styled.div`
   -webkit-backdrop-filter: ${DS2_VARS.dropdownFilter};
 `;
 
-const WeekDayHeadCell = styled.button<{ $isToday?: boolean; $isSelected?: boolean }>`
+const WeekDayHeadCell = styled.button<{
+  $isToday?: boolean;
+  $isSelected?: boolean;
+}>`
   background: transparent;
   border: none;
   padding: 8px 6px;
@@ -931,7 +934,11 @@ const HourSlot = styled.div`
 `;
 
 /* Event-блок внутри дня week/day view. Положение и высота — по времени. */
-const TimeEventBlock = styled.div<{ $color: string; $top: number; $height: number }>`
+const TimeEventBlock = styled.div<{
+  $color: string;
+  $top: number;
+  $height: number;
+}>`
   position: absolute;
   left: 4px;
   right: 4px;
@@ -1013,10 +1020,9 @@ const DeleteBtnFloat = styled.button`
 
 /* ─── Icons ─── */
 
-const IconChevron: FC<React.PropsWithChildren<{ dir: 'left' | 'right' | 'down'; size?: number }>> = ({
-  dir,
-  size = 12,
-}) => (
+const IconChevron: FC<
+  React.PropsWithChildren<{ dir: 'left' | 'right' | 'down'; size?: number }>
+> = ({ dir, size = 12 }) => (
   <svg
     width={size}
     height={size}
@@ -1114,12 +1120,14 @@ function dateKey(d: Date): string {
 function buildMonthGrid(viewDate: Date): Date[] {
   const first = startOfMonth(viewDate);
   // День недели первого числа (1 = Mon, 7 = Sun)
-  let dow = first.getDay() || 7;
+  const dow = first.getDay() || 7;
   const start = new Date(first);
   start.setDate(first.getDate() - (dow - 1));
   const cells: Date[] = [];
   for (let i = 0; i < 42; i++) {
-    cells.push(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i));
+    cells.push(
+      new Date(start.getFullYear(), start.getMonth(), start.getDate() + i),
+    );
   }
   return cells;
 }
@@ -1169,12 +1177,9 @@ function timeToHeight(time?: string, endTime?: string): number {
 
 /* ─── Component ─── */
 
-export const CalendarDropdown: FC<React.PropsWithChildren<CalendarDropdownProps>> = ({
-  open,
-  onClose,
-  events: seedEvents,
-  userId,
-}) => {
+export const CalendarDropdown: FC<
+  React.PropsWithChildren<CalendarDropdownProps>
+> = ({ open, onClose, events: seedEvents, userId }) => {
   const [viewDate, setViewDate] = useState<Date>(() => new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [view, setView] = useState<ViewMode>('month');
@@ -1182,7 +1187,9 @@ export const CalendarDropdown: FC<React.PropsWithChildren<CalendarDropdownProps>
   const [quickAddError, setQuickAddError] = useState<string | null>(null);
   const [moPopOpen, setMoPopOpen] = useState(false);
   const [moPopMode, setMoPopMode] = useState<'months' | 'years'>('months');
-  const [moPopYear, setMoPopYear] = useState<number>(() => new Date().getFullYear());
+  const [moPopYear, setMoPopYear] = useState<number>(() =>
+    new Date().getFullYear(),
+  );
   // Старт диапазона в year-grid (12 лет). Пересчитывается каждый раз
   // при переключении в years mode.
   const [moPopYearBase, setMoPopYearBase] = useState<number>(
@@ -1192,12 +1199,10 @@ export const CalendarDropdown: FC<React.PropsWithChildren<CalendarDropdownProps>
   const [draggedEventId, setDraggedEventId] = useState<string | null>(null);
 
   // CRUD-хранилище событий (localStorage scoped по userId).
-  const {
-    events,
-    addEvent,
-    removeEvent,
-    moveEvent,
-  } = useCalendarEvents(userId, seedEvents);
+  const { events, addEvent, removeEvent, moveEvent } = useCalendarEvents(
+    userId,
+    seedEvents,
+  );
 
   // Esc: year-grid → months → закрыть picker → закрыть диалог.
   useEffect(() => {
@@ -1470,8 +1475,7 @@ export const CalendarDropdown: FC<React.PropsWithChildren<CalendarDropdownProps>
                   {Array.from({ length: 12 }).map((_, i) => {
                     const y = moPopYearBase + i;
                     const isActive = y === viewDate.getFullYear();
-                    const isCurrent =
-                      y === today.getFullYear() && !isActive;
+                    const isCurrent = y === today.getFullYear() && !isActive;
                     return (
                       <MoPopCell
                         key={y}
@@ -1755,13 +1759,18 @@ export const CalendarDropdown: FC<React.PropsWithChildren<CalendarDropdownProps>
           <DayCol>
             <DayHead>
               <DayHeadTitle>
-                {selectedDate.getDate()} {MONTHS_RU_GEN[selectedDate.getMonth()]}
-                , {WEEKDAYS_RU[(selectedDate.getDay() || 7) - 1].toLowerCase()}
+                {selectedDate.getDate()}{' '}
+                {MONTHS_RU_GEN[selectedDate.getMonth()]},{' '}
+                {WEEKDAYS_RU[(selectedDate.getDay() || 7) - 1].toLowerCase()}
               </DayHeadTitle>
               <DayHeadSub>
                 {dayEvents.length === 0
                   ? t('Событий нет')
-                  : t('%s события · %s встреч', String(dayEvents.length), formatDuration(totalMinutes))}
+                  : t(
+                      '%s события · %s встреч',
+                      String(dayEvents.length),
+                      formatDuration(totalMinutes),
+                    )}
               </DayHeadSub>
               {dayEvents.length > 0 && totalMinutes > 0 ? (
                 <Timeline>
@@ -1812,8 +1821,7 @@ export const CalendarDropdown: FC<React.PropsWithChildren<CalendarDropdownProps>
                           {ev.online ? <OnlineBadge>online</OnlineBadge> : null}
                           {ev.attendees ? (
                             <span>
-                              {ev.attendees}{' '}
-                              {t('чел.')}
+                              {ev.attendees} {t('чел.')}
                             </span>
                           ) : null}
                         </EventMeta>
@@ -1843,9 +1851,7 @@ export const CalendarDropdown: FC<React.PropsWithChildren<CalendarDropdownProps>
                   </FocusSlotIcon>
                   <FocusSlotBody>
                     <FocusSlotTitle>{t('Фокус-слот')}</FocusSlotTitle>
-                    <FocusSlotMeta>
-                      {t('Весь день свободен')}
-                    </FocusSlotMeta>
+                    <FocusSlotMeta>{t('Весь день свободен')}</FocusSlotMeta>
                   </FocusSlotBody>
                 </FocusSlot>
               </div>
@@ -1867,7 +1873,9 @@ export const CalendarDropdown: FC<React.PropsWithChildren<CalendarDropdownProps>
                 if (quickAddError) setQuickAddError(null);
               }}
               aria-invalid={Boolean(quickAddError)}
-              aria-describedby={quickAddError ? 'cal-quickadd-error' : undefined}
+              aria-describedby={
+                quickAddError ? 'cal-quickadd-error' : undefined
+              }
             />
             <QuickAddReturnHint
               type="submit"

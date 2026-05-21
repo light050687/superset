@@ -7,7 +7,10 @@ interface ThemeToggleProps {
   onToggle: () => void;
 }
 
-const ThemeToggle: FC<React.PropsWithChildren<ThemeToggleProps>> = ({ theme, onToggle }) => (
+const ThemeToggle: FC<React.PropsWithChildren<ThemeToggleProps>> = ({
+  theme,
+  onToggle,
+}) => (
   <ThemeToggleWrapper>
     <ControlBtn
       onClick={onToggle}

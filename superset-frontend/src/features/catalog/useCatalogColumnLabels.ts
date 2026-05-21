@@ -79,7 +79,7 @@ export function singularAccusative(plural: string): string {
   const mapped = DEFAULT_SINGULAR_ACC[lower];
   if (mapped) return mapped;
   // Heuristic: -ки → -ку (папки→папку), остальное -ы/-и → strip.
-  if (/[кгхжшщчц]и$/.test(lower)) return lower.slice(0, -1) + 'у';
+  if (/[кгхжшщчц]и$/.test(lower)) return `${lower.slice(0, -1)}у`;
   if (/[ыи]$/.test(lower)) return lower.slice(0, -1);
   return lower;
 }
@@ -121,7 +121,12 @@ export function genitivePlural(plural: string): string {
  *   n=1/21/31 → one, n=2/3/4/22/23/24 → few, остальное → many.
  *   Для английских/других языков можно заменить при необходимости.
  */
-function slavicPlural(n: number, one: string, few: string, many: string): string {
+function slavicPlural(
+  n: number,
+  one: string,
+  few: string,
+  many: string,
+): string {
   const mod100 = Math.abs(n) % 100;
   const mod10 = mod100 % 10;
   if (mod100 >= 11 && mod100 <= 14) return many;

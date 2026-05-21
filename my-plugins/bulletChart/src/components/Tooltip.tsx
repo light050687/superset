@@ -1,10 +1,7 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Kbd,
   Tooltip as TooltipBox,
-  TtDot,
-  TtFoot,
   TtHead,
   TtHeadBody,
   TtL,
@@ -28,6 +25,11 @@ interface TooltipProps {
   y: number;
   rootEl: HTMLElement | null;
   showDetailHint: boolean;
+  /** ink/s/g300 цвета для tooltip — нужны inline т.к. portal вне CSS-vars
+      scope CardRoot и cascade переменных не работает. */
+  ink: string;
+  surface: string;
+  border: string;
 }
 
 function statusLabel(
@@ -90,6 +92,9 @@ const BulletTooltip: React.FC<TooltipProps> = ({
   y,
   rootEl,
   showDetailHint,
+  ink,
+  surface,
+  border,
 }) => {
   if (!rootEl) return null;
 
@@ -128,7 +133,11 @@ const BulletTooltip: React.FC<TooltipProps> = ({
     : 'up';
 
   return createPortal(
-    <TooltipBox role="tooltip" style={{ left, top }} statusColor={statusColor}>
+    <TooltipBox
+      role="tooltip"
+      style={{ left, top, background: ink, color: surface, borderColor: border }}
+      statusColor={statusColor}
+    >
       <TtHead>
         <TtStatus />
         <TtHeadBody>
@@ -189,17 +198,6 @@ const BulletTooltip: React.FC<TooltipProps> = ({
         ) : null}
       </TtRows>
       <TtStatusText>{statusLabel(row.status, direction)}</TtStatusText>
-      {showDetailHint ? (
-        <TtFoot>
-          <Kbd>Click</Kbd>
-          <span>фильтр</span>
-          <TtDot>·</TtDot>
-          <Kbd>Ctrl</Kbd>
-          <span>+</span>
-          <Kbd>Click</Kbd>
-          <span>детализация</span>
-        </TtFoot>
-      ) : null}
     </TooltipBox>,
     rootEl,
   );

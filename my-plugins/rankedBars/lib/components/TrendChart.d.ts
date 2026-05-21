@@ -5,6 +5,8 @@ interface TrendChartProps {
     height?: number;
     /** Short label under the last point (e.g. "сейчас", "−1н"). */
     labelBuilder?: (weeksAgo: number) => string;
+    /** Suffix appended to value in hover tooltip, e.g. " млн ₽". */
+    unitSuffix?: string;
 }
 declare const _default: React.NamedExoticComponent<TrendChartProps>;
 export default _default;

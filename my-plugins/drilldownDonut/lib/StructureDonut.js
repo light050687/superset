@@ -113,11 +113,30 @@ function DonutChartInner({ width, height, dataState, categories, hasSubcategorie
             });
         });
         ro.observe(el);
+        /* Resilience: Chrome выгружает canvas content при долгом offscreen
+           или memory pressure. IntersectionObserver + visibilitychange ловят
+           возврат в viewport / tab-active и force-resize'ат canvas. */
+        let intersectionObserver = null;
+        if (typeof IntersectionObserver !== 'undefined') {
+            intersectionObserver = new IntersectionObserver(entries => {
+                if (entries.some(e => e.isIntersecting)) {
+                    chartRef.current?.resize({ silent: true });
+                }
+            }, { threshold: 0.01 });
+            intersectionObserver.observe(el);
+        }
+        const onVisibility = () => {
+            if (!document.hidden)
+                chartRef.current?.resize({ silent: true });
+        };
+        document.addEventListener('visibilitychange', onVisibility);
         return () => {
             console.debug('[donut] cleanup: disposing ECharts instance', 'level=', level);
             if (debounceId !== undefined)
                 cancelAnimationFrame(debounceId);
             ro.disconnect();
+            intersectionObserver?.disconnect();
+            document.removeEventListener('visibilitychange', onVisibility);
             instance.dispose();
             chartRef.current = null;
         };
