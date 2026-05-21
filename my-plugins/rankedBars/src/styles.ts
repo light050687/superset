@@ -2,11 +2,15 @@ import styled from '@emotion/styled';
 import { css, keyframes } from '@emotion/react';
 import { LIGHT_TOKENS, DARK_TOKENS, FONTS, EASE } from './themeTokens';
 
-// DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
-// race-condition-free относительно <style dangerouslySetInnerHTML> (см. donut).
+/* DS 2.0 canonical card mount animation. Только opacity — transform убран
+   намеренно: Superset dashboard drag-drop сам управляет transform на
+   chart-cell ancestor'е (и иногда на самой обёртке). Конфликт двух transform
+   приводил к тому что после перестановки чарта он оставался смещённым/невидимым
+   до hard refresh. Fade-in через opacity безопасен и работает поверх любого
+   transform parent'а. */
 const cardInKf = keyframes`
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 `;
 
 const L = LIGHT_TOKENS;
@@ -155,12 +159,42 @@ export const TitleBlock = styled.div`
 `;
 
 export const CardTitle = styled.div`
-  font-family: var(--m);
-  font-size: var(--fs-micro);
+  /* DS 2.0 §02 «Заголовок секции»: 1-в-1 с metricTimeSeries Title,
+     scorecard CardTitle, drilldownDonut HeaderText. Manrope sans 17px / 700 /
+     0.05em UPPER, height 23.75px, display:inline-block. */
+  font-family: var(--f);
+  font-size: 17px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.3;
+  height: 23.75px;
+  display: inline-block;
+  position: relative;
+`;
+
+/* Mock-режим бейдж — orange "ТЕСТ" pill рядом с заголовком. Паттерн из
+   metricTimeSeries/styles.ts (MockBadge). transform:translateY поднимает
+   badge выше baseline. */
+export const MockBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--wn-b);
+  color: var(--wn);
+  font-family: var(--m);
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-left: 6px;
+  transform: translateY(-30%);
+  user-select: none;
 `;
 
 export const CardSub = styled.div`
@@ -230,7 +264,10 @@ export const RankRowEl = styled.div<RankRowStyleProps>`
   --cat-bg: ${({ $catBg }) => $catBg};
 
   display: grid;
-  grid-template-columns: 36px minmax(180px, 220px) minmax(140px, 1fr) 70px 92px 80px 56px;
+  /* Колонки value/delta/share не должны wrap'ить число и единицу на 2 строки.
+     Ширины подобраны под max-format "999,99 млрд ₽" / "−999,99 п.п." / "100 %"
+     при font-variant tabular-nums в --m (JetBrains Mono). */
+  grid-template-columns: 36px minmax(160px, 200px) minmax(120px, 1fr) 70px 116px 100px 56px;
   align-items: center;
   gap: 14px;
   padding: 11px 10px;
@@ -431,6 +468,7 @@ export const Value = styled.div`
   text-align: right;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 
   .u {
     font-weight: 500;
@@ -451,6 +489,7 @@ export const Delta = styled.div<{ $status: 'up' | 'dn' | 'wn' }>`
   gap: 3px;
   letter-spacing: 0.01em;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: ${({ $status }) =>
     $status === 'up'
       ? 'var(--up)'
@@ -473,78 +512,12 @@ export const Share = styled.div`
   text-align: right;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 
   .u {
     font-weight: 500;
     color: var(--g500);
     font-size: var(--fs-micro);
-  }
-`;
-
-// ─── Footer ─────────────────────────────────────────────────────────────────
-export const CardFooter = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--g200);
-  font-family: var(--m);
-  font-size: var(--fs-meta);
-  font-weight: 500;
-  color: var(--g500);
-  letter-spacing: 0.01em;
-
-  .hint {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-
-    /* DS 2.0: иконки 16px (раньше 11px — мелковато). */
-    svg {
-      width: 16px;
-      height: 16px;
-      color: var(--g500);
-      flex-shrink: 0;
-    }
-
-    kbd {
-      display: inline-block;
-      background: var(--g100);
-      border: 1px solid var(--g300);
-      border-radius: 6px;
-      padding: 1px 5px;
-      font-family: var(--m);
-      font-size: var(--fs-micro);
-      font-weight: 700;
-      color: var(--g700);
-      line-height: 1;
-      vertical-align: baseline;
-    }
-  }
-
-  .more {
-    background: none;
-    border: none;
-    color: var(--c-sky);
-    cursor: pointer;
-    font-family: var(--m);
-    font-size: var(--fs-meta);
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 0;
-
-    &:hover {
-      color: var(--ink);
-    }
-    &:focus-visible {
-      outline: 2px solid var(--c-sky);
-      outline-offset: 2px;
-      border-radius: 6px;
-    }
   }
 `;
 
@@ -554,6 +527,53 @@ export const IconDropdownWrap = styled.div`
   display: inline-block;
   width: 32px;
   height: 30px;
+`;
+
+/* Capsule + button для открытия AllItemsModal. Паттерн заимствован из
+   riskMatrix/styles.ts (Toolbar + TbBtn). 30×30 desktop, 44×44 на coarse
+   pointer per ADR-0001. */
+export const OpenAllToolbar = styled.div`
+  display: inline-flex;
+  align-items: center;
+  background: var(--g100);
+  border: 1px solid var(--g200);
+  border-radius: 6px;
+  overflow: hidden;
+`;
+
+export const OpenAllBtn = styled.button`
+  width: 32px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--g500);
+  cursor: pointer;
+  transition: 0.12s var(--ease);
+
+  &:hover {
+    color: var(--ink);
+    background: var(--g200);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--c-sky);
+    outline-offset: 1px;
+  }
+  svg {
+    width: 14px;
+    height: 14px;
+    display: block;
+  }
+
+  @media (pointer: coarse) {
+    min-width: 44px;
+    min-height: 44px;
+    width: auto;
+    height: auto;
+    padding: 10px;
+  }
 `;
 
 export const IconDropdown = styled.div<{ $open: boolean }>`
@@ -863,14 +883,17 @@ export const StatBox = styled.div`
     margin-bottom: 6px;
   }
   .v {
-    /* DS v2.0: hero KPI в модалке — fluid 28→56 */
-    font-size: var(--fs-hero);
+    /* StatBox в 4-col grid (~150px на колонку) — fs-hero (var) тут не работает
+       и не помещает max-format "999,99 млн ₽". Фиксируем clamp 22→28 чтобы
+       6 цифр + unit влезали без overflow при tabular-nums. */
+    font-size: clamp(22px, 3vw, 28px);
     font-weight: 800;
     color: var(--ink);
     font-family: var(--f);
     letter-spacing: -0.02em;
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
   .v .u {
     font-weight: 500;
@@ -1005,6 +1028,7 @@ export const TopRow = styled.div<{ $catColor: string }>`
     text-align: right;
     letter-spacing: -0.01em;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 `;
 
@@ -1209,18 +1233,21 @@ export const TooltipBox = styled.div<{ $visible: boolean }>`
   ${THEME_VARS_CSS}
 
   position: fixed;
-  background: var(--g100);
-  border: 1px solid var(--g300);
-  border-radius: 10px;
-  padding: 12px 14px 10px;
+  /* DS 2.1 §08 «Тултипы»: tooltip того же тона что Card surface — НЕ инверт.
+     light: bg=--s(#fff) + text=--ink(#0a0a0a) = белый tooltip.
+     dark:  bg=--s(#171a1e) + text=--ink(#e6e9ef) = тёмный tooltip.
+     Border + shadow дают визуальное отделение от Card. */
+  background: var(--s);
+  color: var(--ink);
+  border: 1px solid rgba(128, 128, 128, 0.25);
+  border-radius: 6px;
+  padding: 8px 12px;
   box-shadow: var(--sh-lg);
   font-family: var(--f);
-  font-size: var(--fs-micro);
-  color: var(--ink);
+  font-size: 11px;
   pointer-events: none;
   z-index: 500;
-  min-width: 240px;
-  max-width: 300px;
+  max-width: 240px;
   display: ${({ $visible }) => ($visible ? 'block' : 'none')};
 
   @keyframes rb-tt-fade {
@@ -1238,107 +1265,64 @@ export const TooltipBox = styled.div<{ $visible: boolean }>`
   .tt-head {
     display: flex;
     align-items: flex-start;
-    gap: 9px;
-    padding-bottom: 9px;
-    margin-bottom: 9px;
-    border-bottom: 1px solid var(--g200);
+    gap: 8px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.25);
   }
-
   .tt-icon {
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-
-    svg {
-      width: 13px;
-      height: 13px;
-    }
+    svg { width: 12px; height: 12px; }
   }
-
-  .tt-titles {
-    flex: 1;
-    min-width: 0;
-  }
+  .tt-titles { flex: 1; min-width: 0; }
+  /* Header 13px Manrope 700 — крупнее DS-минимума 11px для лучшей читаемости. */
   .tt-name {
-    font-size: var(--fs-meta);
+    font-size: 13px;
     font-weight: 700;
     color: var(--ink);
-    line-height: 1.25;
-    margin-bottom: 2px;
-    letter-spacing: -0.005em;
+    line-height: 1.3;
+    margin-bottom: 1px;
   }
+  /* DS 2.1: sub — 11px моно, описание/единицы/период. */
   .tt-sub {
-    font-size: var(--fs-micro);
-    font-weight: 500;
+    font-size: 11px;
+    font-weight: 400;
     color: var(--g500);
     font-family: var(--m);
-    letter-spacing: 0.01em;
+    line-height: 1.4;
   }
 
-  .tt-rows {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
+  .tt-rows { display: flex; flex-direction: column; gap: 4px; }
   .tt-row {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 14px;
+    gap: 12px;
     font-family: var(--m);
   }
+  /* DS 2.1: метка KPI — 11px моно 600 0.06em UPPERCASE. */
   .tt-l {
-    font-size: var(--fs-micro);
+    font-size: 11px;
     font-weight: 600;
     color: var(--g500);
     letter-spacing: 0.06em;
     text-transform: uppercase;
   }
+  /* DS 2.1: «строка» 12px моно. tabular-nums всегда на числовых значениях. */
   .tt-v {
-    font-size: var(--fs-meta);
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 600;
     color: var(--ink);
-    letter-spacing: -0.005em;
     font-variant-numeric: tabular-nums;
   }
-  .tt-v.up {
-    color: var(--up);
-  }
-  .tt-v.dn {
-    color: var(--dn);
-  }
-  .tt-v.wn {
-    color: var(--g500);
-  }
+  .tt-v.up { color: var(--up); }
+  .tt-v.dn { color: var(--dn); }
+  .tt-v.wn { color: var(--g500); }
 
-  .tt-foot {
-    margin-top: 9px;
-    padding-top: 9px;
-    border-top: 1px solid var(--g200);
-    font-family: var(--m);
-    font-size: var(--fs-micro);
-    font-weight: 500;
-    color: var(--g500);
-    letter-spacing: 0.01em;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-
-    kbd {
-      display: inline-block;
-      background: var(--g200);
-      border: 1px solid var(--g300);
-      border-radius: 6px;
-      padding: 1px 4px;
-      font-family: var(--m);
-      font-size: var(--fs-nano);
-      font-weight: 700;
-      color: var(--g700);
-      line-height: 1;
-    }
-  }
 `;

@@ -75,9 +75,7 @@ const Shell = styled.aside<{ $open: boolean }>`
   box-shadow: inset 0 1px 0 ${DS2_VARS.aiSideHairline};
   /* Slide справа-налево: closed — за overlay'ем (невидима),
      open — в позиции у левого края overlay. */
-  transform: translateX(
-    ${({ $open }) => ($open ? '0' : 'calc(100% + 20px)')}
-  );
+  transform: translateX(${({ $open }) => ($open ? '0' : 'calc(100% + 20px)')});
   opacity: ${({ $open }) => ($open ? 1 : 0)};
   pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};
   transition:
@@ -284,10 +282,7 @@ const FolderDot = styled.span<{ $color: string; $dashed?: boolean }>`
   height: 7px;
   border-radius: 50%;
   background: ${({ $color, $dashed }) => ($dashed ? 'transparent' : $color)};
-  ${({ $dashed }) =>
-    $dashed
-      ? `border: 1px dashed ${DS2_VARS.g400};`
-      : ''}
+  ${({ $dashed }) => ($dashed ? `border: 1px dashed ${DS2_VARS.g400};` : '')}
   flex-shrink: 0;
 `;
 
@@ -298,9 +293,7 @@ const FolderName = styled.span<{ $italic?: boolean }>`
   text-overflow: ellipsis;
   white-space: nowrap;
   ${({ $italic }) =>
-    $italic
-      ? `color: ${DS2_VARS.g500}; font-style: italic;`
-      : ''}
+    $italic ? `color: ${DS2_VARS.g500}; font-style: italic;` : ''}
 `;
 
 const FolderCount = styled.span`
@@ -478,8 +471,9 @@ export const AiSidePanel: FC<React.PropsWithChildren<AiSidePanelProps>> = ({
     async (folder: AiChatFolder) => {
       // eslint-disable-next-line no-alert
       const ok = window.confirm(
-        t('Удалить папку «%(name)s»? Чаты внутри останутся (без папки).',
-          { name: folder.name }),
+        t('Удалить папку «%(name)s»? Чаты внутри останутся (без папки).', {
+          name: folder.name,
+        }),
       );
       if (!ok) return;
       try {
@@ -514,8 +508,9 @@ export const AiSidePanel: FC<React.PropsWithChildren<AiSidePanelProps>> = ({
     async (session: AiChatSession) => {
       // eslint-disable-next-line no-alert
       const ok = window.confirm(
-        t('Удалить чат «%(title)s» вместе со всеми сообщениями?',
-          { title: session.title || t('Без названия') }),
+        t('Удалить чат «%(title)s» вместе со всеми сообщениями?', {
+          title: session.title || t('Без названия'),
+        }),
       );
       if (!ok) return;
       try {
@@ -572,9 +567,7 @@ export const AiSidePanel: FC<React.PropsWithChildren<AiSidePanelProps>> = ({
           {roots.length === 0 && noFolderCount === 0 ? null : (
             <>
               {roots.map((f, idx) => {
-                const count = sessions.filter(
-                  s => s.folder_id === f.id,
-                ).length;
+                const count = sessions.filter(s => s.folder_id === f.id).length;
                 return (
                   <FolderRowWrap key={f.id}>
                     <FolderRow

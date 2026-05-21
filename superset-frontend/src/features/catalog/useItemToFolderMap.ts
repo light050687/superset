@@ -84,10 +84,7 @@ export function useItemToFolderMap(): UseItemToFolderMapResult {
             // Если объект уже попал в несколько папок, оставляем первую
             // не-дефолтную (она «настоящая» департамент-принадлежность).
             const existing = next.get(k);
-            if (
-              !existing ||
-              (existing.isDefault && !folder.is_default)
-            ) {
+            if (!existing || (existing.isDefault && !folder.is_default)) {
               next.set(k, {
                 folderId: folder.id,
                 folderName: folder.name,

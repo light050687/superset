@@ -108,6 +108,7 @@ export function buildOption(params: BuildOptionParams): BuildOptionResult {
     gran,
     buckets: slice.buckets,
     tokens,
+    isDark: isDarkMode,
     fontText,
     fontMono,
     valueFormatter,
@@ -136,13 +137,15 @@ export function buildOption(params: BuildOptionParams): BuildOptionResult {
     toolbox: { show: false },
     tooltip: {
       trigger: 'axis',
-      backgroundColor: tokens.ink,
-      borderColor: 'transparent',
-      borderWidth: 0,
-      padding: [8, 12, 9, 12],
+      /* DS 2.1 §08 «Тултипы»: всегда dark bg с light текстом в обеих темах.
+         tokens theme-aware, поэтому в dark theme swap ink↔s. */
+      backgroundColor: tokens.s,
+      borderColor: 'rgba(128,128,128,0.25)',
+      borderWidth: 1,
+      padding: [8, 12, 8, 12],
       extraCssText:
-        'pointer-events:none;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:260px',
-      textStyle: { color: tokens.s, fontFamily: fontText, fontSize: 11 },
+        'pointer-events:none;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:240px',
+      textStyle: { color: tokens.ink, fontFamily: fontText, fontSize: 11 },
       axisPointer: {
         type: 'line',
         lineStyle: { color: tokens.g400, width: 1, type: [2, 3] },

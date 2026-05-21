@@ -314,9 +314,7 @@ export class ChartCreation extends PureComponent<
           size="small"
           items={[
             {
-              title: (
-                <StyledStepTitle>{t('Choose a dataset')}</StyledStepTitle>
-              ),
+              title: <StyledStepTitle>{t('Choose a dataset')}</StyledStepTitle>,
               status: this.state.datasource?.value ? 'finish' : 'process',
               content: (
                 <StyledStepDescription className="dataset">

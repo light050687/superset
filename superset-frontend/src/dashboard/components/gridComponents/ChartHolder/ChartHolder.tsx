@@ -40,7 +40,6 @@ import useFilterFocusHighlightStyles from 'src/dashboard/util/useFilterFocusHigh
 import { useChartViewportPriority } from 'src/dashboard/hooks/useChartViewportPriority';
 import { useFetchStrategy } from 'src/dashboard/utils/fetchStrategy';
 import { COLUMN_TYPE, ROW_TYPE } from 'src/dashboard/util/componentTypes';
-import { VIZ_SHAPE_SKELETONS } from './skeletonRegistry';
 import {
   GRID_BASE_UNIT,
   GRID_COLUMN_COUNT,
@@ -48,6 +47,7 @@ import {
   GRID_MIN_COLUMN_COUNT,
   GRID_MIN_ROW_UNITS,
 } from 'src/dashboard/util/constants';
+import { VIZ_SHAPE_SKELETONS } from './skeletonRegistry';
 
 export const CHART_MARGIN = 32;
 
@@ -124,7 +124,9 @@ const ChartHolder = ({
   const isFullSize = fullSizeChartId === chartId;
 
   // Responsive: measure actual container size via ResizeObserver
-  const chartHolderRef = useRef<HTMLDivElement>(null) as React.MutableRefObject<HTMLDivElement | null>;
+  const chartHolderRef = useRef<HTMLDivElement>(
+    null,
+  ) as React.MutableRefObject<HTMLDivElement | null>;
   const [measuredWidth, setMeasuredWidth] = useState(0);
   const [measuredHeight, setMeasuredHeight] = useState(0);
 
@@ -153,8 +155,7 @@ const ChartHolder = ({
   const chartStatus = useSelector<RootState, string | undefined>(
     state => (state.charts as any)?.[chartId]?.chartStatus,
   );
-  const isLoadingChart =
-    chartStatus === 'loading' || chartStatus === undefined;
+  const isLoadingChart = chartStatus === 'loading' || chartStatus === undefined;
   const showSkeleton = fetchStrategy.show_skeletons && isLoadingChart;
 
   /* DS v2.0: per-viz_type minHeightMultiple override.
@@ -272,7 +273,7 @@ const ChartHolder = ({
     if (meta.widthSub != null && meta.subdivisionsUsed) {
       const sub = meta.subdivisionsUsed;
       const colGap = gridGuides.columnGap;
-      const rowGap = gridGuides.rowGap;
+      const { rowGap } = gridGuides;
       const subCellWFloat = Math.max(
         1,
         (columnWidth - (sub - 1) * colGap) / sub,
@@ -290,7 +291,8 @@ const ChartHolder = ({
           : component.meta.height * GRID_BASE_UNIT;
       return { w, h };
     }
-    const w = (columnWidth + GRID_GUTTER_SIZE) * widthMultiple - GRID_GUTTER_SIZE;
+    const w =
+      (columnWidth + GRID_GUTTER_SIZE) * widthMultiple - GRID_GUTTER_SIZE;
     const h = component.meta.height * GRID_BASE_UNIT;
     return { w, h };
   }, [
@@ -364,7 +366,7 @@ const ChartHolder = ({
     if (effectiveMode === 'sub') {
       const sub = effectiveSub;
       const colGap = gridGuides.columnGap;
-      const rowGap = gridGuides.rowGap;
+      const { rowGap } = gridGuides;
       /* widthStep для re-resizable — integer (re-resizable плохо
          работает с float grid/snap значениями: при float step delta
          округляется некорректно и chart resize становится unstable).
@@ -377,8 +379,14 @@ const ChartHolder = ({
       );
       const subStepX = subCellWidth + colGap;
       const subStepY = subCellWidth + rowGap;
-      const startSubW = Math.max(1, Math.round((metaOuter.w + colGap) / subStepX));
-      const startSubH = Math.max(1, Math.round((metaOuter.h + rowGap) / subStepY));
+      const startSubW = Math.max(
+        1,
+        Math.round((metaOuter.w + colGap) / subStepX),
+      );
+      const startSubH = Math.max(
+        1,
+        Math.round((metaOuter.h + rowGap) / subStepY),
+      );
       /* Push-shrink maxWidth для sub-mode: зеркально col-mode, но в
          sub-cells. widthLeft (в col-units) умножаем на sub чтобы перейти
          в sub-cells текущего effectiveSub. */
@@ -411,10 +419,7 @@ const ChartHolder = ({
       1,
       Math.round((metaOuter.w + GRID_GUTTER_SIZE) / colStep),
     );
-    const startColH = Math.max(
-      1,
-      Math.round(metaOuter.h / GRID_BASE_UNIT),
-    );
+    const startColH = Math.max(1, Math.round(metaOuter.h / GRID_BASE_UNIT));
     /* Push-shrink maxWidth: чарт может расшириться вправо до края Row,
        сжимая соседей справа до GRID_MIN_COLUMN_COUNT каждый. Когда
        rightSiblingsCount=0 (один чарт в Row или последний справа), формула
@@ -559,13 +564,11 @@ const ChartHolder = ({
             layoutMode: 'free',
             freePxWidth: adjW
               ? Math.max(80, Math.round((payload as any).width))
-              : meta.freePxWidth ?? Math.round(metaOuter.w),
+              : (meta.freePxWidth ?? Math.round(metaOuter.w)),
             freePxHeight: Math.max(
               60,
               Math.round(
-                (payload as any).height ||
-                  meta.freePxHeight ||
-                  metaOuter.h,
+                (payload as any).height || meta.freePxHeight || metaOuter.h,
               ),
             ),
           }),
@@ -578,9 +581,7 @@ const ChartHolder = ({
           ? (payload as any).width
           : meta.widthSub || resizeConfig.widthMultiple;
         const nextHeightSub =
-          (payload as any).height ||
-          meta.heightSub ||
-          component.meta.height;
+          (payload as any).height || meta.heightSub || component.meta.height;
         if (adjW && parentComponent.type === ROW_TYPE) {
           dispatch(
             resizeComponentWithShrinkingNeighbors({
@@ -714,7 +715,9 @@ const ChartHolder = ({
             if (typeof dragSourceRef === 'function') {
               dragSourceRef(node);
             } else if (dragSourceRef) {
-              (dragSourceRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+              (
+                dragSourceRef as React.MutableRefObject<HTMLDivElement | null>
+              ).current = node;
             }
             chartHolderRef.current = node;
           }}
@@ -764,38 +767,35 @@ const ChartHolder = ({
               После того как плагин mount'ится со своим внутренним
               skeleton (aria-busy без data-shape-skeleton), CSS-rule
               в DashboardBuilder.tsx скрывает оба overlay через display:none. */}
-          {showSkeleton && (() => {
-            const ShapeSkeleton = vizType
-              ? VIZ_SHAPE_SKELETONS[vizType]
-              : undefined;
-            if (ShapeSkeleton) {
+          {showSkeleton &&
+            (() => {
+              const ShapeSkeleton = vizType
+                ? VIZ_SHAPE_SKELETONS[vizType]
+                : undefined;
+              if (ShapeSkeleton) {
+                return (
+                  <ShapeSkeleton width={chartWidth} height={chartHeight} />
+                );
+              }
               return (
-                <ShapeSkeleton
-                  width={chartWidth}
-                  height={chartHeight}
+                <div
+                  aria-hidden="true"
+                  data-generic-shimmer="true"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: 2,
+                    borderRadius: 10,
+                    background:
+                      'linear-gradient(110deg, var(--g100) 8%, var(--g200) 18%, var(--g100) 33%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'ds2-skeleton-shimmer 1.6s ease-in-out infinite',
+                    pointerEvents: 'none',
+                    transition: 'opacity 280ms cubic-bezier(0.4, 0, 0.2, 1)',
+                  }}
                 />
               );
-            }
-            return (
-              <div
-                aria-hidden="true"
-                data-generic-shimmer="true"
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  zIndex: 2,
-                  borderRadius: 10,
-                  background:
-                    'linear-gradient(110deg, var(--g100) 8%, var(--g200) 18%, var(--g100) 33%)',
-                  backgroundSize: '200% 100%',
-                  animation:
-                    'ds2-skeleton-shimmer 1.6s ease-in-out infinite',
-                  pointerEvents: 'none',
-                  transition: 'opacity 280ms cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
-              />
-            );
-          })()}
+            })()}
           <Chart
             componentId={component.id}
             id={component.meta.chartId}

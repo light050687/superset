@@ -19,8 +19,6 @@
 import { Children, ReactElement, Fragment, forwardRef } from 'react';
 import cx from 'classnames';
 import { Button as AntdButton } from 'antd';
-
-type ButtonRef = HTMLButtonElement | HTMLAnchorElement;
 import { useTheme } from '@superset-ui/core';
 import { Tooltip } from '../Tooltip';
 import type {
@@ -31,6 +29,8 @@ import type {
   ButtonVariantType,
   OnClickHandler,
 } from './types';
+
+type ButtonRef = HTMLButtonElement | HTMLAnchorElement;
 
 // forwardRef is required so AntD Dropdown / Tooltip triggers can attach refs
 // through @rc-component/trigger (AntD v6). Otherwise React emits

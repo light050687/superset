@@ -39,7 +39,13 @@ function useDs2EChartsColors(): {
 } {
   const read = () => {
     if (typeof document === 'undefined') {
-      return { ink: '#0A0A0A', g500: '#737373', g600: '#555555', cSky: '#3B8BD9', cSkyAlpha8: 'rgba(59, 139, 217, 0.08)' };
+      return {
+        ink: '#0A0A0A',
+        g500: '#737373',
+        g600: '#555555',
+        cSky: '#3B8BD9',
+        cSkyAlpha8: 'rgba(59, 139, 217, 0.08)',
+      };
     }
     const cs = getComputedStyle(document.documentElement);
     const get = (name: string, fallback: string) =>
@@ -93,8 +99,12 @@ function classifyColumns(
   data: Array<Record<string, unknown>>,
 ): { dimensions: string[]; measures: string[]; timeDimension: string | null } {
   const q = (cubeQuery ?? {}) as Record<string, unknown>;
-  const dims: string[] = Array.isArray(q.dimensions) ? (q.dimensions as string[]) : [];
-  const meas: string[] = Array.isArray(q.measures) ? (q.measures as string[]) : [];
+  const dims: string[] = Array.isArray(q.dimensions)
+    ? (q.dimensions as string[])
+    : [];
+  const meas: string[] = Array.isArray(q.measures)
+    ? (q.measures as string[])
+    : [];
   const timeDimsRaw = Array.isArray(q.timeDimensions)
     ? (q.timeDimensions as Array<Record<string, unknown>>)
     : [];
@@ -108,7 +118,11 @@ function classifyColumns(
     const keys = Object.keys(data[0]);
     return {
       dimensions: keys.filter(k => typeof data[0][k] === 'string'),
-      measures: keys.filter(k => typeof data[0][k] === 'number' || /^\-?\d/.test(String(data[0][k] ?? ''))),
+      measures: keys.filter(
+        k =>
+          typeof data[0][k] === 'number' ||
+          /^\-?\d/.test(String(data[0][k] ?? '')),
+      ),
       timeDimension: null,
     };
   }
@@ -130,17 +144,29 @@ function toNum(v: unknown): number {
   return 0;
 }
 
-export const AiInlineChart: FC<AiInlineChartProps> = ({ cubeQuery, rawData }) => {
+export const AiInlineChart: FC<AiInlineChartProps> = ({
+  cubeQuery,
+  rawData,
+}) => {
   const colors = useDs2EChartsColors();
 
   const option = useMemo(() => {
     if (!Array.isArray(rawData) || rawData.length === 0) return null;
-    const { dimensions, measures, timeDimension } = classifyColumns(cubeQuery, rawData);
+    const { dimensions, measures, timeDimension } = classifyColumns(
+      cubeQuery,
+      rawData,
+    );
     if (measures.length === 0) return null;
 
     const measure = measures[0];
     const measureLabel = prettify(measure);
-    const baseGrid = { left: 12, right: 16, top: 24, bottom: 32, containLabel: true };
+    const baseGrid = {
+      left: 12,
+      right: 16,
+      top: 24,
+      bottom: 32,
+      containLabel: true,
+    };
     const baseTextStyle = {
       fontFamily: "'Manrope', 'Inter', sans-serif",
       fontSize: 11,
@@ -209,7 +235,12 @@ export const AiInlineChart: FC<AiInlineChartProps> = ({ cubeQuery, rawData }) =>
         xAxis: {
           type: 'category',
           data: xs,
-          axisLabel: { fontSize: 10, rotate: 30, overflow: 'truncate', width: 100 },
+          axisLabel: {
+            fontSize: 10,
+            rotate: 30,
+            overflow: 'truncate',
+            width: 100,
+          },
         },
         yAxis: { type: 'value', axisLabel: { fontSize: 10 } },
         series: [

@@ -76,7 +76,9 @@ const STATE_ICONS: Record<string, FC<React.PropsWithChildren<IconType>>> = {
   failed: Icons.CloseCircleOutlined,
 };
 
-const SqlEditorTabHeader: FC<React.PropsWithChildren<Props>> = ({ queryEditor }) => {
+const SqlEditorTabHeader: FC<React.PropsWithChildren<Props>> = ({
+  queryEditor,
+}) => {
   const theme = useTheme();
   const qe = useSelector<SqlLabRootState, QueryEditor>(
     ({ sqlLab: { unsavedQueryEditor } }) => ({

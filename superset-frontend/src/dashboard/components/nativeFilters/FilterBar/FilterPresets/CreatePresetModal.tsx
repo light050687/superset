@@ -109,9 +109,7 @@ const CreatePresetModal = ({
   const isEditMode = !!editPreset;
 
   const [name, setName] = useState(editPreset?.name ?? '');
-  const [description, setDescription] = useState(
-    editPreset?.description ?? '',
-  );
+  const [description, setDescription] = useState(editPreset?.description ?? '');
   const [selectedFilterIds, setSelectedFilterIds] = useState<string[]>(
     editPreset?.includedFilters ?? Object.keys(filters),
   );
@@ -223,7 +221,9 @@ const CreatePresetModal = ({
         disabled: !name.trim() || selectedFilterIds.length === 0,
       }}
       destroyOnClose
-      width={typeof window !== 'undefined' && window.innerWidth <= 570 ? '95vw' : 520}
+      width={
+        typeof window !== 'undefined' && window.innerWidth <= 570 ? '95vw' : 520
+      }
       centered
     >
       <FormGroup>
@@ -323,7 +323,11 @@ const CreatePresetModal = ({
             border-bottom: 1px solid var(--ant-color-warning-border, #ffe58f);
           `}
         >
-          <span css={css`font-weight: 600;`}>
+          <span
+            css={css`
+              font-weight: 600;
+            `}
+          >
             {t('Корпоративный пресет')}
           </span>
           <Switch

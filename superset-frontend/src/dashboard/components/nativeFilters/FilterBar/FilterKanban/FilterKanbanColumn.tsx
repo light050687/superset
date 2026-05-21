@@ -256,17 +256,20 @@ const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
      Body колонки, но и gap'ы между грид-item'ами, AddColBtn, empty
      areas. Локальный handler больше не нужен и удалён. */
 
-  const [{ isOver }, dropRef] = useDrop(() => ({
-    accept: FILTER_CARD_DND_TYPE,
-    canDrop: () => !isPresetColumn,
-    drop: (item: { filterId: string }) => {
-      if (isPresetColumn) return;
-      onMoveFilter(item.filterId, categoryId);
-    },
-    collect: monitor => ({
-      isOver: !isPresetColumn && monitor.isOver({ shallow: true }),
+  const [{ isOver }, dropRef] = useDrop(
+    () => ({
+      accept: FILTER_CARD_DND_TYPE,
+      canDrop: () => !isPresetColumn,
+      drop: (item: { filterId: string }) => {
+        if (isPresetColumn) return;
+        onMoveFilter(item.filterId, categoryId);
+      },
+      collect: monitor => ({
+        isOver: !isPresetColumn && monitor.isOver({ shallow: true }),
+      }),
     }),
-  }), [categoryId, onMoveFilter, isPresetColumn]);
+    [categoryId, onMoveFilter, isPresetColumn],
+  );
 
   const canAddFilter = !isPresetColumn && typeof onAddFilter === 'function';
 

@@ -26,10 +26,29 @@ function useChartInstance({ option, width, height, onReady, }) {
             });
             observerRef.current.observe(containerRef.current);
         }
+        /* Resilience: Chrome выгружает canvas content при долгом offscreen
+           или memory pressure. При возврате в viewport / tab visible — force
+           resize + setOption чтобы canvas перерисовался. */
+        let intersectionObserver = null;
+        if (typeof IntersectionObserver !== 'undefined' && containerRef.current) {
+            intersectionObserver = new IntersectionObserver(entries => {
+                if (entries.some(e => e.isIntersecting)) {
+                    chartRef.current?.resize();
+                }
+            }, { threshold: 0.01 });
+            intersectionObserver.observe(containerRef.current);
+        }
+        const onVisibility = () => {
+            if (!document.hidden)
+                chartRef.current?.resize();
+        };
+        document.addEventListener('visibilitychange', onVisibility);
         onReady?.(chart);
         return () => {
             observerRef.current?.disconnect();
             observerRef.current = null;
+            intersectionObserver?.disconnect();
+            document.removeEventListener('visibilitychange', onVisibility);
             chart.dispose();
             chartRef.current = null;
         };

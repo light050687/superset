@@ -261,194 +261,198 @@ type OptionControlLabelProps = {
 export const OptionControlLabel = forwardRef<
   HTMLDivElement,
   OptionControlLabelProps
->((
-  {
-    label,
-    savedMetric,
-    adhocMetric,
-    onRemove,
-    onMoveLabel,
-    onDropLabel,
-    withCaret,
-    isFunction,
-    type,
-    index,
-    isExtra,
-    datasourceWarningMessage,
-    tooltipTitle,
-    multi = true,
-    ...props
-  },
-  forwardedRef,
-) => {
-  const theme = useTheme();
-  const ref = useRef<HTMLDivElement | null>(null);
-  const labelRef = useRef<HTMLDivElement>(null);
-
-  const composedRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      ref.current = node;
-      if (typeof forwardedRef === 'function') {
-        forwardedRef(node);
-      } else if (forwardedRef) {
-        (forwardedRef as { current: HTMLDivElement | null }).current = node;
-      }
-    },
-    [forwardedRef],
-  );
-  const hasMetricName = savedMetric?.metric_name;
-  const [, drop] = useDrop({
-    accept: type,
-    drop() {
-      if (!multi) {
-        return;
-      }
-      onDropLabel?.();
-    },
-    hover(item: DragItem, monitor: DropTargetMonitor) {
-      if (!multi) {
-        return;
-      }
-      if (!ref.current) {
-        return;
-      }
-      const { dragIndex } = item;
-      const hoverIndex = index;
-      // Don't replace items with themselves
-      if (dragIndex === hoverIndex) {
-        return;
-      }
-      // Determine rectangle on screen
-      const hoverBoundingRect = ref.current?.getBoundingClientRect();
-      // Get vertical middle
-      const hoverMiddleY =
-        (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
-      // Determine mouse position
-      const clientOffset = monitor.getClientOffset();
-      // Get pixels to the top
-      const hoverClientY = clientOffset?.y
-        ? clientOffset?.y - hoverBoundingRect.top
-        : 0;
-      // Only perform the move when the mouse has crossed half of the items height
-      // When dragging downwards, only move when the cursor is below 50%
-      // When dragging upwards, only move when the cursor is above 50%
-      // Dragging downwards
-      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
-        return;
-      }
-      // Dragging upwards
-      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
-        return;
-      }
-      // Time to actually perform the action
-      onMoveLabel?.(dragIndex, hoverIndex);
-      // Note: we're mutating the monitor item here!
-      // Generally it's better to avoid mutations,
-      // but it's good here for the sake of performance
-      // to avoid expensive index searches.
-      // eslint-disable-next-line no-param-reassign
-      item.dragIndex = hoverIndex;
-    },
-  });
-  const [{ isDragging }, drag] = useDrag({
-    type,
-    item: {
+>(
+  (
+    {
+      label,
+      savedMetric,
+      adhocMetric,
+      onRemove,
+      onMoveLabel,
+      onDropLabel,
+      withCaret,
+      isFunction,
       type,
-      dragIndex: index,
-      value: savedMetric?.metric_name ? savedMetric : adhocMetric,
+      index,
+      isExtra,
+      datasourceWarningMessage,
+      tooltipTitle,
+      multi = true,
+      ...props
     },
-    collect: monitor => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
+    forwardedRef,
+  ) => {
+    const theme = useTheme();
+    const ref = useRef<HTMLDivElement | null>(null);
+    const labelRef = useRef<HTMLDivElement>(null);
 
-  const getLabelContent = () => {
-    const shouldShowTooltip =
-      (!isDragging &&
-        typeof label === 'string' &&
-        tooltipTitle &&
-        label &&
-        tooltipTitle !== label) ||
-      (!isDragging &&
-        labelRef &&
-        labelRef.current &&
-        labelRef.current.scrollWidth > labelRef.current.clientWidth);
-
-    if (savedMetric && hasMetricName) {
-      return (
-        <StyledMetricOption
-          metric={savedMetric}
-          labelRef={labelRef}
-          shouldShowTooltip={!isDragging}
-        />
-      );
-    }
-    if (!shouldShowTooltip) {
-      return <LabelText ref={labelRef}>{label}</LabelText>;
-    }
-    return (
-      <Tooltip title={tooltipTitle || label}>
-        <LabelText ref={labelRef}>{label}</LabelText>
-      </Tooltip>
+    const composedRef = useCallback(
+      (node: HTMLDivElement | null) => {
+        ref.current = node;
+        if (typeof forwardedRef === 'function') {
+          forwardedRef(node);
+        } else if (forwardedRef) {
+          (forwardedRef as { current: HTMLDivElement | null }).current = node;
+        }
+      },
+      [forwardedRef],
     );
-  };
+    const hasMetricName = savedMetric?.metric_name;
+    const [, drop] = useDrop({
+      accept: type,
+      drop() {
+        if (!multi) {
+          return;
+        }
+        onDropLabel?.();
+      },
+      hover(item: DragItem, monitor: DropTargetMonitor) {
+        if (!multi) {
+          return;
+        }
+        if (!ref.current) {
+          return;
+        }
+        const { dragIndex } = item;
+        const hoverIndex = index;
+        // Don't replace items with themselves
+        if (dragIndex === hoverIndex) {
+          return;
+        }
+        // Determine rectangle on screen
+        const hoverBoundingRect = ref.current?.getBoundingClientRect();
+        // Get vertical middle
+        const hoverMiddleY =
+          (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+        // Determine mouse position
+        const clientOffset = monitor.getClientOffset();
+        // Get pixels to the top
+        const hoverClientY = clientOffset?.y
+          ? clientOffset?.y - hoverBoundingRect.top
+          : 0;
+        // Only perform the move when the mouse has crossed half of the items height
+        // When dragging downwards, only move when the cursor is below 50%
+        // When dragging upwards, only move when the cursor is above 50%
+        // Dragging downwards
+        if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+          return;
+        }
+        // Dragging upwards
+        if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+          return;
+        }
+        // Time to actually perform the action
+        onMoveLabel?.(dragIndex, hoverIndex);
+        // Note: we're mutating the monitor item here!
+        // Generally it's better to avoid mutations,
+        // but it's good here for the sake of performance
+        // to avoid expensive index searches.
+        // eslint-disable-next-line no-param-reassign
+        item.dragIndex = hoverIndex;
+      },
+    });
+    const [{ isDragging }, drag] = useDrag({
+      type,
+      item: {
+        type,
+        dragIndex: index,
+        value: savedMetric?.metric_name ? savedMetric : adhocMetric,
+      },
+      collect: monitor => ({
+        isDragging: monitor.isDragging(),
+      }),
+    });
 
-  const getOptionControlContent = () => (
-    <OptionControlContainer
-      withCaret={withCaret}
-      data-test="option-label"
-      {...props}
-      css={css`
-        text-align: center;
-      `}
-    >
-      <CloseContainer
-        role="button"
-        data-test="remove-control-button"
-        onClick={onRemove}
+    const getLabelContent = () => {
+      const shouldShowTooltip =
+        (!isDragging &&
+          typeof label === 'string' &&
+          tooltipTitle &&
+          label &&
+          tooltipTitle !== label) ||
+        (!isDragging &&
+          labelRef &&
+          labelRef.current &&
+          labelRef.current.scrollWidth > labelRef.current.clientWidth);
+
+      if (savedMetric && hasMetricName) {
+        return (
+          <StyledMetricOption
+            metric={savedMetric}
+            labelRef={labelRef}
+            shouldShowTooltip={!isDragging}
+          />
+        );
+      }
+      if (!shouldShowTooltip) {
+        return <LabelText ref={labelRef}>{label}</LabelText>;
+      }
+      return (
+        <Tooltip title={tooltipTitle || label}>
+          <LabelText ref={labelRef}>{label}</LabelText>
+        </Tooltip>
+      );
+    };
+
+    const getOptionControlContent = () => (
+      <OptionControlContainer
+        withCaret={withCaret}
+        data-test="option-label"
+        {...props}
+        css={css`
+          text-align: center;
+        `}
       >
-        <Icons.CloseOutlined
-          iconSize="m"
-          iconColor={theme.colorIcon}
-          css={css`
-            vertical-align: sub;
-          `}
-        />
-      </CloseContainer>
-      <Label data-test="control-label">
-        {isFunction && <Icons.FunctionOutlined iconSize="m" />}
-        {getLabelContent()}
-      </Label>
-      {(!!datasourceWarningMessage || isExtra) && (
-        <StyledInfoTooltip
-          type="warning"
-          placement="top"
-          tooltip={
-            datasourceWarningMessage ||
-            t(`
+        <CloseContainer
+          role="button"
+          data-test="remove-control-button"
+          onClick={onRemove}
+        >
+          <Icons.CloseOutlined
+            iconSize="m"
+            iconColor={theme.colorIcon}
+            css={css`
+              vertical-align: sub;
+            `}
+          />
+        </CloseContainer>
+        <Label data-test="control-label">
+          {isFunction && <Icons.FunctionOutlined iconSize="m" />}
+          {getLabelContent()}
+        </Label>
+        {(!!datasourceWarningMessage || isExtra) && (
+          <StyledInfoTooltip
+            type="warning"
+            placement="top"
+            tooltip={
+              datasourceWarningMessage ||
+              t(`
                 This filter was inherited from the dashboard's context.
                 It won't be saved when saving the chart.
               `)
-          }
-        />
-      )}
-      {withCaret && (
-        <CaretContainer>
-          <Icons.RightOutlined
-            iconSize="m"
-            css={css`
-              margin: ${theme.sizeUnit}px;
-            `}
-            iconColor={theme.colorIcon}
+            }
           />
-        </CaretContainer>
-      )}
-    </OptionControlContainer>
-  );
+        )}
+        {withCaret && (
+          <CaretContainer>
+            <Icons.RightOutlined
+              iconSize="m"
+              css={css`
+                margin: ${theme.sizeUnit}px;
+              `}
+              iconColor={theme.colorIcon}
+            />
+          </CaretContainer>
+        )}
+      </OptionControlContainer>
+    );
 
-  drag(drop(ref));
-  return (
-    <DragContainer ref={composedRef}>{getOptionControlContent()}</DragContainer>
-  );
-});
+    drag(drop(ref));
+    return (
+      <DragContainer ref={composedRef}>
+        {getOptionControlContent()}
+      </DragContainer>
+    );
+  },
+);
 OptionControlLabel.displayName = 'OptionControlLabel';

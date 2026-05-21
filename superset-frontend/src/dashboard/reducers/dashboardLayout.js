@@ -30,7 +30,13 @@ import newComponentFactory from '../util/newComponentFactory';
 import newEntitiesFromDrop from '../util/newEntitiesFromDrop';
 import reorderItem from '../util/dnd-reorder';
 import shouldWrapChildInRow from '../util/shouldWrapChildInRow';
-import { ROW_TYPE, TAB_TYPE, TABS_TYPE, PAGE_TYPE, PAGES_TYPE } from '../util/componentTypes';
+import {
+  ROW_TYPE,
+  TAB_TYPE,
+  TABS_TYPE,
+  PAGE_TYPE,
+  PAGES_TYPE,
+} from '../util/componentTypes';
 import cloneComponentTree from '../util/cloneComponentTree';
 
 import {

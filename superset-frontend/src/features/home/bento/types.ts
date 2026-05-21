@@ -12,20 +12,15 @@
 import type { CatalogObjectType } from 'src/features/catalog';
 
 /** Тип объекта для визуального тега карточки. */
-export type BentoCardKind =
-  | 'dashboard'
-  | 'chart'
-  | 'geo'
-  | 'table'
-  | 'doc';
+export type BentoCardKind = 'dashboard' | 'chart' | 'geo' | 'table' | 'doc';
 
 /** Размеры bento-карточки в 12-колоночной сетке. */
 export type BentoCardSize =
-  | 'small'   // span 3
-  | 'medium'  // span 4
-  | 'wide'    // span 6
-  | 'large'   // span 4, row-span 2
-  | 'full';   // span 12
+  | 'small' // span 3
+  | 'medium' // span 4
+  | 'wide' // span 6
+  | 'large' // span 4, row-span 2
+  | 'full'; // span 12
 
 /** Универсальный объект для отрисовки bento-карточки. */
 export interface BentoItem {

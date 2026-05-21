@@ -148,10 +148,7 @@ function writeSeenSet(set: Set<string>): void {
 }
 
 /** Помечает объект как «просмотренный» — точка рядом с ним исчезнет. */
-export function markCatalogItemSeen(
-  type: CatalogObjectType,
-  id: number,
-): void {
+export function markCatalogItemSeen(type: CatalogObjectType, id: number): void {
   const set = readSeenSet();
   const key = makeItemKey(type, id);
   if (set.has(key)) return;

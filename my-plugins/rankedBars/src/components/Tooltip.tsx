@@ -65,6 +65,7 @@ const Tooltip: React.FC<TooltipProps> = ({ payload }) => {
       role="tooltip"
       aria-hidden={payload == null}
       $visible={payload != null}
+      data-theme={payload?.themeMode ?? 'light'}
     >
       {payload?.element}
     </TooltipBox>,

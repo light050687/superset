@@ -395,17 +395,11 @@ const PresetDropdown = ({
           <Icons.Undo iconSize="m" />
           {t('Сбросить фильтры')}
         </FooterButton>
-        <FooterButton
-          onClick={onCreateClick}
-          aria-label={t('Создать пресет')}
-        >
+        <FooterButton onClick={onCreateClick} aria-label={t('Создать пресет')}>
           <Icons.PlusOutlined />
           {t('Создать пресет')}
         </FooterButton>
-        <FooterButton
-          onClick={onImportClick}
-          aria-label={t('Импорт пресета')}
-        >
+        <FooterButton onClick={onImportClick} aria-label={t('Импорт пресета')}>
           <Icons.DownloadOutlined />
           {t('Импорт пресета')}
         </FooterButton>

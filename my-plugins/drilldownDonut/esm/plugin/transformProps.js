@@ -167,6 +167,7 @@ export default function transformProps(chartProps) {
         categories,
         hasSubcategories: !!subCol && categories.some((c) => c.children.length > 0),
         totalRevenue,
+        rubDecimals,
         padAngle,
         borderRadius,
         showOuterLabelsPct,

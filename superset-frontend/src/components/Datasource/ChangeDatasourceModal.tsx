@@ -94,7 +94,9 @@ const StyledSpan = styled.span`
   }
 `;
 
-const ChangeDatasourceModal: FunctionComponent<React.PropsWithChildren<ChangeDatasourceModalProps>> = ({
+const ChangeDatasourceModal: FunctionComponent<
+  React.PropsWithChildren<ChangeDatasourceModalProps>
+> = ({
   addDangerToast,
   addSuccessToast,
   onChange,

@@ -240,15 +240,23 @@ export interface ExploreChartHeaderProps {
 export type Extensions = Partial<{
   'alertsreports.header.icon': ComponentType<React.PropsWithChildren<unknown>>;
   'load.drillby.options': LoadDrillByOptions;
-  'embedded.documentation.configuration_details': ComponentType<React.PropsWithChildren<ConfigDetailsProps>>;
+  'embedded.documentation.configuration_details': ComponentType<
+    React.PropsWithChildren<ConfigDetailsProps>
+  >;
   'embedded.documentation.description': ReturningDisplayable;
   'embedded.documentation.url': string;
-  'embedded.modal': ComponentType<React.PropsWithChildren<DashboardEmbedModalExtensions>>;
+  'embedded.modal': ComponentType<
+    React.PropsWithChildren<DashboardEmbedModalExtensions>
+  >;
   'dashboard.nav.right': ComponentType<React.PropsWithChildren<unknown>>;
   'home.submenu': ComponentType<React.PropsWithChildren<SubMenuProps>>;
-  'navbar.right-menu.item.icon': ComponentType<React.PropsWithChildren<RightMenuItemIconProps>>;
+  'navbar.right-menu.item.icon': ComponentType<
+    React.PropsWithChildren<RightMenuItemIconProps>
+  >;
   'navbar.right': ComponentType<React.PropsWithChildren<unknown>>;
-  'report-modal.dropdown.item.icon': ComponentType<React.PropsWithChildren<unknown>>;
+  'report-modal.dropdown.item.icon': ComponentType<
+    React.PropsWithChildren<unknown>
+  >;
   'root.context.provider': ComponentType<React.PropsWithChildren<unknown>>;
   'welcome.message': ComponentType<React.PropsWithChildren<unknown>>;
   'welcome.banner': ComponentType<React.PropsWithChildren<unknown>>;
@@ -256,11 +264,21 @@ export type Extensions = Partial<{
   'ssh_tunnel.form.switch': ComponentType<React.PropsWithChildren<SwitchProps>>;
   'databaseconnection.extraOption': DatabaseConnectionExtension;
   /* Custom components to show in the database and dataset delete modals */
-  'database.delete.related': ComponentType<React.PropsWithChildren<DatabaseDeleteRelatedExtensionProps>>;
-  'dataset.delete.related': ComponentType<React.PropsWithChildren<DatasetDeleteRelatedExtensionProps>>;
-  'sqleditor.extension.form': ComponentType<React.PropsWithChildren<SQLFormExtensionProps>>;
-  'sqleditor.extension.resultTable': ComponentType<React.PropsWithChildren<SQLResultTableExtensionProps>>;
-  'dashboard.slice.header': ComponentType<React.PropsWithChildren<SliceHeaderExtension>>;
+  'database.delete.related': ComponentType<
+    React.PropsWithChildren<DatabaseDeleteRelatedExtensionProps>
+  >;
+  'dataset.delete.related': ComponentType<
+    React.PropsWithChildren<DatasetDeleteRelatedExtensionProps>
+  >;
+  'sqleditor.extension.form': ComponentType<
+    React.PropsWithChildren<SQLFormExtensionProps>
+  >;
+  'sqleditor.extension.resultTable': ComponentType<
+    React.PropsWithChildren<SQLResultTableExtensionProps>
+  >;
+  'dashboard.slice.header': ComponentType<
+    React.PropsWithChildren<SliceHeaderExtension>
+  >;
   'sqleditor.extension.customAutocomplete': (
     args: CustomAutoCompleteArgs,
   ) => CustomAutocomplete[] | undefined;
@@ -268,6 +286,10 @@ export type Extensions = Partial<{
     string,
     ComponentType<React.PropsWithChildren<SQLTablePreviewExtensionProps>>,
   ][];
-  'filter.dateFilterControl': ComponentType<React.PropsWithChildren<DateFilterControlProps>>;
-  'explore.chart.header': ComponentType<React.PropsWithChildren<ExploreChartHeaderProps>>;
+  'filter.dateFilterControl': ComponentType<
+    React.PropsWithChildren<DateFilterControlProps>
+  >;
+  'explore.chart.header': ComponentType<
+    React.PropsWithChildren<ExploreChartHeaderProps>
+  >;
 }>;

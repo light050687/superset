@@ -800,9 +800,11 @@ const Select = forwardRef(
                     ...(stylesProp as { popup?: { root?: CSSProperties } })
                       ?.popup,
                     root: {
-                      ...(stylesProp as {
-                        popup?: { root?: CSSProperties };
-                      })?.popup?.root,
+                      ...(
+                        stylesProp as {
+                          popup?: { root?: CSSProperties };
+                        }
+                      )?.popup?.root,
                       ...dropdownStyle,
                     },
                   },

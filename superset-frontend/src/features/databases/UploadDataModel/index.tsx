@@ -212,7 +212,9 @@ const SwitchContainer = ({
   </StyledSwitchContainer>
 );
 
-const UploadDataModal: FunctionComponent<React.PropsWithChildren<UploadDataModalProps>> = ({
+const UploadDataModal: FunctionComponent<
+  React.PropsWithChildren<UploadDataModalProps>
+> = ({
   addDangerToast,
   addSuccessToast,
   onHide,

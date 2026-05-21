@@ -34,11 +34,9 @@ export const StyledControlNumberFormItem = styled(ControlFormItem)`
   `}
 `;
 
-export const MapViewPopoverContent: FC<React.PropsWithChildren<MapViewPopoverContentProps>> = ({
-  onClose = () => {},
-  onSave = () => {},
-  mapViewConf,
-}) => {
+export const MapViewPopoverContent: FC<
+  React.PropsWithChildren<MapViewPopoverContentProps>
+> = ({ onClose = () => {}, onSave = () => {}, mapViewConf }) => {
   // This is needed to force mounting the form every time
   // we get a new layerConf prop. Otherwise the input fields
   // will not be updated properly, since ControlFormItem only

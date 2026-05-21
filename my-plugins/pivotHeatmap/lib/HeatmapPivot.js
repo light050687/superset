@@ -143,18 +143,28 @@ function HeatmapPivot(props) {
     // Tooltip / popover
     const [tooltip, setTooltip] = (0, react_1.useState)(INITIAL_TOOLTIP);
     const [profile, setProfile] = (0, react_1.useState)(INITIAL_PROFILE);
-    // Theme (follow Superset body attribute if present)
+    /* Theme: следим за html[data-theme] (Superset 6 ставит туда, не на body).
+       Default 'light' — соответствует поведению Superset до явного переключения.
+       Реагируем только на конкретные значения 'light'/'dark', чтобы не упасть
+       в dark при отсутствии атрибута. */
     const [theme, setTheme] = (0, react_1.useState)(() => {
         if (typeof document === 'undefined')
-            return 'dark';
-        return document.body.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+            return 'light';
+        const v = document.documentElement.getAttribute('data-theme');
+        return v === 'dark' ? 'dark' : 'light';
     });
     (0, react_1.useEffect)(() => {
-        const obs = new MutationObserver(() => {
-            const v = document.body.getAttribute('data-theme');
-            setTheme(v === 'light' ? 'light' : 'dark');
-        });
-        obs.observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
+        if (typeof document === 'undefined')
+            return undefined;
+        const html = document.documentElement;
+        const read = () => {
+            const v = html.getAttribute('data-theme');
+            if (v === 'dark' || v === 'light')
+                setTheme(v);
+        };
+        read();
+        const obs = new MutationObserver(read);
+        obs.observe(html, { attributes: true, attributeFilter: ['data-theme'] });
         return () => obs.disconnect();
     }, []);
     // ── Derived: sorted rows ──
@@ -524,17 +534,13 @@ function HeatmapPivot(props) {
                                                 ].filter(Boolean).join(' ');
                                                 const shortLabel = truncateLabel(col.name, colLabelMaxChars);
                                                 const wasTruncated = shortLabel !== col.name;
-                                                return ((0, jsx_runtime_1.jsxs)("th", { scope: "col", className: className, onClick: (e) => onColHeaderClick(e, col), onDoubleClick: (e) => onColHeaderDblClick(e, col), onMouseEnter: (e) => onColHeaderEnter(e, col), onMouseLeave: onHeaderLeave, onMouseMove: onHeaderMove, tabIndex: 0, title: wasTruncated
-                                                        ? `${col.name} — клик: сортировка, дв. клик: фильтр, ⇧ клик: сравнить`
-                                                        : 'Клик — сортировка · дв. клик — фильтр · ⇧ клик — сравнить', "aria-label": col.name, children: [shortLabel, arrow && (0, jsx_runtime_1.jsx)("span", { className: "sort-arrow", children: arrow })] }, col.id));
+                                                return ((0, jsx_runtime_1.jsxs)("th", { scope: "col", className: className, onClick: (e) => onColHeaderClick(e, col), onDoubleClick: (e) => onColHeaderDblClick(e, col), onMouseEnter: (e) => onColHeaderEnter(e, col), onMouseLeave: onHeaderLeave, onMouseMove: onHeaderMove, tabIndex: 0, "aria-label": col.name, children: [shortLabel, arrow && (0, jsx_runtime_1.jsx)("span", { className: "sort-arrow", children: arrow })] }, col.id));
                                             }), showTotals && ((0, jsx_runtime_1.jsx)("th", { className: "totals-col", scope: "col", "aria-label": "\u0418\u0442\u043E\u0433\u043E", children: "\u0418\u0442\u043E\u0433\u043E" }))] }) }), (0, jsx_runtime_1.jsxs)("tbody", { children: [rows.map((row) => {
                                             const rowHl = hoverRow === row.id;
                                             return ((0, jsx_runtime_1.jsxs)("tr", { className: rowHl ? 'row-hl' : '', children: [(() => {
                                                         const shortRowLabel = truncateLabel(row.name, rowLabelMaxChars);
                                                         const rowTruncated = shortRowLabel !== row.name;
-                                                        return ((0, jsx_runtime_1.jsx)("th", { scope: "row", className: row.id === rowFilter ? 'filtered' : '', onClick: (e) => onRowHeaderClick(e, row), onMouseEnter: (e) => onRowHeaderEnter(e, row), onMouseLeave: onHeaderLeave, onMouseMove: onHeaderMove, tabIndex: 0, title: rowTruncated
-                                                                ? `${row.name} — клик: фильтр, ⇧: сравнить`
-                                                                : 'Клик — фильтр · ⇧ — сравнить', "aria-label": row.name, children: shortRowLabel }));
+                                                        return ((0, jsx_runtime_1.jsx)("th", { scope: "row", className: row.id === rowFilter ? 'filtered' : '', onClick: (e) => onRowHeaderClick(e, row), onMouseEnter: (e) => onRowHeaderEnter(e, row), onMouseLeave: onHeaderLeave, onMouseMove: onHeaderMove, tabIndex: 0, "aria-label": row.name, children: shortRowLabel }));
                                                     })(), cols.map((col) => {
                                                         const cell = cells.get(`${row.id}|${col.id}`);
                                                         const st = (0, thresholds_1.cellStatus)(cell, thresholds);

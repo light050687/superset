@@ -30,9 +30,13 @@ exports.KEYFRAMES_CSS = `
 const EASE = 'cubic-bezier(0.4, 0, 0.2, 1)';
 // DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
 // race-condition-free относительно <style dangerouslySetInnerHTML> (см. donut).
+/* Только opacity — transform убран намеренно: Superset dashboard drag-drop
+   управляет transform на chart-cell ancestor'е. Конфликт двух transform
+   приводил к тому что после перестановки чарт оставался смещённым/невидимым
+   до hard refresh. */
 const cardInKf = (0, react_1.keyframes) `
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 `;
 /* ================================================================
  * ROOT
@@ -909,14 +913,15 @@ exports.CardFooter = core_1.styled.footer `
 exports.TooltipEl = core_1.styled.div `
   position: fixed;
   display: ${p => (p.$visible ? 'block' : 'none')};
-  background: var(--ink);
-  color: var(--s);
-  border: 1px solid var(--g700);
+  /* DS 2.1 §08 «Тултипы»: tooltip того же тона что Card surface (НЕ инверт). */
+  background: var(--s);
+  color: var(--ink);
+  border: 1px solid rgba(128, 128, 128, 0.25);
   border-radius: 6px;
   padding: 8px 12px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
   font-family: var(--f);
-  font-size: var(--fs-meta);
+  font-size: 11px;
   pointer-events: none;
   z-index: 2000;
   max-width: 240px;
@@ -926,9 +931,9 @@ exports.TooltipEl = core_1.styled.div `
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    padding-bottom: 6px;
-    margin-bottom: 6px;
-    border-bottom: 1px solid var(--g700);
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.25);
   }
   .tt-status {
     width: 4px;
@@ -936,64 +941,56 @@ exports.TooltipEl = core_1.styled.div `
     flex-shrink: 0;
     align-self: stretch;
   }
-  .tt-titles {
-    flex: 1;
-    min-width: 0;
-  }
+  .tt-titles { flex: 1; min-width: 0; }
+  /* Header 13px Manrope 700 — крупнее DS-минимума для читаемости. */
   .tt-name {
-    font-size: var(--fs-meta);
+    font-size: 13px;
     font-weight: 700;
-    color: var(--s);
+    color: var(--ink);
     line-height: 1.3;
-    margin-bottom: 2px;
-    letter-spacing: -0.005em;
+    margin-bottom: 1px;
   }
   .tt-sub {
-    font-size: var(--fs-micro);
-    font-weight: 500;
-    color: var(--g400);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--g500);
     font-family: var(--m);
-    letter-spacing: 0.01em;
+    line-height: 1.4;
   }
   .tt-trend {
-    background: var(--g700);
-    border: 1px solid var(--g600);
-    border-radius: 4px;
+    background: rgba(128, 128, 128, 0.15);
+    border-radius: 5px;
     padding: 6px 8px;
     margin-bottom: 6px;
   }
   .tt-trend-l {
-    font-size: var(--fs-micro);
+    font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--g400);
+    color: var(--g500);
     font-family: var(--m);
     margin-bottom: 3px;
   }
-  .tt-rows {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
+  .tt-rows { display: flex; flex-direction: column; gap: 4px; }
   .tt-row {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 14px;
+    gap: 12px;
     font-family: var(--m);
   }
   .tt-l {
-    font-size: var(--fs-micro);
+    font-size: 11px;
     font-weight: 600;
-    color: var(--g400);
+    color: var(--g500);
     letter-spacing: 0.06em;
     text-transform: uppercase;
   }
   .tt-v {
-    font-size: var(--fs-meta);
-    font-weight: 700;
-    color: var(--s);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
     letter-spacing: -0.005em;
     font-variant-numeric: tabular-nums;
   }

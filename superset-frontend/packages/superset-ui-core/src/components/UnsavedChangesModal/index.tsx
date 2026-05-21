@@ -29,7 +29,9 @@ export type UnsavedChangesModalProps = {
   body?: string;
 };
 
-export const UnsavedChangesModal: FC<React.PropsWithChildren<UnsavedChangesModalProps>> = ({
+export const UnsavedChangesModal: FC<
+  React.PropsWithChildren<UnsavedChangesModalProps>
+> = ({
   showModal,
   onHide,
   handleSave,

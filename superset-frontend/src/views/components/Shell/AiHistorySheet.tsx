@@ -413,8 +413,8 @@ const Insight = styled.button<{ $sev: 'high' | 'med' | 'info' }>`
       $sev === 'high'
         ? DS2_VARS.cTangerine
         : $sev === 'med'
-        ? DS2_VARS.cAmber
-        : DS2_VARS.cSky};
+          ? DS2_VARS.cAmber
+          : DS2_VARS.cSky};
   }
 
   &:hover {
@@ -442,14 +442,14 @@ const InsIcon = styled.span<{ $kind: 'daily' | 'weekly' | 'anomaly' }>`
     $kind === 'daily'
       ? `color-mix(in oklab, ${DS2_VARS.cSky} 15%, transparent)`
       : $kind === 'weekly'
-      ? `color-mix(in oklab, ${DS2_VARS.cViolet} 15%, transparent)`
-      : `color-mix(in oklab, ${DS2_VARS.cTangerine} 15%, transparent)`};
+        ? `color-mix(in oklab, ${DS2_VARS.cViolet} 15%, transparent)`
+        : `color-mix(in oklab, ${DS2_VARS.cTangerine} 15%, transparent)`};
   color: ${({ $kind }) =>
     $kind === 'daily'
       ? DS2_VARS.cSky
       : $kind === 'weekly'
-      ? DS2_VARS.cViolet
-      : DS2_VARS.cTangerine};
+        ? DS2_VARS.cViolet
+        : DS2_VARS.cTangerine};
 
   svg {
     width: 10px;
@@ -739,12 +739,9 @@ function formatRelative(iso?: string): string {
   ).padStart(2, '0')}`;
 }
 
-export const AiHistorySheet: FC<React.PropsWithChildren<AiHistorySheetProps>> = ({
-  open,
-  onClose,
-  onSelectSession,
-  onNewChat,
-}) => {
+export const AiHistorySheet: FC<
+  React.PropsWithChildren<AiHistorySheetProps>
+> = ({ open, onClose, onSelectSession, onNewChat }) => {
   const [sessions, setSessions] = useState<AiChatSession[]>([]);
   const [folders, setFolders] = useState<AiChatFolder[]>([]);
   const [activeTasks, setActiveTasks] = useState<AiActiveTask[]>([]);
@@ -784,9 +781,7 @@ export const AiHistorySheet: FC<React.PropsWithChildren<AiHistorySheetProps>> = 
       t('Удалить все папки? Чаты останутся без папки.'),
     );
     if (!ok) return;
-    const rootIds = folders
-      .filter(f => f.parent_id === null)
-      .map(f => f.id);
+    const rootIds = folders.filter(f => f.parent_id === null).map(f => f.id);
     for (const id of rootIds) {
       try {
         // eslint-disable-next-line no-await-in-loop
@@ -904,102 +899,102 @@ export const AiHistorySheet: FC<React.PropsWithChildren<AiHistorySheetProps>> = 
         <Body>
           {/* Col 1: В РАБОТЕ */}
           <Col>
-          <ColHead>
-            <span>{t('В работе')}</span>
-            <ColHeadCount>{activeJobs.length}</ColHeadCount>
-          </ColHead>
-          {activeJobs.length === 0 ? (
-            <Empty>{t('Нет активных задач')}</Empty>
-          ) : (
-            activeJobs.map(j => (
-              <ActiveRow key={j.id} type="button">
-                <Spinner />
-                <ActiveText>{j.title}</ActiveText>
-                <ActiveTime>{j.progress}</ActiveTime>
-              </ActiveRow>
-            ))
-          )}
-        </Col>
+            <ColHead>
+              <span>{t('В работе')}</span>
+              <ColHeadCount>{activeJobs.length}</ColHeadCount>
+            </ColHead>
+            {activeJobs.length === 0 ? (
+              <Empty>{t('Нет активных задач')}</Empty>
+            ) : (
+              activeJobs.map(j => (
+                <ActiveRow key={j.id} type="button">
+                  <Spinner />
+                  <ActiveText>{j.title}</ActiveText>
+                  <ActiveTime>{j.progress}</ActiveTime>
+                </ActiveRow>
+              ))
+            )}
+          </Col>
 
-        {/* Col 2: ПАПКИ */}
-        <Col>
-          <ColHead>
-            <span>{t('Папки')}</span>
-            <ColHeadCount>
-              {rootFolders.length + (noFolderCount > 0 ? 1 : 0)}
-            </ColHeadCount>
-          </ColHead>
-          {rootFolders.length === 0 && noFolderCount === 0 ? (
-            <Empty>{t('Папок пока нет')}</Empty>
-          ) : (
-            <>
-              {rootFolders.map(f => (
-                <FolderRow key={f.id} type="button">
-                  <FolderDot $color={f.color} />
-                  <FolderName>{f.name}</FolderName>
-                  <FolderCount>{f.count}</FolderCount>
-                </FolderRow>
-              ))}
-              {noFolderCount > 0 ? (
-                <FolderRow type="button">
-                  <FolderDot $color="transparent" $dashed />
-                  <FolderName $italic>{t('Без папки')}</FolderName>
-                  <FolderCount>{noFolderCount}</FolderCount>
-                </FolderRow>
-              ) : null}
-            </>
-          )}
-        </Col>
+          {/* Col 2: ПАПКИ */}
+          <Col>
+            <ColHead>
+              <span>{t('Папки')}</span>
+              <ColHeadCount>
+                {rootFolders.length + (noFolderCount > 0 ? 1 : 0)}
+              </ColHeadCount>
+            </ColHead>
+            {rootFolders.length === 0 && noFolderCount === 0 ? (
+              <Empty>{t('Папок пока нет')}</Empty>
+            ) : (
+              <>
+                {rootFolders.map(f => (
+                  <FolderRow key={f.id} type="button">
+                    <FolderDot $color={f.color} />
+                    <FolderName>{f.name}</FolderName>
+                    <FolderCount>{f.count}</FolderCount>
+                  </FolderRow>
+                ))}
+                {noFolderCount > 0 ? (
+                  <FolderRow type="button">
+                    <FolderDot $color="transparent" $dashed />
+                    <FolderName $italic>{t('Без папки')}</FolderName>
+                    <FolderCount>{noFolderCount}</FolderCount>
+                  </FolderRow>
+                ) : null}
+              </>
+            )}
+          </Col>
 
-        {/* Col 3: ИИ АНАЛИТИКА */}
-        <InsightsCol>
-          <ColHead>
-            <span title={t('Автоматические сводки и найденные аномалии')}>
-              {t('ИИ аналитика')}
-            </span>
-            <ColHeadCount>{insights.length}</ColHeadCount>
-          </ColHead>
-          {insights.length === 0 ? (
-            <Empty>{t('Пока нет инсайтов')}</Empty>
-          ) : (
-            insights.map(ins => (
-              <Insight key={ins.id} type="button" $sev={ins.severity}>
-                <InsHead>
-                  <InsIcon $kind={ins.kind}>{insightIcon(ins.kind)}</InsIcon>
-                  <InsBadge>{ins.badge}</InsBadge>
-                  <InsTime>{ins.time}</InsTime>
-                </InsHead>
-                <InsTitle>{ins.title}</InsTitle>
-                <InsPreview>{ins.preview}</InsPreview>
-              </Insight>
-            ))
-          )}
-        </InsightsCol>
+          {/* Col 3: ИИ АНАЛИТИКА */}
+          <InsightsCol>
+            <ColHead>
+              <span title={t('Автоматические сводки и найденные аномалии')}>
+                {t('ИИ аналитика')}
+              </span>
+              <ColHeadCount>{insights.length}</ColHeadCount>
+            </ColHead>
+            {insights.length === 0 ? (
+              <Empty>{t('Пока нет инсайтов')}</Empty>
+            ) : (
+              insights.map(ins => (
+                <Insight key={ins.id} type="button" $sev={ins.severity}>
+                  <InsHead>
+                    <InsIcon $kind={ins.kind}>{insightIcon(ins.kind)}</InsIcon>
+                    <InsBadge>{ins.badge}</InsBadge>
+                    <InsTime>{ins.time}</InsTime>
+                  </InsHead>
+                  <InsTitle>{ins.title}</InsTitle>
+                  <InsPreview>{ins.preview}</InsPreview>
+                </Insight>
+              ))
+            )}
+          </InsightsCol>
 
-        {/* Col 4: НЕДАВНИЕ */}
-        <Col>
-          <ColHead>
-            <span>{t('Недавние')}</span>
-            <ColHeadCount>{recents.length}</ColHeadCount>
-          </ColHead>
-          {recents.length === 0 ? (
-            <Empty>{t('Пусто')}</Empty>
-          ) : (
-            recents.map(s => (
-              <ChatRow
-                key={s.id}
-                type="button"
-                onClick={() => handleSelect(s.id)}
-              >
-                <IconChatBubble />
-                <ChatTitle>{s.title || t('Без названия')}</ChatTitle>
-                <ChatTime>
-                  {formatRelative(s.changed_on ?? s.created_on ?? '')}
-                </ChatTime>
-              </ChatRow>
-            ))
-          )}
-        </Col>
+          {/* Col 4: НЕДАВНИЕ */}
+          <Col>
+            <ColHead>
+              <span>{t('Недавние')}</span>
+              <ColHeadCount>{recents.length}</ColHeadCount>
+            </ColHead>
+            {recents.length === 0 ? (
+              <Empty>{t('Пусто')}</Empty>
+            ) : (
+              recents.map(s => (
+                <ChatRow
+                  key={s.id}
+                  type="button"
+                  onClick={() => handleSelect(s.id)}
+                >
+                  <IconChatBubble />
+                  <ChatTitle>{s.title || t('Без названия')}</ChatTitle>
+                  <ChatTime>
+                    {formatRelative(s.changed_on ?? s.created_on ?? '')}
+                  </ChatTime>
+                </ChatRow>
+              ))
+            )}
+          </Col>
         </Body>
       </TabView>
 

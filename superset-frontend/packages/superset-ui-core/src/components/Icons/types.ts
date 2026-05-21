@@ -29,7 +29,9 @@ export type IconType = AntdIconProps & {
   customIcons?: boolean;
 };
 
-export type CustomIconType = ComponentType<React.PropsWithChildren<SVGProps<SVGSVGElement>>>;
+export type CustomIconType = ComponentType<
+  React.PropsWithChildren<SVGProps<SVGSVGElement>>
+>;
 export type AntdIconType = typeof Icon;
 
 export interface BaseIconProps {

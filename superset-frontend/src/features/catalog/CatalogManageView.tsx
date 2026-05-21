@@ -20,18 +20,9 @@
  *  - реальные имена объектов через SupersetClient (hook useCatalogObjectNames)
  */
 import { styled, t } from '@superset-ui/core';
-import {
-  type FC,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { DS2_VARS } from 'src/theme/ds2';
-import {
-  listCatalogItems,
-  updateCatalogFolder,
-} from './api';
+import { listCatalogItems, updateCatalogFolder } from './api';
 import type { CatalogDraft } from './useCatalogDraft';
 import { CatalogConfirmModal } from './CatalogConfirmModal';
 import { CatalogDeleteModal } from './CatalogDeleteModal';
@@ -52,10 +43,7 @@ import type {
   CatalogFolderNode,
   CatalogObjectType,
 } from './types';
-import {
-  objectKey,
-  useCatalogObjectNames,
-} from './useCatalogObjectNames';
+import { objectKey, useCatalogObjectNames } from './useCatalogObjectNames';
 import {
   deriveDefaultFolderName,
   genitivePlural,
@@ -169,8 +157,7 @@ const Col = styled.div`
   }
   /* Мокап .mc-col: без внутреннего padding, только border-right
      (полу-прозрачный) между колонками. */
-  border-right: 1px solid
-    color-mix(in oklab, ${DS2_VARS.g100} 70%, transparent);
+  border-right: 1px solid color-mix(in oklab, ${DS2_VARS.g100} 70%, transparent);
 
   &:last-child {
     border-right: none;
@@ -368,8 +355,8 @@ const Row = styled.div<{
       $dropZone === 'into'
         ? DS2_VARS.cSky
         : $selected
-        ? `color-mix(in oklab, ${DS2_VARS.cSky} 40%, transparent)`
-        : 'transparent'};
+          ? `color-mix(in oklab, ${DS2_VARS.cSky} 40%, transparent)`
+          : 'transparent'};
   cursor: pointer;
   user-select: none;
   transition: all 0.1s ${DS2_VARS.ease};
@@ -377,8 +364,8 @@ const Row = styled.div<{
     $dropZone === 'into'
       ? `color-mix(in oklab, ${DS2_VARS.cSky} 22%, transparent)`
       : $selected
-      ? `color-mix(in oklab, ${DS2_VARS.cSky} 10%, transparent)`
-      : 'transparent'};
+        ? `color-mix(in oklab, ${DS2_VARS.cSky} 10%, transparent)`
+        : 'transparent'};
   /* Default color — g700 (как в мокапе для неактивных строк). Hover
      переключает на ink; selected — на cSky. Meta/count наследуют через
      правила ниже. */
@@ -402,10 +389,9 @@ const Row = styled.div<{
       $dropZone === 'into'
         ? `color-mix(in oklab, ${DS2_VARS.cSky} 22%, transparent)`
         : $selected
-        ? `color-mix(in oklab, ${DS2_VARS.cSky} 14%, transparent)`
-        : `color-mix(in oklab, ${DS2_VARS.bg3} 70%, transparent)`};
-    color: ${({ $selected }) =>
-      $selected ? DS2_VARS.cSky : DS2_VARS.ink};
+          ? `color-mix(in oklab, ${DS2_VARS.cSky} 14%, transparent)`
+          : `color-mix(in oklab, ${DS2_VARS.bg3} 70%, transparent)`};
+    color: ${({ $selected }) => ($selected ? DS2_VARS.cSky : DS2_VARS.ink)};
   }
 
   /* Count / Actions swap (мокап .mcr-count / .mcr-actions): count видно по
@@ -742,12 +728,9 @@ function nextColor(count: number): string {
 
 /* ─── Component ─── */
 
-export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProps>> = ({
-  folders: baselineFolders,
-  onChanged,
-  scope,
-  draft,
-}) => {
+export const CatalogManageView: FC<
+  React.PropsWithChildren<CatalogManageViewProps>
+> = ({ folders: baselineFolders, onChanged, scope, draft }) => {
   /* Derived state из draft: move-ops накладываются на baseline, удалённые
      папки помечаются через deletedFolderIds (но в списке остаются, чтобы
      UI мог показать их зачёркнутыми и разрешить Reset). */
@@ -766,14 +749,18 @@ export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProp
 
   const setDeptId = useCallback((v: number | null) => setDeptIdState(v), []);
   const setSubId = useCallback((v: number | null) => setSubIdState(v), []);
-  const setFolderId = useCallback((v: number | null) => setFolderIdState(v), []);
+  const setFolderId = useCallback(
+    (v: number | null) => setFolderIdState(v),
+    [],
+  );
 
   /* Любое изменение selection синхронизируется в localStorage. */
   useEffect(() => {
     writeSelection({ deptId, subId, folderId });
   }, [deptId, subId, folderId]);
-  const [deleteTarget, setDeleteTarget] =
-    useState<CatalogFolderNode | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CatalogFolderNode | null>(
+    null,
+  );
   /* Объекты лежат на уровне папки (listCatalogItems возвращает прямые
      дети конкретной папки, не рекурсивно). Чтобы колонка «Подразделы»
      показывала объекты дефолтной папки (у которой нет под-структуры),
@@ -823,7 +810,6 @@ export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProp
     () => (subId === null ? [] : folders.filter(f => f.parent_id === subId)),
     [folders, subId],
   );
-
 
   // Сброс selection если удалили выбранную папку
   useEffect(() => {
@@ -1059,8 +1045,7 @@ export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProp
      текущим именем is_default-папки — бэкенд сам приведёт её к новому
      wrapper_name, если отличается. Для не-root — sibling-обёртка. */
   const resolveWrapperName = useCallback(
-    (target: CatalogFolderNode): string =>
-      wrapperNameForLevel(levelOf(target)),
+    (target: CatalogFolderNode): string => wrapperNameForLevel(levelOf(target)),
     [levelOf, wrapperNameForLevel],
   );
 
@@ -1148,11 +1133,7 @@ export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProp
 
   /* Draft-режим: перемещение папки (parent_id, position). */
   const moveFolder = useCallback(
-    (
-      folderId: number,
-      newParentId: number | null,
-      newPosition?: number,
-    ) => {
+    (folderId: number, newParentId: number | null, newPosition?: number) => {
       draft.enqueueMoveFolder(folderId, newParentId, newPosition);
     },
     [draft],
@@ -1210,7 +1191,9 @@ export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProp
           'Всё содержимое <strong>%s</strong> переедет в <strong>%s</strong>, ' +
             'после чего исходник будет удалён.',
           src.name,
-          target.is_default ? deriveDefaultFolderName(labels.dept) : target.name,
+          target.is_default
+            ? deriveDefaultFolderName(labels.dept)
+            : target.name,
         ),
         meta: [
           t('Подпапок: %s', String(children.length)),
@@ -1364,18 +1347,14 @@ export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProp
      своего потомка — это делается в handleDropOnRow). */
 
   const acceptAnyFolderOrItem = useCallback(
-    (p: DndPayload) =>
-      p.kind === 'item' || p.kind === 'folder',
+    (p: DndPayload) => p.kind === 'item' || p.kind === 'folder',
     [],
   );
 
   /* canDropInto возвращает true для ВСЕХ accepted — тогда зона «into»
      (середина row'а) подсвечивается sky-фоном. handleDropOnRow сам
      решит, что это значит (merge/move/assign). */
-  const canDropIntoAnything = useCallback(
-    (_p: DndPayload) => true,
-    [],
-  );
+  const canDropIntoAnything = useCallback((_p: DndPayload) => true, []);
 
   /* Body-acceptors одинаковые — разрешаем любой folder/item, решение
      о том что делать принимается в handleDropOnBody с учётом
@@ -1408,9 +1387,7 @@ export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProp
               <IconPlus />
             </AddBtn>
           </ColHead>
-          <ColBody
-            $dropActive={false}
-          >
+          <ColBody $dropActive={false}>
             {depts.length === 0 ? (
               <Empty>
                 <IconFolder />
@@ -1422,9 +1399,7 @@ export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProp
                 <DndRow
                   key={d.id}
                   dragPayload={
-                    d.is_default
-                      ? undefined
-                      : folderDragPayload(d.id, 1, null)
+                    d.is_default ? undefined : folderDragPayload(d.id, 1, null)
                   }
                   canAccept={acceptAnyFolderOrItem}
                   canDropInto={canDropIntoAnything}
@@ -1433,60 +1408,60 @@ export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProp
                   }
                 >
                   {({ isDragging, isOver, dropZone, ref }) => (
-                <Row
-                  ref={ref}
-                  className={deptId === d.id ? 'is-selected' : ''}
-                  $selected={deptId === d.id}
-                  $dropZone={isOver ? dropZone : null}
-                  $dragging={isDragging}
-                  $pendingDelete={deletedFolderIds.has(d.id)}
-                  $pendingCreate={d.id < 0}
-                  onClick={() => {
-                    setDeptId(d.id);
-                    setSubId(null);
-                    setFolderId(null);
-                  }}
-                >
-                  <Dot $color={d.color ?? '#999999'} />
-                  {/* Мокап .mcr-body: flex:1 обёртка вокруг имени, чтобы
+                    <Row
+                      ref={ref}
+                      className={deptId === d.id ? 'is-selected' : ''}
+                      $selected={deptId === d.id}
+                      $dropZone={isOver ? dropZone : null}
+                      $dragging={isDragging}
+                      $pendingDelete={deletedFolderIds.has(d.id)}
+                      $pendingCreate={d.id < 0}
+                      onClick={() => {
+                        setDeptId(d.id);
+                        setSubId(null);
+                        setFolderId(null);
+                      }}
+                    >
+                      <Dot $color={d.color ?? '#999999'} />
+                      {/* Мокап .mcr-body: flex:1 обёртка вокруг имени, чтобы
                       Slot прижался к правому краю. Без неё Name с fixed
                       width оставил бы space между названием и count'ом. */}
-                  <RowBody>
-                    <Name>
-                      {d.is_default
-                        ? deriveDefaultFolderName(labels.dept)
-                        : d.name}
-                    </Name>
-                  </RowBody>
-                  <Slot>
-                    <Count className="cat-count">{d.item_count}</Count>
-                    {d.is_default ? null : (
-                      <Actions className="cat-actions">
-                        <ActBtn
-                          type="button"
-                          onClick={e => {
-                            e.stopPropagation();
-                            renameFolder(d);
-                          }}
-                          aria-label={t('Переименовать')}
-                        >
-                          <IconEdit />
-                        </ActBtn>
-                        <DelBtn
-                          type="button"
-                          className="mcr-act-del"
-                          onClick={e => {
-                            e.stopPropagation();
-                            setDeleteTarget(d);
-                          }}
-                          aria-label={t('Удалить')}
-                        >
-                          <IconTrash />
-                        </DelBtn>
-                      </Actions>
-                    )}
-                  </Slot>
-                </Row>
+                      <RowBody>
+                        <Name>
+                          {d.is_default
+                            ? deriveDefaultFolderName(labels.dept)
+                            : d.name}
+                        </Name>
+                      </RowBody>
+                      <Slot>
+                        <Count className="cat-count">{d.item_count}</Count>
+                        {d.is_default ? null : (
+                          <Actions className="cat-actions">
+                            <ActBtn
+                              type="button"
+                              onClick={e => {
+                                e.stopPropagation();
+                                renameFolder(d);
+                              }}
+                              aria-label={t('Переименовать')}
+                            >
+                              <IconEdit />
+                            </ActBtn>
+                            <DelBtn
+                              type="button"
+                              className="mcr-act-del"
+                              onClick={e => {
+                                e.stopPropagation();
+                                setDeleteTarget(d);
+                              }}
+                              aria-label={t('Удалить')}
+                            >
+                              <IconTrash />
+                            </DelBtn>
+                          </Actions>
+                        )}
+                      </Slot>
+                    </Row>
                   )}
                 </DndRow>
               ))
@@ -1530,152 +1505,153 @@ export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProp
             }
           >
             {({ isOver: subBodyOver, ref: subBodyRef }) => (
-          <ColBody
-            ref={subBodyRef}
-            $dropActive={subBodyOver}
-          >
-            {deptId === null ? (
-              <Empty>
-                <IconFolder />
-                <strong>
-                  {t('Выберите %s', singularAccusative(labels.dept))}
-                </strong>
-                <span>
-                  {t('Слева, чтобы открыть %s', labels.sub.toLowerCase())}
-                </span>
-              </Empty>
-            ) : subs.length === 0 && scopedDeptItems.length === 0 ? (
-              <Empty>
-                <IconFolderSub />
-                <strong>{t('Нет %s', genitivePlural(labels.sub))}</strong>
-                <span>{t('Создайте первый через «+»')}</span>
-              </Empty>
-            ) : (
-              <>
-                {subs.map(s => (
-                  <DndRow
-                    key={`sub-${s.id}`}
-                    dragPayload={
-                      s.is_default
-                        ? undefined
-                        : folderDragPayload(s.id, 2, s.parent_id)
-                    }
-                    canAccept={acceptAnyFolderOrItem}
-                    canDropInto={canDropIntoAnything}
-                    onDrop={(payload, zone) =>
-                      handleDropOnRow(payload, zone, s, 'sub')
-                    }
-                  >
-                    {({ isDragging, isOver, dropZone, ref }) => (
-                    <Row
-                      ref={ref}
-                      className={subId === s.id ? 'is-selected' : ''}
-                      $selected={subId === s.id}
-                      $dropZone={isOver ? dropZone : null}
-                      $dragging={isDragging}
-                      $pendingDelete={deletedFolderIds.has(s.id)}
-                      $pendingCreate={s.id < 0}
-                      onClick={() => {
-                        setSubId(s.id);
-                        setFolderId(null);
-                      }}
-                    >
-                      <RowIcon
-                        $color={
-                          s.color ?? selectedDept?.color ?? DS2_VARS.cSky
+              <ColBody ref={subBodyRef} $dropActive={subBodyOver}>
+                {deptId === null ? (
+                  <Empty>
+                    <IconFolder />
+                    <strong>
+                      {t('Выберите %s', singularAccusative(labels.dept))}
+                    </strong>
+                    <span>
+                      {t('Слева, чтобы открыть %s', labels.sub.toLowerCase())}
+                    </span>
+                  </Empty>
+                ) : subs.length === 0 && scopedDeptItems.length === 0 ? (
+                  <Empty>
+                    <IconFolderSub />
+                    <strong>{t('Нет %s', genitivePlural(labels.sub))}</strong>
+                    <span>{t('Создайте первый через «+»')}</span>
+                  </Empty>
+                ) : (
+                  <>
+                    {subs.map(s => (
+                      <DndRow
+                        key={`sub-${s.id}`}
+                        dragPayload={
+                          s.is_default
+                            ? undefined
+                            : folderDragPayload(s.id, 2, s.parent_id)
+                        }
+                        canAccept={acceptAnyFolderOrItem}
+                        canDropInto={canDropIntoAnything}
+                        onDrop={(payload, zone) =>
+                          handleDropOnRow(payload, zone, s, 'sub')
                         }
                       >
-                        <IconFolderSub />
-                      </RowIcon>
-                      <RowBody>
-                        <Name>
-                          {s.is_default
-                            ? deriveDefaultFolderName(labels.dept)
-                            : s.name}
-                        </Name>
-                        {(() => {
-                          const childFolders = folders.filter(
-                            x => x.parent_id === s.id,
-                          ).length;
-                          const totalItems = s.item_count ?? 0;
-                          const total = childFolders + totalItems;
-                          if (total === 0) return null;
-                          return <MetaLine>{`${total} эл.`}</MetaLine>;
-                        })()}
-                      </RowBody>
-                      <Slot>
-                        <Count className="cat-count">{s.item_count}</Count>
-                        {s.is_default ? null : (
-                          <Actions className="cat-actions">
-                            <ActBtn
-                              type="button"
-                              onClick={e => {
-                                e.stopPropagation();
-                                renameFolder(s);
-                              }}
-                              aria-label={t('Переименовать')}
+                        {({ isDragging, isOver, dropZone, ref }) => (
+                          <Row
+                            ref={ref}
+                            className={subId === s.id ? 'is-selected' : ''}
+                            $selected={subId === s.id}
+                            $dropZone={isOver ? dropZone : null}
+                            $dragging={isDragging}
+                            $pendingDelete={deletedFolderIds.has(s.id)}
+                            $pendingCreate={s.id < 0}
+                            onClick={() => {
+                              setSubId(s.id);
+                              setFolderId(null);
+                            }}
+                          >
+                            <RowIcon
+                              $color={
+                                s.color ?? selectedDept?.color ?? DS2_VARS.cSky
+                              }
                             >
-                              <IconEdit />
-                            </ActBtn>
-                            <DelBtn
-                              type="button"
-                              className="mcr-act-del"
-                              onClick={e => {
-                                e.stopPropagation();
-                                setDeleteTarget(s);
-                              }}
-                              aria-label={t('Удалить')}
-                            >
-                              <IconTrash />
-                            </DelBtn>
-                          </Actions>
+                              <IconFolderSub />
+                            </RowIcon>
+                            <RowBody>
+                              <Name>
+                                {s.is_default
+                                  ? deriveDefaultFolderName(labels.dept)
+                                  : s.name}
+                              </Name>
+                              {(() => {
+                                const childFolders = folders.filter(
+                                  x => x.parent_id === s.id,
+                                ).length;
+                                const totalItems = s.item_count ?? 0;
+                                const total = childFolders + totalItems;
+                                if (total === 0) return null;
+                                return <MetaLine>{`${total} эл.`}</MetaLine>;
+                              })()}
+                            </RowBody>
+                            <Slot>
+                              <Count className="cat-count">
+                                {s.item_count}
+                              </Count>
+                              {s.is_default ? null : (
+                                <Actions className="cat-actions">
+                                  <ActBtn
+                                    type="button"
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      renameFolder(s);
+                                    }}
+                                    aria-label={t('Переименовать')}
+                                  >
+                                    <IconEdit />
+                                  </ActBtn>
+                                  <DelBtn
+                                    type="button"
+                                    className="mcr-act-del"
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      setDeleteTarget(s);
+                                    }}
+                                    aria-label={t('Удалить')}
+                                  >
+                                    <IconTrash />
+                                  </DelBtn>
+                                </Actions>
+                              )}
+                            </Slot>
+                          </Row>
                         )}
-                      </Slot>
-                    </Row>
-                    )}
-                  </DndRow>
-                ))}
+                      </DndRow>
+                    ))}
 
-                {/* Объекты, ассайнутые напрямую в департамент (folder_id=deptId) —
+                    {/* Объекты, ассайнутые напрямую в департамент (folder_id=deptId) —
                     показываются ИНЛАЙН вместе с подразделами, на своём уровне.
                     Это ключевое требование: объект живёт там, где его создали. */}
-                {deptItemsLoading
-                  ? null
-                  : scopedDeptItems.map(it => {
-                      const info =
-                        objectNames[objectKey(it.object_type, it.object_id)];
-                      const { color, Icon } = typeColorFor(it.object_type);
-                      return (
-                        <DndRow
-                          key={`dept-item-${it.id}`}
-                          dragPayload={itemDragPayload(it)}
-                        >
-                          {({ isDragging, ref }) => (
-                        <Row
-                          ref={ref}
-                          $dragging={isDragging}
-                          title={info?.title ?? ''}
-                        >
-                          <RowIcon $color={color} $tinted>
-                            <Icon />
-                          </RowIcon>
-                          <RowBody>
-                            <Name>
-                              {info?.title ??
-                                `${it.object_type} #${it.object_id}`}
-                            </Name>
-                            {info?.subtitle ? (
-                              <MetaLine>{info.subtitle}</MetaLine>
-                            ) : null}
-                          </RowBody>
-                        </Row>
-                          )}
-                        </DndRow>
-                      );
-                    })}
-              </>
-            )}
-          </ColBody>
+                    {deptItemsLoading
+                      ? null
+                      : scopedDeptItems.map(it => {
+                          const info =
+                            objectNames[
+                              objectKey(it.object_type, it.object_id)
+                            ];
+                          const { color, Icon } = typeColorFor(it.object_type);
+                          return (
+                            <DndRow
+                              key={`dept-item-${it.id}`}
+                              dragPayload={itemDragPayload(it)}
+                            >
+                              {({ isDragging, ref }) => (
+                                <Row
+                                  ref={ref}
+                                  $dragging={isDragging}
+                                  title={info?.title ?? ''}
+                                >
+                                  <RowIcon $color={color} $tinted>
+                                    <Icon />
+                                  </RowIcon>
+                                  <RowBody>
+                                    <Name>
+                                      {info?.title ??
+                                        `${it.object_type} #${it.object_id}`}
+                                    </Name>
+                                    {info?.subtitle ? (
+                                      <MetaLine>{info.subtitle}</MetaLine>
+                                    ) : null}
+                                  </RowBody>
+                                </Row>
+                              )}
+                            </DndRow>
+                          );
+                        })}
+                  </>
+                )}
+              </ColBody>
             )}
           </DndBody>
         </Col>
@@ -1695,7 +1671,9 @@ export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProp
               {labels.folder}
               <IconEdit />
             </ColHeadLabel>
-            <ColHeadCount>{subfolders.length + scopedSubItems.length}</ColHeadCount>
+            <ColHeadCount>
+              {subfolders.length + scopedSubItems.length}
+            </ColHeadCount>
             <AddBtn
               type="button"
               onClick={() => subId !== null && addFolder(subId, 'folder')}
@@ -1712,141 +1690,149 @@ export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProp
             }
           >
             {({ isOver: folBodyOver, ref: folBodyRef }) => (
-          <ColBody
-            ref={folBodyRef}
-            $dropActive={folBodyOver}
-          >
-            {subId === null ? (
-              <Empty>
-                <IconFolderSub />
-                <strong>
-                  {t('Выберите %s', singularAccusative(labels.sub))}
-                </strong>
-                <span>
-                  {t('Чтобы увидеть %s и объекты', labels.folder.toLowerCase())}
-                </span>
-              </Empty>
-            ) : subfolders.length === 0 && scopedSubItems.length === 0 ? (
-              <Empty>
-                <IconFolderSub />
-                <strong>{t('Нет %s', genitivePlural(labels.folder))}</strong>
-                <span>{t('Создайте первую через «+»')}</span>
-              </Empty>
-            ) : (
-              <>
-                {subfolders.map(f => (
-                  <DndRow
-                    key={`folder-${f.id}`}
-                    dragPayload={
-                      f.is_default
-                        ? undefined
-                        : folderDragPayload(f.id, 3, f.parent_id)
-                    }
-                    canAccept={acceptAnyFolderOrItem}
-                    canDropInto={canDropIntoAnything}
-                    onDrop={(payload, zone) =>
-                      handleDropOnRow(payload, zone, f, 'folder')
-                    }
-                  >
-                    {({ isDragging, isOver, dropZone, ref }) => (
-                    <Row
-                      ref={ref}
-                      className={folderId === f.id ? 'is-selected' : ''}
-                      $selected={folderId === f.id}
-                      $dropZone={isOver ? dropZone : null}
-                      $dragging={isDragging}
-                      $pendingDelete={deletedFolderIds.has(f.id)}
-                      $pendingCreate={f.id < 0}
-                      onClick={() => setFolderId(f.id)}
-                    >
-                      <RowIcon
-                        $color={
-                          f.color ?? selectedSub?.color ?? DS2_VARS.cTangerine
+              <ColBody ref={folBodyRef} $dropActive={folBodyOver}>
+                {subId === null ? (
+                  <Empty>
+                    <IconFolderSub />
+                    <strong>
+                      {t('Выберите %s', singularAccusative(labels.sub))}
+                    </strong>
+                    <span>
+                      {t(
+                        'Чтобы увидеть %s и объекты',
+                        labels.folder.toLowerCase(),
+                      )}
+                    </span>
+                  </Empty>
+                ) : subfolders.length === 0 && scopedSubItems.length === 0 ? (
+                  <Empty>
+                    <IconFolderSub />
+                    <strong>
+                      {t('Нет %s', genitivePlural(labels.folder))}
+                    </strong>
+                    <span>{t('Создайте первую через «+»')}</span>
+                  </Empty>
+                ) : (
+                  <>
+                    {subfolders.map(f => (
+                      <DndRow
+                        key={`folder-${f.id}`}
+                        dragPayload={
+                          f.is_default
+                            ? undefined
+                            : folderDragPayload(f.id, 3, f.parent_id)
+                        }
+                        canAccept={acceptAnyFolderOrItem}
+                        canDropInto={canDropIntoAnything}
+                        onDrop={(payload, zone) =>
+                          handleDropOnRow(payload, zone, f, 'folder')
                         }
                       >
-                        <IconFolder />
-                      </RowIcon>
-                      <RowBody>
-                        <Name>
-                          {f.is_default
-                            ? deriveDefaultFolderName(labels.dept)
-                            : f.name}
-                        </Name>
-                        {(f.item_count ?? 0) > 0 ? (
-                          <MetaLine>{`${f.item_count} эл.`}</MetaLine>
-                        ) : null}
-                      </RowBody>
-                      <Slot>
-                        <Count className="cat-count">{f.item_count}</Count>
-                        {f.is_default ? null : (
-                          <Actions className="cat-actions">
-                            <ActBtn
-                              type="button"
-                              onClick={e => {
-                                e.stopPropagation();
-                                renameFolder(f);
-                              }}
-                              aria-label={t('Переименовать')}
+                        {({ isDragging, isOver, dropZone, ref }) => (
+                          <Row
+                            ref={ref}
+                            className={folderId === f.id ? 'is-selected' : ''}
+                            $selected={folderId === f.id}
+                            $dropZone={isOver ? dropZone : null}
+                            $dragging={isDragging}
+                            $pendingDelete={deletedFolderIds.has(f.id)}
+                            $pendingCreate={f.id < 0}
+                            onClick={() => setFolderId(f.id)}
+                          >
+                            <RowIcon
+                              $color={
+                                f.color ??
+                                selectedSub?.color ??
+                                DS2_VARS.cTangerine
+                              }
                             >
-                              <IconEdit />
-                            </ActBtn>
-                            <DelBtn
-                              type="button"
-                              className="mcr-act-del"
-                              onClick={e => {
-                                e.stopPropagation();
-                                setDeleteTarget(f);
-                              }}
-                              aria-label={t('Удалить')}
-                            >
-                              <IconTrash />
-                            </DelBtn>
-                          </Actions>
+                              <IconFolder />
+                            </RowIcon>
+                            <RowBody>
+                              <Name>
+                                {f.is_default
+                                  ? deriveDefaultFolderName(labels.dept)
+                                  : f.name}
+                              </Name>
+                              {(f.item_count ?? 0) > 0 ? (
+                                <MetaLine>{`${f.item_count} эл.`}</MetaLine>
+                              ) : null}
+                            </RowBody>
+                            <Slot>
+                              <Count className="cat-count">
+                                {f.item_count}
+                              </Count>
+                              {f.is_default ? null : (
+                                <Actions className="cat-actions">
+                                  <ActBtn
+                                    type="button"
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      renameFolder(f);
+                                    }}
+                                    aria-label={t('Переименовать')}
+                                  >
+                                    <IconEdit />
+                                  </ActBtn>
+                                  <DelBtn
+                                    type="button"
+                                    className="mcr-act-del"
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      setDeleteTarget(f);
+                                    }}
+                                    aria-label={t('Удалить')}
+                                  >
+                                    <IconTrash />
+                                  </DelBtn>
+                                </Actions>
+                              )}
+                            </Slot>
+                          </Row>
                         )}
-                      </Slot>
-                    </Row>
-                    )}
-                  </DndRow>
-                ))}
+                      </DndRow>
+                    ))}
 
-                {/* Loose items подраздела (folder_id=subId) — inline с папками. */}
-                {subItemsLoading
-                  ? null
-                  : scopedSubItems.map(it => {
-                      const info =
-                        objectNames[objectKey(it.object_type, it.object_id)];
-                      const { color, Icon } = typeColorFor(it.object_type);
-                      return (
-                        <DndRow
-                          key={`sub-item-${it.id}`}
-                          dragPayload={itemDragPayload(it)}
-                        >
-                          {({ isDragging, ref }) => (
-                        <Row
-                          ref={ref}
-                          $dragging={isDragging}
-                          title={info?.title ?? ''}
-                        >
-                          <RowIcon $color={color} $tinted>
-                            <Icon />
-                          </RowIcon>
-                          <RowBody>
-                            <Name>
-                              {info?.title ??
-                                `${it.object_type} #${it.object_id}`}
-                            </Name>
-                            {info?.subtitle ? (
-                              <MetaLine>{info.subtitle}</MetaLine>
-                            ) : null}
-                          </RowBody>
-                        </Row>
-                          )}
-                        </DndRow>
-                      );
-                    })}
-              </>
-            )}
-          </ColBody>
+                    {/* Loose items подраздела (folder_id=subId) — inline с папками. */}
+                    {subItemsLoading
+                      ? null
+                      : scopedSubItems.map(it => {
+                          const info =
+                            objectNames[
+                              objectKey(it.object_type, it.object_id)
+                            ];
+                          const { color, Icon } = typeColorFor(it.object_type);
+                          return (
+                            <DndRow
+                              key={`sub-item-${it.id}`}
+                              dragPayload={itemDragPayload(it)}
+                            >
+                              {({ isDragging, ref }) => (
+                                <Row
+                                  ref={ref}
+                                  $dragging={isDragging}
+                                  title={info?.title ?? ''}
+                                >
+                                  <RowIcon $color={color} $tinted>
+                                    <Icon />
+                                  </RowIcon>
+                                  <RowBody>
+                                    <Name>
+                                      {info?.title ??
+                                        `${it.object_type} #${it.object_id}`}
+                                    </Name>
+                                    {info?.subtitle ? (
+                                      <MetaLine>{info.subtitle}</MetaLine>
+                                    ) : null}
+                                  </RowBody>
+                                </Row>
+                              )}
+                            </DndRow>
+                          );
+                        })}
+                  </>
+                )}
+              </ColBody>
             )}
           </DndBody>
         </Col>
@@ -1894,67 +1880,65 @@ export const CatalogManageView: FC<React.PropsWithChildren<CatalogManageViewProp
             }
           >
             {({ isOver: itemsBodyOver, ref: itemsBodyRef }) => (
-          <ColBody
-            ref={itemsBodyRef}
-            $dropActive={itemsBodyOver}
-          >
-            {folderId === null ? (
-              <Empty>
-                <IconBox />
-                <strong>
-                  {t('Выберите %s', singularAccusative(labels.folder))}
-                </strong>
-                <span>{t('Чтобы увидеть объекты')}</span>
-              </Empty>
-            ) : folderItemsLoading ? (
-              <Empty>
-                <IconBox />
-                <span>{t('Загрузка…')}</span>
-              </Empty>
-            ) : scopedFolderItems.length === 0 ? (
-              <Empty>
-                <IconBox />
-                <strong>
-                  {scope === 'dashboard'
-                    ? t('Нет дашбордов')
-                    : t('Нет чартов')}
-                </strong>
-                <span>{t('Перетащите сюда объекты')}</span>
-              </Empty>
-            ) : (
-              scopedFolderItems.map(it => {
-                const info =
-                  objectNames[objectKey(it.object_type, it.object_id)];
-                const { color, Icon } = typeColorFor(it.object_type);
-                return (
-                  <DndRow
-                    key={`folder-item-${it.id}`}
-                    dragPayload={itemDragPayload(it)}
-                  >
-                    {({ isDragging, ref }) => (
-                  <Row
-                    ref={ref}
-                    $dragging={isDragging}
-                    title={info?.title ?? ''}
-                  >
-                    <RowIcon $color={color} $tinted>
-                      <Icon />
-                    </RowIcon>
-                    <RowBody>
-                      <Name>
-                        {info?.title ?? `${it.object_type} #${it.object_id}`}
-                      </Name>
-                      {info?.subtitle ? (
-                        <MetaLine>{info.subtitle}</MetaLine>
-                      ) : null}
-                    </RowBody>
-                  </Row>
-                    )}
-                  </DndRow>
-                );
-              })
-            )}
-          </ColBody>
+              <ColBody ref={itemsBodyRef} $dropActive={itemsBodyOver}>
+                {folderId === null ? (
+                  <Empty>
+                    <IconBox />
+                    <strong>
+                      {t('Выберите %s', singularAccusative(labels.folder))}
+                    </strong>
+                    <span>{t('Чтобы увидеть объекты')}</span>
+                  </Empty>
+                ) : folderItemsLoading ? (
+                  <Empty>
+                    <IconBox />
+                    <span>{t('Загрузка…')}</span>
+                  </Empty>
+                ) : scopedFolderItems.length === 0 ? (
+                  <Empty>
+                    <IconBox />
+                    <strong>
+                      {scope === 'dashboard'
+                        ? t('Нет дашбордов')
+                        : t('Нет чартов')}
+                    </strong>
+                    <span>{t('Перетащите сюда объекты')}</span>
+                  </Empty>
+                ) : (
+                  scopedFolderItems.map(it => {
+                    const info =
+                      objectNames[objectKey(it.object_type, it.object_id)];
+                    const { color, Icon } = typeColorFor(it.object_type);
+                    return (
+                      <DndRow
+                        key={`folder-item-${it.id}`}
+                        dragPayload={itemDragPayload(it)}
+                      >
+                        {({ isDragging, ref }) => (
+                          <Row
+                            ref={ref}
+                            $dragging={isDragging}
+                            title={info?.title ?? ''}
+                          >
+                            <RowIcon $color={color} $tinted>
+                              <Icon />
+                            </RowIcon>
+                            <RowBody>
+                              <Name>
+                                {info?.title ??
+                                  `${it.object_type} #${it.object_id}`}
+                              </Name>
+                              {info?.subtitle ? (
+                                <MetaLine>{info.subtitle}</MetaLine>
+                              ) : null}
+                            </RowBody>
+                          </Row>
+                        )}
+                      </DndRow>
+                    );
+                  })
+                )}
+              </ColBody>
             )}
           </DndBody>
         </Col>

@@ -16,7 +16,10 @@
 import { useEffect, useState } from 'react';
 
 function getMatches(query: string): boolean {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+  if (
+    typeof window === 'undefined' ||
+    typeof window.matchMedia !== 'function'
+  ) {
     return false;
   }
   return window.matchMedia(query).matches;
@@ -26,7 +29,10 @@ export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState<boolean>(() => getMatches(query));
 
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    if (
+      typeof window === 'undefined' ||
+      typeof window.matchMedia !== 'function'
+    ) {
       return undefined;
     }
     const mql = window.matchMedia(query);

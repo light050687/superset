@@ -52,7 +52,10 @@ function DriversCellInner({ data, tokens }: Props) {
     );
   }
 
-  const dCls3 = deltaClass(data.mainSegmentDelta, true);
+  /* После early-return на isSegment, data — это Store. Явный cast потому что
+     --strict false в этом плагине не сужает discriminated union. */
+  const store = data as Store;
+  const dCls3 = deltaClass(store.mainSegmentDelta, true);
   return (
     <Cell $align="left">
       <DriversCellEl>
@@ -61,11 +64,11 @@ function DriversCellInner({ data, tokens }: Props) {
         <span className="driver-row">
           <span className="driver-name">
             <span className="type-dot" style={{ background: tokens.g500 }} />
-            {data.mainSegment}
+            {store.mainSegment}
           </span>
-          <span className="driver-pct">{nf0(data.mainSegmentPct)}%</span>
+          <span className="driver-pct">{nf0(store.mainSegmentPct)}%</span>
           <span className={`driver-delta ${dCls3}`}>
-            {fmtDelta(data.mainSegmentDelta)}
+            {fmtDelta(store.mainSegmentDelta)}
           </span>
         </span>
       </DriversCellEl>

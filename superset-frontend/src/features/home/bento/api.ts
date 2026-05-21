@@ -109,7 +109,7 @@ export async function fetchFavoriteDashboards(
   const { json } = await SupersetClient.get({
     endpoint: `/api/v1/dashboard/?q=${q}`,
   });
-  const rows = ((json as { result: DashboardApiRow[] }).result ?? []);
+  const rows = (json as { result: DashboardApiRow[] }).result ?? [];
   return rows.map(row => ({
     id: row.id,
     title: row.dashboard_title,
@@ -137,7 +137,7 @@ export async function fetchFavoriteCharts(
   const { json } = await SupersetClient.get({
     endpoint: `/api/v1/chart/?q=${q}`,
   });
-  const rows = ((json as { result: ChartApiRow[] }).result ?? []);
+  const rows = (json as { result: ChartApiRow[] }).result ?? [];
   return rows.map(row => ({
     id: row.id,
     title: row.slice_name,
@@ -174,14 +174,12 @@ export async function toggleFavorite(
   }
 }
 
-export async function fetchRecentActivity(
-  pageSize = 12,
-): Promise<BentoItem[]> {
+export async function fetchRecentActivity(pageSize = 12): Promise<BentoItem[]> {
   const q = rison.encode({ page_size: pageSize, distinct: false });
   const { json } = await SupersetClient.get({
     endpoint: `/api/v1/log/recent_activity/?q=${q}`,
   });
-  const rows = ((json as { result: RecentActivityRow[] }).result ?? []);
+  const rows = (json as { result: RecentActivityRow[] }).result ?? [];
   // Убираем дубли по URL и фильтруем записи без url.
   const seen = new Set<string>();
   const deduped: RecentActivityRow[] = [];

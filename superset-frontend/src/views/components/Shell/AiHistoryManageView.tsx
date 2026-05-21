@@ -25,13 +25,7 @@
  *   - «Сбросить» удаляет все корневые папки; чаты остаются без папки
  */
 import { styled, t } from '@superset-ui/core';
-import {
-  type DragEvent,
-  type FC,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { type DragEvent, type FC, useEffect, useMemo, useState } from 'react';
 import { DS2_VARS } from 'src/theme/ds2';
 import {
   createAiChatFolder,
@@ -175,8 +169,8 @@ const Row = styled.div<{ $selected?: boolean; $dropActive?: boolean }>`
     $dropActive
       ? 'rgba(59, 139, 217, 0.18)'
       : $selected
-      ? 'rgba(59, 139, 217, 0.14)'
-      : 'transparent'};
+        ? 'rgba(59, 139, 217, 0.14)'
+        : 'transparent'};
   color: ${({ $selected }) => ($selected ? DS2_VARS.cSky : DS2_VARS.ink)};
   font-family: ${DS2_VARS.fontSans};
   font-size: var(--fs-meta);
@@ -366,11 +360,9 @@ function parseDrag(raw: string): DragPayload | null {
 
 /* ─── Component ─── */
 
-export const AiHistoryManageView: FC<React.PropsWithChildren<AiHistoryManageViewProps>> = ({
-  folders,
-  sessions,
-  onChanged,
-}) => {
+export const AiHistoryManageView: FC<
+  React.PropsWithChildren<AiHistoryManageViewProps>
+> = ({ folders, sessions, onChanged }) => {
   const [rootId, setRootId] = useState<number | null>(null);
   const [subId, setSubId] = useState<number | null>(null);
   const [subSubId, setSubSubId] = useState<number | null>(null);
@@ -417,7 +409,8 @@ export const AiHistoryManageView: FC<React.PropsWithChildren<AiHistoryManageView
     if (subSubId !== null)
       return localSessions.filter(s => s.folder_id === subSubId);
     if (subId !== null) return localSessions.filter(s => s.folder_id === subId);
-    if (rootId !== null) return localSessions.filter(s => s.folder_id === rootId);
+    if (rootId !== null)
+      return localSessions.filter(s => s.folder_id === rootId);
     return [];
   }, [localSessions, subSubId, subId, rootId]);
 
@@ -525,7 +518,10 @@ export const AiHistoryManageView: FC<React.PropsWithChildren<AiHistoryManageView
   };
   const onDragLeave = () => setDropTarget(null);
 
-  const moveFolder = async (payload: FolderDragPayload, newParent: number | null) => {
+  const moveFolder = async (
+    payload: FolderDragPayload,
+    newParent: number | null,
+  ) => {
     try {
       await updateAiChatFolder(payload.folderId, { parent_id: newParent });
       await onChanged();
@@ -534,7 +530,10 @@ export const AiHistoryManageView: FC<React.PropsWithChildren<AiHistoryManageView
     }
   };
 
-  const moveChat = async (payload: ChatDragPayload, newFolder: number | null) => {
+  const moveChat = async (
+    payload: ChatDragPayload,
+    newFolder: number | null,
+  ) => {
     if (payload.fromFolderId === newFolder) return;
     try {
       await updateAiChatSession(payload.sessionId, { folder_id: newFolder });
@@ -775,10 +774,10 @@ export const AiHistoryManageView: FC<React.PropsWithChildren<AiHistoryManageView
             {selectedSubSub
               ? selectedSubSub.name
               : selectedSub
-              ? selectedSub.name
-              : selectedRoot
-              ? selectedRoot.name
-              : t('Чаты')}
+                ? selectedSub.name
+                : selectedRoot
+                  ? selectedRoot.name
+                  : t('Чаты')}
           </HeadLabel>
           <HeadCount>{col4Chats.length}</HeadCount>
         </Head>

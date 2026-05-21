@@ -133,8 +133,7 @@ const PresetItem = styled.div<{ $active?: boolean }>`
     gap: ${theme.sizeUnit}px;
     border-radius: ${theme.borderRadiusSM}px;
     background: ${$active ? theme.colorPrimaryBg : 'transparent'};
-    border-left: 3px solid
-      ${$active ? theme.colorPrimary : 'transparent'};
+    border-left: 3px solid ${$active ? theme.colorPrimary : 'transparent'};
     &:hover {
       background: ${$active ? theme.colorPrimaryBg : theme.colorBgTextHover};
     }

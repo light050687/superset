@@ -212,7 +212,7 @@ export default function RankedStoresChart(
     segmentIdCol,
   } = props;
 
-  const { tokens, cssVars } = useDsThemeTokens();
+  const { tokens, cssVars, isDark } = useDsThemeTokens();
   const [state, dispatch] = useReducer(reducer, defaultSort, createInitialState);
 
   /* Sync когда пользователь меняет default_sort в controlPanel — но только
@@ -584,7 +584,14 @@ export default function RankedStoresChart(
         </Card>
       </Wrap>
 
-      <Tooltip visible={tt.store !== null} pos={tt.pos}>
+      <Tooltip
+        visible={tt.store !== null}
+        pos={tt.pos}
+        /* Tooltip того же тона что Card surface (НЕ инверт). */
+        ink={tokens.surface}
+        surface={tokens.ink}
+        border={tokens.g700}
+      >
         {tt.store && (
           <TooltipContent store={tt.store} allStores={stores} tokens={tokens} />
         )}

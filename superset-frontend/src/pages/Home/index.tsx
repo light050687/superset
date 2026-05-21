@@ -56,9 +56,9 @@ export const LoadingCards = ({ cover }: LoadingProps) => (
   </CardContainer>
 );
 
-const Welcome: ComponentType<React.PropsWithChildren<WelcomeProps>> = ({ user }) => (
-  <HomeBento user={user} />
-);
+const Welcome: ComponentType<React.PropsWithChildren<WelcomeProps>> = ({
+  user,
+}) => <HomeBento user={user} />;
 
 // Экспорт как ComponentType без обязательных props — нужно для routes.tsx,
 // где массив типизирован как Routes = { Component: ComponentType }[].

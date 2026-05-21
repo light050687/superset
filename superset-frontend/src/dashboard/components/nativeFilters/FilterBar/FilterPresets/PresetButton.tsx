@@ -76,10 +76,7 @@ interface PresetButtonProps {
   dashboardId: number;
   dataMaskSelected: DataMaskState;
   filters: Filters;
-  onApplyPreset: (
-    filterData: DataMaskState,
-    includedFilters: string[],
-  ) => void;
+  onApplyPreset: (filterData: DataMaskState, includedFilters: string[]) => void;
   onClearAll: () => void;
   activePresetId: number | null;
   activePresetName: string | null;

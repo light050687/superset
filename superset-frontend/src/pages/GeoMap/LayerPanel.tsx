@@ -1,19 +1,17 @@
 import { FC, useState } from 'react';
 import type { LayerGroupState } from './hooks/useLayerGroups';
 import LayerGroups from './LayerGroups';
-import {
-  PanelWrapper,
-  PanelHeader,
-  ToggleIcon,
-  PanelBody,
-} from './styles';
+import { PanelWrapper, PanelHeader, ToggleIcon, PanelBody } from './styles';
 
 interface LayerPanelProps {
   groups: LayerGroupState[];
   onToggleGroup: (groupId: string) => void;
 }
 
-const LayerPanel: FC<React.PropsWithChildren<LayerPanelProps>> = ({ groups, onToggleGroup }) => {
+const LayerPanel: FC<React.PropsWithChildren<LayerPanelProps>> = ({
+  groups,
+  onToggleGroup,
+}) => {
   const [open, setOpen] = useState(true);
 
   return (

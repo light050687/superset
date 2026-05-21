@@ -10,7 +10,13 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  */
 import { styled, t } from '@superset-ui/core';
-import { type FC, type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import {
+  type FC,
+  type KeyboardEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { DragSourceMonitor, useDrag } from 'react-dnd';
 import { useHistory } from 'react-router-dom';
 import {
@@ -368,14 +374,18 @@ export const BentoCard: FC<React.PropsWithChildren<BentoCardProps>> = ({
             LIVE
           </LiveTag>
         ) : null}
-        {item.tags?.slice(0, 2).map(tag => <Tag key={tag}>{tag}</Tag>)}
+        {item.tags?.slice(0, 2).map(tag => (
+          <Tag key={tag}>{tag}</Tag>
+        ))}
       </TagRow>
 
       <StarBtn
         type="button"
         $on={starOptimistic}
         aria-pressed={starOptimistic}
-        aria-label={starOptimistic ? t('Убрать из избранного') : t('В избранное')}
+        aria-label={
+          starOptimistic ? t('Убрать из избранного') : t('В избранное')
+        }
         onClick={handleStarClick}
       >
         {starOptimistic ? '★' : '☆'}

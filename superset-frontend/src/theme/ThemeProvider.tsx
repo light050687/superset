@@ -78,7 +78,9 @@ function resolveMode(mode: ThemeMode): 'dark' | 'light' {
 let lastPointerPoint: { x: number; y: number } | null = null;
 function initPointerCapture(): void {
   if (typeof document === 'undefined') return;
-  if ((window as unknown as { __ds2PointerCapture?: boolean }).__ds2PointerCapture)
+  if (
+    (window as unknown as { __ds2PointerCapture?: boolean }).__ds2PointerCapture
+  )
     return;
   (window as unknown as { __ds2PointerCapture?: boolean }).__ds2PointerCapture =
     true;
@@ -126,9 +128,7 @@ function spawnThemeGlow(
   }
   const glow = document.createElement('div');
   const tone =
-    resolvedTo === 'dark'
-      ? 'rgba(0, 0, 0, 0.45)'
-      : 'rgba(255, 255, 255, 0.55)';
+    resolvedTo === 'dark' ? 'rgba(0, 0, 0, 0.45)' : 'rgba(255, 255, 255, 0.55)';
   glow.style.cssText = `
     position: fixed;
     inset: 0;
@@ -196,11 +196,10 @@ function runThemeViewTransition(
   }
 
   // Точка клика — центр clip-path circle и glow overlay.
-  const point =
-    lastPointerPoint ?? {
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2,
-    };
+  const point = lastPointerPoint ?? {
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
+  };
   document.documentElement.style.setProperty('--ds-tt-x', `${point.x}px`);
   document.documentElement.style.setProperty('--ds-tt-y', `${point.y}px`);
 

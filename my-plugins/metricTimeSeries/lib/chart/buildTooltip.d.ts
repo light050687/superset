@@ -13,6 +13,7 @@ interface TooltipBuildParams {
     gran: Granularity;
     buckets: Bucket[];
     tokens: TokenMap;
+    isDark: boolean;
     fontText: string;
     fontMono: string;
     valueFormatter: ValueFormatter;

@@ -62,7 +62,11 @@ import {
 } from './state';
 import { createFilterKey, updateFilterKey } from './keyValue';
 import ActionButtons from './ActionButtons';
-import { PresetButton, fetchPresets, fetchDefaultPreset } from './FilterPresets';
+import {
+  PresetButton,
+  fetchPresets,
+  fetchDefaultPreset,
+} from './FilterPresets';
 import type { FilterPreset } from './FilterPresets';
 import Horizontal from './Horizontal';
 import Vertical from './Vertical';

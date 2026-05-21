@@ -779,7 +779,9 @@ const RightMenu = ({
   );
 };
 
-const RightMenuWithQueryWrapper: FC<React.PropsWithChildren<RightMenuProps>> = props => {
+const RightMenuWithQueryWrapper: FC<
+  React.PropsWithChildren<RightMenuProps>
+> = props => {
   const [, setQuery] = useQueryParams({
     databaseAdded: BooleanParam,
     datasetAdded: BooleanParam,

@@ -322,6 +322,55 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
   useEffect(() => setUnit(defaultUnit), [defaultUnit]);
 
   const echartsRef = useRef<ReactECharts | null>(null);
+  /* Ref на основной Card div — нужен для IntersectionObserver (resilience-эффект ниже). */
+  const cardContainerRef = useRef<HTMLDivElement | null>(null);
+
+  /* Resize/resilience для echarts-for-react wrapper.
+     Wrapper НЕ имеет встроенного ResizeObserver — без force-resize chart
+     остаётся 0×0 если первый mount произошёл до CSS layout finalize.
+     Также покрываем canvas context loss (long offscreen, tab switch). */
+  useEffect(() => {
+    const card = cardContainerRef.current;
+    if (!card) return undefined;
+    const safeResize = (): void => {
+      const inst = echartsRef.current?.getEchartsInstance();
+      if (!inst) return;
+      const w = card.clientWidth;
+      const h = card.clientHeight;
+      if (w <= 0 || h <= 0) return;
+      inst.resize();
+    };
+    /* ResizeObserver — основной механизм: container size меняется
+       (CSS layout, window resize, drag-resize в dashboard) → resize.
+       rAF throttle: дашборд может выдать burst resize-событий. */
+    let ro: ResizeObserver | null = null;
+    let rafId: number | undefined;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(() => {
+        if (rafId !== undefined) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(safeResize);
+      });
+      ro.observe(card);
+    }
+    /* IO: при возврате в viewport (long offscreen → canvas context lost). */
+    let io: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== 'undefined') {
+      io = new IntersectionObserver(
+        entries => { if (entries.some(e => e.isIntersecting)) safeResize(); },
+        { threshold: 0.01 },
+      );
+      io.observe(card);
+    }
+    /* visibilitychange: при возврате tab-active (browser suspended). */
+    const onVisibility = (): void => { if (!document.hidden) safeResize(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      if (rafId !== undefined) cancelAnimationFrame(rafId);
+      ro?.disconnect();
+      io?.disconnect();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
 
   // ── Option build ──
   const { option, buckets } = useMemo(
@@ -597,7 +646,7 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
       <SrLive aria-live="polite" aria-atomic="true">
         {liveMessage}
       </SrLive>
-      <Card data-info-hint-container="">
+      <Card data-info-hint-container="" ref={cardContainerRef}>
         {isStale && <StaleBar aria-hidden="true" />}
         <CardHead>
           <TitleWrap>
@@ -712,10 +761,29 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
             <ReactECharts
               ref={(inst: unknown) => {
                 echartsRef.current = inst as ReactECharts;
+                /* Force initial resize когда wrapper готов.
+                   ReactECharts создаёт ECharts instance АСИНХРОННО после mount —
+                   мой useEffect наверху уже отработал, но в момент его выполнения
+                   getEchartsInstance() возвращал null. ResizeObserver fires только
+                   на изменение размера, не на ready-state. Без этого hooka после
+                   late mount (chart scrolled into view) ECharts инициализируется
+                   с 0×0 → canvas blank навсегда. rAF гарантирует layout finalized. */
+                if (inst && cardContainerRef.current) {
+                  const chart = (inst as ReactECharts).getEchartsInstance();
+                  const c = cardContainerRef.current;
+                  if (chart) {
+                    requestAnimationFrame(() => {
+                      if (c.clientWidth > 0 && c.clientHeight > 0) {
+                        chart.resize();
+                      }
+                    });
+                  }
+                }
               }}
               option={option as unknown as echarts.EChartsCoreOption}
               notMerge
-              lazyUpdate
+              /* lazyUpdate УБРАН: при mount с initial 0×0 container
+                 wrapper может skip setOption полностью → canvas blank. */
               onEvents={onEvents}
             />
           </ChartInner>

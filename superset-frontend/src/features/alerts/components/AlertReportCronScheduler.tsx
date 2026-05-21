@@ -49,10 +49,9 @@ const SCHEDULE_TYPE_OPTIONS = [
   },
 ];
 
-export const AlertReportCronScheduler: FC<React.PropsWithChildren<AlertReportCronSchedulerProps>> = ({
-  value,
-  onChange,
-}) => {
+export const AlertReportCronScheduler: FC<
+  React.PropsWithChildren<AlertReportCronSchedulerProps>
+> = ({ value, onChange }) => {
   const theme = useTheme();
   const [scheduleFormat, setScheduleFormat] = useState<ScheduleType>(
     ScheduleType.Picker,

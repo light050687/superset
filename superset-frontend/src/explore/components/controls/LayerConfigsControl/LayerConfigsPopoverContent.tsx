@@ -124,7 +124,9 @@ export const StyledSaveButton = styled(Button)`
   `}
 `;
 
-export const LayerConfigsPopoverContent: FC<React.PropsWithChildren<LayerConfigsPopoverContentProps>> = ({ onClose = () => {}, onSave = () => {}, layerConf }) => {
+export const LayerConfigsPopoverContent: FC<
+  React.PropsWithChildren<LayerConfigsPopoverContentProps>
+> = ({ onClose = () => {}, onSave = () => {}, layerConf }) => {
   const [currentLayerConf, setCurrentLayerConf] =
     useState<LayerConf>(layerConf);
   const initialWmsVersion =

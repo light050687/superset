@@ -138,8 +138,7 @@ const Rail = styled.nav<{
 
   @media (prefers-reduced-motion: reduce) {
     transition: opacity 120ms ease;
-    transform: ${({ $hidden }) =>
-      $hidden ? 'scaleY(0)' : 'scaleY(1)'};
+    transform: ${({ $hidden }) => ($hidden ? 'scaleY(0)' : 'scaleY(1)')};
   }
 `;
 
@@ -392,9 +391,7 @@ function useMainDockMetrics(): DockMetrics | null {
     let dock: HTMLElement | null = null;
     let cleanupResize: (() => void) | undefined;
     const tryAttach = (attemptsLeft: number): void => {
-      dock = document.querySelector<HTMLElement>(
-        'nav[data-shell-rail="main"]',
-      );
+      dock = document.querySelector<HTMLElement>('nav[data-shell-rail="main"]');
       if (!dock && attemptsLeft > 0) {
         requestAnimationFrame(() => tryAttach(attemptsLeft - 1));
         return;
@@ -445,10 +442,7 @@ function usePagesRailHeightVar(
     }
     const update = (): void => {
       const h = Math.ceil(el.getBoundingClientRect().height);
-      document.documentElement.style.setProperty(
-        '--pages-rail-h',
-        `${h}px`,
-      );
+      document.documentElement.style.setProperty('--pages-rail-h', `${h}px`);
     };
     update();
     const observer = new ResizeObserver(update);
@@ -507,9 +501,9 @@ export const DashboardPagesRail: FC = () => {
   // или справа (after). Вычисляется в handleDragOver по cursor-X.
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
-  const [dropPosition, setDropPosition] = useState<
-    'before' | 'after' | null
-  >(null);
+  const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(
+    null,
+  );
 
   const handlePageClick = useCallback(
     (pageId: string) => {

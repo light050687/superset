@@ -27,15 +27,15 @@ import { useCallback } from 'react';
 import Echart from '../components/Echart';
 import { NULL_STRING } from '../constants';
 import { EventHandlers, TreePathInfo } from '../types';
+import { extractTreePathInfo } from './constants';
+import { TreemapTransformedProps } from './types';
+import { formatSeriesName } from '../utils/series';
 
 type TreemapDataParam = {
   name?: string;
   value?: number | number[];
   children?: unknown[];
 } | null;
-import { extractTreePathInfo } from './constants';
-import { TreemapTransformedProps } from './types';
-import { formatSeriesName } from '../utils/series';
 
 export default function EchartsTreemap({
   echartOptions,

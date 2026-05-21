@@ -43,7 +43,7 @@ export default function usePagesVisibility(): [boolean, (v: boolean) => void] {
   useEffect(() => {
     setVisibleState(readStored(dashboardId));
     const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
+      const { detail } = e as CustomEvent;
       if (!detail || detail.dashboardId === dashboardId) {
         setVisibleState(readStored(dashboardId));
       }

@@ -1,7 +1,7 @@
 import type { ChartDataResponseResult, QueryFormColumn, QueryFormMetric } from '@superset-ui/core';
 export type UnitMode = 'rub' | 'pct';
 export type SortMode = 'sum' | 'delta' | 'share';
-export type DataState = 'loading' | 'error' | 'empty' | 'partial' | 'populated';
+export type DataState = 'loading' | 'error' | 'empty' | 'partial' | 'stale' | 'populated';
 export type IconName = 'clock' | 'thermometer' | 'shield' | 'triangle' | 'package';
 /** One row in the ranking — produced by transformProps from query[0] and sparkline query[1]. */
 export interface RankedRow {

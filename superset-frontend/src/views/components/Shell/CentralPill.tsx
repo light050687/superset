@@ -41,7 +41,11 @@ import {
   DEFAULT_AI_TOOLS,
   type AiToolsConfig,
 } from './AiSettingsPopover';
-import type { AiContext, AiModelDescriptor, AiModelId } from './CentralPillTypes';
+import type {
+  AiContext,
+  AiModelDescriptor,
+  AiModelId,
+} from './CentralPillTypes';
 import { ContextPopover } from './ContextPopover';
 import { ModelPopover } from './ModelPopover';
 
@@ -51,7 +55,10 @@ interface CentralPillProps {
   onContextChange: (ctx: AiContext) => void;
   modelId: AiModelId;
   onModelChange: (model: AiModelDescriptor) => void;
-  onSubmit: (query: string, meta: { contextId: string; modelId: AiModelId }) => void;
+  onSubmit: (
+    query: string,
+    meta: { contextId: string; modelId: AiModelId },
+  ) => void;
   onFocusChange?: (focused: boolean) => void;
   /** Принудительно держать pill расширенным (используется когда открыт
    *  AI overlay — тогда строка не должна сворачиваться при кликах вне). */
@@ -285,8 +292,7 @@ const MicBtn = styled.button<{ $hasText: boolean }>`
   width: ${({ $hasText }) => ($hasText ? '24px' : '22px')};
   height: ${({ $hasText }) => ($hasText ? '24px' : '22px')};
   padding: 0;
-  background: ${({ $hasText }) =>
-    $hasText ? DS2_VARS.cSky : 'transparent'};
+  background: ${({ $hasText }) => ($hasText ? DS2_VARS.cSky : 'transparent')};
   border: none;
   border-radius: ${({ $hasText }) => ($hasText ? '50%' : '6px')};
   color: ${({ $hasText }) => ($hasText ? '#0C0D10' : DS2_VARS.g500)};
@@ -301,8 +307,7 @@ const MicBtn = styled.button<{ $hasText: boolean }>`
     border-radius 0.12s ${DS2_VARS.ease};
 
   &:hover {
-    background: ${({ $hasText }) =>
-      $hasText ? '#7ABCF5' : DS2_VARS.g100};
+    background: ${({ $hasText }) => ($hasText ? '#7ABCF5' : DS2_VARS.g100)};
     color: ${({ $hasText }) => ($hasText ? '#0C0D10' : DS2_VARS.ink)};
   }
 
@@ -486,8 +491,8 @@ export const CentralPill: FC<React.PropsWithChildren<CentralPillProps>> = ({
     modelId === 'opus-4.7'
       ? 'Opus 4.7'
       : modelId === 'sonnet-4.6'
-      ? 'Sonnet 4.6'
-      : 'Haiku 4.5';
+        ? 'Sonnet 4.6'
+        : 'Haiku 4.5';
   const modelMode = modelId === 'opus-4.7' ? 'Extended' : 'Default';
 
   const doSubmit = useCallback(() => {
@@ -547,7 +552,7 @@ export const CentralPill: FC<React.PropsWithChildren<CentralPillProps>> = ({
           {!expanded && hasText ? (
             <MicBtn
               type="submit"
-              $hasText={true}
+              $hasText
               aria-label={t('Отправить')}
               title={t('Enter')}
             >

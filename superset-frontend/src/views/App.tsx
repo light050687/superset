@@ -80,32 +80,30 @@ const App = () => (
         isFrontendRoute={isFrontendRoute}
       >
         <Switch>
-          {routes.map(
-            ({ path, Component, props = {}, Fallback = Loading }) => (
-              <Route path={path} key={path}>
-                <Suspense fallback={<Fallback />}>
-                  <Layout>
-                    <Layout.Content
+          {routes.map(({ path, Component, props = {}, Fallback = Loading }) => (
+            <Route path={path} key={path}>
+              <Suspense fallback={<Fallback />}>
+                <Layout>
+                  <Layout.Content
+                    css={css`
+                      display: flex;
+                      flex-direction: column;
+                      flex: 1;
+                      min-height: 0;
+                    `}
+                  >
+                    <ErrorBoundary
                       css={css`
-                        display: flex;
-                        flex-direction: column;
-                        flex: 1;
-                        min-height: 0;
+                        margin: 16px;
                       `}
                     >
-                      <ErrorBoundary
-                        css={css`
-                          margin: 16px;
-                        `}
-                      >
-                        <Component user={bootstrapData.user} {...props} />
-                      </ErrorBoundary>
-                    </Layout.Content>
-                  </Layout>
-                </Suspense>
-              </Route>
-            ),
-          )}
+                      <Component user={bootstrapData.user} {...props} />
+                    </ErrorBoundary>
+                  </Layout.Content>
+                </Layout>
+              </Suspense>
+            </Route>
+          ))}
         </Switch>
       </Shell>
       <ToastContainer />

@@ -28,10 +28,9 @@ import {
   zoomConfigsToData,
 } from './zoomUtil';
 
-export const ZoomConfigsChart: FC<React.PropsWithChildren<ZoomConfigsChartProps>> = ({
-  value,
-  onChange = () => {},
-}) => {
+export const ZoomConfigsChart: FC<
+  React.PropsWithChildren<ZoomConfigsChartProps>
+> = ({ value, onChange = () => {} }) => {
   const ref = createRef<HTMLDivElement>();
 
   useEffect(() => {

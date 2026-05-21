@@ -70,7 +70,11 @@ const Table: FC<React.PropsWithChildren<{ id: number }>> = ({ id }) => {
     accent: j > 1,
   }));
   return (
-    <svg viewBox="0 0 260 75" style={{ width: '100%', height: '100%' }} aria-hidden>
+    <svg
+      viewBox="0 0 260 75"
+      style={{ width: '100%', height: '100%' }}
+      aria-hidden
+    >
       {rows.map((r, i) => (
         <g key={i}>
           <rect
@@ -98,11 +102,47 @@ const Table: FC<React.PropsWithChildren<{ id: number }>> = ({ id }) => {
 };
 
 const Doc: FC<React.PropsWithChildren<unknown>> = () => (
-  <svg viewBox="0 0 260 75" style={{ width: '100%', height: '100%' }} aria-hidden>
-    <rect x={16} y={8} width={100} height={9} rx={2} fill={DS2_VARS.g300} opacity={0.5} />
-    <rect x={16} y={24} width={180} height={5} rx={2} fill={DS2_VARS.g200} opacity={0.4} />
-    <rect x={16} y={35} width={150} height={5} rx={2} fill={DS2_VARS.g200} opacity={0.4} />
-    <rect x={16} y={46} width={190} height={5} rx={2} fill={DS2_VARS.g200} opacity={0.4} />
+  <svg
+    viewBox="0 0 260 75"
+    style={{ width: '100%', height: '100%' }}
+    aria-hidden
+  >
+    <rect
+      x={16}
+      y={8}
+      width={100}
+      height={9}
+      rx={2}
+      fill={DS2_VARS.g300}
+      opacity={0.5}
+    />
+    <rect
+      x={16}
+      y={24}
+      width={180}
+      height={5}
+      rx={2}
+      fill={DS2_VARS.g200}
+      opacity={0.4}
+    />
+    <rect
+      x={16}
+      y={35}
+      width={150}
+      height={5}
+      rx={2}
+      fill={DS2_VARS.g200}
+      opacity={0.4}
+    />
+    <rect
+      x={16}
+      y={46}
+      width={190}
+      height={5}
+      rx={2}
+      fill={DS2_VARS.g200}
+      opacity={0.4}
+    />
   </svg>
 );
 
@@ -157,7 +197,10 @@ const Bars: FC<React.PropsWithChildren<{ id: number }>> = ({ id }) => {
   );
 };
 
-export const BentoPreview: FC<React.PropsWithChildren<PreviewProps>> = ({ id, kind }) => {
+export const BentoPreview: FC<React.PropsWithChildren<PreviewProps>> = ({
+  id,
+  kind,
+}) => {
   switch (kind) {
     case 'geo':
       return <Geo id={id} />;

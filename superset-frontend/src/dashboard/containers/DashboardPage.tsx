@@ -108,7 +108,9 @@ const selectActiveFilters = createSelector(
   }),
 );
 
-export const DashboardPage: FC<React.PropsWithChildren<PageProps>> = ({ idOrSlug }: PageProps) => {
+export const DashboardPage: FC<React.PropsWithChildren<PageProps>> = ({
+  idOrSlug,
+}: PageProps) => {
   const theme = useTheme();
   const dispatch = useDispatch();
   const history = useHistory();

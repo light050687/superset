@@ -162,7 +162,9 @@ export interface SubMenuProps {
   backgroundColor?: string;
 }
 
-const SubMenuComponent: FunctionComponent<React.PropsWithChildren<SubMenuProps>> = props => {
+const SubMenuComponent: FunctionComponent<
+  React.PropsWithChildren<SubMenuProps>
+> = props => {
   const [showMenu, setMenu] = useState<MenuMode>('horizontal');
   const [navRightStyle, setNavRightStyle] = useState('nav-right');
   const theme = useTheme();

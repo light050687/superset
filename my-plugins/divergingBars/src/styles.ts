@@ -23,9 +23,13 @@ export const ROOT_CLASS = 'velocity-diverging';
 // DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
 // race-condition-free относительно <style dangerouslySetInnerHTML> или
 // `document.createElement('style')`-injection (см. donut StructureDonut.tsx).
+/* Только opacity — transform убран намеренно: Superset dashboard drag-drop
+   управляет transform на chart-cell ancestor'е. Конфликт двух transform
+   приводил к тому что после перестановки чарт оставался смещённым/невидимым
+   до hard refresh. */
 const cardInKf = keyframes`
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 `;
 
 export const KEYFRAMES_CSS = `
@@ -1178,20 +1182,19 @@ export const TooltipRoot = styled.div`
     --wn: ${D.wn};
   }
 
-  /* DS 2.0 §08: Тултип — radius 6, padding 8×12, max-width 240. */
+  /* DS 2.1 §08 «Тултипы»: tooltip того же тона что Card surface (НЕ инверт). */
   position: fixed;
   background: var(--s);
-  border: 1px solid var(--g300);
+  color: var(--ink);
+  border: 1px solid rgba(128, 128, 128, 0.25);
   border-radius: 6px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   box-shadow: 0 12px 32px rgba(15, 17, 20, 0.18);
   font-family: var(--f);
-  font-size: var(--fs-meta);
-  color: var(--ink);
+  font-size: 11px;
   pointer-events: none;
   z-index: 2000;
-  min-width: 240px;
-  max-width: 280px;
+  max-width: 240px;
   display: none;
   font-variant-numeric: tabular-nums;
 
@@ -1207,10 +1210,10 @@ export const TooltipRoot = styled.div`
   .tt-head {
     display: flex;
     align-items: flex-start;
-    gap: 9px;
-    padding-bottom: 9px;
-    margin-bottom: 9px;
-    border-bottom: 1px solid var(--g200);
+    gap: 8px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.25);
   }
   .tt-status {
     width: 4px;
@@ -1218,47 +1221,40 @@ export const TooltipRoot = styled.div`
     flex-shrink: 0;
     align-self: stretch;
   }
-  .tt-titles {
-    flex: 1;
-    min-width: 0;
-  }
+  .tt-titles { flex: 1; min-width: 0; }
+  /* Header 13px Manrope 700 — крупнее DS-минимума для читаемости. */
   .tt-name {
-    font-size: var(--fs-meta);
+    font-size: 13px;
     font-weight: 700;
     color: var(--ink);
     line-height: 1.3;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
   }
   .tt-sub {
-    font-size: var(--fs-micro);
-    font-weight: 500;
-    color: var(--g600);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--g500);
     font-family: var(--m);
     line-height: 1.4;
   }
-  .tt-rows {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
+  .tt-rows { display: flex; flex-direction: column; gap: 4px; }
   .tt-row {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 14px;
+    gap: 12px;
     font-family: var(--m);
   }
-  /* DS 2.0 §07: метка тултипа — 10px моно --g600 (минимум). */
   .tt-l {
-    font-size: var(--fs-micro);
+    font-size: 11px;
     font-weight: 600;
-    color: var(--g600);
+    color: var(--g500);
     letter-spacing: 0.06em;
     text-transform: uppercase;
   }
   .tt-v {
-    font-size: var(--fs-meta);
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 600;
     color: var(--ink);
     font-variant-numeric: tabular-nums;
   }

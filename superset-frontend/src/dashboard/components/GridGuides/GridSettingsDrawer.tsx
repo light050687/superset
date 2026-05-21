@@ -87,8 +87,7 @@ const ToggleSwitch = styled.button<{ $checked: boolean }>`
   padding: 0;
   border: none;
   border-radius: 12px;
-  background: ${({ $checked }) =>
-    $checked ? DS2_VARS.cSky : DS2_VARS.g300};
+  background: ${({ $checked }) => ($checked ? DS2_VARS.cSky : DS2_VARS.g300)};
   transition: background 0.15s ${DS2_VARS.ease};
   cursor: pointer;
 
@@ -222,9 +221,7 @@ export const GridSettingsDrawer: FC = () => {
           <Label>
             <span>{t('Сетка ячеек внутри колонок')}</span>
             <Hint>
-              {t(
-                'Каждая колонка разбита на квадраты с теми же отступами',
-              )}
+              {t('Каждая колонка разбита на квадраты с теми же отступами')}
             </Hint>
           </Label>
           <ToggleSwitch

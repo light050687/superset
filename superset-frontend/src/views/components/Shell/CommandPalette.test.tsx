@@ -18,7 +18,7 @@ describe('<CommandPalette>', () => {
       useRouter: true,
       useTheme: true,
     });
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('рендерит placeholder и ESC-хинт', () => {
@@ -45,10 +45,10 @@ describe('<CommandPalette>', () => {
 
   it('когда onAskAi передан — показывает пункт ИИ первым', () => {
     const askAi = jest.fn();
-    render(
-      <CommandPalette open onClose={() => {}} onAskAi={askAi} />,
-      { useRouter: true, useTheme: true },
-    );
+    render(<CommandPalette open onClose={() => {}} onAskAi={askAi} />, {
+      useRouter: true,
+      useTheme: true,
+    });
     expect(screen.getByText('Спросить ИИ-аналитика')).toBeInTheDocument();
     expect(screen.getByText('Tab')).toBeInTheDocument();
   });
@@ -68,10 +68,10 @@ describe('<CommandPalette>', () => {
 
   it('Tab вызывает onAskAi с текущим query', () => {
     const askAi = jest.fn();
-    render(
-      <CommandPalette open onClose={() => {}} onAskAi={askAi} />,
-      { useRouter: true, useTheme: true },
-    );
+    render(<CommandPalette open onClose={() => {}} onAskAi={askAi} />, {
+      useRouter: true,
+      useTheme: true,
+    });
     const input = screen.getByPlaceholderText(
       'Поиск, навигация или вопрос ИИ…',
     );

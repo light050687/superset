@@ -21,7 +21,11 @@ import maplibregl from 'maplibre-gl';
 import type { Map as MaplibreMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { ThemeMode, Language } from './types';
-import { DEFAULT_CENTER, DEFAULT_ZOOM, CANVAS_CONTEXT_ATTRIBUTES } from './constants';
+import {
+  DEFAULT_CENTER,
+  DEFAULT_ZOOM,
+  CANVAS_CONTEXT_ATTRIBUTES,
+} from './constants';
 import { loadStyle } from './utils/styleLoader';
 import { applyLanguage } from './hooks/useMapLanguage';
 import { MapCanvasDiv } from './styles';

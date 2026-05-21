@@ -153,7 +153,7 @@ const Avatar = styled.div`
   height: 40px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8B5CF6, #D946A8);
+  background: linear-gradient(135deg, #8b5cf6, #d946a8);
   color: ${DS2_VARS.s};
   font-size: var(--fs-interactive);
   font-weight: 700;
@@ -909,7 +909,9 @@ const setCurrentLocale = (next: string): void => {
 
 /* ─── Component ─── */
 
-export const SettingsDropdown: FC<React.PropsWithChildren<SettingsDropdownProps>> = ({
+export const SettingsDropdown: FC<
+  React.PropsWithChildren<SettingsDropdownProps>
+> = ({
   anchor,
   open,
   onClose,
@@ -1125,7 +1127,6 @@ export const SettingsDropdown: FC<React.PropsWithChildren<SettingsDropdownProps>
               <TileGrid>{managementTiles.map(renderTile)}</TileGrid>
             </Section>
           ) : null}
-
         </Body>
 
         {/* Единая строка: Тёмная · Язык · Личные · Выход. 4 равных по ширине
@@ -1202,4 +1203,3 @@ export const SettingsDropdown: FC<React.PropsWithChildren<SettingsDropdownProps>
     document.body,
   );
 };
-

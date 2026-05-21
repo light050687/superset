@@ -35,7 +35,9 @@ const CHAT_SESSION_BASE = '/api/v1/ai_chat_session';
 // ─────── Metadata DB (через SupersetClient) ───────
 
 export async function listAiChatFolders(): Promise<AiChatFolder[]> {
-  const { json } = await SupersetClient.get({ endpoint: `${CHAT_FOLDER_BASE}/` });
+  const { json } = await SupersetClient.get({
+    endpoint: `${CHAT_FOLDER_BASE}/`,
+  });
   return (json as { result: AiChatFolder[] }).result ?? [];
 }
 
@@ -132,7 +134,7 @@ function resolveAiBackendUrl(): string | null {
   // 1. Variable от сборщика Vite/Webpack (инжектится при build).
   const envUrl =
     typeof process !== 'undefined'
-      ? (process as any)?.env?.AI_BACKEND_URL ?? null
+      ? ((process as any)?.env?.AI_BACKEND_URL ?? null)
       : null;
   if (envUrl) return envUrl;
 
@@ -223,7 +225,7 @@ function adaptAnalyzeResponse(raw: AiAnalyzeRawResponse): AiAnalyzeResponse {
     raw.answer !== null &&
     !Array.isArray(raw.answer)
   ) {
-    const answer = raw.answer;
+    const { answer } = raw;
     // Если backend не вернул kpi, но есть markdown-text — попробуем извлечь.
     if (
       (!answer.kpi || answer.kpi.length === 0) &&
@@ -366,7 +368,11 @@ function mockAnalyze(request: AiAnalyzeRequest): Promise<AiAnalyzeResponse> {
             'при плане 22,0%. Закупочная цена выросла на 8% относительно февраля.',
         },
         actions: [
-          { kind: 'open_dashboard', label: 'Открыть KPI Маржа', url: '/dashboard/list/' },
+          {
+            kind: 'open_dashboard',
+            label: 'Открыть KPI Маржа',
+            url: '/dashboard/list/',
+          },
           { kind: 'create_table', label: 'Создать таблицу' },
           { kind: 'download', label: 'Экспорт', url: '#' },
         ],

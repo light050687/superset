@@ -30,8 +30,7 @@ import { DS2_RADIUS, DS2_SPACE, DS2_VARS } from 'src/theme/ds2';
 
 const Tile = styled.button<{ $over: boolean }>`
   background: ${DS2_VARS.s};
-  border: 1px solid
-    ${({ $over }) => ($over ? DS2_VARS.cSky : DS2_VARS.g100)};
+  border: 1px solid ${({ $over }) => ($over ? DS2_VARS.cSky : DS2_VARS.g100)};
   border-radius: ${DS2_RADIUS.card}px;
   padding: ${DS2_SPACE.s3}px;
   cursor: pointer;
@@ -96,12 +95,9 @@ interface DepartmentTileProps {
   isAdmin?: boolean;
 }
 
-export const DepartmentTile: FC<React.PropsWithChildren<DepartmentTileProps>> = ({
-  folder,
-  onClick,
-  onItemDropped,
-  isAdmin = false,
-}) => {
+export const DepartmentTile: FC<
+  React.PropsWithChildren<DepartmentTileProps>
+> = ({ folder, onClick, onItemDropped, isAdmin = false }) => {
   const ref = useRef<HTMLButtonElement>(null);
 
   const [{ isOver, canDrop }, drop] = useDrop({
@@ -145,11 +141,7 @@ export const DepartmentTile: FC<React.PropsWithChildren<DepartmentTileProps>> = 
       type="button"
       $over={isOver && canDrop}
       onClick={() => onClick(folder)}
-      aria-label={t(
-        'Папка каталога: %s, %d элементов',
-        displayName,
-        visible,
-      )}
+      aria-label={t('Папка каталога: %s, %d элементов', displayName, visible)}
     >
       <Header>
         <Dot $color={folder.color ?? DS2_VARS.g400} />

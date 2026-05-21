@@ -102,8 +102,9 @@ export default function createLoadableRenderer<
     return loadPromise;
   };
 
-  const Renderer: LoadableRenderer<Props, Exports> = (props: Props &
-    LoadableRendererProps) => {
+  const Renderer: LoadableRenderer<Props, Exports> = (
+    props: Props & LoadableRendererProps,
+  ) => {
     const { onRenderSuccess, onRenderFailure, ...rest } = props;
 
     const [state, setState] = useState<LoadState<Exports>>(() => {

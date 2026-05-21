@@ -332,7 +332,12 @@ const FilterControls: FC<React.PropsWithChildren<FilterControlsProps>> = ({
         filtersOutOfScopeIds.has(filter.id) ||
         overflowedFiltersInScopeIds.has(filter.id),
     );
-  }, [filtersOutOfScope, filtersWithValues, overflowedFiltersInScope, isMobile]);
+  }, [
+    filtersOutOfScope,
+    filtersWithValues,
+    overflowedFiltersInScope,
+    isMobile,
+  ]);
 
   useEffect(() => {
     if (outlinedFilterId && overflowedIds.includes(outlinedFilterId)) {

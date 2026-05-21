@@ -122,7 +122,9 @@ const sharedModules = {
   '@superset-ui/core': () => import('@superset-ui/core'),
 };
 
-export const DynamicPluginProvider: FC<React.PropsWithChildren<unknown>> = ({ children }) => {
+export const DynamicPluginProvider: FC<React.PropsWithChildren<unknown>> = ({
+  children,
+}) => {
   const [pluginState, dispatch] = useReducer(
     pluginContextReducer,
     dummyPluginContext,

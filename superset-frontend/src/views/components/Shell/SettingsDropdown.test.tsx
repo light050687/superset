@@ -11,10 +11,7 @@
  */
 import { useRef } from 'react';
 import { fireEvent, render, screen } from 'spec/helpers/testing-library';
-import type {
-  BootstrapUser,
-  MenuData,
-} from 'src/types/bootstrapTypes';
+import type { BootstrapUser, MenuData } from 'src/types/bootstrapTypes';
 import { SettingsDropdown } from './SettingsDropdown';
 
 const makeMenu = (): MenuData => ({
@@ -53,9 +50,7 @@ const makeMenu = (): MenuData => ({
       label: 'Данные',
       name: 'data',
       isHeader: true,
-      childs: [
-        { label: 'Датасеты', url: '/tablemodelview/list/' },
-      ],
+      childs: [{ label: 'Датасеты', url: '/tablemodelview/list/' }],
     },
   ],
   environment_tag: { text: '', color: '' },
@@ -74,10 +69,9 @@ const makeUser = (): BootstrapUser => ({
   roles: {},
 });
 
-const Harness: React.FC<React.PropsWithChildren<{ open: boolean; onClose?: () => void }>> = ({
-  open,
-  onClose = () => {},
-}) => {
+const Harness: React.FC<
+  React.PropsWithChildren<{ open: boolean; onClose?: () => void }>
+> = ({ open, onClose = () => {} }) => {
   const ref = useRef<HTMLButtonElement>(null);
   return (
     <>
@@ -98,7 +92,7 @@ const Harness: React.FC<React.PropsWithChildren<{ open: boolean; onClose?: () =>
 describe('<SettingsDropdown>', () => {
   it('не рендерится когда open=false', () => {
     render(<Harness open={false} />, { useRouter: true, useTheme: true });
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('рендерит секции и плитки из menu_data.settings', () => {

@@ -29,7 +29,9 @@ interface ChoroplethSectionProps {
   onClear: () => void;
 }
 
-const ChoroplethSection: FC<React.PropsWithChildren<ChoroplethSectionProps>> = ({
+const ChoroplethSection: FC<
+  React.PropsWithChildren<ChoroplethSectionProps>
+> = ({
   state,
   legendItems,
   onFileSelected,

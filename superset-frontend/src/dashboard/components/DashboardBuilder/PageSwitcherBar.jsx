@@ -186,9 +186,7 @@ export default function PageSwitcherBar({ pagesComponent, editMode }) {
                 `}
               />
             ) : (
-              <span
-                onDoubleClick={() => editMode && handleStartRename(pageId)}
-              >
+              <span onDoubleClick={() => editMode && handleStartRename(pageId)}>
                 {name}
               </span>
             )}

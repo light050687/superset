@@ -27,7 +27,9 @@ export interface RegistryMetadata {
 
 export interface ComponentItem<Metadata = RegistryMetadata> {
   metadata: Metadata;
-  loadComponent: () => Promise<{ default: ComponentType<React.PropsWithChildren<any>> }>;
+  loadComponent: () => Promise<{
+    default: ComponentType<React.PropsWithChildren<any>>;
+  }>;
 }
 
 export interface ComponentRegistry<Metadata = RegistryMetadata> {

@@ -48,7 +48,9 @@ describe('<CentralPill>', () => {
 
   it('Enter с непустым текстом вызывает onSubmit(trimmed, meta)', () => {
     render(<CentralPill {...baseProps} />);
-    const input = screen.getByLabelText('Запрос ИИ или поиск') as HTMLInputElement;
+    const input = screen.getByLabelText(
+      'Запрос ИИ или поиск',
+    ) as HTMLInputElement;
     fireEvent.change(input, { target: { value: '  Какая маржа?  ' } });
     fireEvent.submit(input.closest('form') as HTMLFormElement);
     expect(baseProps.onSubmit).toHaveBeenCalledTimes(1);
@@ -60,7 +62,9 @@ describe('<CentralPill>', () => {
 
   it('Enter с пустым/пробельным текстом не вызывает onSubmit', () => {
     render(<CentralPill {...baseProps} />);
-    const input = screen.getByLabelText('Запрос ИИ или поиск') as HTMLInputElement;
+    const input = screen.getByLabelText(
+      'Запрос ИИ или поиск',
+    ) as HTMLInputElement;
     fireEvent.change(input, { target: { value: '   ' } });
     fireEvent.submit(input.closest('form') as HTMLFormElement);
     expect(baseProps.onSubmit).not.toHaveBeenCalled();
@@ -68,7 +72,9 @@ describe('<CentralPill>', () => {
 
   it('после submit input очищается', () => {
     render(<CentralPill {...baseProps} />);
-    const input = screen.getByLabelText('Запрос ИИ или поиск') as HTMLInputElement;
+    const input = screen.getByLabelText(
+      'Запрос ИИ или поиск',
+    ) as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'Привет' } });
     expect(input.value).toBe('Привет');
     fireEvent.submit(input.closest('form') as HTMLFormElement);
@@ -77,12 +83,14 @@ describe('<CentralPill>', () => {
 
   it('Escape очищает input и снимает focus', () => {
     render(<CentralPill {...baseProps} />);
-    const input = screen.getByLabelText('Запрос ИИ или поиск') as HTMLInputElement;
+    const input = screen.getByLabelText(
+      'Запрос ИИ или поиск',
+    ) as HTMLInputElement;
     input.focus();
     fireEvent.change(input, { target: { value: 'черновик' } });
     fireEvent.keyDown(input, { key: 'Escape' });
     expect(input.value).toBe('');
-    expect(document.activeElement).not.toBe(input);
+    expect(input).not.toHaveFocus();
   });
 
   it('клик по context chip открывает popover со списком контекстов', () => {

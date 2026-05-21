@@ -163,8 +163,7 @@ const RailNav = styled.nav<{ $collapsed: boolean }>`
     inset: -20px;
   }
 
-  @media print,
-    (max-width: 767px) {
+  @media print, (max-width: 767px) {
     display: none;
   }
 
@@ -254,8 +253,7 @@ const DockGrabber = styled.button<{
     outline-offset: 4px;
   }
 
-  @media print,
-    (max-width: 767px) {
+  @media print, (max-width: 767px) {
     display: none;
   }
 
@@ -353,8 +351,7 @@ const RailButton = styled.button<{ $active?: boolean }>`
     width: 3px;
     height: 3px;
     border-radius: 50%;
-    background: ${({ $active }) =>
-      $active ? DS2_VARS.cSky : 'transparent'};
+    background: ${({ $active }) => ($active ? DS2_VARS.cSky : 'transparent')};
     box-shadow: ${({ $active }) =>
       $active ? DS2_VARS.dockBtnActiveGlow : 'none'};
     transition: background 0.12s ${DS2_VARS.ease};
@@ -701,7 +698,9 @@ export const Rail: FC<React.PropsWithChildren<RailProps>> = ({
             $active={calendarActive}
           >
             <IconCalendar />
-            {calendarBadgeColor ? <RailDot $color={calendarBadgeColor} /> : null}
+            {calendarBadgeColor ? (
+              <RailDot $color={calendarBadgeColor} />
+            ) : null}
           </RailButton>
         ),
       },
@@ -811,7 +810,7 @@ export const Rail: FC<React.PropsWithChildren<RailProps>> = ({
         {slots.map((slot, i) =>
           slot.kind === 'sep' ? (
             // eslint-disable-next-line react/no-array-index-key
-            (<RailSep key={`sep-${i}`} role="presentation" />)
+            <RailSep key={`sep-${i}`} role="presentation" />
           ) : (
             slot.node
           ),

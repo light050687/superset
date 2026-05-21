@@ -22,17 +22,18 @@ import { ThemedAgGridReact } from '@superset-ui/core/components';
 import type { CellKeyDownEvent, Column, GridOptions } from 'ag-grid-community';
 import type { AgGridReactProps } from 'ag-grid-react';
 
-type CellKeyDownParams = NonNullable<
-  AgGridReactProps<Record<string, any>>['onCellKeyDown']
-> extends (params: infer P) => any
-  ? P
-  : never;
-
 import copyTextToClipboard from 'src/utils/copy';
 
 import { PIVOT_COL_ID, GridSize } from './constants';
 import { Header } from './Header';
 import type { TableProps } from './types';
+
+type CellKeyDownParams =
+  NonNullable<AgGridReactProps<Record<string, any>>['onCellKeyDown']> extends (
+    params: infer P,
+  ) => any
+    ? P
+    : never;
 
 const gridComponents = {
   agColumnHeader: Header,
@@ -66,8 +67,9 @@ export function GridTable<RecordType extends object>({
       if (!('column' in params)) {
         return;
       }
-      const { event, column, data, value, api } =
-        params as CellKeyDownEvent<Record<string, any>>;
+      const { event, column, data, value, api } = params as CellKeyDownEvent<
+        Record<string, any>
+      >;
       const keyboardEvent = event as KeyboardEvent | null;
       if (
         !document.getSelection?.()?.toString?.() &&

@@ -77,11 +77,13 @@ const TruncatedTextWithTooltip = ({
   );
 };
 
-const MetadataItem: FC<React.PropsWithChildren<{
-  label: ReactNode;
-  value: ReactNode;
-  tooltipText?: string;
-}>> = ({ label, value, tooltipText }) => (
+const MetadataItem: FC<
+  React.PropsWithChildren<{
+    label: ReactNode;
+    value: ReactNode;
+    tooltipText?: string;
+  }>
+> = ({ label, value, tooltipText }) => (
   <div
     css={(theme: Theme) => css`
       font-size: ${theme.fontSizeSM}px;
@@ -113,10 +115,12 @@ const MetadataItem: FC<React.PropsWithChildren<{
   </div>
 );
 
-const SliceAddedBadgePlaceholder: FC<React.PropsWithChildren<{
-  showThumbnails?: boolean;
-  placeholderRef: (element: HTMLDivElement) => void;
-}>> = ({ showThumbnails, placeholderRef }) => (
+const SliceAddedBadgePlaceholder: FC<
+  React.PropsWithChildren<{
+    showThumbnails?: boolean;
+    placeholderRef: (element: HTMLDivElement) => void;
+  }>
+> = ({ showThumbnails, placeholderRef }) => (
   <div
     ref={placeholderRef}
     css={(theme: Theme) => css`
@@ -141,9 +145,9 @@ const SliceAddedBadgePlaceholder: FC<React.PropsWithChildren<{
   </div>
 );
 
-const SliceAddedBadge: FC<React.PropsWithChildren<{ placeholder?: HTMLDivElement }>> = ({
-  placeholder,
-}) => (
+const SliceAddedBadge: FC<
+  React.PropsWithChildren<{ placeholder?: HTMLDivElement }>
+> = ({ placeholder }) => (
   <div
     css={(theme: Theme) => css`
       /* Display styles */
@@ -167,17 +171,19 @@ const SliceAddedBadge: FC<React.PropsWithChildren<{ placeholder?: HTMLDivElement
   </div>
 );
 
-const AddSliceCard: FC<React.PropsWithChildren<{
-  datasourceUrl?: string;
-  datasourceName?: string;
-  innerRef?: RefObject<HTMLDivElement>;
-  isSelected?: boolean;
-  lastModified?: string;
-  sliceName: string;
-  style?: CSSProperties;
-  thumbnailUrl?: string | null;
-  visType: string;
-}>> = ({
+const AddSliceCard: FC<
+  React.PropsWithChildren<{
+    datasourceUrl?: string;
+    datasourceName?: string;
+    innerRef?: RefObject<HTMLDivElement>;
+    isSelected?: boolean;
+    lastModified?: string;
+    sliceName: string;
+    style?: CSSProperties;
+    thumbnailUrl?: string | null;
+    visType: string;
+  }>
+> = ({
   datasourceUrl,
   datasourceName = '-',
   innerRef,

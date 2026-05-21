@@ -24,10 +24,7 @@ import { useShell } from 'src/views/components/Shell/ShellContext';
 import { CatalogManageView } from './CatalogManageView';
 import { useCatalogDraft } from './useCatalogDraft';
 import { useCatalogFolders } from './useCatalogFolders';
-import {
-  markCatalogItemSeen,
-  markCatalogViewed,
-} from './useCatalogHasUpdates';
+import { markCatalogItemSeen, markCatalogViewed } from './useCatalogHasUpdates';
 import {
   deriveDefaultFolderName,
   useCatalogColumnLabels,
@@ -78,10 +75,7 @@ function writeDrillPath(path: number[]): void {
     if (path.length === 0) {
       window.localStorage.removeItem(DRILL_PATH_STORAGE_KEY);
     } else {
-      window.localStorage.setItem(
-        DRILL_PATH_STORAGE_KEY,
-        JSON.stringify(path),
-      );
+      window.localStorage.setItem(DRILL_PATH_STORAGE_KEY, JSON.stringify(path));
     }
   } catch {
     // ignore
@@ -461,8 +455,7 @@ const Empty = styled.div`
    кнопок. */
 const FooterRow = styled.div`
   padding: 14px 24px 18px;
-  border-top: 1px solid
-    color-mix(in oklab, ${DS2_VARS.g100} 70%, transparent);
+  border-top: 1px solid color-mix(in oklab, ${DS2_VARS.g100} 70%, transparent);
   flex-shrink: 0;
   display: flex;
   gap: 12px;
@@ -510,8 +503,8 @@ const FooterBtn = styled.button<{
       $active
         ? `background: color-mix(in oklab, ${DS2_VARS.cSky} 85%, #000); color: #ffffff;`
         : $variant === 'neutral'
-        ? `border-color: ${DS2_VARS.g300}; color: ${DS2_VARS.ink};`
-        : `border-color: ${DS2_VARS.cSky}; color: ${DS2_VARS.cSky}; background: color-mix(in oklab, ${DS2_VARS.cSky} 10%, transparent);`}
+          ? `border-color: ${DS2_VARS.g300}; color: ${DS2_VARS.ink};`
+          : `border-color: ${DS2_VARS.cSky}; color: ${DS2_VARS.cSky}; background: color-mix(in oklab, ${DS2_VARS.cSky} 10%, transparent);`}
   }
 
   &:focus-visible {
@@ -601,17 +594,14 @@ const ScopeBtn = styled.button<{ $active: boolean }>`
   border-radius: ${DS2_VARS.rControl};
   border: none;
   cursor: pointer;
-  background: ${({ $active }) =>
-    $active ? DS2_VARS.cSky : 'transparent'};
-  color: ${({ $active }) =>
-    $active ? '#FFFFFF' : DS2_VARS.g500};
+  background: ${({ $active }) => ($active ? DS2_VARS.cSky : 'transparent')};
+  color: ${({ $active }) => ($active ? '#FFFFFF' : DS2_VARS.g500)};
   transition:
     background 0.12s ${DS2_VARS.ease},
     color 0.12s ${DS2_VARS.ease};
 
   &:hover {
-    color: ${({ $active }) =>
-      $active ? '#FFFFFF' : DS2_VARS.ink};
+    color: ${({ $active }) => ($active ? '#FFFFFF' : DS2_VARS.ink)};
   }
 
   &:focus-visible {
@@ -870,12 +860,14 @@ export const CatalogDrawer: FC<React.PropsWithChildren<CatalogDrawerProps>> = ({
     () =>
       currentFolderId === null
         ? null
-        : folders.find(f => f.id === currentFolderId) ?? null,
+        : (folders.find(f => f.id === currentFolderId) ?? null),
     [folders, currentFolderId],
   );
   const currentRootId = drillPath[0] ?? null;
   const currentRootColor =
-    currentRootId !== null ? rootColorMap.get(currentRootId) ?? DS2_VARS.cSky : DS2_VARS.cSky;
+    currentRootId !== null
+      ? (rootColorMap.get(currentRootId) ?? DS2_VARS.cSky)
+      : DS2_VARS.cSky;
 
   /* Подпапки текущего уровня (прямые дети currentFolder). */
   const currentSubfolders = useMemo(
@@ -894,8 +886,19 @@ export const CatalogDrawer: FC<React.PropsWithChildren<CatalogDrawerProps>> = ({
   // Заглушки: реальные данные favourites/recent появятся в отдельной задаче
   // (требуют отдельных API endpoint'ов). Layout pixel-perfect готов — нужно
   // только заполнить реальными данными.
-  const favourites: Array<{ id: number; title: string; meta: string; kind: string }> = [];
-  const recent: Array<{ id: number; title: string; meta: string; time: string; kind: string }> = [];
+  const favourites: Array<{
+    id: number;
+    title: string;
+    meta: string;
+    kind: string;
+  }> = [];
+  const recent: Array<{
+    id: number;
+    title: string;
+    meta: string;
+    time: string;
+    kind: string;
+  }> = [];
 
   /* Откат draft-очереди: просто выкидывает pending ops — реальное
      состояние на сервере не трогаем. «Было 3 папки, объединил в 2,
@@ -945,251 +948,257 @@ export const CatalogDrawer: FC<React.PropsWithChildren<CatalogDrawerProps>> = ({
       {/* Overview (3 колонки): Избранное / История / Департаменты */}
       <TabView $active={tab === 'overview'}>
         <Grid>
-        {/* Колонка 1: Избранное */}
-        <Col>
-          <ColHead
-            type="button"
-            onClick={() =>
-              navTo(
-                `${listBasePath}?filters=(favorite:(label:Yes,value:!t))&pageIndex=0&sortColumn=changed_on_delta_humanized&sortOrder=desc&viewMode=table`,
-              )
-            }
-            aria-label={t('Открыть список избранного')}
-          >
-            <IconHeadStar />
-            <span className="col-head-label">{t('Избранное')}</span>
-            <ColHeadCount>{favourites.length}</ColHeadCount>
-            <span className="col-head-arrow" aria-hidden>›</span>
-          </ColHead>
-          <ColBody>
-            {favourites.length === 0 ? (
-              <Empty>
-                <IconStarBig />
-                {scope === 'dashboard'
-                  ? t('Пока нет избранных дашбордов')
-                  : t('Пока нет избранных чартов')}
-              </Empty>
-            ) : (
-              favourites.map(item => (
-                <Item key={item.id} type="button">
-                  <ItemIc>{iconForKind(item.kind)}</ItemIc>
-                  <ItemBody>
-                    <ItemTitle>{item.title}</ItemTitle>
-                    <ItemMeta>{item.meta}</ItemMeta>
-                  </ItemBody>
-                </Item>
-              ))
-            )}
-          </ColBody>
-        </Col>
+          {/* Колонка 1: Избранное */}
+          <Col>
+            <ColHead
+              type="button"
+              onClick={() =>
+                navTo(
+                  `${listBasePath}?filters=(favorite:(label:Yes,value:!t))&pageIndex=0&sortColumn=changed_on_delta_humanized&sortOrder=desc&viewMode=table`,
+                )
+              }
+              aria-label={t('Открыть список избранного')}
+            >
+              <IconHeadStar />
+              <span className="col-head-label">{t('Избранное')}</span>
+              <ColHeadCount>{favourites.length}</ColHeadCount>
+              <span className="col-head-arrow" aria-hidden>
+                ›
+              </span>
+            </ColHead>
+            <ColBody>
+              {favourites.length === 0 ? (
+                <Empty>
+                  <IconStarBig />
+                  {scope === 'dashboard'
+                    ? t('Пока нет избранных дашбордов')
+                    : t('Пока нет избранных чартов')}
+                </Empty>
+              ) : (
+                favourites.map(item => (
+                  <Item key={item.id} type="button">
+                    <ItemIc>{iconForKind(item.kind)}</ItemIc>
+                    <ItemBody>
+                      <ItemTitle>{item.title}</ItemTitle>
+                      <ItemMeta>{item.meta}</ItemMeta>
+                    </ItemBody>
+                  </Item>
+                ))
+              )}
+            </ColBody>
+          </Col>
 
-        {/* Колонка 2: История */}
-        <Col>
-          {/* История — переход на list page текущего scope, отсортированный
+          {/* Колонка 2: История */}
+          <Col>
+            {/* История — переход на list page текущего scope, отсортированный
               по дате последнего изменения (changed_on_delta_humanized).
               Отдельной страницы «История» в Superset нет — но сортировка
               по «последнее изменение» даёт тот же UX: сверху свежее. */}
-          <ColHead
-            type="button"
-            onClick={() =>
-              navTo(
-                `${listBasePath}?pageIndex=0&sortColumn=changed_on_delta_humanized&sortOrder=desc&viewMode=table`,
-              )
-            }
-            aria-label={t('Открыть список недавних')}
-          >
-            <IconHeadClock />
-            <span className="col-head-label">{t('История')}</span>
-            <ColHeadCount>{recent.length}</ColHeadCount>
-            <span className="col-head-arrow" aria-hidden>›</span>
-          </ColHead>
-          <ColBody>
-            {recent.length === 0 ? (
-              <Empty>
-                <IconClockBig />
-                {t('Здесь появятся недавно открытые объекты')}
-              </Empty>
-            ) : (
-              recent.map(item => (
-                <Item key={item.id} type="button">
-                  <ItemIc>{iconForKind(item.kind)}</ItemIc>
-                  <ItemBody>
-                    <ItemTitle>{item.title}</ItemTitle>
-                    <ItemMeta>{item.meta}</ItemMeta>
-                  </ItemBody>
-                  <ItemTime>{item.time}</ItemTime>
-                </Item>
-              ))
-            )}
-          </ColBody>
-        </Col>
+            <ColHead
+              type="button"
+              onClick={() =>
+                navTo(
+                  `${listBasePath}?pageIndex=0&sortColumn=changed_on_delta_humanized&sortOrder=desc&viewMode=table`,
+                )
+              }
+              aria-label={t('Открыть список недавних')}
+            >
+              <IconHeadClock />
+              <span className="col-head-label">{t('История')}</span>
+              <ColHeadCount>{recent.length}</ColHeadCount>
+              <span className="col-head-arrow" aria-hidden>
+                ›
+              </span>
+            </ColHead>
+            <ColBody>
+              {recent.length === 0 ? (
+                <Empty>
+                  <IconClockBig />
+                  {t('Здесь появятся недавно открытые объекты')}
+                </Empty>
+              ) : (
+                recent.map(item => (
+                  <Item key={item.id} type="button">
+                    <ItemIc>{iconForKind(item.kind)}</ItemIc>
+                    <ItemBody>
+                      <ItemTitle>{item.title}</ItemTitle>
+                      <ItemMeta>{item.meta}</ItemMeta>
+                    </ItemBody>
+                    <ItemTime>{item.time}</ItemTime>
+                  </Item>
+                ))
+              )}
+            </ColBody>
+          </Col>
 
-        {/* Колонка 3: Департаменты. Два режима (мокап .sc-col):
+          {/* Колонка 3: Департаменты. Два режима (мокап .sc-col):
             1) drillPath пуст → заголовок «ДЕПАРТАМЕНТЫ» (клик → list page),
                тело — root-папки (клик по строке → drill-in).
             2) drillPath не пуст → заголовок-back (стрелка + dot + имя папки),
                тело — подпапки + объекты текущего уровня.
             Счётчики берём из item_counts_by_type[scope] — scope-specific,
             чтобы юзер не путался total-цифрой. */}
-        <Col>
-          {drillPath.length === 0 ? (
-            <>
-              <ColHead
-                type="button"
-                onClick={() => navTo(listBasePath)}
-                aria-label={
-                  scope === 'dashboard'
-                    ? t('Открыть список дашбордов')
-                    : t('Открыть список чартов')
-                }
-              >
-                <IconHeadGrid />
-                <span className="col-head-label">{t('Департаменты')}</span>
-                <ColHeadCount>{rootFolders.length}</ColHeadCount>
-                <span className="col-head-arrow" aria-hidden>›</span>
-              </ColHead>
-              <ColBody>
-                {rootFolders.length === 0 ? (
-                  <Empty>
-                    <IconFolderBig />
-                    {t(
-                      'Папок пока нет. Создайте первую через «Управление каталогом».',
-                    )}
-                  </Empty>
-                ) : (
-                  rootFolders.map((folder, idx) => {
-                    const scopedCount =
-                      folder.item_counts_by_type?.[scope] ?? 0;
+          <Col>
+            {drillPath.length === 0 ? (
+              <>
+                <ColHead
+                  type="button"
+                  onClick={() => navTo(listBasePath)}
+                  aria-label={
+                    scope === 'dashboard'
+                      ? t('Открыть список дашбордов')
+                      : t('Открыть список чартов')
+                  }
+                >
+                  <IconHeadGrid />
+                  <span className="col-head-label">{t('Департаменты')}</span>
+                  <ColHeadCount>{rootFolders.length}</ColHeadCount>
+                  <span className="col-head-arrow" aria-hidden>
+                    ›
+                  </span>
+                </ColHead>
+                <ColBody>
+                  {rootFolders.length === 0 ? (
+                    <Empty>
+                      <IconFolderBig />
+                      {t(
+                        'Папок пока нет. Создайте первую через «Управление каталогом».',
+                      )}
+                    </Empty>
+                  ) : (
+                    rootFolders.map((folder, idx) => {
+                      const scopedCount =
+                        folder.item_counts_by_type?.[scope] ?? 0;
+                      return (
+                        <Dept
+                          key={folder.id}
+                          type="button"
+                          onClick={() => setDrillPath([folder.id])}
+                          aria-current={
+                            activeFolderId === folder.id ? 'true' : undefined
+                          }
+                        >
+                          <DeptDot $color={pickColor(idx)} />
+                          <DeptName>
+                            {folder.is_default
+                              ? deriveDefaultFolderName(labels.dept)
+                              : folder.name}
+                          </DeptName>
+                          <DeptCount>{scopedCount}</DeptCount>
+                          <IconDeptChev />
+                        </Dept>
+                      );
+                    })
+                  )}
+                </ColBody>
+              </>
+            ) : (
+              <>
+                <DrillHead
+                  type="button"
+                  onClick={() => setDrillPath(drillPath.slice(0, -1))}
+                  aria-label={t('Назад')}
+                  title={t('Назад')}
+                >
+                  <IconDrillBack />
+                  <DrillDot $color={currentRootColor} />
+                  <span className="drill-name">
+                    {currentFolder
+                      ? currentFolder.is_default
+                        ? deriveDefaultFolderName(labels.dept)
+                        : currentFolder.name
+                      : ''}
+                  </span>
+                  <span className="drill-count">
+                    {currentSubfolders.length + drilled.items.length}
+                  </span>
+                </DrillHead>
+                <ColBody>
+                  {/* Подпапки текущего уровня — визуально как .sc-dept строки.
+                    Цвет точки — custom folder.color если есть, иначе цвет
+                    root-ветки (чтобы вся ветка читалась в одном оттенке). */}
+                  {currentSubfolders.map(sub => {
+                    const scopedCount = sub.item_counts_by_type?.[scope] ?? 0;
+                    const dotColor = sub.color ?? currentRootColor;
                     return (
                       <Dept
-                        key={folder.id}
+                        key={`sub-${sub.id}`}
                         type="button"
-                        onClick={() => setDrillPath([folder.id])}
+                        onClick={() => setDrillPath([...drillPath, sub.id])}
                         aria-current={
-                          activeFolderId === folder.id ? 'true' : undefined
+                          activeFolderId === sub.id ? 'true' : undefined
                         }
                       >
-                        <DeptDot $color={pickColor(idx)} />
+                        <DeptDot $color={dotColor} />
                         <DeptName>
-                          {folder.is_default
+                          {sub.is_default
                             ? deriveDefaultFolderName(labels.dept)
-                            : folder.name}
+                            : sub.name}
                         </DeptName>
                         <DeptCount>{scopedCount}</DeptCount>
                         <IconDeptChev />
                       </Dept>
                     );
-                  })
-                )}
-              </ColBody>
-            </>
-          ) : (
-            <>
-              <DrillHead
-                type="button"
-                onClick={() => setDrillPath(drillPath.slice(0, -1))}
-                aria-label={t('Назад')}
-                title={t('Назад')}
-              >
-                <IconDrillBack />
-                <DrillDot $color={currentRootColor} />
-                <span className="drill-name">
-                  {currentFolder
-                    ? currentFolder.is_default
-                      ? deriveDefaultFolderName(labels.dept)
-                      : currentFolder.name
-                    : ''}
-                </span>
-                <span className="drill-count">
-                  {currentSubfolders.length + drilled.items.length}
-                </span>
-              </DrillHead>
-              <ColBody>
-                {/* Подпапки текущего уровня — визуально как .sc-dept строки.
-                    Цвет точки — custom folder.color если есть, иначе цвет
-                    root-ветки (чтобы вся ветка читалась в одном оттенке). */}
-                {currentSubfolders.map(sub => {
-                  const scopedCount = sub.item_counts_by_type?.[scope] ?? 0;
-                  const dotColor = sub.color ?? currentRootColor;
-                  return (
-                    <Dept
-                      key={`sub-${sub.id}`}
-                      type="button"
-                      onClick={() => setDrillPath([...drillPath, sub.id])}
-                      aria-current={
-                        activeFolderId === sub.id ? 'true' : undefined
-                      }
-                    >
-                      <DeptDot $color={dotColor} />
-                      <DeptName>
-                        {sub.is_default
-                          ? deriveDefaultFolderName(labels.dept)
-                          : sub.name}
-                      </DeptName>
-                      <DeptCount>{scopedCount}</DeptCount>
-                      <IconDeptChev />
-                    </Dept>
-                  );
-                })}
+                  })}
 
-                {/* Объекты текущей папки — клик открывает dashboard/chart и
+                  {/* Объекты текущей папки — клик открывает dashboard/chart и
                     закрывает drawer. markCatalogItemSeen снимает точку
                     «новое» с объекта (item-level badge). */}
-                {drilled.loading ? (
-                  <div
-                    style={{
-                      padding: '24px 12px',
-                      fontSize: 11,
-                      color: DS2_VARS.g500,
-                      fontFamily: DS2_VARS.fontMono,
-                      textAlign: 'center',
-                    }}
-                  >
-                    {t('Загрузка…')}
-                  </div>
-                ) : drilled.error ? (
-                  <div
-                    style={{
-                      padding: '24px 12px',
-                      fontSize: 11,
-                      color: DS2_VARS.dn,
-                      fontFamily: DS2_VARS.fontMono,
-                      textAlign: 'center',
-                    }}
-                  >
-                    {drilled.error}
-                  </div>
-                ) : drilled.items.length === 0 &&
-                  currentSubfolders.length === 0 ? (
-                  <Empty>
-                    <IconFolderBig />
-                    {scope === 'dashboard'
-                      ? t('В этой папке нет дашбордов')
-                      : t('В этой папке нет чартов')}
-                  </Empty>
-                ) : (
-                  drilled.items.map(it => (
-                    <Item
-                      key={`it-${it.objectType}-${it.id}`}
-                      type="button"
-                      onClick={() => {
-                        markCatalogItemSeen(it.objectType, it.id);
-                        navTo(it.url);
+                  {drilled.loading ? (
+                    <div
+                      style={{
+                        padding: '24px 12px',
+                        fontSize: 11,
+                        color: DS2_VARS.g500,
+                        fontFamily: DS2_VARS.fontMono,
+                        textAlign: 'center',
                       }}
-                      title={it.title}
                     >
-                      <ItemIc>{iconForKind(it.kind)}</ItemIc>
-                      <ItemBody>
-                        <ItemTitle>{it.title}</ItemTitle>
-                        <ItemMeta>{it.meta}</ItemMeta>
-                      </ItemBody>
-                    </Item>
-                  ))
-                )}
-              </ColBody>
-            </>
-          )}
-        </Col>
+                      {t('Загрузка…')}
+                    </div>
+                  ) : drilled.error ? (
+                    <div
+                      style={{
+                        padding: '24px 12px',
+                        fontSize: 11,
+                        color: DS2_VARS.dn,
+                        fontFamily: DS2_VARS.fontMono,
+                        textAlign: 'center',
+                      }}
+                    >
+                      {drilled.error}
+                    </div>
+                  ) : drilled.items.length === 0 &&
+                    currentSubfolders.length === 0 ? (
+                    <Empty>
+                      <IconFolderBig />
+                      {scope === 'dashboard'
+                        ? t('В этой папке нет дашбордов')
+                        : t('В этой папке нет чартов')}
+                    </Empty>
+                  ) : (
+                    drilled.items.map(it => (
+                      <Item
+                        key={`it-${it.objectType}-${it.id}`}
+                        type="button"
+                        onClick={() => {
+                          markCatalogItemSeen(it.objectType, it.id);
+                          navTo(it.url);
+                        }}
+                        title={it.title}
+                      >
+                        <ItemIc>{iconForKind(it.kind)}</ItemIc>
+                        <ItemBody>
+                          <ItemTitle>{it.title}</ItemTitle>
+                          <ItemMeta>{it.meta}</ItemMeta>
+                        </ItemBody>
+                      </Item>
+                    ))
+                  )}
+                </ColBody>
+              </>
+            )}
+          </Col>
         </Grid>
       </TabView>
 
@@ -1274,7 +1283,6 @@ export const CatalogDrawer: FC<React.PropsWithChildren<CatalogDrawerProps>> = ({
           </FooterBtn>
         </FooterRow>
       ) : null}
-
     </>
   );
 };

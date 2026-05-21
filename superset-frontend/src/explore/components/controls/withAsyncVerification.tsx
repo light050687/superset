@@ -126,7 +126,9 @@ export default function withAsyncVerification({
   quiet = false,
   showLoadingState: defaultShowLoadingState = true,
 }: WithAsyncVerificationOptions) {
-  const ControlComponent: ComponentType<React.PropsWithChildren<FullControlProps>> =
+  const ControlComponent: ComponentType<
+    React.PropsWithChildren<FullControlProps>
+  > =
     typeof baseControl === 'string'
       ? controlComponentMap[baseControl]
       : baseControl;

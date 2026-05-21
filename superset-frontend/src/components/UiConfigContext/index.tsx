@@ -45,9 +45,9 @@ export const UiConfigContext = createContext<UiConfigType>({
 
 export const useUiConfig = () => useContext(UiConfigContext);
 
-export const EmbeddedUiConfigProvider: FC<React.PropsWithChildren<EmbeddedUiConfigProviderProps>> = ({
-  children,
-}) => {
+export const EmbeddedUiConfigProvider: FC<
+  React.PropsWithChildren<EmbeddedUiConfigProviderProps>
+> = ({ children }) => {
   const config = getUrlParam(URL_PARAMS.uiConfig) || 0;
   const [embeddedConfig] = useState({
     hideTitle: (config & 1) !== 0,

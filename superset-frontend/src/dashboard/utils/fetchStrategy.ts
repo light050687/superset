@@ -48,7 +48,8 @@ function clamp(value: number, min: number, max: number): number {
 export function readFetchStrategy(
   metadata: Record<string, any> | null | undefined,
 ): FetchStrategyMetadata {
-  const raw = (metadata?.fetch_strategy as Partial<FetchStrategyMetadata>) || {};
+  const raw =
+    (metadata?.fetch_strategy as Partial<FetchStrategyMetadata>) || {};
   return {
     concurrency: clamp(
       Number.isFinite(raw.concurrency)

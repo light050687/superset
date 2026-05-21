@@ -17,10 +17,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  ArrowLeftOutlined,
-  CloseOutlined,
-} from '@ant-design/icons';
+import { ArrowLeftOutlined, CloseOutlined } from '@ant-design/icons';
 import { styled } from '@superset-ui/core';
 
 export interface RadialMenuItem {
@@ -137,7 +134,6 @@ const Root = styled.div<{ x: number; y: number }>`
       transform: scale(1);
     }
   }
-
 `;
 
 const IconLayer = styled.div`
@@ -182,7 +178,6 @@ const IconWrap = styled.div<{
       transform: scale(1);
     }
   }
-
 `;
 
 const CenterButton = styled.button`
@@ -315,11 +310,7 @@ export function RadialMenu({ items, x, y, onClose }: Props): JSX.Element {
       role="dialog"
       aria-label="Контекстное меню чарта"
     >
-      <Root
-        x={x}
-        y={y}
-        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-      >
+      <Root x={x} y={y} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
         <svg
           viewBox={`0 0 ${SIZE} ${SIZE}`}
           width={SIZE}
@@ -340,9 +331,7 @@ export function RadialMenu({ items, x, y, onClose }: Props): JSX.Element {
                 stroke="#dcdcdc"
                 strokeWidth="1"
                 onMouseEnter={() => setHovered(i)}
-                onMouseLeave={() =>
-                  setHovered(cur => (cur === i ? null : cur))
-                }
+                onMouseLeave={() => setHovered(cur => (cur === i ? null : cur))}
                 onClick={() => handleItemClick(item)}
                 style={{
                   /* Reverse stagger 40ms — counterclockwise appearance:

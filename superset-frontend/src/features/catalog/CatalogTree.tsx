@@ -134,8 +134,7 @@ export const CatalogTree: FC<React.PropsWithChildren<CatalogTreeProps>> = ({
   const [{ isOver: rootOver, canDrop: rootCanDrop }, rootDrop] = useDrop({
     accept: [CATALOG_DRAG_TYPES.FOLDER],
     canDrop: (dragged: DragFolderPayload | DragItemPayload) =>
-      dragged.type === CATALOG_DRAG_TYPES.FOLDER &&
-      dragged.parentId !== null,
+      dragged.type === CATALOG_DRAG_TYPES.FOLDER && dragged.parentId !== null,
     drop: (dragged: DragFolderPayload | DragItemPayload) => {
       if (dragged.type === CATALOG_DRAG_TYPES.FOLDER) {
         void onFolderMove(dragged.folderId, null);
@@ -185,8 +184,7 @@ export const CatalogTree: FC<React.PropsWithChildren<CatalogTreeProps>> = ({
           onItemDrop={onItemDrop}
           descendantIds={descendants}
         />
-        {isExpanded &&
-          node.children.map(child => renderNode(child, depth + 1))}
+        {isExpanded && node.children.map(child => renderNode(child, depth + 1))}
       </Fragment>
     );
   };

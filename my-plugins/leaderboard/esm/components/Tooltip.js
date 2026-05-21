@@ -3,7 +3,7 @@ import { memo, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { TooltipEl } from '../styles';
 /** Portal-tooltip. Позиционируется относительно курсора, «прилипает» к границам окна. */
-function TooltipInner({ visible, pos, children }) {
+function TooltipInner({ visible, pos, children, ink, surface, border }) {
     const [portalRoot] = useState(() => typeof document !== 'undefined' ? document.body : null);
     const [size, setSize] = useState({ w: 280, h: 140 });
     useEffect(() => {
@@ -24,7 +24,7 @@ function TooltipInner({ visible, pos, children }) {
         x = 8;
     if (y < 8)
         y = 8;
-    return createPortal(_jsx(TooltipEl, { id: "rs-tooltip", "$visible": visible, style: { left: x, top: y }, role: "tooltip", children: children }), portalRoot);
+    return createPortal(_jsx(TooltipEl, { id: "rs-tooltip", "$visible": visible, style: { left: x, top: y, background: ink, color: surface, borderColor: border }, role: "tooltip", children: children }), portalRoot);
 }
 export default memo(TooltipInner);
 //# sourceMappingURL=Tooltip.js.map

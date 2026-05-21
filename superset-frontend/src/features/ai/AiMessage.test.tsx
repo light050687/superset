@@ -45,7 +45,11 @@ describe('<AiMessage>', () => {
       ],
       insight: { prefix: 'Инсайт', text: 'Говядина бьёт категорию' },
       actions: [
-        { kind: 'open_dashboard', label: 'Открыть KPI', url: '/dashboard/list/' },
+        {
+          kind: 'open_dashboard',
+          label: 'Открыть KPI',
+          url: '/dashboard/list/',
+        },
         { kind: 'download', label: 'Экспорт' },
       ],
       source: {

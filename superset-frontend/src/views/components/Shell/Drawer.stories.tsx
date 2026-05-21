@@ -60,12 +60,16 @@ const Story = ({ openedKind, withContent }: Args) => (
                     </div>
                   ),
                   tools: (
-                    <div style={{ padding: 12, fontSize: 12, color: 'var(--ink)' }}>
+                    <div
+                      style={{ padding: 12, fontSize: 12, color: 'var(--ink)' }}
+                    >
                       Гео · Таблицы · Документы · Self-service (этап 6)
                     </div>
                   ),
                   create: (
-                    <div style={{ padding: 12, fontSize: 12, color: 'var(--ink)' }}>
+                    <div
+                      style={{ padding: 12, fontSize: 12, color: 'var(--ink)' }}
+                    >
                       Дашборд · Чарт · Датасет · SQL (этап 6)
                     </div>
                   ),

@@ -26,6 +26,8 @@ import {
   styled,
   t,
   useTheme,
+  FeatureFlag,
+  isFeatureEnabled,
 } from '@superset-ui/core';
 import { useDispatch, useSelector } from 'react-redux';
 import { EmptyState, Loading } from '@superset-ui/core/components';
@@ -35,18 +37,6 @@ import DashboardHeader from 'src/dashboard/components/Header';
 import { Icons } from '@superset-ui/core/components/Icons';
 import IconButton from 'src/dashboard/components/IconButton';
 import { Droppable } from 'src/dashboard/components/dnd/DragDroppable';
-
-/**
- * Shape of the object produced by DragDroppable's drop() handler
- * (src/dashboard/components/dnd/handleDrop.js) and consumed by the
- * untyped `handleComponentDrop` thunk.
- */
-type DashboardDropResult = {
-  source: { id: string | null; type?: string; index: number };
-  destination?: { id: string; type: string; index: number };
-  dragging: { id: string | number; type: string; meta?: Record<string, any> };
-  position?: string;
-};
 import DashboardComponent from 'src/dashboard/containers/DashboardComponent';
 import WithPopoverMenu from 'src/dashboard/components/menu/WithPopoverMenu';
 import getDirectPathToTabIndex from 'src/dashboard/util/getDirectPathToTabIndex';
@@ -81,18 +71,26 @@ import {
   BUILDER_SIDEPANEL_WIDTH,
   EMPTY_CONTAINER_Z_INDEX,
 } from 'src/dashboard/constants';
-import { getRootLevelTabsComponent, shouldFocusTabs } from './utils';
-import DashboardContainer from './DashboardContainer';
-import { useNativeFilters } from './state';
-import DashboardWrapper from './DashboardWrapper';
 import { ViewportPriorityProvider } from 'src/dashboard/hooks/useChartViewportPriority';
 import { useFetchStrategy } from 'src/dashboard/utils/fetchStrategy';
 import { setQueueConcurrency } from 'src/dashboard/utils/chartFetchQueue';
 import { isCurrentUserBot } from 'src/utils/isBot';
-import {
-  FeatureFlag,
-  isFeatureEnabled,
-} from '@superset-ui/core';
+import { getRootLevelTabsComponent, shouldFocusTabs } from './utils';
+import DashboardContainer from './DashboardContainer';
+import { useNativeFilters } from './state';
+import DashboardWrapper from './DashboardWrapper';
+
+/**
+ * Shape of the object produced by DragDroppable's drop() handler
+ * (src/dashboard/components/dnd/handleDrop.js) and consumed by the
+ * untyped `handleComponentDrop` thunk.
+ */
+type DashboardDropResult = {
+  source: { id: string | null; type?: string; index: number };
+  destination?: { id: string; type: string; index: number };
+  dragging: { id: string | number; type: string; meta?: Record<string, any> };
+  position?: string;
+};
 
 /* FiltersPanel + StickyPanel удалены вместе с renderChild() —
    вертикальный FilterBar теперь живёт в Drawer'е через DashboardSideRail. */
@@ -316,7 +314,7 @@ const StyledDashboardContent = styled.div<{
          занимает всю ширину с симметричными margin 32px. */
 
       /* this is the ParentSize wrapper */
-    & > div:first-of-type {
+      & > div:first-of-type {
         height: 100% !important;
       }
     }
@@ -388,8 +386,14 @@ const StyledDashboardContent = styled.div<{
            overflow:visible на SliceHeader выше slice_name выглядывал
            поверх Card в edit-mode (видно как «График» / slice_name
            призрачно в левом верхнем углу). */
-        & div[data-test-viz-type^='ext-'].chart-slice > div:first-child .header-title,
-        & div[data-test-viz-type^='ext-'].chart-slice > div:first-child .editable-title {
+        &
+          div[data-test-viz-type^='ext-'].chart-slice
+          > div:first-child
+          .header-title,
+        &
+          div[data-test-viz-type^='ext-'].chart-slice
+          > div:first-child
+          .editable-title {
           display: none !important;
           visibility: hidden !important;
         }
@@ -409,7 +413,10 @@ const StyledDashboardContent = styled.div<{
            card top-right, opacity 0→1 на hover.
            SliceHeader collapsed выше до height:0, но header-controls
            (контейнер ⋮) поднимаем absolutely в правый верхний угол. */
-        & div[data-test-viz-type^='ext-']:not([data-test-viz-type='ext-kpi-card']).chart-slice
+        &
+          div[data-test-viz-type^='ext-']:not(
+            [data-test-viz-type='ext-kpi-card']
+          ).chart-slice
           > div:first-child
           .header-controls {
           position: absolute !important;
@@ -425,10 +432,16 @@ const StyledDashboardContent = styled.div<{
           opacity: 0;
           transition: opacity 0.15s ease;
         }
-        & div[data-test-viz-type^='ext-']:not([data-test-viz-type='ext-kpi-card']).chart-slice:hover
+        &
+          div[data-test-viz-type^='ext-']:not(
+            [data-test-viz-type='ext-kpi-card']
+          ).chart-slice:hover
           > div:first-child
           .header-controls,
-        & div[data-test-viz-type^='ext-']:not([data-test-viz-type='ext-kpi-card']).chart-slice
+        &
+          div[data-test-viz-type^='ext-']:not(
+            [data-test-viz-type='ext-kpi-card']
+          ).chart-slice
           > div:first-child
           .header-controls:focus-within {
           opacity: 1;
@@ -541,7 +554,7 @@ const StyledDashboardContent = styled.div<{
      */
 
     /* Prevent horizontal overflow in responsive view mode */
-    &[data-view-mode="true"] {
+    &[data-view-mode='true'] {
       overflow-x: hidden;
     }
 
@@ -549,11 +562,11 @@ const StyledDashboardContent = styled.div<{
      * Equal-height cards: complete flex chain from grid-row down to chart container.
      * Every level must be display:flex + flex:1 so cards stretch to equal height.
      */
-    &[data-view-mode="true"] .grid-row {
+    &[data-view-mode='true'] .grid-row {
       align-items: stretch;
     }
 
-    &[data-view-mode="true"] .dragdroppable-column {
+    &[data-view-mode='true'] .dragdroppable-column {
       display: flex !important;
       flex-direction: column !important;
     }
@@ -565,7 +578,7 @@ const StyledDashboardContent = styled.div<{
        на всю колонку, и view-mode выглядел иначе чем edit. Сохраняем
        только вертикальный flex-chain для equal-height stretch.
     */
-    &[data-view-mode="true"] .resizable-container {
+    &[data-view-mode='true'] .resizable-container {
       display: flex !important;
       flex-direction: column !important;
       /* Override inline height — let flex chain control height */
@@ -585,14 +598,13 @@ const StyledDashboardContent = styled.div<{
        же row. С :has() селектор не применяется к native ECharts
        (echarts_*, mixed_chart и т.д.) — их inline height нужен для
        canvas measurement, иначе chart canvas = 0×0. */
-    &[data-view-mode="true"]
-      .resizable-container:has(.dashboard-markdown),
-    &[data-view-mode="true"]
+    &[data-view-mode='true'] .resizable-container:has(.dashboard-markdown),
+    &[data-view-mode='true']
       .resizable-container:has(.dashboard-component-header),
-    &[data-view-mode="true"]
+    &[data-view-mode='true']
       .resizable-container:has(.dashboard-component-divider),
-    &[data-view-mode="true"]
-      .resizable-container:has(div[data-test-viz-type^="ext-"]) {
+    &[data-view-mode='true']
+      .resizable-container:has(div[data-test-viz-type^='ext-']) {
       flex: 1 1 auto !important;
       align-self: stretch !important;
     }
@@ -606,7 +618,7 @@ const StyledDashboardContent = styled.div<{
        Решение: до chart-load resizable-container должен иметь min-height
        равной выcоте предполагаемой по resize-config (через flex-grow
        внутри stretched dragdroppable-column). */
-    &[data-view-mode="true"] .dragdroppable-column > .resizable-container {
+    &[data-view-mode='true'] .dragdroppable-column > .resizable-container {
       min-height: 100% !important;
     }
 
@@ -620,40 +632,44 @@ const StyledDashboardContent = styled.div<{
        skeleton имеет атрибут только наш shape-overlay), не reagueт на
        свой собственный shape-overlay. Без этого generic overlay /
        shape-overlay перекрывал плагин-internal skeleton (z-index выше). */
-    &[data-view-mode="true"]
-      .dashboard-component-chart-holder:has([aria-busy="true"]:not([data-shape-skeleton="true"]))
-      > [data-generic-shimmer="true"],
-    &[data-view-mode="true"]
-      .dashboard-component-chart-holder:has([aria-busy="true"]:not([data-shape-skeleton="true"]))
-      > [data-shape-skeleton="true"] {
+    &[data-view-mode='true']
+      .dashboard-component-chart-holder:has(
+        [aria-busy='true']:not([data-shape-skeleton='true'])
+      )
+      > [data-generic-shimmer='true'],
+    &[data-view-mode='true']
+      .dashboard-component-chart-holder:has(
+        [aria-busy='true']:not([data-shape-skeleton='true'])
+      )
+      > [data-shape-skeleton='true'] {
       display: none !important;
     }
 
-    &[data-view-mode="true"] .dashboard-component-chart-holder {
+    &[data-view-mode='true'] .dashboard-component-chart-holder {
       flex: 1;
       display: flex;
       flex-direction: column;
     }
 
-    &[data-view-mode="true"] .dashboard-chart {
+    &[data-view-mode='true'] .dashboard-chart {
       flex: 1;
       display: flex;
       flex-direction: column;
     }
 
-    &[data-view-mode="true"] .chart-slice {
+    &[data-view-mode='true'] .chart-slice {
       flex: 1;
       display: flex;
       flex-direction: column;
     }
 
-    &[data-view-mode="true"] .slice_container {
+    &[data-view-mode='true'] .slice_container {
       flex: 1;
       display: flex;
       flex-direction: column;
     }
 
-    &[data-view-mode="true"] .chart-container {
+    &[data-view-mode='true'] .chart-container {
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -666,7 +682,7 @@ const StyledDashboardContent = styled.div<{
 
     /* Chart.tsx .slice_container задаёт height: chartHeight px фикс
          (Emotion). В view-mode override на 100% — flex chain контролирует. */
-    &[data-view-mode="true"] .slice_container {
+    &[data-view-mode='true'] .slice_container {
       flex: 1;
       height: 100% !important;
       min-height: 0 !important;
@@ -675,7 +691,7 @@ const StyledDashboardContent = styled.div<{
     /* DS2 row equalization для markdown — тот же flex-chain что для
        charts. Без этого markdown короткий, чарт длинный → разные
        высоты в одном row. */
-    &[data-view-mode="true"] .dashboard-markdown {
+    &[data-view-mode='true'] .dashboard-markdown {
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -684,7 +700,7 @@ const StyledDashboardContent = styled.div<{
     /* WithPopoverMenu wrapper — важный промежуточный слой между
        .dragdroppable и .dashboard-markdown/.dashboard-component-header
        и т.д. Без flex здесь chain рвётся: markdown wrapper висит auto-height. */
-    &[data-view-mode="true"] .with-popover-menu {
+    &[data-view-mode='true'] .with-popover-menu {
       flex: 1 1 auto !important;
       display: flex !important;
       flex-direction: column !important;
@@ -695,7 +711,7 @@ const StyledDashboardContent = styled.div<{
     /* dragdroppable wrapper в row (orient=column): растяжение по высоте
        сиблинга. Без этого markdown/header не получают max(row) даже если
        внутренние wrapper'ы flex. */
-    &[data-view-mode="true"] .grid-row > .dragdroppable {
+    &[data-view-mode='true'] .grid-row > .dragdroppable {
       align-self: stretch !important;
       display: flex !important;
       flex-direction: column !important;
@@ -707,13 +723,13 @@ const StyledDashboardContent = styled.div<{
        занимал всю высоту row (а не прижимался к верху карточки).
        descendant (без >) — устойчиво к любым промежуточным wrapper'ам
        в кастомных форках. */
-    &[data-view-mode="true"] .dashboard-markdown .resizable-container {
+    &[data-view-mode='true'] .dashboard-markdown .resizable-container {
       flex: 1 1 auto !important;
       align-self: stretch !important;
       min-height: 0;
     }
 
-    &[data-view-mode="true"]
+    &[data-view-mode='true']
       .dashboard-markdown
       .dashboard-component-chart-holder {
       flex: 1 1 auto !important;
@@ -726,7 +742,7 @@ const StyledDashboardContent = styled.div<{
        сиблинга. Текст центрируется по вертикали через justify-content.
        !important на всём — на случай если в кастомном форке Header.jsx
        inline-стилей или Emotion-styled override'ит. */
-    &[data-view-mode="true"] .dashboard-component-header {
+    &[data-view-mode='true'] .dashboard-component-header {
       flex: 1 1 auto !important;
       display: flex !important;
       flex-direction: column !important;
@@ -738,7 +754,7 @@ const StyledDashboardContent = styled.div<{
 
     /* Divider — wrapper тянется на полную высоту row, hr остаётся
        центром. Future-proof для будущих divider-стилей с фоном. */
-    &[data-view-mode="true"] .dashboard-component-divider {
+    &[data-view-mode='true'] .dashboard-component-divider {
       flex: 1 1 auto !important;
       display: flex !important;
       flex-direction: column !important;
@@ -753,7 +769,7 @@ const StyledDashboardContent = styled.div<{
        flex:1 — высота тянется до dashboard-component-chart-holder,
        дальше плагин сам пробрасывает по своей DOM-цепочке.
        descendant (без >) — устойчиво к промежуточным wrapper'ам. */
-    &[data-view-mode="true"]
+    &[data-view-mode='true']
       .dragdroppable-column
       .resizable-container
       .dashboard-component {
@@ -768,7 +784,7 @@ const StyledDashboardContent = styled.div<{
        внутренний Card плагина (с height: 100%) растягивался на полную
        высоту resizable-container'а. Универсальный селектор покрывает
        все 10 плагинов и любые будущие ext-*. */
-    &[data-view-mode="true"]
+    &[data-view-mode='true']
       div[data-test-viz-type^='ext-']
       .slice_container
       > div {
@@ -777,7 +793,7 @@ const StyledDashboardContent = styled.div<{
       flex-direction: column;
     }
 
-    &[data-view-mode="true"]
+    &[data-view-mode='true']
       div[data-test-viz-type^='ext-']
       .slice_container
       > div
@@ -787,7 +803,7 @@ const StyledDashboardContent = styled.div<{
       flex-direction: column;
     }
 
-    &[data-view-mode="true"]
+    &[data-view-mode='true']
       div[data-test-viz-type^='ext-']
       .slice_container
       > div
@@ -809,7 +825,7 @@ const StyledDashboardContent = styled.div<{
      * sizeUnit*4 (16px) такой же как в edit, чтобы отступы со всех
      * сторон были симметричны и идентичны между edit/view.
      */
-    &[data-view-mode="true"] .grid-container {
+    &[data-view-mode='true'] .grid-container {
       container-type: inline-size;
       container-name: grid;
     }
@@ -836,7 +852,7 @@ const StyledDashboardContent = styled.div<{
 
     /* Hide filter panel on very narrow viewports (mobile) */
     @media only screen and (max-width: 549px) {
-      [data-test="dashboard-filters-panel"] {
+      [data-test='dashboard-filters-panel'] {
         display: none !important;
       }
     }
@@ -1055,8 +1071,7 @@ const DashboardBuilder = () => {
     typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT,
   );
   useEffect(() => {
-    const onResize = () =>
-      setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+    const onResize = () => setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
@@ -1168,147 +1183,149 @@ const DashboardBuilder = () => {
           ref={headerRef}
           filterBarWidth={headerFilterBarWidth}
         >
-        {/* @ts-ignore */}
-        <Droppable
-          data-test="top-level-tabs"
-          className={cx(!topLevelTabs && !topLevelPages && editMode && 'empty-droptarget')}
-          component={dashboardRoot}
-          parentComponent={null}
-          depth={DASHBOARD_ROOT_DEPTH}
-          index={0}
-          orientation="column"
-          onDrop={handleDrop}
-          editMode={editMode}
-          // you cannot drop on/displace tabs if they already exist
-          disableDragDrop={!!topLevelTabs || !!topLevelPages}
-          style={draggableStyle}
-        >
-          {renderDraggableContent}
-        </Droppable>
-      </StyledHeader>
-      <StyledContent fullSizeChartId={fullSizeChartId}>
-        {!editMode &&
-          !topLevelTabs &&
-          !topLevelPages &&
-          dashboardLayout[DASHBOARD_GRID_ID]?.children?.length === 0 && (
-            <EmptyState
-              title={t('There are no charts added to this dashboard')}
-              size="large"
-              description={
-                canEdit &&
-                t(
-                  'Go to the edit mode to configure the dashboard and add charts',
-                )
-              }
-              buttonText={canEdit && t('Edit the dashboard')}
-              buttonAction={() => {
-                dispatch(setEditMode(true));
-                dispatch(clearDashboardHistory());
-              }}
-              image="dashboard.svg"
-            />
-          )}
-        <DashboardContentWrapper
-          data-test="dashboard-content-wrapper"
-          className={cx('dashboard', editMode && 'dashboard--editing')}
-        >
-          <StyledDashboardContent
-            className="dashboard-content"
-            data-view-mode={!editMode ? 'true' : undefined}
+          {/* @ts-ignore */}
+          <Droppable
+            data-test="top-level-tabs"
+            className={cx(
+              !topLevelTabs && !topLevelPages && editMode && 'empty-droptarget',
+            )}
+            component={dashboardRoot}
+            parentComponent={null}
+            depth={DASHBOARD_ROOT_DEPTH}
+            index={0}
+            orientation="column"
+            onDrop={handleDrop}
             editMode={editMode}
-            marginLeft={dashboardContentMarginLeft}
+            // you cannot drop on/displace tabs if they already exist
+            disableDragDrop={!!topLevelTabs || !!topLevelPages}
+            style={draggableStyle}
           >
-            {showDashboard ? (
-              missingInitialFilters.length > 0 ? (
-                <div
-                  css={css`
-                    display: flex;
-                    flex-direction: row;
-                    align-items: center;
-                    justify-content: center;
-                    flex: 1;
-                    & div {
-                      width: 500px;
-                    }
-                  `}
-                >
-                  <BasicErrorAlert
-                    title={t('Unable to load dashboard')}
-                    body={t(
-                      `The following filters have the 'Select first filter value by default'
+            {renderDraggableContent}
+          </Droppable>
+        </StyledHeader>
+        <StyledContent fullSizeChartId={fullSizeChartId}>
+          {!editMode &&
+            !topLevelTabs &&
+            !topLevelPages &&
+            dashboardLayout[DASHBOARD_GRID_ID]?.children?.length === 0 && (
+              <EmptyState
+                title={t('There are no charts added to this dashboard')}
+                size="large"
+                description={
+                  canEdit &&
+                  t(
+                    'Go to the edit mode to configure the dashboard and add charts',
+                  )
+                }
+                buttonText={canEdit && t('Edit the dashboard')}
+                buttonAction={() => {
+                  dispatch(setEditMode(true));
+                  dispatch(clearDashboardHistory());
+                }}
+                image="dashboard.svg"
+              />
+            )}
+          <DashboardContentWrapper
+            data-test="dashboard-content-wrapper"
+            className={cx('dashboard', editMode && 'dashboard--editing')}
+          >
+            <StyledDashboardContent
+              className="dashboard-content"
+              data-view-mode={!editMode ? 'true' : undefined}
+              editMode={editMode}
+              marginLeft={dashboardContentMarginLeft}
+            >
+              {showDashboard ? (
+                missingInitialFilters.length > 0 ? (
+                  <div
+                    css={css`
+                      display: flex;
+                      flex-direction: row;
+                      align-items: center;
+                      justify-content: center;
+                      flex: 1;
+                      & div {
+                        width: 500px;
+                      }
+                    `}
+                  >
+                    <BasicErrorAlert
+                      title={t('Unable to load dashboard')}
+                      body={t(
+                        `The following filters have the 'Select first filter value by default'
                     option checked and could not be loaded, which is preventing the dashboard
                     from rendering: %s`,
-                      missingInitialFilters.join(', '),
-                    )}
-                  />
-                </div>
+                        missingInitialFilters.join(', '),
+                      )}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <DashboardContainer
+                      topLevelTabs={topLevelTabs}
+                      topLevelPages={topLevelPages}
+                    />
+                  </>
+                )
               ) : (
-                <>
-                  <DashboardContainer
-                    topLevelTabs={topLevelTabs}
-                    topLevelPages={topLevelPages}
-                  />
-                </>
-              )
-            ) : (
-              <Loading />
-            )}
-            {/* Старый sticky-sidebar BuilderComponentPane убран — его
+                <Loading />
+              )}
+              {/* Старый sticky-sidebar BuilderComponentPane убран — его
                 содержимое (SliceAdder + layout-элементы) теперь живёт
                 в Shell-drawer'е kind='builder' (BuilderDrawer.tsx),
                 открывается кнопкой «Конструктор» в mini-rail'е. */}
-          </StyledDashboardContent>
-        </DashboardContentWrapper>
-      </StyledContent>
-      {dashboardIsSaving && (
-        <SaveOverlayBackdrop role="status" aria-live="polite">
-          <SaveOverlayCard>
-            <span className="save-icon" aria-hidden>
-              {/* SVG spinner — track (статичный круг) + stripe
+            </StyledDashboardContent>
+          </DashboardContentWrapper>
+        </StyledContent>
+        {dashboardIsSaving && (
+          <SaveOverlayBackdrop role="status" aria-live="polite">
+            <SaveOverlayCard>
+              <span className="save-icon" aria-hidden>
+                {/* SVG spinner — track (статичный круг) + stripe
                   (вращающаяся 1/4 дуга). circle.r=46, c=2π·46≈289;
                   dasharray "70 220" → 70px дуги видно, 220px пропуск.
                   CSS animation крутит этот единственный circle. */}
-              <svg
-                className="save-spinner"
-                viewBox="0 0 100 100"
-                aria-hidden="true"
-              >
-                <circle
-                  className="save-spinner-track"
-                  cx="50"
-                  cy="50"
-                  r="46"
-                />
-                <circle
-                  className="save-spinner-stripe"
-                  cx="50"
-                  cy="50"
-                  r="46"
-                  pathLength="100"
-                  strokeDasharray="22 100"
-                />
-              </svg>
-              <Icons.SaveOutlined iconSize="xl" />
-            </span>
-            <span className="save-caption">{t('Сохранение дашборда…')}</span>
-          </SaveOverlayCard>
-        </SaveOverlayBackdrop>
-      )}
-      {showFilterBar && isMobile && (
-        <MobileFilterBar>
-          <FilterBar
-            orientation={FilterBarOrientation.Vertical}
-            verticalConfig={{
-              filtersOpen: true,
-              toggleFiltersBar: toggleDashboardFiltersOpen,
-              width: 0,
-              height: '100%',
-              offset: 0,
-              isMobile: true,
-            }}
-          />
-        </MobileFilterBar>
-      )}
+                <svg
+                  className="save-spinner"
+                  viewBox="0 0 100 100"
+                  aria-hidden="true"
+                >
+                  <circle
+                    className="save-spinner-track"
+                    cx="50"
+                    cy="50"
+                    r="46"
+                  />
+                  <circle
+                    className="save-spinner-stripe"
+                    cx="50"
+                    cy="50"
+                    r="46"
+                    pathLength="100"
+                    strokeDasharray="22 100"
+                  />
+                </svg>
+                <Icons.SaveOutlined iconSize="xl" />
+              </span>
+              <span className="save-caption">{t('Сохранение дашборда…')}</span>
+            </SaveOverlayCard>
+          </SaveOverlayBackdrop>
+        )}
+        {showFilterBar && isMobile && (
+          <MobileFilterBar>
+            <FilterBar
+              orientation={FilterBarOrientation.Vertical}
+              verticalConfig={{
+                filtersOpen: true,
+                toggleFiltersBar: toggleDashboardFiltersOpen,
+                width: 0,
+                height: '100%',
+                offset: 0,
+                isMobile: true,
+              }}
+            />
+          </MobileFilterBar>
+        )}
       </DashboardWrapper>
     </ViewportPriorityProvider>
   );

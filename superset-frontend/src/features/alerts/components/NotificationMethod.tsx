@@ -191,7 +191,9 @@ type SlackOptionsType = {
   options: { label: string; value: string }[];
 }[];
 
-export const NotificationMethod: FunctionComponent<React.PropsWithChildren<NotificationMethodProps>> = ({
+export const NotificationMethod: FunctionComponent<
+  React.PropsWithChildren<NotificationMethodProps>
+> = ({
   setting = null,
   index,
   onUpdate,
@@ -463,14 +465,14 @@ export const NotificationMethod: FunctionComponent<React.PropsWithChildren<Notif
             />
             {index !== 0 && !!onRemove ? (
               // eslint-disable-next-line jsx-a11y/control-has-associated-label
-              (<span
+              <span
                 role="button"
                 tabIndex={0}
                 className="delete-button"
                 onClick={() => onRemove(index)}
               >
                 <Icons.DeleteOutlined iconSize="l" />
-              </span>)
+              </span>
             ) : null}
           </div>
         </StyledInputContainer>
@@ -540,7 +542,7 @@ export const NotificationMethod: FunctionComponent<React.PropsWithChildren<Notif
                   </>
                 ) : (
                   // for SlackV2
-                  (<div className="input-container">
+                  <div className="input-container">
                     <Select
                       ariaLabel={t('Select channels')}
                       mode="multiple"
@@ -559,7 +561,7 @@ export const NotificationMethod: FunctionComponent<React.PropsWithChildren<Notif
                       tooltipContent={t('Force refresh Slack channels list')}
                       disabled={isSlackChannelsLoading}
                     />
-                  </div>)
+                  </div>
                 )}
               </div>
             </StyledInputContainer>

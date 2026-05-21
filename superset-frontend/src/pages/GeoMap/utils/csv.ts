@@ -21,9 +21,9 @@ export function parseCSV(text: string): {
 
   const rows: Record<string, string>[] = [];
   for (let i = 1; i < lines.length; i++) {
-    const vals = lines[i]!
-      .split(sep)
-      .map(v => v.trim().replace(/^["']|["']$/g, ''));
+    const vals = lines[i]!.split(sep).map(v =>
+      v.trim().replace(/^["']|["']$/g, ''),
+    );
     if (vals.length !== columns.length) continue;
     const row: Record<string, string> = {};
     columns.forEach((col, j) => {

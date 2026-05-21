@@ -31,6 +31,7 @@ import BulletRow from './components/BulletRow';
 import SortMenu from './components/SortMenu';
 import BulletTooltip from './components/Tooltip';
 import DetailModal from './DetailModal';
+import { LIGHT_TOKENS, DARK_TOKENS } from './themeTokens';
 import { InfoHint, InfoHintTopRight } from './components/InfoHint';
 import type {
   BulletChartProps,
@@ -307,13 +308,9 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
           </Controls>
         </CardHead>
 
-        {dataState === 'loading' ? (
-          <StateOverlay aria-busy="true">
-            <Skeleton widthPct={100} />
-            <Skeleton widthPct={95} />
-            <Skeleton widthPct={90} />
-          </StateOverlay>
-        ) : null}
+        {/* dataState === 'loading' уже обработан выше через early return
+            на line ~204 (отдельный Root для skeleton). Здесь dataState
+            гарантированно не 'loading'. */}
 
         {dataState === 'error' ? (
           <StateOverlay role="alert">
@@ -407,6 +404,11 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
           y={tooltipState.y}
           rootEl={rootRef.current}
           showDetailHint={enableDetailModal}
+          /* Tooltip того же тона что Card surface (НЕ инверт).
+             Передаём theme-aware tokens: bg=surface, text=ink. */
+          ink={isDarkMode ? DARK_TOKENS.s : LIGHT_TOKENS.s}
+          surface={isDarkMode ? DARK_TOKENS.ink : LIGHT_TOKENS.ink}
+          border={isDarkMode ? DARK_TOKENS.g700 : LIGHT_TOKENS.g300}
         />
       ) : null}
 

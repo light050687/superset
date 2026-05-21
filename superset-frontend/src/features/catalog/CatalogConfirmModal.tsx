@@ -73,12 +73,7 @@ const IconBox = styled.div<{ $variant: 'danger' | 'primary' }>`
 `;
 
 const WarnIcon = (): JSX.Element => (
-  <svg
-    viewBox="0 0 20 20"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.6}
-  >
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.6}>
     <circle cx="10" cy="10" r="8.2" />
     <path d="M10 6v5M10 13.5v.5" />
   </svg>
@@ -159,11 +154,7 @@ export const CatalogConfirmModal: FC<
             {t('Отмена')}
           </ModalBtn>
         )}
-        <SubmitBtn
-          type="button"
-          onClick={handleConfirm}
-          disabled={submitting}
-        >
+        <SubmitBtn type="button" onClick={handleConfirm} disabled={submitting}>
           {submitting ? t('…') : (submitLabel ?? defaultSubmitLabel)}
         </SubmitBtn>
       </ModalBtnRow>

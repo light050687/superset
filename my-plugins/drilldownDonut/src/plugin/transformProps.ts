@@ -209,6 +209,7 @@ export default function transformProps(chartProps: ChartProps): StructureDonutPr
     categories,
     hasSubcategories: !!subCol && categories.some((c) => c.children.length > 0),
     totalRevenue,
+    rubDecimals,
     padAngle,
     borderRadius,
     showOuterLabelsPct,

@@ -19,10 +19,7 @@
 /* eslint-env browser */
 import { Component } from 'react';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import {
-  FixedSizeGrid as Grid,
-  FixedSizeList as List,
-} from 'react-window';
+import { FixedSizeGrid as Grid, FixedSizeList as List } from 'react-window';
 // @ts-ignore
 import { createFilter } from 'react-search-input';
 import { t, styled, css } from '@superset-ui/core';
@@ -503,9 +500,7 @@ class SliceAdder extends Component<SliceAdderProps, SliceAdderState> {
                     height={height}
                     itemCount={this.state.filteredSlices.length}
                     itemSize={DEFAULT_CELL_HEIGHT}
-                    itemKey={index =>
-                      this.state.filteredSlices[index].slice_id
-                    }
+                    itemKey={index => this.state.filteredSlices[index].slice_id}
                   >
                     {this.rowRenderer}
                   </List>

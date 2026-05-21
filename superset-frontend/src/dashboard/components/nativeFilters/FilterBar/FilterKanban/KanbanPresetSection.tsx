@@ -60,10 +60,7 @@ export interface KanbanPresetSectionProps {
   dataMaskSelected: DataMaskState;
   filters: Filters;
   activePresetId: number | null;
-  onApplyPreset: (
-    filterData: DataMaskState,
-    includedFilters: string[],
-  ) => void;
+  onApplyPreset: (filterData: DataMaskState, includedFilters: string[]) => void;
   onClearAll: () => void;
   onPresetChange: (id: number | null, name: string | null) => void;
   onPresetsRefresh: () => void;

@@ -38,7 +38,9 @@ export const StyledControlFormItem = styled(ControlFormItem)`
   `}
 `;
 
-export const ZoomConfigControl: FC<React.PropsWithChildren<ZoomConfigsControlProps>> = ({
+export const ZoomConfigControl: FC<
+  React.PropsWithChildren<ZoomConfigsControlProps>
+> = ({
   value,
   onChange = () => {},
   name,

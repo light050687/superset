@@ -147,6 +147,9 @@ const KpiShapeSkeleton: FC<ShapeSkeletonProps> = () => (
 /* Реестр viz_type → shape-skeleton component. Расширяется добавлением
    новых записей. Для viz_type без shape — fallback на generic ds2-shimmer
    в ChartHolder.tsx (zero regression). */
-export const VIZ_SHAPE_SKELETONS: Record<string, ComponentType<ShapeSkeletonProps>> = {
+export const VIZ_SHAPE_SKELETONS: Record<
+  string,
+  ComponentType<ShapeSkeletonProps>
+> = {
   'ext-kpi-card': KpiShapeSkeleton,
 };
