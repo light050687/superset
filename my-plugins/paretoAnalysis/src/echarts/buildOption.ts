@@ -130,7 +130,7 @@ export function buildEChartsOption({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const series: Record<string, any>[] = [];
 
-  // 1. Текущий период — бары.
+  // 1. Текущий период — бары с wave-anim (overshoot + per-bar stagger).
   series.push({
     name: 'bars',
     type: 'bar',
@@ -141,6 +141,12 @@ export function buildEChartsOption({
     z: 2,
     silent: false,
     itemStyle: { borderRadius: [3, 3, 0, 0] },
+    // Wave-effect: каждый bar по очереди слева→направо, с overshoot pop'ом.
+    // Длительность 0.8s, stagger 60ms/bar, easing backOut (выпрыгивает чуть
+    // выше final-height и оседает). Для 14 bars total = 60×14 + 800 ≈ 1.6s.
+    animationDuration: 800,
+    animationDelay: (idx: number) => idx * 60,
+    animationEasing: 'backOut',
   });
 
   // 2. Прошлый период — опционально (ghost bars).
@@ -182,6 +188,11 @@ export function buildEChartsOption({
     showSymbol: state.seriesVisible.line,
     symbolSize: 7,
     z: 3,
+    // Line draw — рисуется слева→направо. Стартует через ~0.6s (когда первые
+    // 10 баров уже поднялись), длится 1.2s — плавный sweep до конца.
+    animationDuration: 1200,
+    animationDelay: 600,
+    animationEasing: 'cubicOut',
     lineStyle: {
       color: tokens.ink,
       width: 2,
@@ -223,12 +234,14 @@ export function buildEChartsOption({
   // ─── Option ───
   return {
     animation: true,
-    animationDuration: 450,
+    /* Global defaults — переопределяются per-series (bars: backOut 800ms,
+       line: cubicOut 1200ms). Эти fallback'и нужны только для axes/grid. */
+    animationDuration: 500,
     animationEasing: 'cubicOut',
     /* Update animation выключена — transformProps пересоздаёт items[] reference
        на каждый Redux dispatch (rows.map → new array). useChartInstance вызывает
        setOption({ notMerge: true }) → ECharts проигрывает update animation, даже
-       если данные идентичны. Initial 450ms reveal остаётся.
+       если данные идентичны. Initial reveal остаётся.
        См. CLAUDE.md «Re-render guard (viz)». */
     animationDurationUpdate: 0,
     animationEasingUpdate: 'linear',

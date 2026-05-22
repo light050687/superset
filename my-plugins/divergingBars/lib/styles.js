@@ -37,6 +37,7 @@ exports.KEYFRAMES_CSS = `
 @keyframes vd-overlay-in{from{opacity:0}to{opacity:1}}
 @keyframes vd-skeleton-pulse{0%{opacity:.12}50%{opacity:.22}100%{opacity:.12}}
 @keyframes vd-fade-in{from{opacity:0}to{opacity:1}}
+@keyframes vd-cascade-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 `;
 /**
  * Корневой контейнер с переменными DS 2.0.
@@ -135,9 +136,9 @@ exports.VelocityRoot = core_1.styled.div `
     animation: ${cardInKf} 0.5s ${EASE} both;
     &[data-no-anim] { animation: none; }
   }
-  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
-  .dragdroppable--dragging & .vd-card,
-  .dashboard--editing & .vd-card {
+  /* Dashboard drag: animation re-trigger при remount → плагин невидим.
+     ВАЖНО: .dashboard--editing убран — он убивает animation на весь edit mode. */
+  .dragdroppable--dragging & .vd-card {
     animation: none !important;
     opacity: 1 !important;
   }
@@ -148,6 +149,8 @@ exports.VelocityRoot = core_1.styled.div `
     justify-content: space-between;
     gap: 16px;
     flex-wrap: wrap;
+    /* Cascade enter — header 0.1s. */
+    animation: vd-cascade-in 0.4s ${EASE} 0.1s both;
   }
   .vd-title-block {
     display: flex;
@@ -623,6 +626,8 @@ exports.VelocityRoot = core_1.styled.div `
     border-radius: 10px;
     overflow: hidden;
     background: var(--s);
+    /* Cascade enter — body 0.25s. */
+    animation: vd-cascade-in 0.5s ${EASE} 0.25s both;
   }
   .vd-table-head,
   .vd-row {
@@ -977,6 +982,8 @@ exports.VelocityRoot = core_1.styled.div `
     gap: 12px;
     padding-top: 12px;
     border-top: 1px solid var(--g200);
+    /* Cascade enter — footer 0.5s. */
+    animation: vd-cascade-in 0.4s ${EASE} 0.5s both;
     font-family: var(--m);
     font-size: var(--fs-micro);
     font-weight: 500;

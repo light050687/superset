@@ -30,6 +30,16 @@ const cardInKf = (0, react_1.keyframes) `
  */
 exports.KEYFRAMES_CSS = `
 @keyframes hp-fade-in { from{opacity:0} to{opacity:1} }
+/* Cascade enter — fadeIn + 4px shift (DS §08). */
+@keyframes hp-cascade-in {
+  from{opacity:0;transform:translateY(4px)}
+  to{opacity:1;transform:translateY(0)}
+}
+/* Cell pop — small scale + fade per ячейка, для diagonal sweep по grid. */
+@keyframes hp-cell-pop {
+  from{opacity:0;transform:scale(.85)}
+  to{opacity:1;transform:scale(1)}
+}
 @keyframes hp-modal-in {
   from{opacity:0;transform:translateY(10px) scale(.98)}
   to{opacity:1;transform:translateY(0) scale(1)}
@@ -161,9 +171,9 @@ exports.Card = core_1.styled.div `
      реальный контент. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
-  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
-  .dragdroppable--dragging &,
-  .dashboard--editing & {
+  /* Dashboard drag: animation re-trigger при remount → плагин невидим.
+     ВАЖНО: .dashboard--editing убран — он убивает animation на весь edit mode. */
+  .dragdroppable--dragging & {
     animation: none !important;
     opacity: 1 !important;
   }
@@ -174,6 +184,8 @@ exports.Header = core_1.styled.div `
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
+  /* Cascade enter: первая строка cascade'а (~0.1s после card mount). */
+  animation: hp-cascade-in 0.4s ${EASE} 0.1s both;
 `;
 exports.TitleBlock = core_1.styled.div `
   display: flex;
@@ -468,6 +480,8 @@ exports.PivotWrap = core_1.styled.div `
   overflow: auto;
   flex: 1;
   min-height: 0;
+  /* Cascade enter: после Header (~0.25s delay), 0.5s. */
+  animation: hp-cascade-in 0.5s ${EASE} 0.25s both;
 
   /* DS 2.0: thin scrollbar (Firefox + WebKit), цвета через токены, авто-смена темы */
   scrollbar-width: thin;
@@ -665,6 +679,11 @@ exports.Cell = core_1.styled.div `
   color: var(--g700);
   transition: all 0.15s ${EASE};
   cursor: pointer;
+  /* Diagonal sweep cascade: каждая ячейка появляется с delay по rowIdx/colIdx.
+     (row × 40ms + col × 25ms) даёт top-left → bottom-right wave.
+     CSS vars --row / --col устанавливаются inline на <td> в HeatmapPivot.tsx. */
+  animation: hp-cell-pop 0.35s ${EASE}
+    calc((var(--row, 0) * 40ms) + (var(--col, 0) * 25ms) + 200ms) both;
   position: relative;
   font-variant-numeric: tabular-nums;
 
@@ -737,6 +756,8 @@ exports.Footer = core_1.styled.div `
   margin-top: 10px;
   padding-top: 12px;
   border-top: 1px solid var(--g200);
+  /* Cascade enter: после PivotWrap (~0.5s delay), 0.4s. */
+  animation: hp-cascade-in 0.4s ${EASE} 0.5s both;
 `;
 exports.Scale = core_1.styled.div `
   display: flex;

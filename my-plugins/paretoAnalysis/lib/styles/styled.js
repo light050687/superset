@@ -499,6 +499,8 @@ exports.VitalFewLine = core_1.styled.div `
   font-size: var(--fs-micro);
   color: var(--g500);
   letter-spacing: 0.01em;
+  /* Cascade enter: после CardHead (~0.1s delay), 0.4s длительность. */
+  animation: pareto-cascade-in 0.4s ${keyframes_1.EASE} 0.1s both;
 
   b {
     font-family: var(--m);
@@ -527,6 +529,9 @@ exports.ChartBox = core_1.styled.div `
   width: 100%;
   /* DS 2.0 §08 — графики с тултипами имеют crosshair-курсор. */
   cursor: crosshair;
+  /* Cascade enter: после VitalFew (~0.25s delay), 0.5s. ECharts series
+     animation (700ms) играет внутри уже-видимого canvas. */
+  animation: pareto-cascade-in 0.5s ${keyframes_1.EASE} 0.25s both;
 `;
 exports.ChartCanvasDiv = core_1.styled.div `
   position: absolute;
@@ -544,6 +549,8 @@ exports.CardFooter = core_1.styled.div `
   margin-top: 16px;
   padding-top: 0;
   border-top: 1px solid var(--g200);
+  /* Cascade enter: последний после chart (~0.5s delay), 0.4s. */
+  animation: pareto-cascade-in 0.4s ${keyframes_1.EASE} 0.5s both;
 `;
 exports.HintItem = core_1.styled.div `
   display: flex;

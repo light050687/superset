@@ -26,6 +26,7 @@ const cardInKf = keyframes `
    ────────────────────────────────────────────────────────── */
 export const KEYFRAMES_CSS = `
 @keyframes bc-row-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bc-cascade-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @keyframes bc-bar-grow{from{width:0}to{width:var(--bc-bar-w)}}
 @keyframes bc-dd-fade{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:translateY(0)}}
 @keyframes bc-tt-fade{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:translateY(0)}}
@@ -88,9 +89,10 @@ export const Card = styled.div `
      новый → animation запускается ровно когда юзер видит контент. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
-  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
-  .dragdroppable--dragging &,
-  .dashboard--editing & {
+  /* Dashboard drag: animation re-trigger при remount → плагин невидим.
+     ВАЖНО: .dashboard--editing убран — он убивает animation на весь edit mode,
+     не только во время drag. Cascade должен играть и в edit mode тоже. */
+  .dragdroppable--dragging & {
     animation: none !important;
     opacity: 1 !important;
   }
@@ -163,6 +165,8 @@ export const CardHead = styled.div `
   justify-content: space-between;
   gap: 18px;
   margin-bottom: 18px;
+  /* Cascade enter — 0.1s после card mount. */
+  animation: bc-cascade-in 0.4s ${EASE} 0.1s both;
 `;
 export const TitleBlock = styled.div `
   display: flex;
@@ -275,6 +279,8 @@ export const BulletList = styled.div `
   gap: 4px;
   flex: 1;
   overflow-y: auto;
+  /* Cascade enter — body после header (~0.25s). Сами rows имеют свой bc-row-in. */
+  animation: bc-cascade-in 0.5s ${EASE} 0.25s both;
 `;
 export const BRow = styled.div `
   --status-color: ${({ statusColor }) => statusColor};
@@ -490,6 +496,8 @@ export const CardFooter = styled.div `
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--g200);
+  /* Cascade enter — последний (~0.5s). */
+  animation: bc-cascade-in 0.4s ${EASE} 0.5s both;
   font-family: var(--m);
   font-size: var(--fs-meta);
   font-weight: 500;

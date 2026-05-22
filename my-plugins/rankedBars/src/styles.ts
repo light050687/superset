@@ -8,6 +8,10 @@ import { LIGHT_TOKENS, DARK_TOKENS, FONTS, EASE } from './themeTokens';
    приводил к тому что после перестановки чарта он оставался смещённым/невидимым
    до hard refresh. Fade-in через opacity безопасен и работает поверх любого
    transform parent'а. */
+const cascadeInKf = keyframes`
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 const cardInKf = keyframes`
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -113,9 +117,9 @@ export const CardRoot = styled.div`
   /* DS 2.0 mount animation. Эмоция keyframes() — race-condition-free. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
-  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
-  .dragdroppable--dragging &,
-  .dashboard--editing & {
+  /* Dashboard drag: animation re-trigger при remount → плагин невидим.
+     ВАЖНО: .dashboard--editing убран — он убивает animation на весь edit mode. */
+  .dragdroppable--dragging & {
     animation: none !important;
     opacity: 1 !important;
   }
@@ -155,6 +159,8 @@ export const CardHead = styled.div`
   justify-content: space-between;
   gap: 18px;
   margin-bottom: 18px;
+  /* Cascade enter — header 0.1s. */
+  animation: ${cascadeInKf} 0.4s ${EASE} 0.1s both;
 `;
 
 export const TitleBlock = styled.div`
@@ -249,6 +255,8 @@ export const RankList = styled.div<{ $hasFilter: boolean }>`
   flex-direction: column;
   gap: 2px;
   flex: 1;
+  /* Cascade enter — body 0.25s. */
+  animation: ${cascadeInKf} 0.5s ${EASE} 0.25s both;
 
   ${({ $hasFilter }) =>
     $hasFilter &&
@@ -1135,6 +1143,8 @@ export const AllFooter = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* Cascade enter — footer 0.5s. */
+  animation: ${cascadeInKf} 0.4s ${EASE} 0.5s both;
   font-family: var(--m);
   font-size: var(--fs-meta);
   font-weight: 500;

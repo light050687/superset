@@ -22,6 +22,7 @@ export const KEYFRAMES_CSS = `
 @keyframes rs-m-fade  { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes rs-tt-fade { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes rs-skeleton { 0% { opacity: .4; } 50% { opacity: .7; } 100% { opacity: .4; } }
+@keyframes rs-cascade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 `;
 const EASE = 'cubic-bezier(0.4, 0, 0.2, 1)';
 // DS 2.0 canonical card mount animation. Через emotion keyframes() helper —
@@ -82,9 +83,9 @@ export const Card = styled.section `
      animation-name доступен ДО commit'а — без race condition. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
-  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
-  .dragdroppable--dragging &,
-  .dashboard--editing & {
+  /* Dashboard drag: animation re-trigger при remount → плагин невидим.
+     ВАЖНО: .dashboard--editing убран — он убивает animation на весь edit mode. */
+  .dragdroppable--dragging & {
     animation: none !important;
     opacity: 1 !important;
   }
@@ -96,6 +97,8 @@ export const CardHead = styled.div `
   gap: 16px;
   margin-bottom: 12px;
   flex-wrap: wrap;
+  /* Cascade enter — header 0.1s. */
+  animation: rs-cascade-in 0.4s var(--ease) 0.1s both;
 `;
 export const TitleBlock = styled.div `
   display: flex;
@@ -402,6 +405,8 @@ export const TableWrap = styled.div `
   border-radius: 10px;
   overflow: hidden;
   background: var(--s);
+  /* Cascade enter — body 0.25s. */
+  animation: rs-cascade-in 0.5s var(--ease) 0.25s both;
 `;
 /* DS v2.0 fluid: --fs-micro UPPER моно для table-header */
 export const TableHead = styled.div `
@@ -845,6 +850,8 @@ export const CardFooter = styled.footer `
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--g200);
+  /* Cascade enter — footer 0.5s. */
+  animation: rs-cascade-in 0.4s var(--ease) 0.5s both;
   font-family: var(--m);
   font-size: var(--fs-micro);
   font-weight: 500;

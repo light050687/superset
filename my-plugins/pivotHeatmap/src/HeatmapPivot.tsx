@@ -896,7 +896,7 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => {
+              {rows.map((row, rowIdx) => {
                 const rowHl = hoverRow === row.id;
                 return (
                   <tr key={row.id} className={rowHl ? 'row-hl' : ''}>
@@ -918,7 +918,7 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
                         </th>
                       );
                     })()}
-                    {cols.map((col) => {
+                    {cols.map((col, colIdx) => {
                       const cell = cells.get(`${row.id}|${col.id}`);
                       const st = cellStatus(cell, thresholds);
                       const isCellFiltered = cellFilter
@@ -947,6 +947,13 @@ export default function HeatmapPivot(props: HeatmapPivotProps): JSX.Element {
                         <td
                           key={col.id}
                           className={colHl ? 'col-hl' : ''}
+                          /* CSS vars для diagonal cascade анимации Cell:
+                             animation-delay = (row * 40ms) + (col * 25ms).
+                             Sweep сверху-слева вниз-направо. */
+                          style={{
+                            ['--row' as string]: rowIdx,
+                            ['--col' as string]: colIdx,
+                          } as React.CSSProperties}
                           onClick={(e) => onCellClick(e, row, col)}
                           onMouseEnter={(e) => onCellEnter(e, row, col)}
                           onMouseMove={onCellMove}
