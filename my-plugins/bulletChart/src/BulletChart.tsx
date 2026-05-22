@@ -25,6 +25,7 @@ import {
   StateOverlay,
   TitleBlock,
   PartialBadge,
+  MockBadge,
   StaleBar,
 } from './styles';
 import BulletRow from './components/BulletRow';
@@ -215,7 +216,10 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
         <Card role="region" aria-label={headerText} aria-busy="true" data-no-anim="">
           <CardHead>
             <TitleBlock>
-              <CardTitle>{headerText}</CardTitle>
+              <CardTitle>
+                {headerText}
+                {mockModeEnabled && <MockBadge>ТЕСТ</MockBadge>}
+              </CardTitle>
             </TitleBlock>
           </CardHead>
           <StateOverlay aria-busy="true">
@@ -244,6 +248,7 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
           <TitleBlock>
             <CardTitle>
               {headerText}
+              {mockModeEnabled && <MockBadge>ТЕСТ</MockBadge>}
               {dataState === 'partial' && (
                 <PartialBadge title="Часть данных недоступна">Частично</PartialBadge>
               )}

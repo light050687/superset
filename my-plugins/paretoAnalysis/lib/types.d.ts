@@ -133,6 +133,9 @@ export interface ThemeTokens {
     up: string;
     dn: string;
     wn: string;
+    upBg: string;
+    dnBg: string;
+    wnBg: string;
     cSky: string;
     cViolet: string;
     cTangerine: string;

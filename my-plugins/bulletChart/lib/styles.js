@@ -7,8 +7,8 @@
  * Keyframes подаются отдельной <style> тэгом в BulletChart.tsx.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TtV = exports.TtL = exports.TtRow = exports.TtRows = exports.TtSub = exports.TtName = exports.TtStatus = exports.TtHead = exports.Tooltip = exports.Kbd = exports.LegendBand = exports.LegendTarget = exports.LegendBar = exports.LegendItem = exports.FootLegend = exports.FootHint = exports.CardFooter = exports.BSpark = exports.BMetaV = exports.BMetaL = exports.BMetaCell = exports.BMetaRow = exports.BTarget = exports.BBar = exports.BBand = exports.BChart = exports.BArrow = exports.BVal = exports.BMain = exports.BMeta = exports.BName = exports.BNameWrap = exports.BTop = exports.BRow = exports.BulletList = exports.FilterPill = exports.IconDdBtn = exports.IconDd = exports.IconDdWrap = exports.Controls = exports.CardSub = exports.CardTitle = exports.TitleBlock = exports.CardHead = exports.StaleBar = exports.PartialBadge = exports.Card = exports.Root = exports.KEYFRAMES_CSS = exports.ROOT_CLASS = void 0;
-exports.TtDot = exports.TtHeadBody = exports.DetailErrorBlock = exports.FootDot = exports.HintCaption = exports.ErrorCaption = exports.Skeleton = exports.StateOverlay = exports.StoreRow = exports.StoreList = exports.ModalSectionL = exports.ModalSection = exports.ModalStatD = exports.ModalStatV = exports.ModalStatL = exports.ModalStat = exports.ModalSummary = exports.ModalCloseBtn = exports.ModalSub = exports.ModalTitle = exports.ModalTitles = exports.ModalHead = exports.ModalBox = exports.ModalBg = exports.TtFoot = exports.TtStatusText = void 0;
+exports.TtL = exports.TtRow = exports.TtRows = exports.TtSub = exports.TtName = exports.TtStatus = exports.TtHead = exports.Tooltip = exports.Kbd = exports.LegendBand = exports.LegendTarget = exports.LegendBar = exports.LegendItem = exports.FootLegend = exports.FootHint = exports.CardFooter = exports.BSpark = exports.BMetaV = exports.BMetaL = exports.BMetaCell = exports.BMetaRow = exports.BTarget = exports.BBar = exports.BBand = exports.BChart = exports.BArrow = exports.BVal = exports.BMain = exports.BMeta = exports.BName = exports.BNameWrap = exports.BTop = exports.BRow = exports.BulletList = exports.FilterPill = exports.IconDdBtn = exports.IconDd = exports.IconDdWrap = exports.Controls = exports.CardSub = exports.CardTitle = exports.TitleBlock = exports.CardHead = exports.StaleBar = exports.MockBadge = exports.PartialBadge = exports.Card = exports.Root = exports.KEYFRAMES_CSS = exports.ROOT_CLASS = void 0;
+exports.TtDot = exports.TtHeadBody = exports.DetailErrorBlock = exports.FootDot = exports.HintCaption = exports.ErrorCaption = exports.Skeleton = exports.StateOverlay = exports.StoreRow = exports.StoreList = exports.ModalSectionL = exports.ModalSection = exports.ModalStatD = exports.ModalStatV = exports.ModalStatL = exports.ModalStat = exports.ModalSummary = exports.ModalCloseBtn = exports.ModalSub = exports.ModalTitle = exports.ModalTitles = exports.ModalHead = exports.ModalBox = exports.ModalBg = exports.TtFoot = exports.TtStatusText = exports.TtV = void 0;
 const core_1 = require("@superset-ui/core");
 const react_1 = require("@emotion/react");
 const themeTokens_1 = require("./themeTokens");
@@ -92,6 +92,12 @@ exports.Card = core_1.styled.div `
      новый → animation запускается ровно когда юзер видит контент. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
+  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
+  .dragdroppable--dragging &,
+  .dashboard--editing & {
+    animation: none !important;
+    opacity: 1 !important;
+  }
 `;
 /* DS 2.0 §06 «Состояния» — Partial badge: данные неполные. */
 exports.PartialBadge = core_1.styled.span `
@@ -110,6 +116,29 @@ exports.PartialBadge = core_1.styled.span `
   text-transform: uppercase;
   margin-left: 8px;
   vertical-align: middle;
+  user-select: none;
+`;
+/* DS 2.0 «Статусный бейдж ТЕСТ» — 1:1 со scorecard MockBadge.
+   Superscript-effect: badge поднят выше базовой линии заголовка. */
+exports.MockBadge = core_1.styled.span `
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--wn-b);
+  color: var(--wn);
+  font-family: var(--m);
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-left: 6px;
+  vertical-align: super;
+  position: relative;
+  top: -2px;
   user-select: none;
 `;
 /* DS 2.0 §06 «Состояния» — Stale bar: тонкая sky-полоса сверху Card,
@@ -644,7 +673,10 @@ exports.TtFoot = core_1.styled.div `
 exports.ModalBg = core_1.styled.div `
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  /* Scrim + blur — фокус на модалке, фон уходит на задний план (canonical). */
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;

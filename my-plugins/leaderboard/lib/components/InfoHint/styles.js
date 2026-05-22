@@ -67,11 +67,14 @@ exports.HintTrigger = core_1.styled.button `
   }
 `;
 /* HintModalBackdrop — fixed overlay поверх всего viewport (через portal в
-   document.body). Mobile-friendly: модалка не зависит от размеров Card. */
+   document.body). Mobile-friendly: модалка не зависит от размеров Card.
+   Scrim + blur — фокус на содержимом, фон уходит на задний план. */
 exports.HintModalBackdrop = core_1.styled.div `
   position: fixed;
   inset: 0;
-  background: rgba(10, 10, 10, 0.45);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;

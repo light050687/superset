@@ -154,6 +154,12 @@ export const Card = styled.div`
   /* Эмоция keyframes() — race-condition-free относительно plain CSS keyframes. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
+  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
+  .dragdroppable--dragging &,
+  .dashboard--editing & {
+    animation: none !important;
+    opacity: 1 !important;
+  }
 
   &:hover {
     border-color: var(--g300);

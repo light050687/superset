@@ -32,6 +32,10 @@ exports.LIGHT_TOKENS = {
     up: '#16A34A',
     dn: '#DC2626',
     wn: '#CCB604',
+    // DS §06: бэкграунд-тинты статусов light = 7% opacity
+    upBg: 'rgba(22, 163, 74, 0.07)',
+    dnBg: 'rgba(220, 38, 38, 0.07)',
+    wnBg: 'rgba(204, 182, 4, 0.07)',
     cSky: '#3B8BD9',
     cViolet: '#8B5CF6',
     cTangerine: '#E87C3E',
@@ -56,6 +60,10 @@ exports.DARK_TOKENS = {
     up: '#34D399',
     dn: '#F87171',
     wn: '#F8F571',
+    // DS §06: бэкграунд-тинты статусов dark = 10% opacity
+    upBg: 'rgba(52, 211, 153, 0.1)',
+    dnBg: 'rgba(248, 113, 113, 0.1)',
+    wnBg: 'rgba(248, 245, 113, 0.1)',
     cSky: '#5CAAF0',
     cViolet: '#A78BFA',
     cTangerine: '#F09A62',

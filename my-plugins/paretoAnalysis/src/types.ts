@@ -183,6 +183,12 @@ export interface ThemeTokens {
   dn: string;
   wn: string;
 
+  // semantic backgrounds (rgba тинты для бейджей/pill — DS §06).
+  // Light: 7-8% opacity, Dark: 10% opacity.
+  upBg: string;
+  dnBg: string;
+  wnBg: string;
+
   // accents
   cSky: string;
   cViolet: string;

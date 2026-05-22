@@ -6,7 +6,7 @@ import { jsx as _jsx } from "react/jsx-runtime";
 import { useEffect, useCallback } from 'react';
 import { ChartCanvasDiv } from '../styles/styled';
 import { useChartInstance } from '../hooks/useChartInstance';
-export default function ChartCanvas({ option, width, height, onHoverItem, onItemClick, onBackgroundClick, onReady, }) {
+export default function ChartCanvas({ option, width, height, items, onHoverItem, onItemClick, onBackgroundClick, onReady, }) {
     const handleReady = useCallback((chart) => {
         onReady?.(chart);
     }, [onReady]);
@@ -21,13 +21,27 @@ export default function ChartCanvas({ option, width, height, onHoverItem, onItem
         if (!chart)
             return undefined;
         const handleMouseOver = params => {
-            const item = params.data?._item;
-            if (!item)
-                return;
             const ev = params.event?.event;
-            const x = ev?.offsetX ?? params.event?.offsetX ?? 0;
-            const y = ev?.offsetY ?? params.event?.offsetY ?? 0;
-            onHoverItem?.({ item, x, y });
+            // clientX/Y (viewport-relative) — TooltipEl теперь position:fixed,
+            // позиционируется напрямую от viewport, обходит overflow:hidden Card.
+            const x = ev?.clientX ?? 0;
+            const y = ev?.clientY ?? 0;
+            // Hover на series data (bar/line) — item напрямую из data._item.
+            const seriesItem = params.data?._item;
+            if (seriesItem) {
+                onHoverItem?.({ item: seriesItem, x, y });
+                return;
+            }
+            // Hover на axisLabel оси X (triggerEvent:true) — lookup item по name.
+            // Только при типе xAxis, иначе любое не-bar событие (например splitLine)
+            // могло бы случайно показывать tooltip.
+            if (params.componentType === 'xAxis' && items) {
+                const name = String(params.value ?? '');
+                const axisItem = items.find(it => it.name === name);
+                if (axisItem) {
+                    onHoverItem?.({ item: axisItem, x, y });
+                }
+            }
         };
         const handleMouseOut = () => onHoverItem?.(null);
         const handleClick = params => {
@@ -56,7 +70,7 @@ export default function ChartCanvas({ option, width, height, onHoverItem, onItem
             chart.off('click', handleClick);
             zr.off('click', zrClickHandler);
         };
-    }, [getChart, onHoverItem, onItemClick, onBackgroundClick]);
+    }, [getChart, items, onHoverItem, onItemClick, onBackgroundClick]);
     return _jsx(ChartCanvasDiv, { ref: containerRef });
 }
 //# sourceMappingURL=ChartCanvas.js.map

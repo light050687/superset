@@ -34,27 +34,6 @@ export default function RuntimeControls({
 }: RuntimeControlsProps) {
   return (
     <>
-      <UnitToggle role="tablist" aria-label="Единицы измерения">
-        <UnitBtn
-          type="button"
-          active={state.unit === 'rub'}
-          aria-pressed={state.unit === 'rub'}
-          onClick={() => onUnitChange('rub')}
-          title="Значение в деньгах"
-        >
-          ₽
-        </UnitBtn>
-        <UnitBtn
-          type="button"
-          active={state.unit === 'pct'}
-          aria-pressed={state.unit === 'pct'}
-          onClick={() => onUnitChange('pct')}
-          title="Процент от общей суммы"
-        >
-          %
-        </UnitBtn>
-      </UnitToggle>
-
       <ThresholdWrap title="Порог зоны A (Парето)">
         <ThresholdLabel>A</ThresholdLabel>
         <ThresholdRange
@@ -90,6 +69,28 @@ export default function RuntimeControls({
           Пред. период
         </Chip>
       )}
+
+      {/* ₽/% — последний перед ⓘ (требование UX-ревизии). */}
+      <UnitToggle role="tablist" aria-label="Единицы измерения">
+        <UnitBtn
+          type="button"
+          active={state.unit === 'rub'}
+          aria-pressed={state.unit === 'rub'}
+          onClick={() => onUnitChange('rub')}
+          title="Значение в деньгах"
+        >
+          ₽
+        </UnitBtn>
+        <UnitBtn
+          type="button"
+          active={state.unit === 'pct'}
+          aria-pressed={state.unit === 'pct'}
+          onClick={() => onUnitChange('pct')}
+          title="Процент от общей суммы"
+        >
+          %
+        </UnitBtn>
+      </UnitToggle>
     </>
   );
 }

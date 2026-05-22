@@ -158,6 +158,12 @@ export const Card = styled.div `
      реальный контент. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
+  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
+  .dragdroppable--dragging &,
+  .dashboard--editing & {
+    animation: none !important;
+    opacity: 1 !important;
+  }
 `;
 export const Header = styled.div `
   display: flex;
@@ -944,8 +950,11 @@ export const ModalRoot = styled.div `
 export const ModalBackdrop = styled.div `
   position: absolute;
   inset: 0;
-  background: var(--modal-scrim);
-  backdrop-filter: blur(2px);
+  /* Scrim 0.65 + blur 3px — canonical. var(--modal-scrim) убран:
+     при portal-рендере не резолвится, fallback на explicit rgba надёжнее. */
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   opacity: 1;
   animation: hp-fade-in 0.18s ${EASE};
 `;

@@ -5,7 +5,7 @@
  * которые устанавливаются в CardRoot через data-theme.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EmptyBlock = exports.Skeleton = exports.StoreRow = exports.BulletRow = exports.Modal = exports.ModalBg = exports.Tooltip = exports.OverlapList = exports.Footer = exports.LegendItem = exports.Legend = exports.QuadAnnot = exports.SelectionOverlay = exports.ChartSvg = exports.ChartArea = exports.SearchSelectBtn = exports.SearchInput = exports.SearchWrap = exports.SelectDdItem = exports.SelectDdMenu = exports.SelectDd = exports.SelectDdWrap = exports.TbDivider = exports.TbBtn = exports.Toolbar = exports.ToolbarRow = exports.Controls = exports.CardSubtitle = exports.CardTitle = exports.TitleBlock = exports.CardHead = exports.StaleBar = exports.PartialBadge = exports.CardRoot = exports.PortalRoot = exports.themeVars = exports.KEYFRAMES_CSS = void 0;
+exports.EmptyBlock = exports.Skeleton = exports.StoreRow = exports.BulletRow = exports.Modal = exports.ModalBg = exports.Tooltip = exports.OverlapList = exports.Footer = exports.LegendItem = exports.Legend = exports.QuadAnnot = exports.SelectionOverlay = exports.ChartSvg = exports.ChartArea = exports.SearchSelectBtn = exports.SearchInput = exports.SearchWrap = exports.SelectDdItem = exports.SelectDdMenu = exports.SelectDd = exports.SelectDdWrap = exports.TbDivider = exports.TbBtn = exports.Toolbar = exports.ToolbarRow = exports.Controls = exports.CardSubtitle = exports.CardTitle = exports.TitleBlock = exports.CardHead = exports.StaleBar = exports.MockBadge = exports.PartialBadge = exports.CardRoot = exports.PortalRoot = exports.themeVars = exports.KEYFRAMES_CSS = void 0;
 const core_1 = require("@superset-ui/core");
 const react_1 = require("@emotion/react");
 const themeTokens_1 = require("./themeTokens");
@@ -118,6 +118,12 @@ exports.CardRoot = core_1.styled.div `
      новый → animation запускается ровно когда юзер видит контент. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
+  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
+  .dragdroppable--dragging &,
+  .dashboard--editing & {
+    animation: none !important;
+    opacity: 1 !important;
+  }
 
   * {
     box-sizing: border-box;
@@ -140,6 +146,29 @@ exports.PartialBadge = core_1.styled.span `
   text-transform: uppercase;
   margin-left: 8px;
   vertical-align: middle;
+  user-select: none;
+`;
+/* DS 2.0 «Статусный бейдж ТЕСТ» — 1:1 со scorecard MockBadge.
+   Superscript-effect: badge поднят выше базовой линии заголовка. */
+exports.MockBadge = core_1.styled.span `
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--wn-b);
+  color: var(--wn);
+  font-family: var(--m);
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-left: 6px;
+  vertical-align: super;
+  position: relative;
+  top: -2px;
   user-select: none;
 `;
 /* DS 2.0 §06 — Stale bar: тонкая sky-полоса сверху Card. */
@@ -1055,7 +1084,11 @@ exports.Tooltip = core_1.styled.div `
 exports.ModalBg = core_1.styled.div `
   position: fixed;
   inset: 0;
-  background: var(--modal-scrim);
+  /* Scrim 0.65 + blur 3px — canonical. var(--modal-scrim) убран:
+     при portal-рендере не резолвится, fallback на explicit rgba надёжнее. */
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   display: none;
   align-items: center;
   justify-content: center;

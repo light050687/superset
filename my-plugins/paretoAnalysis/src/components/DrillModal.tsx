@@ -100,33 +100,51 @@ export default function DrillModal({
   const deltaClass =
     deltaPct == null ? '' : deltaPct > 0.5 ? 'bad' : deltaPct < -0.5 ? 'good' : '';
 
-  // Движение ранга.
-  const rankDeltaTxt =
-    item.rankPrev == null
-      ? '—'
-      : item.rankDelta === 0
-      ? `#${item.rank} (без изменений)`
-      : `#${item.rankPrev} → #${item.rank}`;
+  // Движение ранга — теперь 5-я hero-метрика в DrillSummaryGrid.
+  // Stream «#11 → #12»: разбито на spans для vertical alignment стрелки.
+  const rankDeltaNode =
+    item.rankPrev == null ? (
+      '—'
+    ) : item.rankDelta === 0 ? (
+      'без изм.'
+    ) : (
+      <>
+        <span>#{item.rankPrev}</span>
+        <span className="arr" aria-hidden="true">→</span>
+        <span>#{item.rank}</span>
+      </>
+    );
   const rankDeltaClass =
     item.rankDelta == null || item.rankDelta === 0
       ? ''
       : item.rankDelta > 0
       ? 'bad'
       : 'good';
+  const rankDeltaTip =
+    item.rankPrev == null
+      ? 'Нет данных за прошлый период'
+      : item.rankDelta === 0
+      ? `Ранг не изменился: #${item.rank}`
+      : item.rankDelta > 0
+      ? `Опустилась с #${item.rankPrev} на #${item.rank} (хуже)`
+      : `Поднялась с #${item.rankPrev} на #${item.rank} (лучше)`;
 
   const content = (
     <ModalOverlay
       data-theme={isDarkMode ? 'dark' : 'light'}
       role="dialog"
       aria-modal="true"
-      aria-label={`Разложение: ${item.name}`}
+      aria-label={`Детализация: ${item.name}`}
     >
       <div className="backdrop" onClick={onClose} />
       <ModalCard>
         <ModalHead>
           <ModalTitle>
+            {/* Eyebrow — зона (+ маркер впервые в А). Слово «Разложение»
+                убрано: оно дублировало назначение модалки (она и так drill).
+                Зона ужe несёт сильный сигнал — A · КРИТИЧЕСКАЯ. */}
             <div className="m-eyebrow">
-              Разложение · {zoneLabel(item.zone)}
+              {zoneLabel(item.zone)}
               {item.isNewInA ? ' · ★ впервые в A' : ''}
             </div>
             <div className="m-h">
@@ -149,23 +167,27 @@ export default function DrillModal({
         </ModalHead>
         <ModalBody>
           <DrillSummaryGrid>
-            <div>
+            <div title={`Позиция в Парето: ${item.rank} из ${computed.items.length}`}>
               <div className="s-l">Ранг</div>
               <div className={`s-v ${zClass}`}>#{item.rank}</div>
             </div>
-            <div>
+            <div title={`${metricLabel} за период: абсолютная величина`}>
               <div className="s-l">{metricLabel}</div>
               <div className={`s-v ${zClass}`}>
                 {formatMetricValue(item.value, metricUnit)}
               </div>
             </div>
-            <div>
+            <div title="% этой категории от общей суммы">
               <div className="s-l">Доля</div>
               <div className="s-v">{formatPct2(item.share)}</div>
             </div>
-            <div>
+            <div title="С нарастающим итогом — все категории до этой включительно">
               <div className="s-l">Кумулятивно</div>
               <div className="s-v">{formatPct1(item.cumPct)}</div>
+            </div>
+            <div title={rankDeltaTip}>
+              <div className="s-l">Движение</div>
+              <div className={`s-v rank-delta ${rankDeltaClass}`}>{rankDeltaNode}</div>
             </div>
           </DrillSummaryGrid>
 
@@ -173,10 +195,6 @@ export default function DrillModal({
             <div className="ctx-row">
               <div className="ctx-l">
                 <span className="ctx-label">Потери от выручки категории</span>
-                <span className="ctx-hint">
-                  {formatMetricValue(item.value, metricUnit)} из{' '}
-                  {formatMetricValue(item.revenueRub ?? null, metricUnit)}
-                </span>
               </div>
               <div className="ctx-bar-wrap">
                 <div className="ctx-bar">
@@ -192,6 +210,12 @@ export default function DrillModal({
                   }}
                   title={`Среднее по категориям: ${formatPct2(avgLossPct)}`}
                 />
+                {/* Цифры под баром — было слева 3 строки (наезды), теперь
+                    одной строкой по центру. */}
+                <span className="ctx-hint ctx-hint-under">
+                  {formatMetricValue(item.value, metricUnit)} из{' '}
+                  {formatMetricValue(item.revenueRub ?? null, metricUnit)}
+                </span>
               </div>
               <div className={`ctx-v ${lossStatus}`}>
                 {formatPct2(lossPct)}
@@ -200,24 +224,20 @@ export default function DrillModal({
             <div className="ctx-row">
               <div className="ctx-l">
                 <span className="ctx-label">Изменение к прошлому периоду</span>
-                <span className="ctx-hint">
+              </div>
+              <div className="ctx-bar-wrap">
+                {/* Mini-bar для этой строки не нужен — центрируем «было/стало»
+                    в этой колонке (один паттерн с «Потери от выручки»). */}
+                <span className="ctx-hint ctx-hint-under">
                   было {formatMetricValue(prev ?? null, metricUnit)} → стало{' '}
                   {formatMetricValue(item.value, metricUnit)}
                 </span>
               </div>
-              <div className="ctx-bar-wrap" />
               <div className={`ctx-v ${deltaClass}`}>
                 {formatSignedPct1(deltaPct)}
               </div>
             </div>
-            <div className="ctx-row">
-              <div className="ctx-l">
-                <span className="ctx-label">Движение по рангу</span>
-                <span className="ctx-hint">позиция в Парето</span>
-              </div>
-              <div className="ctx-bar-wrap" />
-              <div className={`ctx-v ${rankDeltaClass}`}>{rankDeltaTxt}</div>
-            </div>
+            {/* «Движение по рангу» убран — дублирует Ранг из summary grid. */}
           </DrillContext>
 
           <DrillSectionTitle>{breakdownTitle}</DrillSectionTitle>
@@ -226,8 +246,11 @@ export default function DrillModal({
               const w = Math.round((b.rub / maxRub) * 100);
               const pctOfTotal =
                 item.value > 0 ? (b.rub / item.value) * 100 : 0;
+              // Tooltip: полное название + сумма + % — hover показывает full
+              // info, даже если name обрезан или столбик визуально маленький.
+              const tip = `${b.name}: ${formatMetricValue(b.rub, metricUnit)} (${formatPct1(pctOfTotal)})`;
               return (
-                <div className="dbf" key={b.name}>
+                <div className="dbf" key={b.name} title={tip}>
                   <div className="dbf-l">{b.name}</div>
                   <div className="dbf-bar">
                     <div

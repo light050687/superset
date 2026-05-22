@@ -17,6 +17,9 @@ import {
   ControlsRow,
   ChartBox,
   CardFooter,
+  MockBadge,
+  PartialBadge,
+  StaleBar,
   SkeletonBlock,
   StateCenter,
   PARETO_CARD_CLASS,
@@ -70,6 +73,7 @@ function ParetoCardInner(props: ParetoCardProps) {
     breakdownTitle,
     dataState,
     isDarkMode,
+    mockModeEnabled,
   } = props;
 
   const [state, dispatch] = useParetoState(defaultThreshold);
@@ -156,7 +160,10 @@ function ParetoCardInner(props: ParetoCardProps) {
         <Card role="region" aria-labelledby={titleId} aria-busy="true" data-no-anim="">
           <CardHead>
             <CardTitleGroup>
-              <CardTitle id={titleId}>{headerText}</CardTitle>
+              <CardTitle id={titleId}>
+                {headerText}
+                {mockModeEnabled && <MockBadge>ТЕСТ</MockBadge>}
+              </CardTitle>
               {subtitleText && <CardSubtitle>{subtitleText}</CardSubtitle>}
             </CardTitleGroup>
           </CardHead>
@@ -179,9 +186,16 @@ function ParetoCardInner(props: ParetoCardProps) {
     >
       <Global styles={css`${PARETO_KEYFRAMES_CSS}`} />
       <Card role="region" aria-labelledby={titleId} data-info-hint-container="">
+        {dataState === 'stale' && <StaleBar aria-hidden="true" />}
         <CardHead>
           <CardTitleGroup>
-            <CardTitle id={titleId}>{headerText}</CardTitle>
+            <CardTitle id={titleId}>
+              {headerText}
+              {mockModeEnabled && <MockBadge>ТЕСТ</MockBadge>}
+              {dataState === 'partial' && (
+                <PartialBadge title="Часть данных недоступна">Частично</PartialBadge>
+              )}
+            </CardTitle>
             {subtitleText && <CardSubtitle>{subtitleText}</CardSubtitle>}
             <Breadcrumb
               state={state}
@@ -211,7 +225,10 @@ function ParetoCardInner(props: ParetoCardProps) {
         />
 
         <ChartBox role="img" aria-label={chartAriaLabel}>
-          {dataState !== 'populated' ? (
+          {/* DS v2.1 §08: partial/stale показывают chart (данные есть, просто
+              неполные/устаревшие — индикатор в шапке через PartialBadge/StaleBar).
+              empty/error — заменяют chart на EmptyState. */}
+          {dataState === 'empty' || dataState === 'error' ? (
             <EmptyState state={dataState} />
           ) : (
             <>
@@ -219,6 +236,7 @@ function ParetoCardInner(props: ParetoCardProps) {
                 option={option}
                 width={width}
                 height={height}
+                items={computed.items}
                 onHoverItem={setHover}
                 onItemClick={onItemClick}
                 onBackgroundClick={onBackgroundClick}

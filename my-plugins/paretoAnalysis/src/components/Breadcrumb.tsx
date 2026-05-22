@@ -60,9 +60,15 @@ export default function Breadcrumb({
     );
   }
 
-  return (
-    <BreadcrumbRow>
-      <BreadcrumbCur>{defaultCaption}</BreadcrumbCur>
-    </BreadcrumbRow>
-  );
+  // Default state (нет активных фильтров) — ничего не рендерим, лишний шум.
+  // subtitleText «за период» уже передаёт контекст. defaultCaption оставлен в
+  // API на случай явного override снаружи (не равен дефолту).
+  if (defaultCaption !== 'Все категории') {
+    return (
+      <BreadcrumbRow>
+        <BreadcrumbCur>{defaultCaption}</BreadcrumbCur>
+      </BreadcrumbRow>
+    );
+  }
+  return null;
 }

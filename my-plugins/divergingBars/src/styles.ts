@@ -139,6 +139,12 @@ export const VelocityRoot = styled.div<{ width: number; height: number }>`
     animation: ${cardInKf} 0.5s ${EASE} both;
     &[data-no-anim] { animation: none; }
   }
+  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
+  .dragdroppable--dragging & .vd-card,
+  .dashboard--editing & .vd-card {
+    animation: none !important;
+    opacity: 1 !important;
+  }
 
   .vd-head {
     display: flex;
@@ -1108,6 +1114,30 @@ export const VelocityRoot = styled.div<{ width: number; height: number }>`
     text-transform: uppercase;
   }
 
+  /* Mock-mode badge «ТЕСТ» в шапке карточки. 1:1 с scorecard MockBadge:
+     --fs-nano UPPER mono, оранжевый wn-tint фон, superscript-эффект. */
+  .vd-mock-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--wn-b);
+    color: var(--wn);
+    font-family: var(--m);
+    font-size: var(--fs-nano);
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-left: 6px;
+    vertical-align: super;
+    position: relative;
+    top: -2px;
+    user-select: none;
+  }
+
   /* Partial-badge (inline warning). */
   .vd-partial-badge {
     display: flex;
@@ -1311,8 +1341,10 @@ export const ModalOverlay = styled.div`
 
   position: fixed;
   inset: 0;
-  background: rgba(15, 17, 20, 0.4);
-  backdrop-filter: blur(4px);
+  /* Scrim 0.65 + blur — canonical (увеличено с 0.4 для фокуса на модалке). */
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;

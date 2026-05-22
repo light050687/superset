@@ -86,6 +86,12 @@ exports.Card = core_1.styled.section `
      animation-name доступен ДО commit'а — без race condition. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
+  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
+  .dragdroppable--dragging &,
+  .dashboard--editing & {
+    animation: none !important;
+    opacity: 1 !important;
+  }
 `;
 exports.CardHead = core_1.styled.div `
   display: flex;
@@ -1010,8 +1016,10 @@ exports.TooltipEl = core_1.styled.div `
 exports.ModalBg = core_1.styled.div `
   position: fixed;
   inset: 0;
-  background: rgba(15, 17, 20, 0.6);
-  backdrop-filter: blur(4px);
+  /* Scrim 0.65 + blur — canonical (синхронизировано с другими плагинами). */
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   display: ${p => (p.$open ? 'flex' : 'none')};
   align-items: center;
   justify-content: center;
