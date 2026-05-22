@@ -14,7 +14,7 @@
  * Transient props ($…): Emotion не пересылает их в DOM — так избегаем
  * React-warning «Unknown prop selected/sortable/open/…» при булевых пропсах.
  */
-export declare const KEYFRAMES_CSS = "\n@keyframes rs-dd-fade { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }\n@keyframes rs-bg-fade { from { opacity: 0; } to { opacity: 1; } }\n@keyframes rs-m-fade  { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }\n@keyframes rs-tt-fade { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }\n@keyframes rs-skeleton { 0% { opacity: .4; } 50% { opacity: .7; } 100% { opacity: .4; } }\n";
+export declare const KEYFRAMES_CSS = "\n@keyframes rs-dd-fade { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }\n@keyframes rs-bg-fade { from { opacity: 0; } to { opacity: 1; } }\n@keyframes rs-m-fade  { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }\n@keyframes rs-tt-fade { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }\n@keyframes rs-skeleton { 0% { opacity: .4; } 50% { opacity: .7; } 100% { opacity: .4; } }\n@keyframes rs-cascade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }\n";
 export declare const Root: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;

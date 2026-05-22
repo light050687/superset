@@ -200,9 +200,9 @@ exports.Card = core_1.styled.div `
      никакой «вспышки» уже-final state до animation start. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
-  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
-  .dragdroppable--dragging &,
-  .dashboard--editing & {
+  /* Dashboard drag: animation re-trigger при remount → плагин невидим.
+     ВАЖНО: .dashboard--editing убран — он убивает animation на весь edit mode. */
+  .dragdroppable--dragging & {
     animation: none !important;
     opacity: 1 !important;
   }
@@ -461,6 +461,16 @@ exports.HeroOverlay = core_1.styled.div `
   pointer-events: none;
   text-align: center;
   z-index: 5;
+  /* Hero number в центре donut'а появляется после SVG reveal sectors —
+     scale-pop из 0.5 + opacity, как фокус-эффект после «раскрытия» colца.
+     Delay 0.9s = примерное завершение Plan D reveal (sectors clockwise). */
+  animation: sd-hero-pop 0.5s ${EASE} 0.9s both;
+
+  @keyframes sd-hero-pop {
+    from { opacity: 0; transform: scale(0.5); }
+    60%  { opacity: 1; transform: scale(1.08); }
+    to   { opacity: 1; transform: scale(1); }
+  }
 `;
 /* HeroValue — fluid scaling по ширине ChartWrap (container:donut).
    Slope 4.5cqi даёт пропорциональный hero относительно diameter donut'а:

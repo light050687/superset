@@ -42,6 +42,10 @@ exports.KEYFRAMES_CSS = `
   from { background-position: 200% 0; }
   to { background-position: -200% 0; }
 }
+@keyframes wo-cascade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 @media (prefers-reduced-motion: never-match) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -147,9 +151,9 @@ exports.Card = core_1.styled.div `
   /* Эмоция keyframes() — race-condition-free относительно plain CSS keyframes. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
-  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
-  .dragdroppable--dragging &,
-  .dashboard--editing & {
+  /* Dashboard drag: animation re-trigger при remount → плагин невидим.
+     ВАЖНО: .dashboard--editing убран — он убивает animation на весь edit mode. */
+  .dragdroppable--dragging & {
     animation: none !important;
     opacity: 1 !important;
   }
@@ -165,6 +169,8 @@ exports.CardHead = core_1.styled.div `
   gap: 16px;
   margin-bottom: 8px;
   flex-shrink: 0;
+  /* Cascade enter — header 0.1s. */
+  animation: wo-cascade-in 0.4s ${EASE} 0.1s both;
 `;
 exports.TitleWrap = core_1.styled.div `
   display: flex;
@@ -403,6 +409,8 @@ exports.ChartWrap = core_1.styled.div `
   min-height: 0;
   width: 100%;
   cursor: ${({ brushActive, drillable }) => brushActive ? 'crosshair' : drillable ? 'pointer' : 'default'};
+  /* Cascade enter — body 0.25s. */
+  animation: wo-cascade-in 0.5s ${EASE} 0.25s both;
 `;
 exports.ChartInner = core_1.styled.div `
   width: 100%;
@@ -460,6 +468,8 @@ exports.CardFooter = core_1.styled.div `
   gap: 12px;
   flex-shrink: 0;
   min-height: 22px;
+  /* Cascade enter — footer 0.5s. */
+  animation: wo-cascade-in 0.4s ${EASE} 0.5s both;
 `;
 exports.Hint = core_1.styled.div `
   display: flex;

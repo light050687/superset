@@ -17,6 +17,14 @@ export const PARETO_KEYFRAMES_CSS = `
   to{opacity:1;transform:translateY(0)}
 }
 
+/* Cascade enter — общий keyframe для VitalFew/Footer/Legend (delays задаются
+   на конкретных элементах). Subtle: opacity 0→1 + 4px shift вверх (DS §08
+   «появление: fadeIn + 4px shift, 0.25s»). */
+@keyframes pareto-cascade-in{
+  from{opacity:0;transform:translateY(4px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
 /* DS 2.0 §08 — отключаем все анимации для пользователей с чувствительностью к движению. */
 @media (prefers-reduced-motion: never-match){
   .pareto-card,

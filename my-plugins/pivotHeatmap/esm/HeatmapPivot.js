@@ -532,13 +532,13 @@ export default function HeatmapPivot(props) {
                                                 const shortLabel = truncateLabel(col.name, colLabelMaxChars);
                                                 const wasTruncated = shortLabel !== col.name;
                                                 return (_jsxs("th", { scope: "col", className: className, onClick: (e) => onColHeaderClick(e, col), onDoubleClick: (e) => onColHeaderDblClick(e, col), onMouseEnter: (e) => onColHeaderEnter(e, col), onMouseLeave: onHeaderLeave, onMouseMove: onHeaderMove, tabIndex: 0, "aria-label": col.name, children: [shortLabel, arrow && _jsx("span", { className: "sort-arrow", children: arrow })] }, col.id));
-                                            }), showTotals && (_jsx("th", { className: "totals-col", scope: "col", "aria-label": "\u0418\u0442\u043E\u0433\u043E", children: "\u0418\u0442\u043E\u0433\u043E" }))] }) }), _jsxs("tbody", { children: [rows.map((row) => {
+                                            }), showTotals && (_jsx("th", { className: "totals-col", scope: "col", "aria-label": "\u0418\u0442\u043E\u0433\u043E", children: "\u0418\u0442\u043E\u0433\u043E" }))] }) }), _jsxs("tbody", { children: [rows.map((row, rowIdx) => {
                                             const rowHl = hoverRow === row.id;
                                             return (_jsxs("tr", { className: rowHl ? 'row-hl' : '', children: [(() => {
                                                         const shortRowLabel = truncateLabel(row.name, rowLabelMaxChars);
                                                         const rowTruncated = shortRowLabel !== row.name;
                                                         return (_jsx("th", { scope: "row", className: row.id === rowFilter ? 'filtered' : '', onClick: (e) => onRowHeaderClick(e, row), onMouseEnter: (e) => onRowHeaderEnter(e, row), onMouseLeave: onHeaderLeave, onMouseMove: onHeaderMove, tabIndex: 0, "aria-label": row.name, children: shortRowLabel }));
-                                                    })(), cols.map((col) => {
+                                                    })(), cols.map((col, colIdx) => {
                                                         const cell = cells.get(`${row.id}|${col.id}`);
                                                         const st = cellStatus(cell, thresholds);
                                                         const isCellFiltered = cellFilter
@@ -562,7 +562,14 @@ export default function HeatmapPivot(props) {
                                                             dimmed ? 'dimmed' : '',
                                                         ].filter(Boolean).join(' ');
                                                         const colHl = hoverCol === col.id && !showTotals;
-                                                        return (_jsx("td", { className: colHl ? 'col-hl' : '', onClick: (e) => onCellClick(e, row, col), onMouseEnter: (e) => onCellEnter(e, row, col), onMouseMove: onCellMove, onMouseLeave: onCellLeave, onMouseDown: (e) => { if (e.shiftKey)
+                                                        return (_jsx("td", { className: colHl ? 'col-hl' : '', 
+                                                            /* CSS vars для diagonal cascade анимации Cell:
+                                                               animation-delay = (row * 40ms) + (col * 25ms).
+                                                               Sweep сверху-слева вниз-направо. */
+                                                            style: {
+                                                                ['--row']: rowIdx,
+                                                                ['--col']: colIdx,
+                                                            }, onClick: (e) => onCellClick(e, row, col), onMouseEnter: (e) => onCellEnter(e, row, col), onMouseMove: onCellMove, onMouseLeave: onCellLeave, onMouseDown: (e) => { if (e.shiftKey)
                                                                 e.preventDefault(); }, children: _jsxs(Cell, { className: cellCls, "aria-label": cell
                                                                     ? `${row.name} × ${col.name}: ${STATUS_LABEL[st]}`
                                                                     : `${row.name} × ${col.name}: нет данных`, children: [_jsx(StatusIcon, { status: st }), formatValue(cell, unit, unitSuffix, decimals, autoFormatRussian)] }) }, col.id));

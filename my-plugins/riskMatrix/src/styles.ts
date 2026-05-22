@@ -31,6 +31,7 @@ export const KEYFRAMES_CSS = `
   @keyframes sr-m-fade { from { opacity: 0 } to { opacity: 1 } }
   @keyframes sr-m-pop  { from { opacity: 0; transform: translateY(8px) scale(.98) } to { opacity: 1; transform: translateY(0) scale(1) } }
   @keyframes sr-skel-pulse { 0%, 100% { opacity: 0.45 } 50% { opacity: 0.85 } }
+  @keyframes sr-cascade-in { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: translateY(0) } }
 `;
 
 /** CSS-переменные DS 2.0 — ставятся на корневом элементе через data-theme */
@@ -121,9 +122,9 @@ export const CardRoot = styled.div`
      новый → animation запускается ровно когда юзер видит контент. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
-  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
-  .dragdroppable--dragging &,
-  .dashboard--editing & {
+  /* Dashboard drag: animation re-trigger при remount → плагин невидим.
+     ВАЖНО: .dashboard--editing убран — он убивает animation на весь edit mode. */
+  .dragdroppable--dragging & {
     animation: none !important;
     opacity: 1 !important;
   }
@@ -213,6 +214,8 @@ export const CardHead = styled.div`
   /* DS 2.1 §06: «Отступ после заголовка контейнера: space-3 (12px)». */
   margin-bottom: 12px;
   flex-shrink: 0;
+  /* Cascade enter — header 0.1s. */
+  animation: sr-cascade-in 0.4s var(--ease) 0.1s both;
 `;
 
 export const TitleBlock = styled.div`
@@ -551,6 +554,8 @@ export const ChartArea = styled.div`
   margin-bottom: 14px;
   user-select: none;
   cursor: grab;
+  /* Cascade enter — body 0.25s. */
+  animation: sr-cascade-in 0.5s var(--ease) 0.25s both;
   /* Скругление углов чарта: квадрант-background, gridlines и точки
      обрезаются по rounded corners, чтобы визуально совпадало с
      border-radius CardRoot (10px). */
@@ -782,6 +787,8 @@ export const Footer = styled.div`
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--g200);
+  /* Cascade enter — footer 0.5s. */
+  animation: sr-cascade-in 0.4s var(--ease) 0.5s both;
   font-family: var(--m);
   font-size: var(--fs-meta);
   font-weight: 500;

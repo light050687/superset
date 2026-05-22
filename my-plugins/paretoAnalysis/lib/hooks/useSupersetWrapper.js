@@ -81,13 +81,12 @@ function injectGlobalStyle() {
       padding: 0 !important;
     }
 
-    /* DRAG-IN-EDIT-MODE fix: dashboard drag триггерит React unmount/remount
-       компонента → cardInKf animation запускается с opacity:0 → плагин
-       полностью невидим во время drag. Отключаем animation на всех Card
-       внутри pareto при родительском .dragdroppable--dragging. */
+    /* DRAG fix: dashboard drag триггерит React unmount/remount компонента
+       → cardInKf animation запускается с opacity:0 → плагин невидим.
+       ВАЖНО: .dashboard--editing убран — он убивал animation на ВЕСЬ edit
+       mode, не только во время drag. Cascade должен играть и при редактировании. */
     .dragdroppable--dragging div[data-test-viz-type="${VIZ_TYPE}"] .pareto-card,
-    .dragdroppable--dragging div[data-test-viz-type="${VIZ_TYPE}"] .pareto-card > *,
-    .dashboard--editing div[data-test-viz-type="${VIZ_TYPE}"] .pareto-card {
+    .dragdroppable--dragging div[data-test-viz-type="${VIZ_TYPE}"] .pareto-card > * {
       animation: none !important;
       opacity: 1 !important;
     }

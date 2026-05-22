@@ -186,10 +186,10 @@ exports.Card = core_1.styled.div `
   animation-timing-function: ${EASE};
   animation-fill-mode: both;
   &[data-no-anim] { animation-name: none; }
-  /* Dashboard drag/edit: React remount-ит компонент → animation
-     стартует с opacity:0 → плагин невидим во время drag. */
-  .dragdroppable--dragging &,
-  .dashboard--editing & {
+  /* Dashboard drag: React remount-ит компонент → animation
+     стартует с opacity:0 → плагин невидим во время drag.
+     ВАЖНО: .dashboard--editing убран — он убивает animation на весь edit mode. */
+  .dragdroppable--dragging & {
     animation-name: none !important;
     opacity: 1 !important;
   }
@@ -368,6 +368,8 @@ exports.CardHead = core_1.styled.div `
   align-items: center;
   margin-bottom: 12px;
   min-height: 24px;
+  /* Cascade enter — header 0.1s (reuse kpi-cmp-in keyframe). */
+  animation: kpi-cmp-in 0.4s ${EASE} 0.1s both;
 
   @container kpi (max-width: 320px) {
     margin-bottom: 8px;
@@ -492,6 +494,8 @@ exports.HeroValue = core_1.styled.div `
   margin-bottom: 4px;
   color: var(--ink);
   transition: color 0.2s ${EASE};
+  /* Cascade enter — hero number 0.3s (между header 0.1s и comparison 0.75s). */
+  animation: kpi-cmp-in 0.5s ${EASE} 0.3s both;
 
   .kpi-card:hover & {
     color: var(--c-sky);
