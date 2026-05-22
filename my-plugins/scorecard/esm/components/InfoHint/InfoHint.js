@@ -35,12 +35,8 @@ export const InfoHint = forwardRef(function InfoHint({ ariaLabel, children, clos
     };
     return (_jsxs(_Fragment, { children: [_jsx(HintTrigger, { ref: triggerRef, type: "button", "aria-label": ariaLabel, "aria-expanded": open, "aria-haspopup": "dialog", onClick: handleToggle, children: _jsx(IconInfo, {}) }), open &&
                 typeof document !== 'undefined' &&
-                createPortal(_jsx(HintModalBackdrop, { onClick: (e) => {
-                        e.stopPropagation();
-                        setOpen(false);
-                    }, onContextMenu: (e) => {
+                createPortal(_jsx(HintModalBackdrop, { onClick: () => setOpen(false), onContextMenu: (e) => {
                         e.preventDefault();
-                        e.stopPropagation();
                         setOpen(false);
                     }, children: _jsxs(HintModalCard, { role: "dialog", "aria-modal": "true", "aria-label": ariaLabel, onClick: (e) => e.stopPropagation(), children: [_jsx(HintOverlayClose, { type: "button", "aria-label": "\u0417\u0430\u043A\u0440\u044B\u0442\u044C", onClick: () => setOpen(false), children: _jsx(IconClose, {}) }), title && _jsx(HintOverlayTitle, { children: title }), _jsx(HintOverlayBody, { children: children })] }) }), document.body)] }));
 });

@@ -20,6 +20,9 @@ export interface ChartCanvasProps {
   option: EChartsOption;
   width: number;
   height: number;
+  /** Список item'ов — нужен для lookup при hover на axisLabel (truncated label
+      не несёт ссылку на item, только value=full name). */
+  items?: ComputedParetoItem[];
   onHoverItem?: (payload: HoverPayload | null) => void;
   onItemClick?: (item: ComputedParetoItem, ctrlKey: boolean) => void;
   onBackgroundClick?: () => void;
@@ -33,10 +36,17 @@ export interface ChartCanvasProps {
 interface EChartsMouseEvent {
   dataIndex?: number;
   data?: { _item?: ComputedParetoItem };
+  /** xAxis label events (triggerEvent:true) — componentType='xAxis',
+      value = полное название категории (formatter рендерит truncated, но
+      events идут с raw value). */
+  componentType?: string;
+  value?: string | number;
   event?: {
     event?: MouseEvent;
     offsetX?: number;
     offsetY?: number;
+    clientX?: number;
+    clientY?: number;
   };
 }
 
@@ -55,6 +65,7 @@ export default function ChartCanvas({
   option,
   width,
   height,
+  items,
   onHoverItem,
   onItemClick,
   onBackgroundClick,
@@ -79,12 +90,27 @@ export default function ChartCanvas({
     if (!chart) return undefined;
 
     const handleMouseOver: EChartsEventHandler = params => {
-      const item = params.data?._item;
-      if (!item) return;
       const ev = params.event?.event;
-      const x = ev?.offsetX ?? params.event?.offsetX ?? 0;
-      const y = ev?.offsetY ?? params.event?.offsetY ?? 0;
-      onHoverItem?.({ item, x, y });
+      // clientX/Y (viewport-relative) — TooltipEl теперь position:fixed,
+      // позиционируется напрямую от viewport, обходит overflow:hidden Card.
+      const x = ev?.clientX ?? 0;
+      const y = ev?.clientY ?? 0;
+      // Hover на series data (bar/line) — item напрямую из data._item.
+      const seriesItem = params.data?._item;
+      if (seriesItem) {
+        onHoverItem?.({ item: seriesItem, x, y });
+        return;
+      }
+      // Hover на axisLabel оси X (triggerEvent:true) — lookup item по name.
+      // Только при типе xAxis, иначе любое не-bar событие (например splitLine)
+      // могло бы случайно показывать tooltip.
+      if (params.componentType === 'xAxis' && items) {
+        const name = String(params.value ?? '');
+        const axisItem = items.find(it => it.name === name);
+        if (axisItem) {
+          onHoverItem?.({ item: axisItem, x, y });
+        }
+      }
     };
     const handleMouseOut: EChartsEventHandler = () => onHoverItem?.(null);
 
@@ -115,7 +141,7 @@ export default function ChartCanvas({
       chart.off('click', handleClick as (p: unknown) => void);
       zr.off('click', zrClickHandler as (p: unknown) => void);
     };
-  }, [getChart, onHoverItem, onItemClick, onBackgroundClick]);
+  }, [getChart, items, onHoverItem, onItemClick, onBackgroundClick]);
 
   return <ChartCanvasDiv ref={containerRef} />;
 }

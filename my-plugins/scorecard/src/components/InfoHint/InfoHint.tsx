@@ -114,13 +114,9 @@ export const InfoHint = forwardRef<InfoHintHandle, InfoHintProps>(
           typeof document !== 'undefined' &&
           createPortal(
             <HintModalBackdrop
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpen(false);
-              }}
+              onClick={() => setOpen(false)}
               onContextMenu={(e) => {
                 e.preventDefault();
-                e.stopPropagation();
                 setOpen(false);
               }}
             >

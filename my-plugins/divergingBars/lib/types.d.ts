@@ -83,6 +83,8 @@ export interface VelocityDivergingProps {
     showSummaryStrip: boolean;
     isDarkMode: boolean;
     theme?: SupersetTheme;
+    /** Mock-режим включён в control panel — рендерим бейдж «ТЕСТ» в шапке. */
+    mockModeEnabled: boolean;
 }
 /** Маппинг имени CSS-переменной (без `--`) на описание формата. */
 export type FormatColorToken = 'c-sky' | 'c-violet' | 'c-tangerine' | 'c-fuchsia' | 'c-amber' | 'g500';

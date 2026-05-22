@@ -250,6 +250,9 @@ export interface ScatterRiskProps {
   /** DS 2.0 §06 «Состояния»: empty / partial / stale / populated.
       'loading' и 'error' приходят отдельно через Superset chartStatus. */
   dataState: 'empty' | 'partial' | 'stale' | 'populated';
+
+  /** Mock-режим включён в control panel — рендерим бейдж «ТЕСТ» в шапке. */
+  mockModeEnabled: boolean;
 }
 
 /** Shape для setDataMask (совместим с Superset API) */

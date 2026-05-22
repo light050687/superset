@@ -210,6 +210,12 @@ export default function transformProps(
       (formData as unknown as { formatMappingJson?: string }).formatMappingJson,
   );
 
+  const mockModeEnabled =
+    (formData as unknown as { mock_mode_enabled?: boolean; mockModeEnabled?: boolean })
+      .mock_mode_enabled ??
+    (formData as unknown as { mockModeEnabled?: boolean }).mockModeEnabled ??
+    false;
+
   const baseProps = {
     width,
     height,
@@ -224,13 +230,8 @@ export default function transformProps(
     isDarkMode,
     formats,
     theme,
+    mockModeEnabled,
   };
-
-  const mockModeEnabled =
-    (formData as unknown as { mock_mode_enabled?: boolean; mockModeEnabled?: boolean })
-      .mock_mode_enabled ??
-    (formData as unknown as { mockModeEnabled?: boolean }).mockModeEnabled ??
-    false;
 
   // ── Mock mode: возвращаем сгенерированные данные, игнорируя queriesData ──
   if (mockModeEnabled) {

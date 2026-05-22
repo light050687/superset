@@ -15,6 +15,12 @@ function Breadcrumb({ state, items, defaultCaption = 'Все категории'
         const count = items.filter(p => p.zone === state.zoneFilter).length;
         return ((0, jsx_runtime_1.jsxs)(styled_1.BreadcrumbRow, { children: [(0, jsx_runtime_1.jsx)(styled_1.BreadcrumbBtn, { type: "button", "aria-label": "\u0421\u043D\u044F\u0442\u044C \u0444\u0438\u043B\u044C\u0442\u0440", title: "\u0421\u043D\u044F\u0442\u044C (Esc)", onClick: onReset, children: "\u25C2" }), (0, jsx_runtime_1.jsx)(styled_1.BreadcrumbCur, { children: "\u0417\u043E\u043D\u0430:" }), (0, jsx_runtime_1.jsx)(styled_1.BreadcrumbSel, { children: (0, zoneColors_1.zoneLabel)(state.zoneFilter) }), (0, jsx_runtime_1.jsxs)(styled_1.BreadcrumbCur, { children: ["\u00B7 ", count, " \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0439"] })] }));
     }
-    return ((0, jsx_runtime_1.jsx)(styled_1.BreadcrumbRow, { children: (0, jsx_runtime_1.jsx)(styled_1.BreadcrumbCur, { children: defaultCaption }) }));
+    // Default state (нет активных фильтров) — ничего не рендерим, лишний шум.
+    // subtitleText «за период» уже передаёт контекст. defaultCaption оставлен в
+    // API на случай явного override снаружи (не равен дефолту).
+    if (defaultCaption !== 'Все категории') {
+        return ((0, jsx_runtime_1.jsx)(styled_1.BreadcrumbRow, { children: (0, jsx_runtime_1.jsx)(styled_1.BreadcrumbCur, { children: defaultCaption }) }));
+    }
+    return null;
 }
 //# sourceMappingURL=Breadcrumb.js.map

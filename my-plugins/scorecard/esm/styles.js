@@ -182,6 +182,13 @@ export const Card = styled.div `
   animation-timing-function: ${EASE};
   animation-fill-mode: both;
   &[data-no-anim] { animation-name: none; }
+  /* Dashboard drag/edit: React remount-ит компонент → animation
+     стартует с opacity:0 → плагин невидим во время drag. */
+  .dragdroppable--dragging &,
+  .dashboard--editing & {
+    animation-name: none !important;
+    opacity: 1 !important;
+  }
   box-shadow: none !important;
   outline: none !important;
   &:hover, &:focus, &:focus-within {
@@ -637,14 +644,17 @@ export const DeltaPill = styled.span `
 /* ══════════════════════════════════════════════════════════
    Detail Modal — drill-down overlay with hierarchical table
    ══════════════════════════════════════════════════════════ */
-/** Backdrop overlay — renders via portal to document.body. DS v2.0: scrim из общего токена `--glass-scrim` (0.40 light / 0.55 dark) */
+/** Backdrop overlay — renders via portal to document.body.
+    Scrim 0.65 + blur 3px — canonical (синхронизировано с другими плагинами). */
 export const Overlay = styled.div `
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--glass-scrim, rgba(0, 0, 0, 0.4));
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   z-index: 100;
   display: flex;
   align-items: center;

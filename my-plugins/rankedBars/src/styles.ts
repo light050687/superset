@@ -113,6 +113,12 @@ export const CardRoot = styled.div`
   /* DS 2.0 mount animation. Эмоция keyframes() — race-condition-free. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
+  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
+  .dragdroppable--dragging &,
+  .dashboard--editing & {
+    animation: none !important;
+    opacity: 1 !important;
+  }
 `;
 
 /* DS 2.0 §06 — Stale bar: тонкая sky-полоса сверху Card. */

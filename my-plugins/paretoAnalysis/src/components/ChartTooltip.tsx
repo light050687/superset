@@ -69,10 +69,18 @@ export default function ChartTooltip({
     );
   }
 
-  // Смещение от курсора; clamp внутри box будет делать браузер за счёт overflow.
+  // Tooltip position:fixed (viewport-coords). Auto-flip: если правый край
+  // не помещается в viewport (max-width tooltip ≈ 260px) — отзеркалить
+  // в левую сторону от курсора, аналогично вверх если нижний клипается.
+  const TT_W = 260;
+  const TT_H = 220;
+  const vpW = typeof window !== 'undefined' ? window.innerWidth : 9999;
+  const vpH = typeof window !== 'undefined' ? window.innerHeight : 9999;
+  const leftPx = x + 12 + TT_W > vpW ? Math.max(8, x - 12 - TT_W) : x + 12;
+  const topPx = y + 12 + TT_H > vpH ? Math.max(8, y - 12 - TT_H) : y + 12;
   const style: React.CSSProperties = {
-    left: x + 12,
-    top: y + 12,
+    left: leftPx,
+    top: topPx,
   };
 
   return (

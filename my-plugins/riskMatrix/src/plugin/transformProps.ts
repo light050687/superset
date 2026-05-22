@@ -521,5 +521,6 @@ export default function transformProps(chartProps: ChartProps): ScatterRiskProps
     shortcutsHint:
       (formData.shortcutsHint as string | undefined) ||
       'Click — фильтр · Ctrl+Click — детализация · Drag — перемещение · Scroll — масштаб',
+    mockModeEnabled: mockEnabled,
   };
 }

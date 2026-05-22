@@ -114,6 +114,12 @@ export const CardRoot = styled.div `
      новый → animation запускается ровно когда юзер видит контент. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
+  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
+  .dragdroppable--dragging &,
+  .dashboard--editing & {
+    animation: none !important;
+    opacity: 1 !important;
+  }
 
   * {
     box-sizing: border-box;
@@ -136,6 +142,29 @@ export const PartialBadge = styled.span `
   text-transform: uppercase;
   margin-left: 8px;
   vertical-align: middle;
+  user-select: none;
+`;
+/* DS 2.0 «Статусный бейдж ТЕСТ» — 1:1 со scorecard MockBadge.
+   Superscript-effect: badge поднят выше базовой линии заголовка. */
+export const MockBadge = styled.span `
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--wn-b);
+  color: var(--wn);
+  font-family: var(--m);
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-left: 6px;
+  vertical-align: super;
+  position: relative;
+  top: -2px;
   user-select: none;
 `;
 /* DS 2.0 §06 — Stale bar: тонкая sky-полоса сверху Card. */
@@ -1051,7 +1080,11 @@ export const Tooltip = styled.div `
 export const ModalBg = styled.div `
   position: fixed;
   inset: 0;
-  background: var(--modal-scrim);
+  /* Scrim 0.65 + blur 3px — canonical. var(--modal-scrim) убран:
+     при portal-рендере не резолвится, fallback на explicit rgba надёжнее. */
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   display: none;
   align-items: center;
   justify-content: center;

@@ -197,6 +197,12 @@ export const Card = styled.div `
      никакой «вспышки» уже-final state до animation start. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
+  /* Dashboard drag/edit: animation re-trigger при remount → плагин невидим. */
+  .dragdroppable--dragging &,
+  .dashboard--editing & {
+    animation: none !important;
+    opacity: 1 !important;
+  }
   display: flex;
   flex-direction: column;
 `;

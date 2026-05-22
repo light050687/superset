@@ -37,6 +37,10 @@ export const ParetoCardRoot = styled.div `
   --up: ${L.up};
   --dn: ${L.dn};
   --wn: ${L.wn};
+  /* DS §06: семантические тинты статусов (rgba) для бейджей/pill */
+  --up-b: ${L.upBg};
+  --dn-b: ${L.dnBg};
+  --wn-b: ${L.wnBg};
   --c-sky: ${L.cSky};
   --c-violet: ${L.cViolet};
   --c-tangerine: ${L.cTangerine};
@@ -47,6 +51,18 @@ export const ParetoCardRoot = styled.div `
   --m: ${L.fontMono};
   --sh: 0 1px 3px rgba(15, 17, 20, 0.06);
   --modal-scrim: rgba(0, 0, 0, 0.55);
+  /* DS §06 типографическая шкала + §05 адаптивная (broad screens).
+     Размеры подняты до canonical (как scorecard/metricTimeSeries визуально):
+     nano 11 (статус-бейдж), micro 12 (мета mono UPPER), meta 13 (body inline),
+     interactive 14 (controls), body 16 (заголовок секции, hero-числа).
+     @container queries ниже уменьшают на узких карточках. */
+  --fs-nano: 11px;
+  --fs-micro: 12px;
+  --fs-meta: 13px;
+  --fs-interactive: 14px;
+  --fs-body: 16px;
+  --fs-subtitle: 17px;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
 
   &[data-theme='dark'] {
     --bg: ${D.bg};
@@ -63,6 +79,9 @@ export const ParetoCardRoot = styled.div `
     --up: ${D.up};
     --dn: ${D.dn};
     --wn: ${D.wn};
+    --up-b: ${D.upBg};
+    --dn-b: ${D.dnBg};
+    --wn-b: ${D.wnBg};
     --c-sky: ${D.cSky};
     --c-violet: ${D.cViolet};
     --c-tangerine: ${D.cTangerine};
@@ -98,8 +117,9 @@ export const Card = styled.div `
   position: relative;
   background: var(--s);
   border: 1px solid var(--g200);
+  /* DS v2.1 §06 Контейнер: radius 10px, padding space-4 × space-6 (16×20px). */
   border-radius: 10px;
-  padding: 16px 20px 14px;
+  padding: 16px 20px;
   box-shadow: var(--sh);
   height: 100%;
   display: flex;
@@ -110,13 +130,36 @@ export const Card = styled.div `
      новый → animation запускается ровно когда юзер видит реальный контент. */
   animation: ${cardInKf} 0.5s ${EASE} both;
   &[data-no-anim] { animation: none; }
+
+  /* DS v2.1 §06 fluid типографика: на узких карточках уменьшаем шрифты, чтобы
+     VitalFewSummary / CardTitle / footer не overflow'или. Уровни по DS §05
+     адаптивной типографики (медиум → small → ультра-компакт). */
+  @container pareto (max-width: 400px) {
+    padding: 14px 16px;
+    --fs-body: 14px;
+    --fs-interactive: 13px;
+    --fs-meta: 12px;
+    --fs-micro: 11px;
+  }
+  @container pareto (max-width: 320px) {
+    padding: 12px 14px;
+    --fs-body: 13px;
+    --fs-interactive: 12px;
+    --fs-meta: 11px;
+    --fs-micro: 11px;
+    --fs-nano: 10px;
+  }
+  @container pareto (max-width: 240px) {
+    padding: 10px 12px;
+  }
 `;
 export const CardHead = styled.div `
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  /* DS v2.1 §06: «Отступ после заголовка контейнера: space-3 (12px)». */
+  margin-bottom: 12px;
   flex-wrap: wrap;
 `;
 export const CardTitleGroup = styled.div `
@@ -127,13 +170,92 @@ export const CardTitleGroup = styled.div `
   flex: 1;
 `;
 export const CardTitle = styled.div `
-  /* DS v2.0 fluid: --fs-micro UPPER моно для card title */
-  font-family: var(--m);
-  font-size: var(--fs-micro);
+  /* DS v2.1 §06 canonical Card title (как в scorecard / metricTimeSeries /
+     donut / riskMatrix после 3f1ed19bd): sans-serif, 14px, 700, UPPERCASE,
+     letter-spacing 0.05em. Раньше был mono 11px — не совпадало с остальными
+     плагинами и было нечитабельно на узких карточках. */
+  font-family: var(--f);
+  font-size: var(--fs-body);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink);
+  line-height: 1.25;
+`;
+/* DS v2.1 §08 «Состояния» — Stale bar: тонкая sky-полоса сверху Card,
+   данные из кеша. Slide animation как progress indicator («обновление в фоне»).
+   Cписывает Card position:relative — он уже есть на Card-обёртке. */
+export const StaleBar = styled.div `
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--c-sky) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: pareto-stale-slide 1.6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+
+  @keyframes pareto-stale-slide {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+`;
+/* DS v2.1 §08 «Состояния» — Partial badge: данные неполные (part queries failed
+   или часть колонок не пришла). Рядом с заголовком, как индикатор того что
+   chart показывает доступную часть. */
+export const PartialBadge = styled.span `
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--wn-b);
+  color: var(--wn);
+  font-family: var(--m);
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-left: 8px;
+  vertical-align: middle;
+  user-select: none;
+`;
+/* DS v2.1 §06 «Статусный бейдж ТЕСТ» — 1:1 со scorecard MockBadge.
+   Min-height 24px (DS требование к pill/индикаторам). */
+export const MockBadge = styled.span `
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 24px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--wn-b);
+  color: var(--wn);
+  font-family: var(--m);
+  font-size: var(--fs-nano);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-left: 6px;
+  vertical-align: super;
+  position: relative;
+  top: -2px;
+  user-select: none;
 `;
 export const CardSubtitle = styled.div `
   /* DS 2.0: subtitle с локализованным time_range («за год», «за месяц»). */
@@ -177,6 +299,13 @@ export const BreadcrumbBtn = styled.button `
     color: var(--ink);
     background: var(--g100);
     outline: none;
+  }
+  /* ADR-0001 mobile-first: touch target 44×44 на coarse pointer (тач). */
+  @media (pointer: coarse) {
+    min-height: 44px;
+    min-width: 44px;
+    height: auto;
+    padding: 0 12px;
   }
 `;
 export const BreadcrumbCur = styled.span `
@@ -229,6 +358,12 @@ export const UnitBtn = styled.button `
     outline: 2px solid var(--c-sky);
     outline-offset: 1px;
   }
+  /* ADR-0001 mobile-first: touch target 44×44 на coarse pointer. */
+  @media (pointer: coarse) {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 10px 14px;
+  }
 `;
 // ═══════════════════════════════════════
 // Chip (Top-A / Prev period)
@@ -259,6 +394,11 @@ export const Chip = styled.button `
   &:focus-visible {
     outline: 2px solid var(--c-sky);
     outline-offset: 1px;
+  }
+  /* ADR-0001 mobile-first: touch target 44×44 на coarse pointer. */
+  @media (pointer: coarse) {
+    min-height: 44px;
+    padding: 10px 14px;
   }
 `;
 // ═══════════════════════════════════════
@@ -396,8 +536,10 @@ export const CardFooter = styled.div `
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 6px;
-  padding-top: 10px;
+  /* DS §06 space-4 (16px) между chart и легендой — комфортная визуальная
+     граница, не залипает. Border-top — тонкая разделительная линия. */
+  margin-top: 16px;
+  padding-top: 0;
   border-top: 1px solid var(--g200);
 `;
 export const HintItem = styled.div `
@@ -446,6 +588,7 @@ export const HintItem = styled.div `
 `;
 export const LegendRow = styled.div `
   display: flex;
+  flex: 1;
   gap: 16px;
   align-items: center;
   flex-wrap: wrap;
@@ -521,13 +664,20 @@ export const ZoneChipBtn = styled.button `
     color: ${({ active }) => (active ? 'var(--ink)' : 'var(--g600)')};
     font-weight: ${({ active }) => (active ? 600 : 500)};
   }
+  /* ADR-0001 mobile-first: touch target 44×44 на coarse pointer. */
+  @media (pointer: coarse) {
+    min-height: 44px;
+    padding: 10px 12px;
+  }
 `;
 // ═══════════════════════════════════════
 // Tooltip (DOM)
 // ═══════════════════════════════════════
 export const TooltipEl = styled.div `
-  position: absolute;
-  z-index: 10;
+  /* position: fixed (viewport-relative) — tooltip выходит за overflow:hidden
+     Card, не клипается её правым краем. Координаты приходят из clientX/Y. */
+  position: fixed;
+  z-index: 10000;
   pointer-events: none;
   /* DS 2.1 §08 «Тултипы»: tooltip того же тона что Card surface (НЕ инверт). */
   background: var(--s);
@@ -611,11 +761,17 @@ export const ModalOverlay = styled.div `
   padding: 24px;
   animation: pareto-overlay-in 0.18s ${EASE};
 
+  /* Modal рендерится через createPortal в document.body — CSS-переменные
+     из ParetoCardRoot не наследуются. Scrim задаём напрямую через data-theme. */
   .backdrop {
     position: absolute;
     inset: 0;
-    background: var(--modal-scrim);
-    backdrop-filter: blur(2px);
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+  &[data-theme='dark'] .backdrop {
+    background: rgba(0, 0, 0, 0.78);
   }
 `;
 export const ModalCard = styled.div `
@@ -624,7 +780,7 @@ export const ModalCard = styled.div `
   border: 1px solid var(--g200);
   border-radius: 10px;
   box-shadow: var(--sh);
-  max-width: min(680px, 100%);
+  max-width: min(820px, 100%);
   width: 100%;
   max-height: calc(100vh - 48px);
   display: flex;
@@ -706,14 +862,28 @@ export const ModalBody = styled.div `
   flex: 1;
 `;
 export const DrillSummaryGrid = styled.div `
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px 18px;
+  display: flex;
+  /* 5 hero metrics в одну строку. Flex с justify-content: space-between —
+     каждая ячейка занимает natural width, лейблы не разрываются,
+     равномерное распределение по ширине. */
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px 16px;
   padding: 14px 16px;
   background: var(--g50);
   border: 1px solid var(--g200);
   border-radius: 8px;
   margin-bottom: 18px;
+
+  /* Каждая ячейка — natural width, label в одну строку. */
+  > div {
+    min-width: 0;
+  }
+
+  .s-l {
+    white-space: nowrap;
+  }
 
   .s-l {
     /* DS v2.0: 9px → var(--fs-micro) (минимум 11) UPPER */
@@ -741,6 +911,33 @@ export const DrillSummaryGrid = styled.div `
   }
   .s-v.zone-c {
     color: var(--g500);
+  }
+  /* Семантика «Движение по рангу»: bad = ранг упал (число выросло),
+     good = поднялся (число уменьшилось). */
+  .s-v.bad {
+    color: var(--dn);
+  }
+  .s-v.good {
+    color: var(--up);
+  }
+  /* Длинные значения движения «#8 → #9» — мельче чтобы не ломать grid.
+     inline-flex + align-items:center — стрелка точно по vertical center цифр
+     (raw text «#11 → #12» давала смещение из-за baseline arrow vs digits). */
+  .s-v.rank-delta {
+    font-size: var(--fs-interactive);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .s-v.rank-delta .arr {
+    /* Sans-serif arrow — на baseline ближе к центру относительно цифр mono. */
+    font-family: var(--f);
+    font-weight: 500;
+    color: var(--g500);
+    font-size: 0.95em;
   }
 `;
 export const DrillContext = styled.div `
@@ -804,7 +1001,21 @@ export const DrillContext = styled.div `
 
   .ctx-bar-wrap {
     position: relative;
-    height: 10px;
+    /* Flex-column: bar сверху + опциональный ctx-hint снизу (по центру).
+       Раньше height: 10px fixed — переключился на content-driven. */
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .ctx-hint.ctx-hint-under {
+    /* Цифры «3,0 млн ₽ из 225,0», «было … → стало …» — по центру под mini-bar.
+     --fs-micro (12px) — на token меньше chart-body, чтобы не конкурировать
+     визуально с правым итоговым числом ctx-v. */
+    text-align: center;
+    font-size: var(--fs-micro);
+    color: var(--g500);
+    line-height: 1.3;
   }
   .ctx-bar {
     height: 10px;
@@ -851,7 +1062,9 @@ export const DrillBars = styled.div `
 
   .dbf {
     display: grid;
-    grid-template-columns: 140px 1fr 110px;
+    /* value-колонка: minmax(120px, auto) — растёт под content, удерживая
+       «123,45 млн ₽» одной строкой при nowrap, и не сжимается ниже минимума. */
+    grid-template-columns: 140px 1fr minmax(120px, auto);
     gap: 14px;
     align-items: center;
   }
@@ -877,13 +1090,19 @@ export const DrillBars = styled.div `
     font-size: var(--fs-meta);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
-    text-align: right;
     color: var(--g700);
+    /* Stack: число (1,9 млн ₽) сверху одной строкой, % под ним справа.
+       white-space: nowrap запрещает разрыв «1,9 млн» ↔ «₽» при тесном месте. */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    white-space: nowrap;
   }
   .dbf-v .pct {
     color: var(--g500);
     font-size: var(--fs-micro);
-    margin-left: 4px;
+    margin-left: 0;
   }
 `;
 // ═══════════════════════════════════════

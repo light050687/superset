@@ -131,7 +131,8 @@ export declare const DeltaPill: import("@emotion/styled").StyledComponent<{
     status: string;
     skipAnimation?: boolean;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, {}>;
-/** Backdrop overlay — renders via portal to document.body. DS v2.0: scrim из общего токена `--glass-scrim` (0.40 light / 0.55 dark) */
+/** Backdrop overlay — renders via portal to document.body.
+    Scrim 0.65 + blur 3px — canonical (синхронизировано с другими плагинами). */
 export declare const Overlay: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;

@@ -136,7 +136,11 @@ export function buildEChartsOption({ computed, state, tokens, }) {
         type: 'line',
         yAxisIndex: 1,
         data: lineData,
-        smooth: false,
+        // smooth: true + smoothMonotone:'x' — Bezier-сглаживание без overshoot,
+        // монотонная интерполяция по X (как в metricTimeSeries). Кумулятивная
+        // линия должна быть монотонно неубывающая — overshoot выглядел бы багом.
+        smooth: true,
+        smoothMonotone: 'x',
         showSymbol: state.seriesVisible.line,
         symbolSize: 7,
         z: 3,
@@ -167,16 +171,10 @@ export function buildEChartsOption({ computed, state, tokens, }) {
                     width: 1,
                     opacity: 0.6,
                 },
-                label: {
-                    show: true,
-                    position: 'end',
-                    color: tokens.g500,
-                    fontFamily: tokens.fontMono,
-                    fontSize: 9,
-                    fontWeight: 600,
-                    formatter: (p) => `${p.value}%`,
-                    padding: [0, 0, 0, 4],
-                },
+                // label.show: false — числа 80%/95% дублировали tick'и 75%/100%
+                // на правой оси и визуально сливались. Зоны идентифицируются
+                // через легенду (A · 0–80%, B · 80–95%, C · 95–100%) и цвет баров.
+                label: { show: false },
                 data: state.topAOnly
                     ? [{ yAxis: state.threshold }]
                     : [{ yAxis: state.threshold }, { yAxis: 95 }],
@@ -197,28 +195,39 @@ export function buildEChartsOption({ computed, state, tokens, }) {
         animationEasingUpdate: 'linear',
         tooltip: { show: false },
         grid: {
-            left: 14,
+            // left: 50 — место под Y-axis tick labels ("120,0 млн", 11px mono ~50px).
+            // right: 48 — место под правую ось %.
+            // bottom: 50 — rotated 28° x-labels впритык (12 chars × 11px ≈ 44px).
+            // containLabel: false — иначе ECharts расширял bottom до ~80px (auto),
+            // создавал огромный gap между labels и легендой.
+            left: 50,
             right: 48,
             top: 22,
-            bottom: 72,
-            containLabel: true,
+            bottom: 53,
+            containLabel: false,
         },
         xAxis: {
             type: 'category',
             data: categories,
+            // triggerEvent: true — ECharts эмитирует mouseover/mouseout с
+            // componentType='xAxis' при наведении на axisLabel. Нужно для
+            // tooltip с полным названием (axisLabel показывает truncated).
+            triggerEvent: true,
             axisLine: { lineStyle: { color: tokens.g300 } },
             axisTick: { show: false },
             axisLabel: {
                 color: tokens.g500,
                 fontFamily: tokens.fontSans,
-                fontSize: 10,
-                fontWeight: 500,
+                // DS v2.1 §05 «Адаптивная типографика» — мин-метка 10→11px.
+                // 11px / 600 — читабельно даже на rotated 28° метках.
+                fontSize: 11,
+                fontWeight: 600,
                 interval: 0,
                 rotate: 28,
                 align: 'right',
                 verticalAlign: 'top',
                 margin: 10,
-                formatter: (name) => name && name.length > 16 ? `${name.slice(0, 15)}…` : name,
+                formatter: (name) => name && name.length > 12 ? `${name.slice(0, 11)}…` : name,
             },
         },
         yAxis: [
@@ -233,8 +242,10 @@ export function buildEChartsOption({ computed, state, tokens, }) {
                 axisLabel: {
                     color: tokens.g500,
                     fontFamily: tokens.fontMono,
-                    fontSize: 9,
-                    fontWeight: 500,
+                    // DS §06: --fs-micro 11px mono для tick-чисел (минимум по DS = 10px,
+                    // 9 нарушает спецификацию). 600 weight — лучше различимы цифры.
+                    fontSize: 11,
+                    fontWeight: 600,
                     formatter: (v) => state.unit === 'rub'
                         ? nf1.format(v)
                         : `${nf1.format(v)}%`,
@@ -253,8 +264,8 @@ export function buildEChartsOption({ computed, state, tokens, }) {
                 axisLabel: {
                     color: tokens.g400,
                     fontFamily: tokens.fontMono,
-                    fontSize: 9,
-                    fontWeight: 500,
+                    fontSize: 11,
+                    fontWeight: 600,
                     formatter: (v) => `${v}%`,
                 },
             },

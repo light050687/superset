@@ -29,6 +29,7 @@ import {
   EmptyBlock,
   KEYFRAMES_CSS,
   PartialBadge,
+  MockBadge,
   PortalRoot,
   OverlapList,
 } from './styles';
@@ -164,6 +165,7 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
     detailQueryParams,
     shortcutsHint,
     dataState,
+    mockModeEnabled,
   } = props;
 
   // ── State ──
@@ -1225,7 +1227,10 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
         <style>{KEYFRAMES_CSS}</style>
         <CardHead>
           <TitleBlock>
-            <CardTitle>{title}</CardTitle>
+            <CardTitle>
+              {title}
+              {mockModeEnabled && <MockBadge>ТЕСТ</MockBadge>}
+            </CardTitle>
           </TitleBlock>
         </CardHead>
         <div role="status" aria-label="Загрузка" style={{ flex: 1 }} />
@@ -1241,6 +1246,7 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
         <TitleBlock>
           <CardTitle id="sr-card-title">
             {title}
+            {mockModeEnabled && <MockBadge>ТЕСТ</MockBadge>}
             {dataState === 'partial' && (
               <PartialBadge title="Часть данных недоступна">Частично</PartialBadge>
             )}

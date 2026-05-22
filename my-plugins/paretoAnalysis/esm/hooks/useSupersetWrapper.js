@@ -37,6 +37,15 @@ function injectGlobalStyle() {
       display: none !important;
     }
 
+    /* DS v2.1 §06: убираем chart-holder dot-menu (3 точки) — для pareto не
+       нужен (фильтры/ресайз/детализация уже внутри карточки через ControlsRow
+       и InfoHint). Override hover-логики ниже из DOM-fallback. */
+    div[data-test-viz-type="${VIZ_TYPE}"] .ant-dropdown-trigger,
+    div[data-test-viz-type="${VIZ_TYPE}"] .header-controls,
+    .dashboard-component-chart-holder:has(div[data-test-viz-type="${VIZ_TYPE}"]) .header-controls {
+      display: none !important;
+    }
+
     div[data-test-viz-type="${VIZ_TYPE}"].chart-slice > div:first-child {
       height: 0 !important;
       min-height: 0 !important;
@@ -67,6 +76,17 @@ function injectGlobalStyle() {
       box-shadow: none !important;
       overflow: visible !important;
       padding: 0 !important;
+    }
+
+    /* DRAG-IN-EDIT-MODE fix: dashboard drag триггерит React unmount/remount
+       компонента → cardInKf animation запускается с opacity:0 → плагин
+       полностью невидим во время drag. Отключаем animation на всех Card
+       внутри pareto при родительском .dragdroppable--dragging. */
+    .dragdroppable--dragging div[data-test-viz-type="${VIZ_TYPE}"] .pareto-card,
+    .dragdroppable--dragging div[data-test-viz-type="${VIZ_TYPE}"] .pareto-card > *,
+    .dashboard--editing div[data-test-viz-type="${VIZ_TYPE}"] .pareto-card {
+      animation: none !important;
+      opacity: 1 !important;
     }
 
     div[data-test-viz-type="${VIZ_TYPE}"] .slice-container {

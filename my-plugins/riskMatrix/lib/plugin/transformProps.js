@@ -409,6 +409,7 @@ function transformProps(chartProps) {
         detailQueryParams,
         shortcutsHint: formData.shortcutsHint ||
             'Click — фильтр · Ctrl+Click — детализация · Drag — перемещение · Scroll — масштаб',
+        mockModeEnabled: mockEnabled,
     };
 }
 //# sourceMappingURL=transformProps.js.map

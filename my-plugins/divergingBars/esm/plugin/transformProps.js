@@ -150,6 +150,10 @@ export default function transformProps(chartProps) {
     const formats = parseFormats(formData
         .format_mapping_json ??
         formData.formatMappingJson);
+    const mockModeEnabled = formData
+        .mock_mode_enabled ??
+        formData.mockModeEnabled ??
+        false;
     const baseProps = {
         width,
         height,
@@ -164,11 +168,8 @@ export default function transformProps(chartProps) {
         isDarkMode,
         formats,
         theme,
+        mockModeEnabled,
     };
-    const mockModeEnabled = formData
-        .mock_mode_enabled ??
-        formData.mockModeEnabled ??
-        false;
     // ── Mock mode: возвращаем сгенерированные данные, игнорируя queriesData ──
     if (mockModeEnabled) {
         const preset = getPreset(formData.mock_preset ??

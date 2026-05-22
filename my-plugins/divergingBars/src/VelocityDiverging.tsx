@@ -264,6 +264,7 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
   showCsvExport,
   showSummaryStrip,
   isDarkMode,
+  mockModeEnabled,
 }) => {
   const theme: 'light' | 'dark' = isDarkMode ? 'dark' : 'light';
   const rootRef = useRef<HTMLDivElement>(null);
@@ -670,7 +671,10 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
     return (
       <VelocityRoot {...rootProps}>
         <div className="vd-card" data-info-hint-container="" data-no-anim="">
-          <h2 className="vd-title">{headerText}</h2>
+          <h2 className="vd-title">
+            {headerText}
+            {mockModeEnabled && <span className="vd-mock-badge">ТЕСТ</span>}
+          </h2>
           <div className="vd-state" role="status">
             <IconEmpty />
             <div className="vd-state-message">
@@ -698,7 +702,10 @@ const VelocityDiverging: React.FC<VelocityDivergingProps> = ({
           {/* Header */}
           <div className="vd-head">
             <div className="vd-title-block">
-              <h2 className="vd-title">{headerText}</h2>
+              <h2 className="vd-title">
+                {headerText}
+                {mockModeEnabled && <span className="vd-mock-badge">ТЕСТ</span>}
+              </h2>
               <div className="vd-sub">
                 {subtitleText && (
                   <>
