@@ -993,7 +993,7 @@ export const TooltipEl = styled.div<{ $visible: boolean }>`
   border: 1px solid rgba(128, 128, 128, 0.25);
   border-radius: 6px;
   padding: 8px 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+  box-shadow: none;
   font-family: var(--f);
   font-size: 11px;
   pointer-events: none;

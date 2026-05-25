@@ -865,7 +865,7 @@ exports.Tooltip = core_1.styled.div `
   border: 1px solid rgba(128, 128, 128, 0.25);
   border-radius: 6px;
   padding: 8px 12px;
-  box-shadow: var(--sh);
+  box-shadow: none;
   font-family: var(--f);
   font-size: 11px;
   max-width: 240px;

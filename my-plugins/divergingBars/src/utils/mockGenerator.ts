@@ -1,17 +1,22 @@
-import type { FormatDef, Store } from '../types';
+import type { ComparisonMode, FormatDef, Store } from '../types';
 
 /**
  * Детерминированный генератор мок-данных — порт `generateStores()` из
  * `ref/velocity-diverging-prototype.html`. Seed фиксирован, чтобы один и
  * тот же дашборд у всех пользователей отрисовывался одинаково.
+ *
+ * v2: модель данных period-over-period. Возвращаем prev/curr скаляры
+ * (агрегаты loss за прошлый/текущий период) + опциональный тренд
+ * длиной 12 точек (для DetailModal — равняется main-периоду в demo-режиме).
+ *
+ * `comparisonMode` влияет на «силу» разницы prev vs curr:
+ *  - prev_week — небольшой сдвиг (±5%)
+ *  - prev_month / prev_quarter — средний
+ *  - prev_year / prev_period / custom — крупный (могут быть кратные изменения)
  */
 
 const SEED = 20260315;
 
-/**
- * Линейный конгруэнтный генератор (LCG) — копирует `seededRandom` из
- * прототипа. Даёт идентичный поток чисел на сервере и в браузере.
- */
 function seededRandom(seed: number): () => number {
   let s = seed;
   return () => {
@@ -96,13 +101,36 @@ const SUBS: Record<string, string[]> = {
   superstore: ['Молл', 'Гипер-1', 'Гипер-2', 'Восток', 'Запад', 'Центр'],
 };
 
+/**
+ * Возвращает множитель для prev → curr в зависимости от режима сравнения.
+ * Чем больше «дистанция» между prev и curr — тем сильнее разброс.
+ */
+function modeFactorRange(mode: ComparisonMode): { mean: number; sd: number } {
+  switch (mode) {
+    case 'prev_week':
+      return { mean: 0.0, sd: 0.05 };
+    case 'prev_month':
+      return { mean: 0.03, sd: 0.12 };
+    case 'prev_quarter':
+      return { mean: 0.05, sd: 0.18 };
+    case 'prev_year':
+      return { mean: 0.08, sd: 0.28 };
+    case 'custom':
+    case 'prev_period':
+    default:
+      return { mean: 0.04, sd: 0.2 };
+  }
+}
+
 export function generateStores(
   formats: FormatDef[] = DEFAULT_FORMATS,
   seed: number = SEED,
+  comparisonMode: ComparisonMode = 'prev_period',
 ): Store[] {
   const rng = seededRandom(seed);
   const stores: Store[] = [];
   let id = 0;
+  const { mean: slopeMean, sd: slopeSd } = modeFactorRange(comparisonMode);
 
   formats.forEach(fmt => {
     const count = fmt.count ?? 50;
@@ -114,27 +142,41 @@ export function generateStores(
       const code = `Д${id + 1}`;
       const to = Math.round(20 + rng() * 300);
 
-      const t = rng();
+      // Базовая «средняя» сумма потерь — пропорциональна ТО и плану формата.
       const baseRub = Math.max(
         10,
         randN(rng, to * plan * 0.01 * 10, to * plan * 0.005),
       );
-      let slope: number;
-      if (t < 0.15) slope = randN(rng, 0.15, 0.06);
-      else if (t < 0.35) slope = randN(rng, 0.06, 0.03);
-      else if (t < 0.65) slope = randN(rng, 0.01, 0.02);
-      else if (t < 0.85) slope = randN(rng, -0.04, 0.02);
-      else slope = randN(rng, -0.1, 0.04);
 
-      const weeksRub: number[] = [];
-      const weeksPct: number[] = [];
-      for (let w = 0; w < 12; w += 1) {
+      // Slope = относительный сдвиг prev → curr.
+      const t = rng();
+      let slope: number;
+      if (t < 0.15) slope = randN(rng, 0.4 + slopeMean, slopeSd);
+      else if (t < 0.35) slope = randN(rng, 0.18 + slopeMean, slopeSd);
+      else if (t < 0.65) slope = randN(rng, slopeMean, slopeSd);
+      else if (t < 0.85) slope = randN(rng, -0.1 + slopeMean, slopeSd);
+      else slope = randN(rng, -0.25 + slopeMean, slopeSd);
+
+      // prev_period 12 weeks: симулируем тренд для DetailModal.
+      const trendLen = 12;
+      const trendRub: number[] = [];
+      const trendPct: number[] = [];
+      const trendLabels: string[] = [];
+      for (let w = 0; w < trendLen; w += 1) {
+        // Линейный наклон от baseRub*(1-slope/2) до baseRub*(1+slope/2)
+        const factor = 1 - slope / 2 + (slope * w) / Math.max(1, trendLen - 1);
         const noise = randN(rng, 0, baseRub * 0.08);
-        const val = Math.max(5, baseRub * (1 + slope * w) + noise);
-        weeksRub.push(+val.toFixed(0));
+        const val = Math.max(5, baseRub * factor + noise);
+        trendRub.push(+val.toFixed(0));
         const pct = (val / (to * 10)) * 100;
-        weeksPct.push(+pct.toFixed(2));
+        trendPct.push(+pct.toFixed(2));
+        trendLabels.push(`Н${w + 1}`);
       }
+
+      const currValueRub = +(baseRub * (1 + slope / 2)).toFixed(0);
+      const prevValueRub = +(baseRub * (1 - slope / 2)).toFixed(0);
+      const currValuePct = +((currValueRub / (to * 10)) * 100).toFixed(2);
+      const prevValuePct = +((prevValueRub / (to * 10)) * 100).toFixed(2);
 
       stores.push({
         id: `s${id}`,
@@ -146,8 +188,13 @@ export function generateStores(
         formatName: fmt.name,
         plan,
         to,
-        weeksRub,
-        weeksPct,
+        prevValueRub,
+        currValueRub,
+        prevValuePct,
+        currValuePct,
+        trendRub,
+        trendPct,
+        trendLabels,
       });
       id += 1;
     }

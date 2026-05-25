@@ -1,9 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BarCell = exports.SkeletonBlock = exports.ModalOverlay = exports.TooltipRoot = exports.VelocityRoot = exports.KEYFRAMES_CSS = exports.ROOT_CLASS = void 0;
+exports.InlineSpinnerLarge = exports.InlineSpinnerSmall = exports.RefreshBar = exports.PageInput = exports.PageEllipsis = exports.PageBtn = exports.PaginationWrap = exports.BarCell = exports.SkeletonBlock = exports.ModalOverlay = exports.TooltipRoot = exports.VelocityRoot = exports.KEYFRAMES_CSS = exports.ROOT_CLASS = void 0;
 const core_1 = require("@superset-ui/core");
 const react_1 = require("@emotion/react");
 const themeTokens_1 = require("./themeTokens");
+/* Keyframes for refresh bar (stale-while-revalidate) и spinner (initial loader). */
+const refreshSlideKf = (0, react_1.keyframes) `
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(150%); }
+  100% { transform: translateX(150%); }
+`;
+const spinKf = (0, react_1.keyframes) `
+  to { transform: rotate(360deg); }
+`;
 /*
  * Design System v2.0 tokens + прототип velocity-diverging-prototype.html
  * переписаны в Emotion-стиль. Все цвета — через CSS custom properties;
@@ -157,16 +166,24 @@ exports.VelocityRoot = core_1.styled.div `
     flex-direction: column;
     gap: 4px;
   }
-  /* DS 2.0 §02 fluid: --fs-micro UPPER моно для секции */
+  /* DS 2.0 §02 «Заголовок карточки» — Manrope 14/16px 700 UPPER. */
   .vd-title {
-    font-family: var(--m);
-    font-size: var(--fs-micro);
+    font-family: ${themeTokens_1.FONTS.text};
+    font-size: 14px;
     font-weight: 700;
-    letter-spacing: 0.06em;
-    line-height: 1.4;
+    letter-spacing: 0.05em;
+    line-height: 1.3;
     text-transform: uppercase;
     color: var(--ink);
     margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  @container diverging (min-width: 768px) {
+    .vd-title {
+      font-size: 16px;
+    }
   }
   /* DS 2.0 §02 fluid: --fs-micro моно для метаданных */
   .vd-sub {
@@ -437,6 +454,522 @@ exports.VelocityRoot = core_1.styled.div `
     color: var(--g600);
   }
 
+  /* ── Direction filter dropdown ─────────────────────────
+     Badge-trigger в .vd-controls вместо старого vd-filter-row с 4 chips.
+     Реиспользует базовый паттерн .vd-dd-trigger/.vd-dd-menu/.vd-dd-item,
+     добавляет: цветную точку выбранной опции в trigger; touch-target
+     min 44×44 (ADR-0001); chevron-индикатор открытия. */
+  .vd-dir-dd-wrap {
+    /* Перекрываем .vd-dd-wrap.position:relative — не меняем, нужен
+       absolute-меню. Просто маркер для outside-click handler. */
+  }
+  .vd-dir-dd-trigger {
+    /* xs: touch target 44 (ADR-0001). desktop — компактный 30. */
+    min-height: 44px;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  @media (min-width: 576px) {
+    .vd-dir-dd-trigger {
+      min-height: 30px;
+      padding: 4px 9px;
+    }
+  }
+  .vd-dir-dd-trigger.on {
+    /* Активный фильтр: рамка цветная, фон лёгкий tint. */
+    border-color: var(--vd-chip-color, var(--g300));
+    color: var(--ink);
+  }
+  .vd-dir-dd-trigger-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--vd-chip-color, var(--g400));
+    flex-shrink: 0;
+  }
+  .vd-dir-dd-trigger-label {
+    font-family: var(--m);
+    font-size: var(--fs-micro);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+  .vd-dir-dd-trigger svg {
+    width: 9px;
+    height: 6px;
+    opacity: 0.7;
+    transition: transform 0.15s ${EASE};
+  }
+  .vd-dir-dd-trigger.open svg {
+    transform: rotate(180deg);
+  }
+  /* Меню — длиннее обычного fmt-dropdown (220px) не нужно: 4 опции. */
+  .vd-dir-dd-menu {
+    min-width: 180px;
+    /* Принудительно высокий z-index чтобы перекрывать table headers. */
+    z-index: 1000;
+    /* Solid фон — белый (light) / тёмный (dark) — fallback если var(--s)
+       не резолвится в каком-то контексте. */
+    background: var(--s, #ffffff);
+    animation-duration: 0.18s !important;
+  }
+  &[data-theme='dark'] .vd-dir-dd-menu {
+    background: var(--s, #1F2937);
+  }
+  .vd-dir-dd-item {
+    /* На desktop — компактнее чем 44 (mobile-only). */
+    min-height: 44px;
+    gap: 10px;
+  }
+  @media (min-width: 576px) {
+    .vd-dir-dd-item {
+      min-height: 34px;
+    }
+  }
+  .vd-dir-dd-item-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--vd-chip-color, var(--g400));
+    flex-shrink: 0;
+    /* Лёгкая обводка чтобы белая точка (для 'all') не сливалась с hover'ом. */
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+  }
+  .vd-dir-dd-item.on {
+    background: var(--g100);
+    color: var(--ink);
+  }
+  .vd-dir-dd-item.on .vd-dir-dd-item-dot {
+    /* Активная опция: точка крупнее ring, fluo halo. */
+    box-shadow:
+      inset 0 0 0 1px rgba(0, 0, 0, 0.04),
+      0 0 0 2px color-mix(in srgb, var(--vd-chip-color, var(--g400)) 25%, transparent);
+  }
+
+  /* Inline reset-кнопка рядом с dir-dropdown в .vd-controls. */
+  .vd-filter-reset-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    min-width: 44px;
+    margin-left: 0;
+    padding: 6px;
+    color: var(--g600);
+  }
+  @media (min-width: 576px) {
+    .vd-filter-reset-inline {
+      min-height: 30px;
+      min-width: 30px;
+      padding: 4px;
+    }
+  }
+  .vd-filter-reset-inline:hover {
+    color: var(--ink);
+    background: var(--g100);
+  }
+  .vd-filter-reset-inline svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* ── Resolved compare-range info row ──────────────────
+     Показывает «Текущий: 17.05.2026 – 23.05.2026 · vs 10.05.2026 – 16.05.2026»
+     под dropdown'ом «Сравнить с». На xs переносится на две строки. */
+  .vd-compare-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+    padding: 8px 12px;
+    margin: 8px 0 0 0;
+    background: var(--g50);
+    border: 1px solid var(--g200);
+    border-radius: 10px;
+    font-family: var(--m);
+    font-size: var(--fs-micro);
+    font-weight: 500;
+    color: var(--g600);
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ${EASE}, border-color 0.15s ${EASE};
+    animation: vd-cascade-in 0.4s ${EASE} 0.25s both;
+  }
+  .vd-compare-info:hover {
+    background: var(--g100);
+    border-color: var(--g300);
+  }
+  .vd-compare-info:focus-visible {
+    outline: 2px solid var(--c-sky);
+    outline-offset: 2px;
+  }
+  .vd-compare-info.on {
+    background: var(--g100);
+    border-color: var(--c-sky);
+  }
+  .vd-compare-info.override {
+    border-color: var(--c-sky);
+  }
+  .vd-compare-info-line {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .vd-compare-info-cal {
+    display: inline-flex;
+    align-items: center;
+    color: var(--g600);
+    flex-shrink: 0;
+  }
+  .vd-compare-info-cal svg {
+    width: 14px;
+    height: 14px;
+  }
+  .vd-compare-info-label {
+    color: var(--g600);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .vd-compare-info-dates {
+    color: var(--ink);
+    font-family: var(--m);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .vd-compare-info-dur {
+    color: var(--g600);
+    font-weight: 500;
+  }
+  .vd-compare-info-vs {
+    color: var(--g500);
+    font-weight: 600;
+    padding: 0 2px;
+  }
+  .vd-compare-info-locked {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    color: var(--c-sky);
+    cursor: help;
+  }
+  .vd-compare-info-locked svg {
+    width: 12px;
+    height: 12px;
+  }
+  /* На xs (<576px) - переносим vs-блок на новую строку для читаемости. */
+  @media (max-width: 575px) {
+    .vd-compare-info {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+    .vd-compare-info-line {
+      flex-wrap: wrap;
+      white-space: normal;
+    }
+    .vd-compare-info-vs {
+      display: none;
+    }
+    .vd-compare-info-locked {
+      margin-left: 0;
+      margin-top: 2px;
+    }
+  }
+  .vd-compare-info-loading {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 6px;
+    color: var(--g500);
+  }
+
+  /* ── Кнопка «Изменить даты» — рядом с dropdown в footer-row. ── */
+  .vd-edit-dates-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--g100);
+    border: 1px solid var(--g200);
+    border-radius: 6px;
+    padding: 6px 10px;
+    /* Touch target — 44×44 как по ADR-0001. */
+    min-height: 44px;
+    min-width: 44px;
+    height: auto;
+    font-family: var(--m);
+    font-size: var(--fs-micro);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: var(--g600);
+    cursor: pointer;
+    transition: color 0.15s ${EASE}, border-color 0.15s ${EASE},
+      background 0.15s ${EASE};
+    white-space: nowrap;
+  }
+  .vd-edit-dates-btn:hover {
+    border-color: var(--g300);
+    color: var(--ink);
+  }
+  .vd-edit-dates-btn:focus-visible {
+    outline: 2px solid var(--c-sky);
+    outline-offset: 2px;
+  }
+  .vd-edit-dates-btn.on {
+    background: var(--c-sky);
+    border-color: var(--c-sky);
+    color: var(--on-accent);
+  }
+  .vd-edit-dates-btn svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+  .vd-edit-dates-btn .vd-edit-dates-label {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .vd-edit-dates-btn .vd-edit-dates-title {
+    color: var(--g500);
+    font-weight: 500;
+  }
+  .vd-edit-dates-btn .vd-edit-dates-range {
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .vd-edit-dates-btn .vd-edit-dates-dur {
+    color: var(--g500);
+    font-weight: 400;
+    font-size: calc(var(--fs-micro) - 1px);
+  }
+  .vd-edit-dates-btn.on .vd-edit-dates-title,
+  .vd-edit-dates-btn.on .vd-edit-dates-range,
+  .vd-edit-dates-btn.on .vd-edit-dates-dur {
+    color: var(--on-accent);
+  }
+  .vd-edit-dates-btn.override {
+    border-color: var(--c-sky);
+    color: var(--ink);
+  }
+  .vd-edit-dates-btn .vd-edit-dates-lock {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 2px;
+    color: var(--c-sky);
+  }
+  .vd-edit-dates-btn .vd-edit-dates-lock svg {
+    width: 11px;
+    height: 11px;
+  }
+  /* На ≥576px можно ужать до 32 в высоту (как остальные триггеры) — но
+     touch target всё равно нужен ≥44 на mobile, см. ADR-0001. */
+  @media (min-width: 576px) {
+    .vd-edit-dates-btn {
+      min-height: 32px;
+      height: 32px;
+    }
+  }
+  /* Скрываем второй календарь в AntD RangePicker dropdown — оставляем один. */
+  .vd-rp-single .ant-picker-panels > *:nth-child(2),
+  .vd-rp-single .ant-picker-panel-container .ant-picker-panels > *:nth-child(n + 2) {
+    display: none !important;
+  }
+  .vd-rp-single .ant-picker-panel-container .ant-picker-panels {
+    flex-wrap: nowrap;
+  }
+
+  /* ── Range modal (portal в document.body) ── */
+  .vd-range-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: vd-dd-fade 0.18s ${EASE};
+  }
+  .vd-range-modal {
+    background: var(--g50);
+    border-radius: 12px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow: auto;
+    padding: 16px 18px 18px;
+    animation: vd-dd-fade 0.2s ${EASE};
+  }
+  .vd-range-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .vd-range-modal-title {
+    font-family: var(--m);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0;
+  }
+  .vd-range-modal-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--g600);
+    cursor: pointer;
+    transition: background 0.15s ${EASE}, color 0.15s ${EASE};
+  }
+  .vd-range-modal-close:hover {
+    background: var(--g100);
+    color: var(--ink);
+  }
+  .vd-range-modal-close svg {
+    width: 14px;
+    height: 14px;
+  }
+  @media (max-width: 575px) {
+    .vd-range-modal-close {
+      width: 44px;
+      height: 44px;
+    }
+  }
+
+  /* ── Custom-range inline panel (mode = custom или edit-dates open) ── */
+  .vd-range-panel {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin: 8px 0 0 0;
+    padding: 12px;
+    background: var(--g50);
+    border: 1px solid var(--g200);
+    border-radius: 10px;
+    animation: vd-dd-fade 0.18s ${EASE};
+  }
+  .vd-range-panel-title {
+    font-family: var(--m);
+    font-size: var(--fs-micro);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--g600);
+  }
+  .vd-range-rows {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .vd-range-row {
+    display: grid;
+    grid-template-columns: minmax(110px, 130px) 1fr;
+    gap: 8px;
+    align-items: center;
+  }
+  .vd-range-row-label {
+    font-family: var(--f);
+    font-size: var(--fs-interactive);
+    font-weight: 500;
+    color: var(--ink);
+  }
+  /* AntD RangePicker внутри — даём ему 100% ширины. */
+  .vd-range-row .ant-picker {
+    width: 100%;
+    min-height: 36px;
+  }
+  @media (min-width: 768px) {
+    .vd-range-rows {
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+  }
+  /* На xs пикеры в столбец — лейбл сверху, picker снизу — touch-friendly. */
+  @media (max-width: 575px) {
+    .vd-range-row {
+      grid-template-columns: 1fr;
+      gap: 4px;
+    }
+    .vd-range-row-label {
+      font-size: var(--fs-micro);
+      color: var(--g600);
+      font-weight: 600;
+    }
+  }
+  /* Кнопки внизу панели — Применить / Сбросить / Отмена. */
+  .vd-range-panel-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding-top: 4px;
+  }
+  .vd-range-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--g200);
+    background: var(--g100);
+    color: var(--g700);
+    font-family: var(--m);
+    font-size: var(--fs-micro);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background 0.15s ${EASE}, border-color 0.15s ${EASE},
+      color 0.15s ${EASE};
+  }
+  .vd-range-btn:hover:not(:disabled) {
+    border-color: var(--g300);
+    color: var(--ink);
+  }
+  .vd-range-btn:focus-visible {
+    outline: 2px solid var(--c-sky);
+    outline-offset: 2px;
+  }
+  .vd-range-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .vd-range-btn.primary {
+    background: var(--c-sky);
+    border-color: var(--c-sky);
+    color: var(--on-accent);
+  }
+  .vd-range-btn.primary:hover:not(:disabled) {
+    /* затемнить — но реализуем через filter, чтобы не зависеть от tinted token */
+    filter: brightness(0.92);
+    color: var(--on-accent);
+  }
+  .vd-range-btn.danger {
+    color: var(--up);
+  }
+  .vd-range-btn.danger:hover:not(:disabled) {
+    color: var(--up);
+    border-color: var(--up);
+  }
+  @media (min-width: 576px) {
+    .vd-range-btn {
+      min-height: 32px;
+      padding: 6px 14px;
+    }
+  }
+
   .vd-export-btn {
     display: inline-flex;
     align-items: center;
@@ -464,7 +997,9 @@ exports.VelocityRoot = core_1.styled.div `
     height: 13px;
   }
 
-  /* ── Filter row ─────────────────────────────────────── */
+  /* ── Filter row (DEPRECATED) ────────────────────────────
+     Заменён на vd-dir-dd-wrap badge-dropdown в .vd-controls.
+     Стили сохранены на случай возврата / отладки разметки. */
   .vd-filter-row {
     display: flex;
     align-items: center;
@@ -557,51 +1092,86 @@ exports.VelocityRoot = core_1.styled.div `
   }
 
   /* ── Summary strip ──────────────────────────────────── */
+  /* Mobile-first (ADR-0001): base = 1 колонка на xs, расширяется до 2
+     на sm, до 4 на lg+. Container queries (а не viewport) — поведение
+     зависит от ширины самого виджета в дашборде, не всего окна. */
   .vd-summary {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 12px;
   }
-  @media (max-width: 900px) {
+  @container diverging (min-width: 480px) {
     .vd-summary {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
-  /* DS 2.0 §06: карточка-сводка — radius 10, padding 12×16 (меньше хоста). */
+  @container diverging (min-width: 900px) {
+    .vd-summary {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  /* DS 2.0 §06: карточка-сводка — radius 10, padding 12×16 (меньше хоста).
+     На широких контейнерах чуть больше воздуха. */
   .vd-sm {
     background: var(--g50);
     border: 1px solid var(--g200);
     border-radius: 10px;
-    padding: 12px 16px;
+    padding: 12px 14px;
+    min-width: 0; /* grid item: разрешить child'у nowrap-text усаживаться */
   }
-  /* DS 2.0 §02 fluid: --fs-micro UPPER моно для KPI label */
+  /* DS v2.1 §02 «Метка KPI»: 11px моно, 500, 0.06em, UPPERCASE.
+     Используем --fs-micro (clamp 11-13) — на узких карточках 11px, на
+     крупных растёт. Weight 500 = чуть тоньше чем дефолт 600, как в DS. */
   .vd-sm-l {
     font-family: var(--m);
     font-size: var(--fs-micro);
-    font-weight: 600;
+    font-weight: 500;
     color: var(--g600);
     letter-spacing: 0.06em;
     line-height: 1.4;
     text-transform: uppercase;
     margin-bottom: 6px;
+    /* На узких карточках label не должна переноситься в 2 строки —
+       пусть лучше обрезается ellipsis'ом, если нужно. */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  /* DS v2.0 P0: hero KPI 22px → fluid clamp(28-56) через --fs-hero.
-     Минимум 28px, на 4K растёт до 56px через cqi. */
+  /* DS v2.1 §02 «Крупное число (hero)»: 28px / 34px / 800 / -0.02em,
+     пропорциональный, tabular-nums. Адаптив §02:
+       xl  ≥1200: 28px
+       lg  ≥992:  26px
+       md  ≥768:  24px
+       xs  <576:  22px
+     Глобальный --fs-hero (clamp 28-56) рассчитан на BigNumber/scorecard hero,
+     где число занимает почти весь viz. В divergingBars 4 карточки делят
+     ширину карточки на 4 → 56px не нужен и просто переносит «9.7M» в 3 строки.
+     Локальный clamp(20-28) даёт 20px на самых узких (1 кол × 320px ширина),
+     22-24px на md, 28px на lg/xl. nowrap — гарантия одной строки.
+     Container queries: используем @container ниже для md+/lg+ breakpoints. */
   .vd-sm-v {
     font-family: var(--f);
-    font-size: var(--fs-hero);
+    font-size: clamp(20px, 1.05rem + 1cqi, 28px);
     font-weight: 800;
     color: var(--ink);
     letter-spacing: -0.02em;
-    line-height: 1.1;
+    line-height: 1.15;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    /* Защита от overflow при экстремально узком контейнере — текст
+       не вылезет, но визуально сообщит что есть скрытое значение. */
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .vd-sm-v .vd-u {
+    /* DS §02 «Подзаголовок / мета»: 11px моно. */
     font-family: var(--m);
-    font-size: var(--fs-meta);
+    font-size: var(--fs-micro);
     color: var(--g600);
     font-weight: 500;
     margin-left: 4px;
+    /* tabular-nums не нужен — это unit-метка. */
+    font-variant-numeric: normal;
   }
   .vd-sm-v.dn {
     color: var(--dn);
@@ -609,15 +1179,31 @@ exports.VelocityRoot = core_1.styled.div `
   .vd-sm-v.up {
     color: var(--up);
   }
-  /* DS 2.0 §02 fluid: --fs-micro моно для описания KPI */
+  /* DS v2.1 §02 «Подзаголовок / мета»: 11px моно, weight 400.
+     На узких карточках разрешён перенос (это вторичный текст). */
   .vd-sm-d {
     font-family: var(--m);
     font-size: var(--fs-micro);
-    font-weight: 500;
+    font-weight: 400;
     color: var(--g600);
-    margin-top: 6px;
+    margin-top: 4px;
     letter-spacing: 0.01em;
     line-height: 1.4;
+  }
+  /* Container-query адаптив для hero-числа (DS §02 шкала xs→xl).
+     Превалирует над clamp() при широких карточках, опускается ниже
+     при узких (xs одна колонка ≈ 320-575px). */
+  @container diverging (min-width: 768px) {
+    /* md: на 768+ карточки чуть просторнее — hero ≈ 24px. */
+    .vd-sm-v {
+      font-size: clamp(22px, 0.9rem + 1.2cqi, 28px);
+    }
+  }
+  @container diverging (min-width: 992px) {
+    /* lg/xl: полная 4-колонная сетка, hero растёт до 26-28px. */
+    .vd-sm-v {
+      font-size: clamp(24px, 0.7rem + 1.4cqi, 32px);
+    }
   }
 
   /* ── Table (DS 2.0 §07: числа моно tabular-nums, заголовки 11px/600) ── */
@@ -975,14 +1561,14 @@ exports.VelocityRoot = core_1.styled.div `
   }
 
   /* ── Footer ─────────────────────────────────────────── */
+  /* grid 1fr auto 1fr → центральный элемент (legend) всегда по центру. */
   .vd-footer {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
     padding-top: 12px;
     border-top: 1px solid var(--g200);
-    /* Cascade enter — footer 0.5s. */
     animation: vd-cascade-in 0.4s ${EASE} 0.5s both;
     font-family: var(--m);
     font-size: var(--fs-micro);
@@ -990,6 +1576,22 @@ exports.VelocityRoot = core_1.styled.div `
     line-height: 1.5;
     color: var(--g600);
     letter-spacing: 0.01em;
+  }
+  .vd-footer .vd-hint {
+    grid-column: 2;
+    justify-self: center;
+  }
+  @media (max-width: 575px) {
+    .vd-footer {
+      grid-template-columns: 1fr;
+    }
+    .vd-footer .vd-hint {
+      grid-column: 1;
+      justify-self: center;
+    }
+  }
+  /* legacy declaration — оставлено для совместимости с другими селекторами */
+  .vd-footer-legacy {
     flex-wrap: wrap;
   }
   .vd-footer .vd-hint {
@@ -1221,7 +1823,7 @@ exports.TooltipRoot = core_1.styled.div `
   border: 1px solid rgba(128, 128, 128, 0.25);
   border-radius: 6px;
   padding: 8px 12px;
-  box-shadow: 0 12px 32px rgba(15, 17, 20, 0.18);
+  box-shadow: none;
   font-family: var(--f);
   font-size: 11px;
   pointer-events: none;
@@ -1231,7 +1833,7 @@ exports.TooltipRoot = core_1.styled.div `
   font-variant-numeric: tabular-nums;
 
   &[data-theme='dark'] {
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+    box-shadow: none;
   }
 
   &[data-visible='true'] {
@@ -1359,7 +1961,12 @@ exports.ModalOverlay = core_1.styled.div `
     background: rgba(15, 17, 20, 0.72);
   }
 
-  /* DS 2.0 §06: карточка — radius 10, padding 16×20. */
+  /* DS 2.0 §06: карточка — radius 10, padding 16×20.
+     container-type: inline-size + container-name: vd-modal — для container
+     queries .m-stat-v/.m-stat-l и т.п. Без этого cqi считается от ближайшего
+     контейнера (overlay = viewport), и --fs-hero (clamp 28→56) на полной
+     desktop-модалке давал 56px → «в 2,5 раза» переносился в 3 строки внутри
+     4-колонной grid. Та же логика, что в .vd-card (см. строки 117-119). */
   .vd-modal {
     background: var(--s);
     border: 1px solid var(--g300);
@@ -1371,6 +1978,8 @@ exports.ModalOverlay = core_1.styled.div `
     animation: vd-m-fade 0.22s ${EASE};
     font-family: var(--f);
     color: var(--ink);
+    container-type: inline-size;
+    container-name: vd-modal;
   }
   &[data-theme='dark'] .vd-modal {
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
@@ -1393,21 +2002,33 @@ exports.ModalOverlay = core_1.styled.div `
     flex: 1;
     min-width: 0;
   }
-  /* DS v2.0 fluid: --fs-title (20-28) для заголовка модалки */
+  /* DS v2.1 §02 «Заголовок секции» / адаптация: пропорциональный, 700/800.
+     Локальный clamp(18-22) вместо глобального --fs-title (20-28) — название
+     магазина «Д31 Спасск-Дальний» в шапке модалки не должно конкурировать
+     визуально с hero-числами в .m-stat-v и не должно ломать layout
+     flex-start gap:14px. nowrap + ellipsis — гарантия одной строки,
+     .m-titles min-width:0 уже позволяет flex-усадку.
+     На xs (контейнер ≤480px) скатываемся к 18px. */
   .m-title {
-    font-size: var(--fs-title);
+    font-size: clamp(18px, 0.9rem + 0.5cqi, 22px);
     font-weight: 800;
-    line-height: 1.3;
+    line-height: 1.25;
     letter-spacing: -0.02em;
     margin: 0 0 4px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  /* DS v2.0 fluid: --fs-micro моно для подзаголовка модалки */
+  /* DS v2.1 §02 «Подзаголовок / мета»: 11px (--fs-micro), моно, weight 400.
+     Метаданные «Д31 · Минимаркет · ТО 84 млн ₽ · сравнение: …» — flex-wrap
+     для случая когда ширина модалки слишком мала чтобы уместить всё в строку. */
   .m-sub {
     font-size: var(--fs-micro);
-    font-weight: 500;
+    font-weight: 400;
     color: var(--g600);
     font-family: var(--m);
     line-height: 1.5;
+    letter-spacing: 0.01em;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1419,14 +2040,18 @@ exports.ModalOverlay = core_1.styled.div `
     padding: 2px 6px;
     font-weight: 600;
     color: var(--g700);
+    font-size: var(--fs-micro);
   }
   .m-sub .m-dot {
     width: 3px;
     height: 3px;
     border-radius: 50%;
     background: var(--g400);
+    flex-shrink: 0;
   }
-  /* DS 2.0 §06: контрол 32×32, radius 6. */
+  /* DS 2.0 §06: контрол 32×32, radius 6.
+     Touch target 44 — единственный кликабельный элемент в модалке;
+     визуальный размер 32, но padding/click area через outline-offset. */
   .m-close {
     width: 32px;
     height: 32px;
@@ -1453,15 +2078,25 @@ exports.ModalOverlay = core_1.styled.div `
     width: 12px;
     height: 12px;
   }
+  /* m-summary: ADR-0001 mobile-first single-layout.
+     Base (xs <480cqi контейнера) = 1 колонка; 2×2 на ≥480; 4×1 на ≥760.
+     Container queries вместо media — модалка может быть уже viewport
+     если открыта на десктопе в Drawer/iframe; зависим от ширины модалки,
+     не окна. */
   .m-summary {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 12px;
     margin-bottom: 20px;
   }
-  @media (max-width: 700px) {
+  @container vd-modal (min-width: 480px) {
     .m-summary {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @container vd-modal (min-width: 760px) {
+    .m-summary {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
   .m-stat {
@@ -1469,8 +2104,13 @@ exports.ModalOverlay = core_1.styled.div `
     border: 1px solid var(--g200);
     border-radius: 10px;
     padding: 12px 16px;
+    /* min-width:0 — иначе grid track зависает на intrinsic min-content
+       (.m-stat-v c длинным текстом расширяет колонку) → колонки разной
+       ширины и сетка ломается. */
+    min-width: 0;
   }
-  /* DS v2.0 fluid: --fs-micro UPPER моно для KPI label */
+  /* DS v2.1 §02 «Метка KPI»: 11px моно 500 0.06em UPPERCASE.
+     Идентично .vd-sm-l на главной карточке — единый ритм. */
   .m-stat-l {
     font-family: var(--m);
     font-size: var(--fs-micro);
@@ -1480,41 +2120,86 @@ exports.ModalOverlay = core_1.styled.div `
     line-height: 1.4;
     text-transform: uppercase;
     margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  /* DS v2.0: hero KPI в модалке — fluid 28→56 */
+  /* DS v2.1 §02 «Крупное число hero»: 28px / 800 / -0.02em /
+     пропорциональный / tabular-nums. Адаптив §02:
+       xl ≥1200: 28px · lg ≥992: 26px · md ≥768: 24px · xs <576: 22px
+
+     ВАЖНО: НЕ используем глобальный --fs-hero (clamp 28→56).
+     --fs-hero рассчитан на BigNumber/scorecard где одна цифра занимает
+     почти весь viz. В модалке divergingBars 4 карточки stat делят ширину
+     900px → 56px разносит «в 2,5 раза» / «9,7M» / «+154,5%» в 2-3 строки.
+     Локальный clamp(20-28) даёт 20px на узких (xs 1 кол), 22-24px на md
+     (2 кол), 26-28px на lg/xl (4 кол). nowrap гарантия одной строки.
+
+     Та же логика что .vd-sm-v на главной карточке (см. строки 1149-1162). */
   .m-stat-v {
     font-family: var(--f);
-    font-size: var(--fs-hero);
+    font-size: clamp(20px, 1.05rem + 1cqi, 28px);
     font-weight: 800;
     letter-spacing: -0.02em;
     line-height: 1.2;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+  /* unit-метка (если есть .u внутри числа — оставлено для будущего). */
   .m-stat-v .u {
-    font-family: var(--m);
-    font-size: var(--fs-meta);
-    font-weight: 500;
-    color: var(--g600);
-    margin-left: 4px;
-  }
-  .m-stat-d {
     font-family: var(--m);
     font-size: var(--fs-micro);
     font-weight: 500;
+    color: var(--g600);
+    margin-left: 4px;
+    font-variant-numeric: normal;
+  }
+  /* DS v2.1 §02 «Подзаголовок / мета»: 11px моно 400. */
+  .m-stat-d {
+    font-family: var(--m);
+    font-size: var(--fs-micro);
+    font-weight: 400;
     margin-top: 6px;
     color: var(--g600);
     line-height: 1.4;
+    letter-spacing: 0.01em;
+    /* description вторичный — разрешён wrap, но не extreme. */
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .m-stat-d.dn {
     color: var(--dn);
+    font-weight: 500;
   }
   .m-stat-d.up {
     color: var(--up);
+    font-weight: 500;
+  }
+  /* Container queries: апскейл hero на широких карточках (md/lg).
+     Идентично .vd-sm-v ступенчатой шкале. */
+  @container vd-modal (min-width: 480px) {
+    /* 2×2: ~220px ширина карточки */
+    .m-stat-v {
+      font-size: clamp(22px, 0.9rem + 1.2cqi, 28px);
+    }
+  }
+  @container vd-modal (min-width: 760px) {
+    /* 4×1: ~190px ширина карточки. Слегка повышаем floor. */
+    .m-stat-v {
+      font-size: clamp(22px, 0.7rem + 1.4cqi, 28px);
+    }
   }
   .m-trend-wrap {
     margin-bottom: 8px;
   }
-  /* DS v2.0 fluid: --fs-micro UPPER моно для section header */
+  /* DS v2.1 §02 «Заголовок секции»: 14px пропорциональный 700 0.05em UPPER.
+     ↑ Это — для page-level заголовков. Для inline-секций внутри карточки
+     остаёмся на --fs-micro (11-13) моно 600 0.06em UPPER — идентично
+     .vd-title в основной карточке (DS §02 «Заголовок столбца»).
+     На узких контейнерах flex-wrap разрешает перенос: section title
+     слева, trend note справа на новой строке. */
   .m-section-l {
     font-family: var(--m);
     font-size: var(--fs-micro);
@@ -1529,13 +2214,19 @@ exports.ModalOverlay = core_1.styled.div `
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
   }
+  /* right side: «в 2,5 раза · +154,5% ↑» — численная, tabular-nums,
+     никаких переносов внутри. */
   .m-section-l .right {
     color: var(--g700);
-    font-weight: 600;
+    font-weight: 500;
     text-transform: none;
     letter-spacing: 0;
     font-size: var(--fs-micro);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
   .m-trend-card {
     background: var(--g50);
@@ -1547,6 +2238,25 @@ exports.ModalOverlay = core_1.styled.div `
     display: block;
     width: 100%;
     height: auto;
+  }
+  /* m-trend-chart: ECharts canvas контейнер. xs base 130px, lg+ 180px. */
+  .m-trend-chart {
+    width: 100%;
+    height: 130px;
+    /* Анти-jitter: задаём min-height чтобы ECharts не рендерился в 0 */
+    min-height: 130px;
+  }
+  @media (min-width: 768px) {
+    .m-trend-chart {
+      height: 160px;
+      min-height: 160px;
+    }
+  }
+  @media (min-width: 1200px) {
+    .m-trend-chart {
+      height: 200px;
+      min-height: 200px;
+    }
   }
 
   @media (prefers-reduced-motion: never-match) {
@@ -1571,5 +2281,134 @@ exports.SkeletonBlock = core_1.styled.div `
 /* Bar cell — relative positioning anchor for the absolute fill bar. */
 exports.BarCell = core_1.styled.div `
   position: relative;
+`;
+/* ── Pagination (port из scorecard, см. DetailModal pagination block) ── */
+exports.PaginationWrap = core_1.styled.div `
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  /* xs base, расширение через min-width: ниже */
+  padding: 8px 14px;
+  border-top: 1px solid var(--g100);
+  font-family: var(--m);
+  font-size: var(--fs-interactive);
+  font-variant-numeric: tabular-nums;
+  flex-wrap: wrap;
+  /* Cascade: pagination follows footer (0.4s @ 0.5s). */
+  animation: vd-cascade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.5s both;
+
+  @media (min-width: 576px) {
+    padding: 8px 24px;
+  }
+`;
+exports.PageBtn = core_1.styled.button `
+  /* DS v2.0: touch target — на xs 44×44 (ADR-0001), на md+ 40×40. */
+  min-width: 44px;
+  height: 44px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--m);
+  font-size: var(--fs-interactive);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  background: ${({ isActive }) => (isActive ? 'var(--c-sky)' : 'transparent')};
+  color: ${({ isActive }) => (isActive ? 'var(--on-accent)' : 'var(--g600)')};
+
+  &:hover:not(:disabled) {
+    background: ${({ isActive }) => isActive ? 'var(--c-sky)' : 'var(--g100)'};
+  }
+  &:focus-visible {
+    outline: 2px solid var(--c-sky);
+    outline-offset: 2px;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  @media (min-width: 768px) {
+    min-width: 40px;
+    height: 40px;
+  }
+`;
+exports.PageEllipsis = core_1.styled.span `
+  width: 28px;
+  text-align: center;
+  color: var(--g500);
+  user-select: none;
+`;
+exports.PageInput = core_1.styled.input `
+  width: 50px;
+  height: 28px;
+  margin-left: 8px;
+  padding: 0 6px;
+  border: 1px solid var(--g200);
+  border-radius: 6px;
+  font-family: var(--m);
+  font-size: var(--fs-meta);
+  text-align: center;
+  color: var(--ink);
+  outline: none;
+  background: var(--s);
+
+  &::placeholder {
+    color: var(--g400);
+    font-size: var(--fs-interactive);
+    font-weight: 500;
+  }
+  &:focus {
+    border-color: var(--c-sky);
+  }
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  -moz-appearance: textfield;
+`;
+/* RefreshBar — тонкая sky-полоска вверху таблицы при stale-while-revalidate. */
+exports.RefreshBar = core_1.styled.div `
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  overflow: hidden;
+  z-index: 4;
+  pointer-events: none;
+
+  &::after {
+    content: '';
+    display: block;
+    width: 40%;
+    height: 100%;
+    background: var(--c-sky);
+    animation: ${refreshSlideKf} 1.2s ease-in-out infinite;
+  }
+`;
+/* Inline spinner (small) для in-row indicators. */
+exports.InlineSpinnerSmall = core_1.styled.span `
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--g200);
+  border-top-color: var(--c-sky);
+  border-radius: 50%;
+  animation: ${spinKf} 0.7s linear infinite;
+  flex-shrink: 0;
+`;
+/* Inline spinner (large) для initial loader в state-row. */
+exports.InlineSpinnerLarge = core_1.styled.span `
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--g200);
+  border-top-color: var(--c-sky);
+  border-radius: 50%;
+  animation: ${spinKf} 0.7s linear infinite;
+  flex-shrink: 0;
 `;
 //# sourceMappingURL=styles.js.map

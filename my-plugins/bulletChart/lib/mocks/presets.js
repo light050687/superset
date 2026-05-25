@@ -99,11 +99,50 @@ const CATEGORIES_PRESET = [
     { id: 'snacks', name: 'Снэки', stores: 388, rate: 0.9, plan: 0.95, py: 1.0, spark: [0.98, 0.95, 0.94, 0.93, 0.92, 0.91, 0.9, 0.9] },
     { id: 'household', name: 'Бытовая химия', stores: 388, rate: 1.1, plan: 1.2, py: 1.3, spark: [1.25, 1.2, 1.18, 1.15, 1.13, 1.12, 1.11, 1.1] },
 ];
+/**
+ * Расширяет storesList до фактического количества магазинов категории.
+ * Берёт первые N seed-entries (если есть), затем генерирует остальные
+ * псевдослучайно вокруг seed-rate с вариацией ±25%. Стабильно: seeded
+ * через index, без Math.random — пресет детерминирован.
+ */
+function expandStoresList(row) {
+    const seeds = row.storesList ?? [];
+    const target = row.stores ?? seeds.length;
+    if (target <= seeds.length)
+        return seeds;
+    const baseName = seeds[0]?.name?.replace(/[«"][^»"]*[»"]/, '') || `${row.name} `;
+    const plan = row.plan ?? row.rate;
+    const py = row.py ?? row.rate;
+    // Seeded "random" — стабильно через index + категория hash.
+    const hash = row.id
+        .split('')
+        .reduce((s, c) => s + c.charCodeAt(0), 0);
+    const pseudo = (i) => {
+        const x = Math.sin(hash * 9999 + i * 17.31) * 10000;
+        return x - Math.floor(x); // 0..1
+    };
+    const out = [...seeds];
+    for (let i = seeds.length; i < target; i++) {
+        // Вариация rate ±25% от row.rate — кто-то лучше, кто-то хуже.
+        const variance = (pseudo(i) - 0.5) * 0.5; // -0.25..+0.25
+        const rate = +(row.rate * (1 + variance)).toFixed(2);
+        const pyVar = (pseudo(i + 1) - 0.5) * 0.3;
+        const pyVal = +(py * (1 + pyVar)).toFixed(2);
+        out.push({
+            name: `${baseName.trim()} №${String(i + 1).padStart(2, '0')}`,
+            rate,
+            plan,
+            py: pyVal,
+        });
+    }
+    return out;
+}
 function enrichRow(row, direction, tolerancePct = 5) {
+    const expandedStores = expandStoresList(row);
     const deltaPlan = row.plan != null ? row.rate - row.plan : null;
     const deltaPy = row.py != null ? row.rate - row.py : null;
     const status = (0, aggregation_1.computeStatus)(row.rate, row.plan, direction, tolerancePct);
-    return { ...row, deltaPlan, deltaPy, status };
+    return { ...row, storesList: expandedStores, deltaPlan, deltaPy, status };
 }
 /** Получить пресет по имени. direction нужен для расчёта статусов. */
 function getPreset(presetName, customJson, direction = 'less_is_better', tolerancePct = 5) {

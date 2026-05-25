@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const jsx_runtime_1 = require("react/jsx-runtime");
 const React = __importStar(require("react"));
+const react_dom_1 = require("react-dom");
 const styles_1 = require("../styles");
 const SORT_ICONS = {
     factDesc: ((0, jsx_runtime_1.jsxs)("svg", { viewBox: "0 0 16 14", width: "16", height: "14", fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", children: [(0, jsx_runtime_1.jsx)("line", { x1: "2", y1: "3", x2: "14", y2: "3" }), (0, jsx_runtime_1.jsx)("line", { x1: "2", y1: "7", x2: "11", y2: "7" }), (0, jsx_runtime_1.jsx)("line", { x1: "2", y1: "11", x2: "7", y2: "11" })] })),
@@ -62,36 +63,76 @@ const SORT_ORDER = [
 ];
 const SortMenu = ({ value, onChange }) => {
     const [open, setOpen] = React.useState(false);
-    const ref = React.useRef(null);
-    // Закрытие по клику вне
+    const triggerRef = React.useRef(null);
+    const [pos, setPos] = React.useState({ top: 0, left: 0 });
+    /* Portal в body — обходит overflow:hidden и stacking-контексты от hero-чисел.
+       Position computed от trigger. Closes: outside-click + Escape + scroll. */
     React.useEffect(() => {
         if (!open)
-            return;
-        const handler = (e) => {
-            if (ref.current && !ref.current.contains(e.target)) {
-                setOpen(false);
-            }
+            return undefined;
+        const update = () => {
+            const r = triggerRef.current?.getBoundingClientRect();
+            if (!r)
+                return;
+            setPos({ top: r.bottom + 4, left: r.left });
         };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [open]);
-    // Закрытие по Escape
-    React.useEffect(() => {
-        if (!open)
-            return;
-        const handler = (e) => {
+        update();
+        const outside = (e) => {
+            const t = e.target;
+            if (!t)
+                return;
+            if (t.closest('.bc-sort-portal') || t === triggerRef.current || triggerRef.current?.contains(t))
+                return;
+            setOpen(false);
+        };
+        const esc = (e) => {
             if (e.key === 'Escape')
                 setOpen(false);
         };
-        document.addEventListener('keydown', handler);
-        return () => document.removeEventListener('keydown', handler);
+        window.addEventListener('scroll', update, true);
+        window.addEventListener('resize', update);
+        document.addEventListener('mousedown', outside);
+        document.addEventListener('keydown', esc);
+        return () => {
+            window.removeEventListener('scroll', update, true);
+            window.removeEventListener('resize', update);
+            document.removeEventListener('mousedown', outside);
+            document.removeEventListener('keydown', esc);
+        };
     }, [open]);
-    return ((0, jsx_runtime_1.jsx)(styles_1.IconDdWrap, { ref: ref, children: (0, jsx_runtime_1.jsxs)(styles_1.IconDd, { open: open, children: [(0, jsx_runtime_1.jsx)(styles_1.IconDdBtn, { type: "button", onClick: () => setOpen(o => !o), "aria-haspopup": "listbox", "aria-expanded": open, "aria-label": `Сортировка: ${SORT_TITLES[value]}`, title: `Сортировка: ${SORT_TITLES[value]}`, children: SORT_ICONS[value] }), open
-                    ? SORT_ORDER.filter(s => s !== value).map(s => ((0, jsx_runtime_1.jsx)(styles_1.IconDdBtn, { type: "button", role: "option", "aria-selected": false, title: SORT_TITLES[s], onClick: () => {
-                            onChange(s);
-                            setOpen(false);
-                        }, children: SORT_ICONS[s] }, s)))
-                    : null] }) }));
+    return ((0, jsx_runtime_1.jsxs)(styles_1.IconDdWrap, { children: [(0, jsx_runtime_1.jsx)(styles_1.IconDdBtn, { ref: triggerRef, type: "button", onClick: () => setOpen(o => !o), "aria-haspopup": "listbox", "aria-expanded": open, "aria-label": `Сортировка: ${SORT_TITLES[value]}`, title: `Сортировка: ${SORT_TITLES[value]}`, style: {
+                    width: 32,
+                    height: 30,
+                    background: 'var(--g100)',
+                    border: `1px solid ${open ? 'var(--g300)' : 'var(--g200)'}`,
+                    borderRadius: 6,
+                }, children: SORT_ICONS[value] }), open && (0, react_dom_1.createPortal)((0, jsx_runtime_1.jsx)("div", { className: "bc-sort-portal", role: "listbox", "aria-label": "\u0421\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u043A\u0430", style: {
+                    position: 'fixed',
+                    top: pos.top,
+                    left: pos.left,
+                    zIndex: 10000,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    width: 32,
+                    background: '#F3F4F6',
+                    border: '1px solid #D1D5DB',
+                    borderRadius: 6,
+                    overflow: 'hidden',
+                    boxShadow: '0 10px 28px rgba(15,17,20,.15)',
+                }, children: SORT_ORDER.filter(s => s !== value).map(s => ((0, jsx_runtime_1.jsx)("button", { type: "button", role: "option", "aria-selected": false, title: SORT_TITLES[s], onClick: () => {
+                        onChange(s);
+                        setOpen(false);
+                    }, style: {
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 32,
+                        height: 30,
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#0F1114',
+                        cursor: 'pointer',
+                    }, onMouseEnter: e => { e.currentTarget.style.background = '#E5E7EB'; }, onMouseLeave: e => { e.currentTarget.style.background = 'transparent'; }, children: SORT_ICONS[s] }, s))) }), document.body)] }));
 };
 exports.default = SortMenu;
 //# sourceMappingURL=SortMenu.js.map

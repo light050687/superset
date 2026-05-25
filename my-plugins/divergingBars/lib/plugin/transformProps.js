@@ -4,6 +4,7 @@ exports.default = transformProps;
 const core_1 = require("@superset-ui/core");
 const presets_1 = require("../mocks/presets");
 const mockGenerator_1 = require("../utils/mockGenerator");
+const rowsToStores_1 = require("../utils/rowsToStores");
 /**
  * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
  */
@@ -63,61 +64,36 @@ function firstString(v) {
         return v[0];
     return undefined;
 }
-/** Группирует плоские строки запроса в Store[] с 12 неделями. */
-function rowsToStores(rows, columns, formatsMap) {
-    const { codeCol, nameCol, cityCol, formatCol, weekCol, lossLabel, turnoverLabel } = columns;
-    // Собираем уникальные недели и сортируем по возрастанию (12 последних берём в конце).
-    const weekSet = new Set();
-    rows.forEach(r => {
-        if (weekCol) {
-            const w = r[weekCol];
-            if (w != null)
-                weekSet.add(String(w));
-        }
-    });
-    const weeksSorted = Array.from(weekSet).sort();
-    const weeksToUse = weeksSorted.slice(-12);
-    const weekIndex = new Map();
-    weeksToUse.forEach((w, i) => weekIndex.set(w, i));
-    // Ключ магазина — code, если есть, иначе name+city.
-    const storeMap = new Map();
-    rows.forEach(r => {
-        const code = codeCol ? String(r[codeCol] ?? '') : '';
-        const name = nameCol ? String(r[nameCol] ?? '') : code || '—';
-        const city = cityCol ? String(r[cityCol] ?? '') : '';
-        const formatId = formatCol ? String(r[formatCol] ?? '') : '';
-        const weekVal = weekCol ? String(r[weekCol] ?? '') : '';
-        const idx = weekIndex.get(weekVal);
-        if (idx === undefined)
-            return;
-        const key = code || `${name}|${city}`;
-        let store = storeMap.get(key);
-        if (!store) {
-            const fmtDef = formatsMap.get(formatId);
-            store = {
-                id: key,
-                code: code || name,
-                name,
-                shortLabel: name,
-                city,
-                format: formatId,
-                formatName: fmtDef?.name ?? formatId ?? '—',
-                plan: fmtDef?.plan ?? 0,
-                to: 0,
-                weeksRub: new Array(12).fill(0),
-                weeksPct: new Array(12).fill(0),
-            };
-            storeMap.set(key, store);
-        }
-        const loss = lossLabel ? Number(r[lossLabel] ?? 0) : 0;
-        const to = turnoverLabel ? Number(r[turnoverLabel] ?? 0) : 0;
-        store.weeksRub[idx] = Number.isFinite(loss) ? loss : 0;
-        // % к ТО для этой недели; если ТО = 0, то 0
-        const pct = to > 0 ? (loss / to) * 100 : 0;
-        store.weeksPct[idx] = +pct.toFixed(2);
-        store.to = Math.max(store.to, Number.isFinite(to) ? to : 0);
-    });
-    return Array.from(storeMap.values());
+/**
+ * Back-compat: legacy `default_horizon` → ComparisonMode.
+ *   'wow' → 'prev_week'
+ *   '4w'  → 'prev_period' (4 weeks back = inherit для main = 4 weeks)
+ *   'mom' → 'prev_month'
+ *   'cum' → 'prev_period'
+ */
+function migrateHorizonToMode(horizon) {
+    switch (horizon) {
+        case 'wow':
+            return 'prev_week';
+        case 'mom':
+            return 'prev_month';
+        case 'cum':
+        case '4w':
+        default:
+            return 'prev_period';
+    }
+}
+function parseRange(raw) {
+    if (!raw)
+        return undefined;
+    const s = String(raw);
+    const sep = s.includes(' : ') ? ' : ' : s.includes(',') ? ',' : null;
+    if (!sep)
+        return undefined;
+    const [start, end] = s.split(sep).map(p => p.trim());
+    if (!start || !end)
+        return undefined;
+    return [start, end];
 }
 function transformProps(chartProps) {
     const { formData, queriesData, width, height, theme } = chartProps;
@@ -130,14 +106,34 @@ function transformProps(chartProps) {
     const timeRange = formData.time_range ??
         formData.timeRange;
     const subtitleText = (userSubtitle?.trim() || formatTimeRangeRu(timeRange));
-    const defaultHorizon = (formData.default_horizon ??
-        formData.defaultHorizon) ?? '4w';
+    // ── Comparison mode resolution ───────────────────────────
+    // 1) Явный new key: default_comparison_mode.
+    // 2) Legacy: default_horizon → migrate.
+    // 3) Default fallback: 'prev_period'.
+    const explicitMode = formData.default_comparison_mode ??
+        formData
+            .defaultComparisonMode;
+    const legacyHorizon = formData.default_horizon ??
+        formData.defaultHorizon;
+    let defaultComparisonMode = 'prev_period';
+    if (explicitMode) {
+        defaultComparisonMode = explicitMode;
+    }
+    else if (legacyHorizon) {
+        defaultComparisonMode = migrateHorizonToMode(legacyHorizon);
+        // eslint-disable-next-line no-console
+        console.warn(`[velocity-diverging] legacy formData.default_horizon='${legacyHorizon}' ` +
+            `migrated to default_comparison_mode='${defaultComparisonMode}'. ` +
+            `Re-save the chart to use the new control.`);
+    }
+    const customCurrentRange = parseRange(formData.custom_current_range ??
+        formData.customCurrentRange);
+    const customPreviousRange = parseRange(formData.custom_previous_range ??
+        formData.customPreviousRange);
     const defaultMetric = (formData.default_metric ??
         formData.defaultMetric) ?? 'rub';
-    const showCumulativeView = formData
-        .show_cumulative_view ??
-        formData.showCumulativeView ??
-        true;
+    // Кумулятивный блок отключён по запросу — кнопка и view скрыты в UI.
+    const showCumulativeView = false;
     const showDetailModal = formData
         .show_detail_modal ??
         formData.showDetailModal ??
@@ -157,12 +153,22 @@ function transformProps(chartProps) {
         .mock_mode_enabled ??
         formData.mockModeEnabled ??
         false;
+    const pageSizeRaw = formData
+        .page_size ??
+        formData.pageSize ??
+        20;
+    const pageSizeParsed = Number(pageSizeRaw);
+    const pageSize = Number.isFinite(pageSizeParsed) && pageSizeParsed > 0
+        ? Math.min(Math.floor(pageSizeParsed), 500)
+        : 20;
     const baseProps = {
         width,
         height,
         headerText,
         subtitleText,
-        defaultHorizon,
+        defaultComparisonMode,
+        customCurrentRange,
+        customPreviousRange,
         defaultMetric,
         showCumulativeView,
         showDetailModal,
@@ -172,11 +178,12 @@ function transformProps(chartProps) {
         formats,
         theme,
         mockModeEnabled,
+        pageSize,
     };
     // ── Mock mode: возвращаем сгенерированные данные, игнорируя queriesData ──
     if (mockModeEnabled) {
         const preset = (0, presets_1.getPreset)(formData.mock_preset ??
-            'losses_velocity');
+            'losses_velocity', defaultComparisonMode);
         return {
             ...baseProps,
             dataState: 'populated',
@@ -184,6 +191,41 @@ function transformProps(chartProps) {
             formats: preset.formats,
         };
     }
+    // ── Convert adhoc_filters → simple {col, op, val} + freeform SQL для
+    //    серверной пагинации внутри карточки. То же что scorecard. ──
+    const fdExt = formData;
+    const adhocFilters = (fdExt.adhocFilters ?? fdExt.adhoc_filters ?? []);
+    const simpleFilters = [];
+    const freeformWhere = [];
+    const freeformHaving = [];
+    for (const f of adhocFilters) {
+        if (f.expressionType === 'SIMPLE') {
+            simpleFilters.push({
+                col: f.subject,
+                op: f.operator,
+                val: f.comparator,
+            });
+        }
+        else if (f.expressionType === 'SQL') {
+            const sql = `(${f.sqlExpression})`;
+            if (f.clause === 'HAVING')
+                freeformHaving.push(sql);
+            else
+                freeformWhere.push(sql);
+        }
+    }
+    const baseExtras = {
+        ...(formData.extras ?? {}),
+    };
+    if (freeformWhere.length > 0)
+        baseExtras.where = freeformWhere.join(' AND ');
+    if (freeformHaving.length > 0)
+        baseExtras.having = freeformHaving.join(' AND ');
+    const ds = chartProps.datasource;
+    const dsId = ds?.id ??
+        chartProps.datasourceId ??
+        0;
+    const dsType = ds?.type ?? 'table';
     // ── Real data mode ──
     const firstQuery = queriesData?.[0];
     const errMsg = firstQuery?.error || firstQuery?.errorMessage;
@@ -195,8 +237,12 @@ function transformProps(chartProps) {
             errorMessage: errMsg,
         };
     }
-    const rows = firstQuery?.data ?? [];
-    if (rows.length === 0) {
+    const mainRows = firstQuery?.data ?? [];
+    // queriesData[1] есть только в custom-режиме (см. buildQuery).
+    const compRows = defaultComparisonMode === 'custom'
+        ? queriesData?.[1]?.data ?? []
+        : undefined;
+    if (mainRows.length === 0) {
         return {
             ...baseProps,
             dataState: 'empty',
@@ -228,15 +274,13 @@ function transformProps(chartProps) {
         : undefined;
     // Partial — если не хватает ключевых колонок, предупреждаем.
     const missing = [];
-    if (!weekCol)
-        missing.push('неделя');
     if (!lossLabel)
         missing.push('метрика потерь');
     if (!codeCol && !nameCol)
         missing.push('код или название магазина');
     const formatsMap = new Map();
     formats.forEach(f => formatsMap.set(f.id, f));
-    const stores = rowsToStores(rows, {
+    const stores = (0, rowsToStores_1.rowsToStores)(mainRows, {
         codeCol,
         nameCol,
         cityCol,
@@ -244,7 +288,8 @@ function transformProps(chartProps) {
         weekCol,
         lossLabel,
         turnoverLabel,
-    }, formatsMap);
+        comparisonMode: defaultComparisonMode,
+    }, formatsMap, compRows);
     if (stores.length === 0) {
         return {
             ...baseProps,
@@ -257,11 +302,36 @@ function transformProps(chartProps) {
             message: `Не хватает колонок: ${missing.join(', ')}. Отображаются частичные данные.`,
         }
         : undefined;
+    const queryMetrics = [];
+    if (metricLoss)
+        queryMetrics.push(metricLoss);
+    if (metricTurnover)
+        queryMetrics.push(metricTurnover);
+    const queryParams = {
+        datasourceId: dsId,
+        datasourceType: dsType,
+        codeCol,
+        nameCol,
+        cityCol,
+        formatCol,
+        weekCol,
+        lossLabel,
+        turnoverLabel,
+        metrics: queryMetrics,
+        timeRange: fdExt.timeRange ?? fdExt.time_range,
+        granularity: fdExt.granularitySqla ?? fdExt.granularity_sqla,
+        filters: simpleFilters,
+        extras: baseExtras,
+        comparisonMode: defaultComparisonMode,
+        customCurrentRange,
+        customPreviousRange,
+    };
     return {
         ...baseProps,
         dataState: partialWarning ? 'partial' : 'populated',
         stores,
         partialWarning,
+        queryParams,
     };
 }
 //# sourceMappingURL=transformProps.js.map

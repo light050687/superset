@@ -1,16 +1,20 @@
 import { ChartProps, getMetricLabel } from '@superset-ui/core';
+import type { QueryFormMetric } from '@superset-ui/core';
 import type {
+  ComparisonMode,
   DataState,
   FormatDef,
   Horizon,
   MetricMode,
   PartialWarning,
   Store,
+  StoresQueryParams,
   VelocityDivergingFormData,
   VelocityDivergingProps,
 } from '../types';
 import { getPreset } from '../mocks/presets';
 import { DEFAULT_FORMATS } from '../utils/mockGenerator';
+import { rowsToStores } from '../utils/rowsToStores';
 
 /**
  * Расширенная форма ChartProps — queriesData типизируется на уровне плагина,
@@ -84,77 +88,34 @@ function firstString(v: unknown): string | undefined {
   return undefined;
 }
 
-/** Группирует плоские строки запроса в Store[] с 12 неделями. */
-function rowsToStores(
-  rows: Record<string, unknown>[],
-  columns: {
-    codeCol?: string;
-    nameCol?: string;
-    cityCol?: string;
-    formatCol?: string;
-    weekCol?: string;
-    lossLabel?: string;
-    turnoverLabel?: string;
-  },
-  formatsMap: Map<string, FormatDef>,
-): Store[] {
-  const { codeCol, nameCol, cityCol, formatCol, weekCol, lossLabel, turnoverLabel } =
-    columns;
+/**
+ * Back-compat: legacy `default_horizon` → ComparisonMode.
+ *   'wow' → 'prev_week'
+ *   '4w'  → 'prev_period' (4 weeks back = inherit для main = 4 weeks)
+ *   'mom' → 'prev_month'
+ *   'cum' → 'prev_period'
+ */
+function migrateHorizonToMode(horizon: Horizon | undefined): ComparisonMode {
+  switch (horizon) {
+    case 'wow':
+      return 'prev_week';
+    case 'mom':
+      return 'prev_month';
+    case 'cum':
+    case '4w':
+    default:
+      return 'prev_period';
+  }
+}
 
-  // Собираем уникальные недели и сортируем по возрастанию (12 последних берём в конце).
-  const weekSet = new Set<string>();
-  rows.forEach(r => {
-    if (weekCol) {
-      const w = r[weekCol];
-      if (w != null) weekSet.add(String(w));
-    }
-  });
-  const weeksSorted = Array.from(weekSet).sort();
-  const weeksToUse = weeksSorted.slice(-12);
-  const weekIndex = new Map<string, number>();
-  weeksToUse.forEach((w, i) => weekIndex.set(w, i));
-
-  // Ключ магазина — code, если есть, иначе name+city.
-  const storeMap = new Map<string, Store>();
-  rows.forEach(r => {
-    const code = codeCol ? String(r[codeCol] ?? '') : '';
-    const name = nameCol ? String(r[nameCol] ?? '') : code || '—';
-    const city = cityCol ? String(r[cityCol] ?? '') : '';
-    const formatId = formatCol ? String(r[formatCol] ?? '') : '';
-    const weekVal = weekCol ? String(r[weekCol] ?? '') : '';
-    const idx = weekIndex.get(weekVal);
-    if (idx === undefined) return;
-
-    const key = code || `${name}|${city}`;
-    let store = storeMap.get(key);
-    if (!store) {
-      const fmtDef = formatsMap.get(formatId);
-      store = {
-        id: key,
-        code: code || name,
-        name,
-        shortLabel: name,
-        city,
-        format: formatId,
-        formatName: fmtDef?.name ?? formatId ?? '—',
-        plan: fmtDef?.plan ?? 0,
-        to: 0,
-        weeksRub: new Array(12).fill(0),
-        weeksPct: new Array(12).fill(0),
-      };
-      storeMap.set(key, store);
-    }
-
-    const loss = lossLabel ? Number(r[lossLabel] ?? 0) : 0;
-    const to = turnoverLabel ? Number(r[turnoverLabel] ?? 0) : 0;
-    store.weeksRub[idx] = Number.isFinite(loss) ? loss : 0;
-    // % к ТО для этой недели; если ТО = 0, то 0
-    const pct = to > 0 ? (loss / to) * 100 : 0;
-    store.weeksPct[idx] = +pct.toFixed(2);
-    store.to = Math.max(store.to, Number.isFinite(to) ? to : 0);
-  });
-
-  return Array.from(storeMap.values());
+function parseRange(raw: unknown): [string, string] | undefined {
+  if (!raw) return undefined;
+  const s = String(raw);
+  const sep = s.includes(' : ') ? ' : ' : s.includes(',') ? ',' : null;
+  if (!sep) return undefined;
+  const [start, end] = s.split(sep).map(p => p.trim());
+  if (!start || !end) return undefined;
+  return [start, end];
 }
 
 export default function transformProps(
@@ -176,18 +137,45 @@ export default function transformProps(
     (formData as unknown as { timeRange?: string }).timeRange;
   const subtitleText = (userSubtitle?.trim() || formatTimeRangeRu(timeRange));
 
-  const defaultHorizon: Horizon =
-    ((formData.default_horizon ??
-      (formData as unknown as { defaultHorizon?: Horizon }).defaultHorizon) as Horizon) ?? '4w';
+  // ── Comparison mode resolution ───────────────────────────
+  // 1) Явный new key: default_comparison_mode.
+  // 2) Legacy: default_horizon → migrate.
+  // 3) Default fallback: 'prev_period'.
+  const explicitMode =
+    (formData.default_comparison_mode as ComparisonMode | undefined) ??
+    (formData as unknown as { defaultComparisonMode?: ComparisonMode })
+      .defaultComparisonMode;
+  const legacyHorizon =
+    (formData.default_horizon as Horizon | undefined) ??
+    (formData as unknown as { defaultHorizon?: Horizon }).defaultHorizon;
+  let defaultComparisonMode: ComparisonMode = 'prev_period';
+  if (explicitMode) {
+    defaultComparisonMode = explicitMode;
+  } else if (legacyHorizon) {
+    defaultComparisonMode = migrateHorizonToMode(legacyHorizon);
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[velocity-diverging] legacy formData.default_horizon='${legacyHorizon}' ` +
+        `migrated to default_comparison_mode='${defaultComparisonMode}'. ` +
+        `Re-save the chart to use the new control.`,
+    );
+  }
+
+  const customCurrentRange = parseRange(
+    (formData as unknown as { custom_current_range?: unknown }).custom_current_range ??
+      (formData as unknown as { customCurrentRange?: unknown }).customCurrentRange,
+  );
+  const customPreviousRange = parseRange(
+    (formData as unknown as { custom_previous_range?: unknown }).custom_previous_range ??
+      (formData as unknown as { customPreviousRange?: unknown }).customPreviousRange,
+  );
+
   const defaultMetric: MetricMode =
     ((formData.default_metric ??
       (formData as unknown as { defaultMetric?: MetricMode }).defaultMetric) as MetricMode) ?? 'rub';
 
-  const showCumulativeView =
-    (formData as unknown as { show_cumulative_view?: boolean; showCumulativeView?: boolean })
-      .show_cumulative_view ??
-    (formData as unknown as { showCumulativeView?: boolean }).showCumulativeView ??
-    true;
+  // Кумулятивный блок отключён по запросу — кнопка и view скрыты в UI.
+  const showCumulativeView = false;
   const showDetailModal =
     (formData as unknown as { show_detail_modal?: boolean; showDetailModal?: boolean })
       .show_detail_modal ??
@@ -216,12 +204,25 @@ export default function transformProps(
     (formData as unknown as { mockModeEnabled?: boolean }).mockModeEnabled ??
     false;
 
+  const pageSizeRaw =
+    (formData as unknown as { page_size?: number | string; pageSize?: number | string })
+      .page_size ??
+    (formData as unknown as { pageSize?: number | string }).pageSize ??
+    20;
+  const pageSizeParsed = Number(pageSizeRaw);
+  const pageSize =
+    Number.isFinite(pageSizeParsed) && pageSizeParsed > 0
+      ? Math.min(Math.floor(pageSizeParsed), 500)
+      : 20;
+
   const baseProps = {
     width,
     height,
     headerText,
     subtitleText,
-    defaultHorizon,
+    defaultComparisonMode,
+    customCurrentRange,
+    customPreviousRange,
     defaultMetric,
     showCumulativeView,
     showDetailModal,
@@ -231,6 +232,7 @@ export default function transformProps(
     formats,
     theme,
     mockModeEnabled,
+    pageSize,
   };
 
   // ── Mock mode: возвращаем сгенерированные данные, игнорируя queriesData ──
@@ -238,6 +240,7 @@ export default function transformProps(
     const preset = getPreset(
       (formData as unknown as { mock_preset?: string }).mock_preset ??
         'losses_velocity',
+      defaultComparisonMode,
     );
     return {
       ...baseProps,
@@ -246,6 +249,51 @@ export default function transformProps(
       formats: preset.formats,
     };
   }
+
+  // ── Convert adhoc_filters → simple {col, op, val} + freeform SQL для
+  //    серверной пагинации внутри карточки. То же что scorecard. ──
+  const fdExt = formData as unknown as {
+    adhocFilters?: Array<Record<string, unknown>>;
+    adhoc_filters?: Array<Record<string, unknown>>;
+    timeRange?: string;
+    time_range?: string;
+    granularitySqla?: string;
+    granularity_sqla?: string;
+  };
+  const adhocFilters = (fdExt.adhocFilters ?? fdExt.adhoc_filters ?? []) as Array<
+    Record<string, unknown>
+  >;
+  const simpleFilters: Array<{ col: string; op: string; val?: unknown }> = [];
+  const freeformWhere: string[] = [];
+  const freeformHaving: string[] = [];
+  for (const f of adhocFilters) {
+    if (f.expressionType === 'SIMPLE') {
+      simpleFilters.push({
+        col: f.subject as string,
+        op: f.operator as string,
+        val: f.comparator,
+      });
+    } else if (f.expressionType === 'SQL') {
+      const sql = `(${f.sqlExpression as string})`;
+      if (f.clause === 'HAVING') freeformHaving.push(sql);
+      else freeformWhere.push(sql);
+    }
+  }
+  const baseExtras: Record<string, unknown> = {
+    ...((formData.extras as Record<string, unknown>) ?? {}),
+  };
+  if (freeformWhere.length > 0) baseExtras.where = freeformWhere.join(' AND ');
+  if (freeformHaving.length > 0) baseExtras.having = freeformHaving.join(' AND ');
+
+  const ds = (chartProps as unknown as {
+    datasource?: { id?: number; type?: string };
+    datasourceId?: number;
+  }).datasource;
+  const dsId =
+    ds?.id ??
+    (chartProps as unknown as { datasourceId?: number }).datasourceId ??
+    0;
+  const dsType = ds?.type ?? 'table';
 
   // ── Real data mode ──
   const firstQuery = queriesData?.[0];
@@ -259,8 +307,14 @@ export default function transformProps(
     };
   }
 
-  const rows = (firstQuery?.data as Record<string, unknown>[] | undefined) ?? [];
-  if (rows.length === 0) {
+  const mainRows = (firstQuery?.data as Record<string, unknown>[] | undefined) ?? [];
+  // queriesData[1] есть только в custom-режиме (см. buildQuery).
+  const compRows =
+    defaultComparisonMode === 'custom'
+      ? (queriesData?.[1]?.data as Record<string, unknown>[] | undefined) ?? []
+      : undefined;
+
+  if (mainRows.length === 0) {
     return {
       ...baseProps,
       dataState: 'empty' as DataState,
@@ -307,7 +361,6 @@ export default function transformProps(
 
   // Partial — если не хватает ключевых колонок, предупреждаем.
   const missing: string[] = [];
-  if (!weekCol) missing.push('неделя');
   if (!lossLabel) missing.push('метрика потерь');
   if (!codeCol && !nameCol) missing.push('код или название магазина');
 
@@ -315,7 +368,7 @@ export default function transformProps(
   formats.forEach(f => formatsMap.set(f.id, f));
 
   const stores = rowsToStores(
-    rows,
+    mainRows,
     {
       codeCol,
       nameCol,
@@ -324,8 +377,10 @@ export default function transformProps(
       weekCol,
       lossLabel,
       turnoverLabel,
+      comparisonMode: defaultComparisonMode,
     },
     formatsMap,
+    compRows,
   );
 
   if (stores.length === 0) {
@@ -342,10 +397,35 @@ export default function transformProps(
       }
     : undefined;
 
+  const queryMetrics: QueryFormMetric[] = [];
+  if (metricLoss) queryMetrics.push(metricLoss as QueryFormMetric);
+  if (metricTurnover) queryMetrics.push(metricTurnover as QueryFormMetric);
+
+  const queryParams: StoresQueryParams = {
+    datasourceId: dsId,
+    datasourceType: dsType,
+    codeCol,
+    nameCol,
+    cityCol,
+    formatCol,
+    weekCol,
+    lossLabel,
+    turnoverLabel,
+    metrics: queryMetrics,
+    timeRange: fdExt.timeRange ?? fdExt.time_range,
+    granularity: fdExt.granularitySqla ?? fdExt.granularity_sqla,
+    filters: simpleFilters,
+    extras: baseExtras,
+    comparisonMode: defaultComparisonMode,
+    customCurrentRange,
+    customPreviousRange,
+  };
+
   return {
     ...baseProps,
     dataState: partialWarning ? ('partial' as DataState) : ('populated' as DataState),
     stores,
     partialWarning,
+    queryParams,
   };
 }

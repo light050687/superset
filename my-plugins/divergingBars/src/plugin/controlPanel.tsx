@@ -167,10 +167,12 @@ const config: ControlPanelConfig = {
             name: 'groupby_week',
             config: {
               ...sharedControls.groupby,
-              label: t('Неделя'),
+              label: t('Неделя (опционально)'),
               description: t(
-                'Колонка с датой понедельника недели (обычно DATE_TRUNC(\'week\', <date>)). ' +
-                  'Ожидается 12 последних недель.',
+                'Колонка временного измерения для тренда (обычно ' +
+                  "DATE_TRUNC('week', <date>)). Не используется для основной агрегации — " +
+                  'агрегация period-over-period выполняется через time_compare. ' +
+                  'Если не задана — модалка покажет только Было/Стало без графика.',
               ),
               multi: false,
               validators: [],
@@ -199,16 +201,23 @@ const config: ControlPanelConfig = {
         ],
         [
           {
-            name: 'default_horizon',
+            name: 'default_comparison_mode',
             config: {
               type: 'SelectControl',
-              label: t('Горизонт по умолчанию'),
-              default: '4w',
+              label: t('Сравнение по умолчанию'),
+              description: t(
+                'Период, с которым сравнивается текущий time_range. ' +
+                  'Пользователь сможет переключить режим прямо в карточке. ' +
+                  '«Выбрать вручную» — два независимых RangePicker\'а.',
+              ),
+              default: 'prev_period',
               choices: [
-                ['wow', t('WoW (неделя к неделе)')],
-                ['4w', t('4W vs 4W')],
-                ['mom', t('MoM (месяц к месяцу)')],
-                ['cum', t('Кумулятивно')],
+                ['prev_period', t('Предыдущий период')],
+                ['prev_week', t('Прошлая неделя')],
+                ['prev_month', t('Прошлый месяц')],
+                ['prev_quarter', t('Прошлый квартал')],
+                ['prev_year', t('Прошлый год')],
+                ['custom', t('Выбрать вручную')],
               ],
               renderTrigger: true,
             },
@@ -245,9 +254,11 @@ const config: ControlPanelConfig = {
             name: 'show_cumulative_view',
             config: {
               type: 'CheckboxControl',
-              label: t('Разрешить кумулятивный вид'),
+              label: t('Кнопка кумулятивного вида'),
               description: t(
-                'Если выключено — кнопка «Кумулят.» будет скрыта из переключателя горизонтов.',
+                'Показать переключатель «Кумулят.» рядом с дропдауном сравнения. ' +
+                  'Отдельный вид — топ-10 магазинов с накопленными потерями ' +
+                  'по доступным datapoints тренда (требуется trendRub).',
               ),
               default: true,
               renderTrigger: true,
@@ -260,7 +271,10 @@ const config: ControlPanelConfig = {
             config: {
               type: 'CheckboxControl',
               label: t('Разрешить модалку детализации'),
-              description: t('Двойной клик / Ctrl+клик открывает 12-недельный тренд магазина.'),
+              description: t(
+                'Двойной клик / Ctrl+клик открывает карточку с тем же самым ' +
+                  'было/стало + тренд по main-периоду (если backend отдал).',
+              ),
               default: true,
               renderTrigger: true,
             },
@@ -273,6 +287,29 @@ const config: ControlPanelConfig = {
               type: 'CheckboxControl',
               label: t('Показывать кнопку CSV'),
               default: true,
+              renderTrigger: true,
+            },
+          },
+        ],
+        [
+          {
+            name: 'page_size',
+            config: {
+              type: 'SelectControl',
+              freeForm: true,
+              clearable: false,
+              label: t('Магазинов на странице'),
+              description: t(
+                'Серверная пагинация: на каждую страницу делается отдельный запрос. ' +
+                  'Меньше — быстрее, больше — реже клики.',
+              ),
+              default: 20,
+              choices: [
+                [10, '10'],
+                [20, '20'],
+                [50, '50'],
+                [100, '100'],
+              ],
               renderTrigger: true,
             },
           },

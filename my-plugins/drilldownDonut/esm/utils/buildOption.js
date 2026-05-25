@@ -122,7 +122,7 @@ export function buildOption(args) {
             borderColor: 'rgba(128,128,128,0.25)',
             borderWidth: 1,
             padding: [8, 12, 8, 12],
-            extraCssText: 'pointer-events:none;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:240px',
+            extraCssText: 'pointer-events:none;border-radius:6px;border:1px solid #d4d8de;max-width:240px',
             textStyle: { color: t.ink, fontFamily: FONTS.text, fontSize: 11 },
             formatter: (p) => {
                 const item = p?.data?._item;

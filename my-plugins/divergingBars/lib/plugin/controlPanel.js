@@ -136,9 +136,11 @@ const config = {
                         name: 'groupby_week',
                         config: {
                             ...chart_controls_1.sharedControls.groupby,
-                            label: (0, core_1.t)('Неделя'),
-                            description: (0, core_1.t)('Колонка с датой понедельника недели (обычно DATE_TRUNC(\'week\', <date>)). ' +
-                                'Ожидается 12 последних недель.'),
+                            label: (0, core_1.t)('Неделя (опционально)'),
+                            description: (0, core_1.t)('Колонка временного измерения для тренда (обычно ' +
+                                "DATE_TRUNC('week', <date>)). Не используется для основной агрегации — " +
+                                'агрегация period-over-period выполняется через time_compare. ' +
+                                'Если не задана — модалка покажет только Было/Стало без графика.'),
                             multi: false,
                             validators: [],
                             visibility: isRealData,
@@ -165,16 +167,21 @@ const config = {
                 ],
                 [
                     {
-                        name: 'default_horizon',
+                        name: 'default_comparison_mode',
                         config: {
                             type: 'SelectControl',
-                            label: (0, core_1.t)('Горизонт по умолчанию'),
-                            default: '4w',
+                            label: (0, core_1.t)('Сравнение по умолчанию'),
+                            description: (0, core_1.t)('Период, с которым сравнивается текущий time_range. ' +
+                                'Пользователь сможет переключить режим прямо в карточке. ' +
+                                '«Выбрать вручную» — два независимых RangePicker\'а.'),
+                            default: 'prev_period',
                             choices: [
-                                ['wow', (0, core_1.t)('WoW (неделя к неделе)')],
-                                ['4w', (0, core_1.t)('4W vs 4W')],
-                                ['mom', (0, core_1.t)('MoM (месяц к месяцу)')],
-                                ['cum', (0, core_1.t)('Кумулятивно')],
+                                ['prev_period', (0, core_1.t)('Предыдущий период')],
+                                ['prev_week', (0, core_1.t)('Прошлая неделя')],
+                                ['prev_month', (0, core_1.t)('Прошлый месяц')],
+                                ['prev_quarter', (0, core_1.t)('Прошлый квартал')],
+                                ['prev_year', (0, core_1.t)('Прошлый год')],
+                                ['custom', (0, core_1.t)('Выбрать вручную')],
                             ],
                             renderTrigger: true,
                         },
@@ -211,8 +218,10 @@ const config = {
                         name: 'show_cumulative_view',
                         config: {
                             type: 'CheckboxControl',
-                            label: (0, core_1.t)('Разрешить кумулятивный вид'),
-                            description: (0, core_1.t)('Если выключено — кнопка «Кумулят.» будет скрыта из переключателя горизонтов.'),
+                            label: (0, core_1.t)('Кнопка кумулятивного вида'),
+                            description: (0, core_1.t)('Показать переключатель «Кумулят.» рядом с дропдауном сравнения. ' +
+                                'Отдельный вид — топ-10 магазинов с накопленными потерями ' +
+                                'по доступным datapoints тренда (требуется trendRub).'),
                             default: true,
                             renderTrigger: true,
                         },
@@ -224,7 +233,8 @@ const config = {
                         config: {
                             type: 'CheckboxControl',
                             label: (0, core_1.t)('Разрешить модалку детализации'),
-                            description: (0, core_1.t)('Двойной клик / Ctrl+клик открывает 12-недельный тренд магазина.'),
+                            description: (0, core_1.t)('Двойной клик / Ctrl+клик открывает карточку с тем же самым ' +
+                                'было/стало + тренд по main-периоду (если backend отдал).'),
                             default: true,
                             renderTrigger: true,
                         },
@@ -237,6 +247,27 @@ const config = {
                             type: 'CheckboxControl',
                             label: (0, core_1.t)('Показывать кнопку CSV'),
                             default: true,
+                            renderTrigger: true,
+                        },
+                    },
+                ],
+                [
+                    {
+                        name: 'page_size',
+                        config: {
+                            type: 'SelectControl',
+                            freeForm: true,
+                            clearable: false,
+                            label: (0, core_1.t)('Магазинов на странице'),
+                            description: (0, core_1.t)('Серверная пагинация: на каждую страницу делается отдельный запрос. ' +
+                                'Меньше — быстрее, больше — реже клики.'),
+                            default: 20,
+                            choices: [
+                                [10, '10'],
+                                [20, '20'],
+                                [50, '50'],
+                                [100, '100'],
+                            ],
                             renderTrigger: true,
                         },
                     },

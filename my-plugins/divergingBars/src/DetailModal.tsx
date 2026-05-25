@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import ReactECharts from 'echarts-for-react';
 import { t } from '@superset-ui/core';
 import { ModalOverlay } from './styles';
-import type { Horizon, MetricMode, Store } from './types';
+import type { ComparisonMode, MetricMode, Store } from './types';
 import { computeTempo, tempoDirection } from './utils/computeTempo';
 import {
   fmtByMetric,
@@ -13,134 +14,188 @@ import {
 interface DetailPalette {
   up: string;
   dn: string;
-  g200: string;
   g50: string;
+  g100: string;
+  g200: string;
   g500: string;
   g600: string;
+  g700: string;
+  s: string;
+  ink: string;
+  fontText: string;
   fontMono: string;
 }
 
 interface DetailModalProps {
   store: Store;
   metric: MetricMode;
-  horizon: Horizon;
+  /** Текущий режим сравнения — для подписи «Сравнение с …» в шапке. */
+  comparisonMode: ComparisonMode;
   theme: 'light' | 'dark';
   palette: DetailPalette;
   onClose: () => void;
 }
 
+/** Человекочитаемая подпись режима сравнения. */
+function comparisonModeLabel(mode: ComparisonMode): string {
+  switch (mode) {
+    case 'prev_period':
+      return 'предыдущий период';
+    case 'prev_week':
+      return 'прошлая неделя';
+    case 'prev_month':
+      return 'прошлый месяц';
+    case 'prev_quarter':
+      return 'прошлый квартал';
+    case 'prev_year':
+      return 'прошлый год';
+    case 'custom':
+      return 'вручную выбранный период';
+    default:
+      return 'предыдущий период';
+  }
+}
+
 /**
- * Большой спарклайн с плавной кривой Безье (порт buildBigSpark).
- * Принимает цвета через palette — нет вызовов getComputedStyle.
+ * Тренд по main-периоду — на ECharts.
+ *
+ * Длина по х-оси = длина массива trend (определяется backend'ом).
+ * Лейблы по х-оси берутся из trendLabels (если есть) или Н1..НN.
+ * Animation: 700ms cubicOut (синхронизация с card-mount cascade DS 2.1).
+ * Цвет: tempo > 1.1 → dn (рост потерь), < 0.9 → up (снижение), else g600.
  */
-const BigSpark: React.FC<{
-  data: number[];
-  tempo: number;
-  palette: DetailPalette;
-}> = ({ data, tempo, palette }) => {
-  const w = 860;
-  const h = 160;
-  const padL = 12;
-  const padR = 12;
-  const padT = 16;
-  const padB = 28;
-  if (!data.length) return <svg viewBox={`0 0 ${w} ${h}`} />;
-  const min = Math.min(...data) * 0.88;
-  const max = Math.max(...data) * 1.1;
-  const range = max - min || 1;
-  const sx = (i: number): number =>
-    padL + (i / (data.length - 1)) * (w - padL - padR);
-  const sy = (v: number): number =>
-    h - padB - ((v - min) / range) * (h - padT - padB);
-  const pts = data.map((v, i) => ({ x: sx(i), y: sy(v), v }));
-  let path = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
-  for (let i = 0; i < pts.length - 1; i += 1) {
-    const p0 = pts[i - 1] ?? pts[i];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[i + 2] ?? p2;
-    const c1x = p1.x + (p2.x - p0.x) / 6;
-    const c1y = p1.y + (p2.y - p0.y) / 6;
-    const c2x = p2.x - (p3.x - p1.x) / 6;
-    const c2y = p2.y - (p3.y - p1.y) / 6;
-    path += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
-  }
-  const areaPath = `${path} L${pts[pts.length - 1].x.toFixed(1)} ${(h - padB).toFixed(1)} L${pts[0].x.toFixed(1)} ${(h - padB).toFixed(1)} Z`;
-
-  const color =
+function buildTrendOption(
+  data: number[],
+  labels: string[],
+  tempo: number,
+  metric: MetricMode,
+  palette: DetailPalette,
+): Record<string, unknown> {
+  const lineColor =
     tempo > 1.1 ? palette.dn : tempo < 0.9 ? palette.up : palette.g600;
-  const gradId = `vd-big-spark-grad-${tempo.toFixed(3).replace(/\./g, '-')}`;
 
-  const labels: { x: number; label: string }[] = [];
-  for (let i = 0; i < 12; i += 2) {
-    labels.push({ x: sx(i), label: i === 11 ? t('сейчас') : `Н${i + 1}` });
-  }
+  const xLabels = labels.length === data.length
+    ? labels
+    : data.map((_, i) => (i === data.length - 1 ? t('сейчас') : `Н${i + 1}`));
 
-  return (
-    <svg
-      width="100%"
-      height={h}
-      viewBox={`0 0 ${w} ${h}`}
-      preserveAspectRatio="none"
-      overflow="visible"
-      role="img"
-      aria-label={t('Тренд потерь за 12 недель')}
-    >
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
-        </linearGradient>
-      </defs>
-      <line
-        x1={padL}
-        y1={h - padB}
-        x2={w - padR}
-        y2={h - padB}
-        stroke={palette.g200}
-        strokeWidth="1"
-      />
-      <path d={areaPath} fill={`url(#${gradId})`} />
-      <path
-        d={path}
-        fill="none"
-        stroke={color}
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {pts.map((p, i) => (
-        <circle
-          key={i}
-          cx={p.x.toFixed(1)}
-          cy={p.y.toFixed(1)}
-          r={i === pts.length - 1 ? 3.5 : 2}
-          fill={color}
-          stroke={palette.g50}
-          strokeWidth={i === pts.length - 1 ? 1.5 : 1}
-        />
-      ))}
-      {labels.map(l => (
-        <text
-          key={l.label}
-          x={l.x}
-          y={h - 8}
-          fontFamily={palette.fontMono}
-          fontSize="11"
-          fill={palette.g600}
-          textAnchor="middle"
-        >
-          {l.label}
-        </text>
-      ))}
-    </svg>
-  );
-};
+  const fmtVal = (v: number): string => fmtByMetric(v, metric);
+
+  return {
+    animation: true,
+    /* DS canonical: ECharts series animation 700ms cubicOut — синхронизировано
+       с card-mount cascade. */
+    animationDuration: 700,
+    animationEasing: 'cubicOut',
+    animationDurationUpdate: 0,
+    animationEasingUpdate: 'linear',
+    grid: { left: 10, right: 12, top: 12, bottom: 26, containLabel: true },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: palette.s,
+      borderColor: 'rgba(128,128,128,0.25)',
+      borderWidth: 1,
+      padding: [8, 12, 8, 12],
+      extraCssText:
+        'pointer-events:none;border-radius:6px;border:1px solid #d4d8de;max-width:240px',
+      textStyle: {
+        color: palette.ink,
+        fontFamily: palette.fontText,
+        fontSize: 13,
+      },
+      axisPointer: {
+        type: 'line',
+        lineStyle: { color: palette.g200, width: 1, type: [2, 3] as number[] },
+        z: 0,
+      },
+      formatter: (params: unknown): string => {
+        const arr = Array.isArray(params) ? params : [params];
+        const p = arr[0] as { dataIndex?: number; value?: number; data?: number };
+        const idx = p?.dataIndex ?? 0;
+        const v = typeof p?.value === 'number' ? p.value : (p?.data as number);
+        const prevV = idx > 0 ? data[idx - 1] : null;
+        const deltaPctRaw =
+          prevV != null && prevV !== 0 ? ((v - prevV) / prevV) * 100 : 0;
+        const deltaPct =
+          prevV != null && prevV !== 0 ? fmtSignedPct(deltaPctRaw) : '—';
+        const weekLabel = xLabels[idx] ?? '';
+        return (
+          `<div style="font-family:${palette.fontMono};line-height:1.5;min-width:120px">` +
+          `<div style="color:${palette.g600};text-transform:uppercase;letter-spacing:.06em;font-size:11px;margin-bottom:4px">${weekLabel}</div>` +
+          `<div style="color:${palette.g600};font-size:12px">${t('Потери')}</div>` +
+          `<div style="color:${palette.ink};font-weight:700;font-size:17px;margin:4px 0">${fmtVal(v)}</div>` +
+          `<div style="color:${palette.g600};font-size:12px">${t('к пред.')}: ${deltaPct}</div>` +
+          `</div>`
+        );
+      },
+    },
+    xAxis: {
+      type: 'category',
+      data: xLabels,
+      axisLine: { lineStyle: { color: palette.g200 } },
+      axisTick: { show: false },
+      axisLabel: {
+        color: palette.g600,
+        fontFamily: palette.fontMono,
+        fontSize: 11,
+        interval: data.length > 12 ? 'auto' : 1,
+      },
+      boundaryGap: false,
+    },
+    yAxis: {
+      type: 'value',
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { lineStyle: { color: palette.g100, type: [2, 3] as number[] } },
+      axisLabel: {
+        color: palette.g600,
+        fontFamily: palette.fontMono,
+        fontSize: 11,
+        formatter: (v: number): string => fmtVal(v),
+      },
+    },
+    series: [
+      {
+        type: 'line',
+        smooth: true,
+        data,
+        symbol: 'circle',
+        symbolSize: 6,
+        showAllSymbol: true,
+        lineStyle: { color: lineColor, width: 2.2 },
+        itemStyle: { color: lineColor, borderColor: palette.g50, borderWidth: 1 },
+        emphasis: {
+          focus: 'series',
+          itemStyle: {
+            color: lineColor,
+            borderColor: palette.s,
+            borderWidth: 2,
+            shadowBlur: 6,
+            shadowColor: lineColor,
+          },
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: `${lineColor}4D` /* 0.30 alpha */ },
+              { offset: 1, color: `${lineColor}05` /* 0.02 alpha */ },
+            ],
+          },
+        },
+        z: 2,
+      },
+    ],
+  };
+}
 
 const DetailModal: React.FC<DetailModalProps> = ({
   store,
   metric,
-  horizon,
+  comparisonMode,
   theme,
   palette,
   onClose,
@@ -149,7 +204,9 @@ const DetailModal: React.FC<DetailModalProps> = ({
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const previousFocus = useRef<Element | null>(null);
 
-  const tr = computeTempo(store, horizon, metric);
+  const prev = metric === 'rub' ? store.prevValueRub : store.prevValuePct;
+  const curr = metric === 'rub' ? store.currValueRub : store.currValuePct;
+  const tr = computeTempo(prev, curr);
   const dir = tempoDirection(tr.tempo);
   const color = dir === 'grow' ? palette.dn : dir === 'shrink' ? palette.up : palette.g600;
   const tCls = dir === 'grow' ? 'dn' : dir === 'shrink' ? 'up' : 'wn';
@@ -183,8 +240,8 @@ const DetailModal: React.FC<DetailModalProps> = ({
     window.addEventListener('keydown', onKey, true);
     return () => {
       window.removeEventListener('keydown', onKey, true);
-      const prev = previousFocus.current;
-      if (prev instanceof HTMLElement) prev.focus();
+      const prevFocus = previousFocus.current;
+      if (prevFocus instanceof HTMLElement) prevFocus.focus();
     };
   }, [onClose]);
 
@@ -192,10 +249,20 @@ const DetailModal: React.FC<DetailModalProps> = ({
     if (e.target === overlayRef.current) onClose();
   };
 
-  const weeks = metric === 'rub' ? store.weeksRub : store.weeksPct;
+  /* Trend данные — опциональны (backend может не отдать). */
+  const trendData =
+    (metric === 'rub' ? store.trendRub : store.trendPct) ?? [];
+  const trendLabels = store.trendLabels ?? [];
+  const hasTrend = trendData.length > 1;
+
   const fv = (v: number): string => fmtByMetric(v, metric);
-  const signed = tr.pctChange > 0 ? '+' : tr.pctChange < 0 ? '\u2212' : '';
+  const signed = tr.pctChange > 0 ? '+' : tr.pctChange < 0 ? '−' : '';
   const trendNote = `${fmtTempoText(tr.tempo)} · ${fmtSignedPct(tr.pctChange)}`;
+
+  const option = useMemo(
+    () => buildTrendOption(trendData, trendLabels, tr.tempo, metric, palette),
+    [trendData, trendLabels, tr.tempo, metric, palette],
+  );
 
   return (
     <ModalOverlay
@@ -275,15 +342,41 @@ const DetailModal: React.FC<DetailModalProps> = ({
             </div>
           </div>
         </div>
-        <div className="m-trend-wrap">
-          <div className="m-section-l">
-            <span>{t('Тренд потерь · 12 недель')}</span>
-            <span className="right">{trendNote}</span>
+        {hasTrend ? (
+          <div className="m-trend-wrap">
+            <div className="m-section-l">
+              <span>
+                {t('Тренд потерь')} · {trendData.length} {t('точек')}
+              </span>
+              <span className="right">{trendNote}</span>
+            </div>
+            <div className="m-trend-card">
+              <div className="m-trend-chart">
+                <ReactECharts
+                  option={option}
+                  notMerge
+                  style={{ width: '100%', height: '100%' }}
+                  opts={{ renderer: 'canvas' }}
+                />
+              </div>
+            </div>
           </div>
-          <div className="m-trend-card">
-            <BigSpark data={weeks} tempo={tr.tempo} palette={palette} />
+        ) : (
+          <div
+            style={{
+              padding: '16px 12px',
+              fontSize: 12,
+              color: palette.g600,
+              fontFamily: palette.fontText,
+              fontStyle: 'italic',
+            }}
+          >
+            {t(
+              'Тренд недоступен — для графика добавьте колонку «Неделя» ' +
+                'в настройках чарта.',
+            )}
           </div>
-        </div>
+        )}
       </div>
     </ModalOverlay>
   );
