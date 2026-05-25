@@ -2,6 +2,9 @@ import * as React from 'react';
 import { createPortal } from 'react-dom';
 import {
   DetailErrorBlock,
+  ErrorRowInner,
+  InlineSpinnerLarge,
+  LoaderRowInner,
   ModalBg,
   ModalBox,
   ModalCloseBtn,
@@ -16,7 +19,14 @@ import {
   ModalSummary,
   ModalTitle,
   ModalTitles,
+  PageBtn,
+  PageEllipsis,
+  PageInput,
+  PaginationWrap,
+  RefreshBar,
+  RetryButton,
   StoreList,
+  StoreListWrap,
   StoreRow,
 } from './styles';
 import type {
@@ -26,9 +36,15 @@ import type {
   Formatters,
   RowStatus,
 } from './types';
-import { fetchDetailRows, DetailStoreRow } from './utils/detailApi';
+import {
+  fetchDetailCount,
+  fetchDetailRows,
+  DetailStoreRow,
+} from './utils/detailApi';
 import { formatStoresCount } from './utils/format';
 import { computeStatus } from './utils/aggregation';
+
+const PAGE_SIZE = 20;
 
 interface DetailModalProps {
   row: FormatRow;
@@ -49,6 +65,30 @@ function statusColor(s: RowStatus): string {
   return 'var(--g500)';
 }
 
+/* Numbered pagination helper — паттерн из scorecard DetailModal:
+   <= 7 страниц: все. Иначе: первые/последние + текущая ± 1, ellipsis между. */
+function getPageNumbers(current0: number, total: number): (number | '...')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages = new Set<number>();
+  pages.add(1);
+  pages.add(total);
+  pages.add(total - 1);
+  pages.add(total - 2);
+  const cur1 = current0 + 1;
+  pages.add(cur1);
+  if (cur1 > 1) pages.add(cur1 - 1);
+  if (cur1 < total) pages.add(cur1 + 1);
+  const sorted = [...pages]
+    .filter(p => p >= 1 && p <= total)
+    .sort((a, b) => a - b);
+  const result: (number | '...')[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1) result.push('...');
+    result.push(sorted[i]);
+  }
+  return result;
+}
+
 const DetailModal: React.FC<DetailModalProps> = ({
   row,
   scaleMax,
@@ -59,8 +99,21 @@ const DetailModal: React.FC<DetailModalProps> = ({
   onClose,
   rootEl,
 }) => {
-  // Mock-режим: используем storesList из пресета (ref:553-612).
-  const initialStores: DetailStoreRow[] = React.useMemo(() => {
+  // ── Server-paged state (real-data режим) ──
+  const [currentPage, setCurrentPage] = React.useState<number>(0);
+  const [stores, setStores] = React.useState<DetailStoreRow[]>([]);
+  const [totalCount, setTotalCount] = React.useState<number | null>(null);
+  const [hasNextPage, setHasNextPage] = React.useState<boolean>(false);
+  const [isInitialLoading, setIsInitialLoading] = React.useState<boolean>(
+    !mockMode && !!detailQueryParams,
+  );
+  const [isRefreshing, setIsRefreshing] = React.useState<boolean>(false);
+  const [fetchError, setFetchError] = React.useState<string | null>(null);
+  // Retry-токен для перезапуска useEffect при «Повторить» — без смены currentPage.
+  const [retryNonce, setRetryNonce] = React.useState<number>(0);
+
+  // Mock-режим: локальная пагинация по storesList пресета.
+  const allMockStores: DetailStoreRow[] = React.useMemo(() => {
     if (!mockMode || !row.storesList) return [];
     return row.storesList.map(s => ({
       name: s.name,
@@ -71,50 +124,148 @@ const DetailModal: React.FC<DetailModalProps> = ({
     }));
   }, [mockMode, row.storesList]);
 
-  const shouldFetch = !mockMode && !!detailQueryParams;
-  const [loading, setLoading] = React.useState<boolean>(shouldFetch);
-  const [error, setError] = React.useState<string | null>(null);
-  const [stores, setStores] = React.useState<DetailStoreRow[]>(initialStores);
+  // AbortController: предотвращает race condition при быстром переключении страниц.
+  const rowsAbortRef = React.useRef<AbortController | null>(null);
+  const countAbortRef = React.useRef<AbortController | null>(null);
+  const hasEverLoadedRef = React.useRef<boolean>(false);
 
+  /* ── Mock-режим: локальная пагинация slice по allMockStores ── */
   React.useEffect(() => {
-    if (!shouldFetch || !detailQueryParams) return;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    fetchDetailRows({ ...detailQueryParams, categoryValue: row.name })
-      .then(rowsFromApi => {
-        if (!cancelled) {
-          setStores(rowsFromApi);
-          setLoading(false);
-        }
+    if (!mockMode) return;
+    const total = allMockStores.length;
+    setTotalCount(total);
+    const start = currentPage * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    const slice = allMockStores.slice(start, end);
+    setStores(slice);
+    setHasNextPage(end < total);
+    setIsInitialLoading(false);
+    setIsRefreshing(false);
+    setFetchError(null);
+    hasEverLoadedRef.current = true;
+  }, [mockMode, allMockStores, currentPage]);
+
+  /* ── Real-data: fetchDetailRows на смену страницы ── */
+  React.useEffect(() => {
+    if (mockMode || !detailQueryParams) return undefined;
+
+    // Abort previous request — race-condition safety на быстром переключении.
+    rowsAbortRef.current?.abort();
+    const controller = new AbortController();
+    rowsAbortRef.current = controller;
+
+    // Stale-while-revalidate: spinner только на initial load,
+    // на смене страницы — RefreshBar + dimmed list.
+    if (!hasEverLoadedRef.current) {
+      setIsInitialLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
+    setFetchError(null);
+
+    fetchDetailRows({
+      ...detailQueryParams,
+      categoryValue: row.name,
+      page: currentPage,
+      pageSize: PAGE_SIZE,
+      signal: controller.signal,
+    })
+      .then(result => {
+        setStores(result.rows);
+        setHasNextPage(result.hasNextPage);
+        hasEverLoadedRef.current = true;
+        setIsInitialLoading(false);
+        setIsRefreshing(false);
       })
       .catch((err: unknown) => {
-        if (!cancelled) {
-          const msg = err instanceof Error ? err.message : 'Не удалось загрузить детализацию';
-          setError(msg);
-          setLoading(false);
-        }
+        if (err instanceof Error && err.name === 'AbortError') return;
+        const msg =
+          err instanceof Error
+            ? err.message
+            : 'Не удалось загрузить детализацию';
+        setFetchError(msg);
+        setIsInitialLoading(false);
+        setIsRefreshing(false);
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [shouldFetch, detailQueryParams, row.name]);
 
+    return () => controller.abort();
+  }, [mockMode, detailQueryParams, row.name, currentPage, retryNonce]);
+
+  /* ── Real-data: fetchDetailCount (отдельный AbortController) ── */
   React.useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
+    if (mockMode || !detailQueryParams) return undefined;
+
+    countAbortRef.current?.abort();
+    const controller = new AbortController();
+    countAbortRef.current = controller;
+
+    fetchDetailCount({
+      ...detailQueryParams,
+      categoryValue: row.name,
+      signal: controller.signal,
+    })
+      .then(count => setTotalCount(count))
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setTotalCount(null);
+      });
+
+    return () => controller.abort();
+    // categoryValue фиксирован за время открытия модалки,
+    // currentPage НЕ влияет на count — pure category total.
+  }, [mockMode, detailQueryParams, row.name]);
+
+  /* ── Cleanup при unmount ── */
+  React.useEffect(
+    () => () => {
+      rowsAbortRef.current?.abort();
+      countAbortRef.current?.abort();
+    },
+    [],
+  );
+
+  /* ── Escape close ── */
+  React.useEffect(() => {
+    const handler = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
 
+  /* ── Focus management ── */
+  const modalRef = React.useRef<HTMLDivElement | null>(null);
   const closeRef = React.useRef<HTMLButtonElement | null>(null);
   React.useEffect(() => {
-    closeRef.current?.focus();
+    // Фокусируем сам Modal (как в scorecard), а не CloseButton — чтобы
+    // visual focus-ring не оказался на крестике при открытии.
+    modalRef.current?.focus();
   }, []);
+
+  /* ── Focus trap (Tab loops внутри модалки) ── */
+  const handleKeyDown = React.useCallback(
+    (e: React.KeyboardEvent): void => {
+      if (e.key !== 'Tab') return;
+      const focusable = modalRef.current?.querySelectorAll<HTMLElement>(
+        'button, input, [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    },
+    [],
+  );
 
   if (!rootEl) return null;
 
+  /* ── Summary block (4 m-stat: Факт / План / Прошлый год / Хуже плана) ── */
   const deltaPlanStr =
     row.deltaPlan != null ? formatters.deltaPP(row.deltaPlan) : '—';
   const deltaPyStr = row.deltaPy != null ? formatters.deltaPP(row.deltaPy) : '—';
@@ -125,7 +276,9 @@ const DetailModal: React.FC<DetailModalProps> = ({
     return delta > 0 ? 'up' : 'dn';
   };
 
-  // Сортировка по убыванию rate (ref:942) — худшие сверху для less_is_better.
+  /* ── Сортировка current page по rate (худшие сверху для less_is_better) ──
+     Это per-page client sort: server отдаёт уже отсортированный по fact desc,
+     но direction === 'less_is_better' переворачивает порядок для UX («хуже всех — сверху»). */
   const sortedStores = React.useMemo(() => {
     const copy = [...stores];
     return copy.sort((a, b) =>
@@ -133,7 +286,9 @@ const DetailModal: React.FC<DetailModalProps> = ({
     );
   }, [stores, direction]);
 
-  // Shared scale для mini-bullet всех stores (ref:943).
+  /* ── Shared scale для mini-bullet: max по current page × 1.1, fallback scaleMax.
+     Меняется между страницами — это OK, юзер видит relative comparison ВНУТРИ
+     страницы (а не global), что соответствует UX «сравнение магазинов на этой странице». */
   const storeScale = React.useMemo(() => {
     if (!stores.length) return scaleMax;
     const all = stores.flatMap(s => [
@@ -148,30 +303,57 @@ const DetailModal: React.FC<DetailModalProps> = ({
   const pct = (v: number): number =>
     Math.min(100, Math.max(0, (v / storeScale) * 100));
 
-  // % магазинов хуже плана.
+  /* ── «Хуже плана: N» — по current page (не по total). Помечаем «на этой странице»,
+     если есть hasNextPage или page > 0 (не весь dataset виден). */
   const worseCount = stores.filter(s => {
     if (s.plan == null) return false;
     return direction === 'less_is_better' ? s.rate > s.plan : s.rate < s.plan;
   }).length;
-  const worsePct = stores.length > 0 ? Math.round((worseCount / stores.length) * 100) : 0;
+  const isPartialView = hasNextPage || currentPage > 0;
+  const worseSubtitle =
+    stores.length === 0
+      ? ''
+      : isPartialView
+        ? `из ${stores.length} на странице`
+        : `из ${stores.length}`;
+  const worsePct =
+    stores.length > 0 ? Math.round((worseCount / stores.length) * 100) : 0;
   const worseTone: 'up' | 'dn' | 'wn' | 'default' =
     stores.length === 0
       ? 'default'
       : worsePct > 50
-      ? 'dn'
-      : worsePct > 30
-      ? 'wn'
-      : 'up';
+        ? 'dn'
+        : worsePct > 30
+          ? 'wn'
+          : 'up';
 
   const rowStatusColor = statusColor(row.status);
+
+  /* ── Pagination state ── */
+  const totalPages =
+    totalCount != null ? Math.max(1, Math.ceil(totalCount / PAGE_SIZE)) : null;
+  const showPagination = totalPages != null && totalPages > 1;
+
+  /* ── Header counter ── */
+  const headerCount =
+    totalCount != null
+      ? `${totalCount}`
+      : `${stores.length}${hasNextPage ? '+' : ''}`;
+
+  /* ── Empty / loaded states ── */
+  const isEmpty =
+    !isInitialLoading && !fetchError && stores.length === 0;
 
   return createPortal(
     <ModalBg role="presentation" onClick={onClose}>
       <ModalBox
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="bc-modal-title"
+        tabIndex={-1}
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
+        onKeyDown={handleKeyDown}
       >
         <ModalHead>
           <ModalTitles>
@@ -229,7 +411,9 @@ const DetailModal: React.FC<DetailModalProps> = ({
             <ModalStatL>Хуже плана</ModalStatL>
             <ModalStatV>
               {worseCount}
-              <span className="u"> из {stores.length || '—'}</span>
+              {worseSubtitle && (
+                <span className="u"> {worseSubtitle}</span>
+              )}
             </ModalStatV>
             <ModalStatD tone={worseTone}>{worsePct}%</ModalStatD>
           </ModalStat>
@@ -239,36 +423,54 @@ const DetailModal: React.FC<DetailModalProps> = ({
           <ModalSectionL>
             <span>Детализация</span>
             <span className="count">
-              {loading ? 'загрузка…' : `${stores.length}`}
+              {isInitialLoading ? 'загрузка…' : headerCount}
             </span>
           </ModalSectionL>
 
-          {error ? (
+          {fetchError ? (
             <DetailErrorBlock>
-              Ошибка: {error}
+              <ErrorRowInner>
+                <span>Ошибка: {fetchError}</span>
+                <RetryButton
+                  type="button"
+                  onClick={() => {
+                    setFetchError(null);
+                    setRetryNonce(n => n + 1);
+                  }}
+                >
+                  Повторить
+                </RetryButton>
+              </ErrorRowInner>
             </DetailErrorBlock>
           ) : null}
 
-          {!error ? (
-            <StoreList>
-              {loading
-                ? Array.from({ length: 4 }).map((_, i) => (
-                    <StoreRow key={`skel-${i}`} style={{ opacity: 0.5 }}>
-                      <span className="rank">—</span>
-                      <span className="name">Загрузка…</span>
-                      <div className="mini-bullet" />
-                      <span className="pct">—</span>
-                      <span className="delta">—</span>
-                    </StoreRow>
-                  ))
-                : sortedStores.map((s, i) => {
+          {!fetchError && (
+            <StoreListWrap>
+              {isRefreshing && <RefreshBar aria-hidden="true" />}
+              {isInitialLoading ? (
+                <LoaderRowInner>
+                  <InlineSpinnerLarge aria-label="Загрузка" />
+                  Загрузка…
+                </LoaderRowInner>
+              ) : isEmpty ? (
+                <LoaderRowInner>Нет данных</LoaderRowInner>
+              ) : (
+                <StoreList
+                  style={{
+                    opacity: isRefreshing ? 0.45 : 1,
+                    transition: 'opacity 0.15s ease',
+                    pointerEvents: isRefreshing ? 'none' : 'auto',
+                  }}
+                >
+                  {sortedStores.map((s, i) => {
                     const d = s.plan != null ? s.rate - s.plan : null;
                     const st = computeStatus(s.rate, s.plan, direction);
                     const color = statusColor(st);
+                    const globalRank = currentPage * PAGE_SIZE + i + 1;
                     return (
                       <StoreRow key={`${s.name}-${i}`}>
                         <span className="rank">
-                          {String(i + 1).padStart(2, '0')}
+                          {String(globalRank).padStart(2, '0')}
                         </span>
                         <span className="name" title={s.name}>
                           {s.name}
@@ -276,12 +478,17 @@ const DetailModal: React.FC<DetailModalProps> = ({
                         <div className="mini-bullet" aria-hidden="true">
                           <div
                             className="mini-bar"
-                            style={{ width: `${pct(s.rate)}%`, background: color }}
+                            style={{
+                              width: `${pct(s.rate)}%`,
+                              background: color,
+                            }}
                           />
                           {s.plan != null ? (
                             <div
                               className="mini-target"
-                              style={{ left: `calc(${pct(s.plan)}% - 1px)` }}
+                              style={{
+                                left: `calc(${pct(s.plan)}% - 1px)`,
+                              }}
                             />
                           ) : null}
                         </div>
@@ -291,7 +498,11 @@ const DetailModal: React.FC<DetailModalProps> = ({
                         <span
                           className={
                             'delta ' +
-                            (st === 'good' ? 'up' : st === 'bad' ? 'dn' : 'wn')
+                            (st === 'good'
+                              ? 'up'
+                              : st === 'bad'
+                                ? 'dn'
+                                : 'wn')
                           }
                         >
                           {d != null ? formatters.deltaPP(d) : '—'}
@@ -299,9 +510,62 @@ const DetailModal: React.FC<DetailModalProps> = ({
                       </StoreRow>
                     );
                   })}
-            </StoreList>
-          ) : null}
+                </StoreList>
+              )}
+            </StoreListWrap>
+          )}
         </ModalSection>
+
+        {showPagination && (
+          <PaginationWrap
+            style={{
+              opacity: isRefreshing ? 0.5 : 1,
+              pointerEvents: isRefreshing ? 'none' : 'auto',
+              transition: 'opacity 0.15s ease',
+            }}
+            aria-label="Навигация по страницам"
+          >
+            {getPageNumbers(currentPage, totalPages!).map((item, idx) =>
+              item === '...' ? (
+                <PageEllipsis key={`e${idx}`}>…</PageEllipsis>
+              ) : (
+                <PageBtn
+                  key={item}
+                  type="button"
+                  isActive={item === currentPage + 1}
+                  aria-label={`Страница ${item}`}
+                  aria-current={item === currentPage + 1 ? 'page' : undefined}
+                  onClick={() => setCurrentPage((item as number) - 1)}
+                  disabled={isRefreshing}
+                >
+                  {item}
+                </PageBtn>
+              ),
+            )}
+            {totalPages! > 7 && (
+              <PageInput
+                type="number"
+                min={1}
+                max={totalPages!}
+                placeholder="№"
+                aria-label="Перейти на страницу"
+                disabled={isRefreshing}
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                  if (e.key === 'Enter') {
+                    const val = parseInt(
+                      (e.target as HTMLInputElement).value,
+                      10,
+                    );
+                    if (val >= 1 && val <= totalPages!) {
+                      setCurrentPage(val - 1);
+                      (e.target as HTMLInputElement).value = '';
+                    }
+                  }
+                }}
+              />
+            )}
+          </PaginationWrap>
+        )}
       </ModalBox>
     </ModalBg>,
     rootEl,

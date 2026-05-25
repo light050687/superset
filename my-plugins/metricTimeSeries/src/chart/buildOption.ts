@@ -144,7 +144,7 @@ export function buildOption(params: BuildOptionParams): BuildOptionResult {
       borderWidth: 1,
       padding: [8, 12, 8, 12],
       extraCssText:
-        'pointer-events:none;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:240px',
+        'pointer-events:none;border-radius:6px;border:1px solid #d4d8de;max-width:240px',
       textStyle: { color: tokens.ink, fontFamily: fontText, fontSize: 11 },
       axisPointer: {
         type: 'line',

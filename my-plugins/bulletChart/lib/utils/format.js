@@ -81,10 +81,11 @@ function formatStoresCount(n) {
  */
 function formatDeltaPP(value, decimals = 2, unitLabel = 'п.п.') {
     if (value === 0)
-        return `0${unitLabel ? ` ${unitLabel}` : ''}`;
+        return `0${unitLabel ? ` ${unitLabel}` : ''}`;
     const sign = value > 0 ? '+' : '\u2212';
     const abs = Math.abs(value);
-    const unit = unitLabel ? ` ${unitLabel}` : '';
+    // NBSP ( ) между числом и unit — атомарно, не разорвётся на 2 строки.
+    const unit = unitLabel ? ` ${unitLabel}` : '';
     return `${sign}${ruNumber(abs, decimals)}${unit}`;
 }
 function makeFormatters(cfg) {

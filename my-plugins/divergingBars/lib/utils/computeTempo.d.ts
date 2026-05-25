@@ -1,16 +1,16 @@
-import type { Horizon, MetricMode, Store, TempoResult } from '../types';
+import type { TempoResult } from '../types';
 /**
- * Вычисляет темп и разницу между периодами для магазина на заданном
- * горизонте. Порт computeTempo() из `velocity-diverging-prototype.html`.
+ * Вычисляет темп и разницу между prev и curr — period-over-period.
  *
- * - `wow`: неделя 11 vs неделя 10 (последняя vs предпоследняя).
- * - `4w`:  сумма недель 8..11 vs сумма 4..7 (4W vs 4W).
- * - `mom`: сумма недель 8..11 vs сумма 0..3 (этот месяц vs позапрошлый).
- * - `cum`: сумма 6..11 vs сумма 0..5 (вторые 6 недель vs первые 6).
+ * Раньше функция нарезала локально weeks[12] на 4 фиксированных горизонта
+ * (WoW/4W/MoM/Cum). Теперь prev/curr приходят готовыми из backend
+ * (через Superset built-in `time_compare`), а локально остаётся только
+ * чистая арифметика темпа.
  *
- * Возвращает NaN-безопасные значения: если prev=0 → tempo=1, pctChange=0.
+ * NaN-безопасно: если prev=0 → tempo=1, pctChange=0 (отсутствие базы для
+ * сравнения трактуется как «нет изменений»).
  */
-export declare function computeTempo(store: Store, horizon: Horizon, metric: MetricMode): TempoResult;
+export declare function computeTempo(prev: number, curr: number): TempoResult;
 /** Классификация магазина по темпу: grow / shrink / flat. */
 export declare function tempoDirection(tempo: number): 'grow' | 'shrink' | 'flat';
 //# sourceMappingURL=computeTempo.d.ts.map

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import {
   Card,
   CardFooter,
@@ -7,12 +8,8 @@ import {
   CardTitle,
   Controls,
   ErrorCaption,
-  FilterPill,
-  FootDot,
-  FootHint,
   FootLegend,
   HintCaption,
-  Kbd,
   KEYFRAMES_CSS,
   LegendBand,
   LegendBar,
@@ -133,9 +130,47 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
 
   // ── State ──
   const [sortBy, setSortBy] = React.useState<SortBy>(defaultSort);
-  const [filterBad, setFilterBad] = React.useState<boolean>(
-    filterWorseThanPlanDefault,
+  /* Единый фильтр статуса: dropdown с 3 опциями (Все/Хуже/Лучше плана).
+     Default из controlPanel: если filterWorseThanPlanDefault=true → 'bad'. */
+  type StatusFilter = 'all' | 'bad' | 'good';
+  const [statusFilter, setStatusFilter] = React.useState<StatusFilter>(
+    filterWorseThanPlanDefault ? 'bad' : 'all',
   );
+  const [statusDdOpen, setStatusDdOpen] = React.useState(false);
+  const statusTriggerRef = React.useRef<HTMLButtonElement>(null);
+  const [statusMenuPos, setStatusMenuPos] = React.useState<{ top: number; right: number }>({ top: 0, right: 0 });
+  React.useEffect(() => {
+    if (!statusDdOpen) return undefined;
+    const update = (): void => {
+      const r = statusTriggerRef.current?.getBoundingClientRect();
+      if (!r) return;
+      setStatusMenuPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+    };
+    update();
+    const closeOnOutside = (e: MouseEvent): void => {
+      const t = e.target as HTMLElement | null;
+      if (!t) return;
+      if (!t.closest('.bc-status-dd-portal') && !t.closest('.bc-status-dd-trigger')) {
+        setStatusDdOpen(false);
+      }
+    };
+    const closeOnEscape = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setStatusDdOpen(false);
+    };
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    document.addEventListener('click', closeOnOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+      document.removeEventListener('click', closeOnOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [statusDdOpen]);
+  // Legacy bridge — для обратной совместимости с visibleRows useMemo / empty messages.
+  const filterBad = statusFilter === 'bad';
+  const filterGood = statusFilter === 'good';
   // Cross-filter: множественный выбор (ref:621 — activeFilters: Set).
   const [activeCategoryIds, setActiveCategoryIds] = React.useState<Set<string>>(
     () => new Set(),
@@ -153,15 +188,20 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
     setSortBy(defaultSort);
   }, [defaultSort]);
   React.useEffect(() => {
-    setFilterBad(filterWorseThanPlanDefault);
+    setStatusFilter(filterWorseThanPlanDefault ? 'bad' : 'all');
   }, [filterWorseThanPlanDefault]);
 
   // ── Derived ──
   const sorted = React.useMemo(() => sortRows(rows, sortBy), [rows, sortBy]);
   const visibleRows = React.useMemo(() => {
-    if (!filterBad) return sorted;
-    return sorted.filter(r => r.status === 'bad');
-  }, [sorted, filterBad]);
+    // Если ни один toggle не активен — показываем всё.
+    if (!filterBad && !filterGood) return sorted;
+    return sorted.filter(r => {
+      if (filterBad && r.status === 'bad') return true;
+      if (filterGood && r.status === 'good') return true;
+      return false;
+    });
+  }, [sorted, filterBad, filterGood]);
 
   const totalStores = React.useMemo(() => {
     const sum = rows.reduce((s, r) => s + (r.stores ?? 0), 0);
@@ -261,40 +301,116 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
                   <span className="strong">{formatStoresCount(totalStores)}</span>
                 </>
               ) : null}
-              {mockModeEnabled ? (
-                <>
-                  <span className="dot" />
-                  <span>Режим проектирования</span>
-                </>
-              ) : null}
             </CardSub>
           </TitleBlock>
           <Controls>
             {rows.length > 0 && (
               <>
                 <SortMenu value={sortBy} onChange={setSortBy} />
-                <FilterPill
-                  type="button"
-                  active={filterBad}
-                  aria-pressed={filterBad}
-                  onClick={() => setFilterBad(v => !v)}
-                  title="Показать только хуже плана"
-                >
-                  <svg
-                    viewBox="0 0 14 14"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M7 2 L13 12 L1 12 Z" />
-                    <line x1="7" y1="6" x2="7" y2="9" />
-                    <line x1="7" y1="11" x2="7" y2="11.5" />
-                  </svg>
-                  <span>Хуже плана</span>
-                </FilterPill>
+                {(() => {
+                  const opts: { id: StatusFilter; label: string; tone: 'neutral' | 'bad' | 'good' }[] = [
+                    { id: 'all', label: 'Все', tone: 'neutral' },
+                    { id: 'bad', label: 'Хуже плана', tone: 'bad' },
+                    { id: 'good', label: 'Лучше плана', tone: 'good' },
+                  ];
+                  const cur = opts.find(o => o.id === statusFilter) ?? opts[0];
+                  const dotColor = cur.tone === 'bad' ? 'var(--dn)' : cur.tone === 'good' ? 'var(--up)' : 'var(--g400)';
+                  const borderColor = cur.tone === 'neutral' ? 'var(--g200)' : (cur.tone === 'bad' ? 'var(--dn)' : 'var(--up)');
+                  return (
+                    <>
+                      <button
+                        ref={statusTriggerRef}
+                        type="button"
+                        className="bc-status-dd-trigger"
+                        aria-haspopup="listbox"
+                        aria-expanded={statusDdOpen}
+                        aria-label={`Фильтр по статусу: ${cur.label}`}
+                        title="Фильтр по статусу"
+                        onClick={() => setStatusDdOpen(v => !v)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          minHeight: 30,
+                          padding: '4px 9px',
+                          background: 'var(--bg)',
+                          border: `1px solid ${borderColor}`,
+                          borderRadius: 8,
+                          color: 'var(--ink)',
+                          fontFamily: 'var(--m)',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
+                        <span>{cur.label}</span>
+                        <svg width="9" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+                          <path d="M1 1 L5 5 L9 1" />
+                        </svg>
+                      </button>
+                      {statusDdOpen && createPortal(
+                        <div
+                          className="bc-status-dd-portal"
+                          role="listbox"
+                          aria-label="Фильтр по статусу"
+                          style={{
+                            position: 'fixed',
+                            top: statusMenuPos.top,
+                            right: statusMenuPos.right,
+                            zIndex: 10000,
+                            minWidth: 180,
+                            background: '#ffffff',
+                            border: '1px solid #D1D5DB',
+                            borderRadius: 10,
+                            padding: 4,
+                            boxShadow: '0 10px 28px rgba(15, 17, 20, 0.15)',
+                          }}
+                        >
+                          {opts.map(o => {
+                            const isOn = statusFilter === o.id;
+                            const oDot = o.tone === 'bad' ? 'var(--dn)' : o.tone === 'good' ? 'var(--up)' : 'var(--g400)';
+                            return (
+                              <button
+                                key={o.id}
+                                type="button"
+                                role="option"
+                                aria-selected={isOn}
+                                onClick={() => {
+                                  setStatusFilter(o.id);
+                                  setStatusDdOpen(false);
+                                }}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 10,
+                                  width: '100%',
+                                  minHeight: 34,
+                                  padding: '7px 10px',
+                                  background: isOn ? '#F3F4F6' : 'transparent',
+                                  border: 'none',
+                                  borderRadius: 6,
+                                  color: '#0F1114',
+                                  fontFamily: 'inherit',
+                                  fontSize: 12,
+                                  fontWeight: isOn ? 600 : 500,
+                                  textAlign: 'left',
+                                  cursor: 'pointer',
+                                }}
+                                onMouseEnter={e => { if (!isOn) (e.currentTarget as HTMLButtonElement).style.background = '#F9FAFB'; }}
+                                onMouseLeave={e => { if (!isOn) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+                              >
+                                <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: '50%', background: oDot, flexShrink: 0, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.04)' }} />
+                                <span>{o.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>,
+                        document.body,
+                      )}
+                    </>
+                  );
+                })()}
               </>
             )}
             <InfoHintTopRight>
@@ -334,9 +450,15 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
           dataState === 'partial' ||
           dataState === 'stale') && rows.length > 0 ? (
           <BulletList role="list">
-            {visibleRows.length === 0 && filterBad ? (
+            {visibleRows.length === 0 && (filterBad || filterGood) ? (
               <StateOverlay>
-                <span>Нет строк «хуже плана» — все в пределах цели</span>
+                <span>
+                  {filterBad && filterGood
+                    ? 'Нет строк «хуже» или «лучше плана» — все в пределах цели'
+                    : filterBad
+                    ? 'Нет строк «хуже плана» — все в пределах цели'
+                    : 'Нет строк «лучше плана» — все в пределах цели или хуже'}
+                </span>
               </StateOverlay>
             ) : (
               visibleRows.map(row => {
@@ -366,35 +488,20 @@ const BulletChartInner: React.FC<BulletChartProps> = props => {
 
         <CardFooter>
           {rows.length > 0 && (
-            <>
-              <FootHint>
-                <Kbd>Click</Kbd>
-                <span>фильтр</span>
-                {enableDetailModal ? (
-                  <>
-                    <FootDot>·</FootDot>
-                    <Kbd>Ctrl</Kbd>
-                    <span>+</span>
-                    <Kbd>Click</Kbd>
-                    <span>детализация</span>
-                  </>
-                ) : null}
-              </FootHint>
-              <FootLegend>
-                <LegendItem>
-                  <LegendBar />
-                  <span>факт</span>
-                </LegendItem>
-                <LegendItem>
-                  <LegendTarget />
-                  <span>цель</span>
-                </LegendItem>
-                <LegendItem>
-                  <LegendBand />
-                  <span>зона</span>
-                </LegendItem>
-              </FootLegend>
-            </>
+            <FootLegend aria-label="Условные обозначения">
+              <LegendItem>
+                <LegendBar />
+                <span>факт</span>
+              </LegendItem>
+              <LegendItem>
+                <LegendTarget />
+                <span>цель</span>
+              </LegendItem>
+              <LegendItem>
+                <LegendBand />
+                <span>зона</span>
+              </LegendItem>
+            </FootLegend>
           )}
         </CardFooter>
       </Card>

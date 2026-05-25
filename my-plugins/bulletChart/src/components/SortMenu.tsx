@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { IconDd, IconDdBtn, IconDdWrap } from '../styles';
+import { createPortal } from 'react-dom';
+import { IconDdBtn, IconDdWrap } from '../styles';
 import type { SortBy } from '../types';
 
 interface SortMenuProps {
@@ -70,61 +71,111 @@ const SORT_ORDER: SortBy[] = [
 
 const SortMenu: React.FC<SortMenuProps> = ({ value, onChange }) => {
   const [open, setOpen] = React.useState(false);
-  const ref = React.useRef<HTMLDivElement | null>(null);
+  const triggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const [pos, setPos] = React.useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
-  // Закрытие по клику вне
+  /* Portal в body — обходит overflow:hidden и stacking-контексты от hero-чисел.
+     Position computed от trigger. Closes: outside-click + Escape + scroll. */
   React.useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+    if (!open) return undefined;
+    const update = (): void => {
+      const r = triggerRef.current?.getBoundingClientRect();
+      if (!r) return;
+      setPos({ top: r.bottom + 4, left: r.left });
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
-
-  // Закрытие по Escape
-  React.useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
+    update();
+    const outside = (e: MouseEvent): void => {
+      const t = e.target as HTMLElement | null;
+      if (!t) return;
+      if (t.closest('.bc-sort-portal') || t === triggerRef.current || triggerRef.current?.contains(t)) return;
+      setOpen(false);
+    };
+    const esc = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') setOpen(false);
     };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    document.addEventListener('mousedown', outside);
+    document.addEventListener('keydown', esc);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+      document.removeEventListener('mousedown', outside);
+      document.removeEventListener('keydown', esc);
+    };
   }, [open]);
 
   return (
-    <IconDdWrap ref={ref}>
-      <IconDd open={open}>
-        <IconDdBtn
-          type="button"
-          onClick={() => setOpen(o => !o)}
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          aria-label={`Сортировка: ${SORT_TITLES[value]}`}
-          title={`Сортировка: ${SORT_TITLES[value]}`}
+    <IconDdWrap>
+      <IconDdBtn
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={`Сортировка: ${SORT_TITLES[value]}`}
+        title={`Сортировка: ${SORT_TITLES[value]}`}
+        style={{
+          width: 32,
+          height: 30,
+          background: 'var(--g100)',
+          border: `1px solid ${open ? 'var(--g300)' : 'var(--g200)'}`,
+          borderRadius: 6,
+        }}
+      >
+        {SORT_ICONS[value]}
+      </IconDdBtn>
+      {open && createPortal(
+        <div
+          className="bc-sort-portal"
+          role="listbox"
+          aria-label="Сортировка"
+          style={{
+            position: 'fixed',
+            top: pos.top,
+            left: pos.left,
+            zIndex: 10000,
+            display: 'flex',
+            flexDirection: 'column',
+            width: 32,
+            background: '#F3F4F6',
+            border: '1px solid #D1D5DB',
+            borderRadius: 6,
+            overflow: 'hidden',
+            boxShadow: '0 10px 28px rgba(15,17,20,.15)',
+          }}
         >
-          {SORT_ICONS[value]}
-        </IconDdBtn>
-        {open
-          ? SORT_ORDER.filter(s => s !== value).map(s => (
-              <IconDdBtn
-                key={s}
-                type="button"
-                role="option"
-                aria-selected={false}
-                title={SORT_TITLES[s]}
-                onClick={() => {
-                  onChange(s);
-                  setOpen(false);
-                }}
-              >
-                {SORT_ICONS[s]}
-              </IconDdBtn>
-            ))
-          : null}
-      </IconDd>
+          {SORT_ORDER.filter(s => s !== value).map(s => (
+            <button
+              key={s}
+              type="button"
+              role="option"
+              aria-selected={false}
+              title={SORT_TITLES[s]}
+              onClick={() => {
+                onChange(s);
+                setOpen(false);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 32,
+                height: 30,
+                background: 'transparent',
+                border: 'none',
+                color: '#0F1114',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#E5E7EB'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+            >
+              {SORT_ICONS[s]}
+            </button>
+          ))}
+        </div>,
+        document.body,
+      )}
     </IconDdWrap>
   );
 };

@@ -1,4 +1,5 @@
 import React from 'react';
+import 'dayjs/locale/ru';
 import type { VelocityDivergingProps } from './types';
 /**
  * Палитра DS 2.0 — ветка light/dark. Используем напрямую токены из
@@ -10,6 +11,7 @@ interface Palette {
     dn: string;
     wn: string;
     g50: string;
+    g100: string;
     g200: string;
     g300: string;
     g400: string;
@@ -17,6 +19,7 @@ interface Palette {
     g600: string;
     g700: string;
     s: string;
+    ink: string;
     cSky: string;
     cViolet: string;
     cTangerine: string;

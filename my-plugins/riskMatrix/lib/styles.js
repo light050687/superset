@@ -834,7 +834,7 @@ exports.OverlapList = core_1.styled.div `
   border: 1px solid var(--g300);
   border-radius: 10px;
   padding: 6px;
-  box-shadow: var(--tooltip-shadow);
+  box-shadow: none;
   font-family: var(--f);
   color: var(--ink);
   pointer-events: auto;
@@ -853,9 +853,7 @@ exports.OverlapList = core_1.styled.div `
      консистентно с focus-outline InfoHint и StoreDrillModal. */
   &[data-locked='true'] {
     border-color: var(--c-sky, #3b8bd9);
-    box-shadow:
-      0 0 0 1px var(--c-sky, #3b8bd9),
-      var(--tooltip-shadow);
+    box-shadow: 0 0 0 1px var(--c-sky, #3b8bd9);
   }
   &[data-locked='true'] .ol-foot {
     color: var(--c-sky, #3b8bd9);
@@ -969,7 +967,7 @@ exports.Tooltip = core_1.styled.div `
   border: 1px solid rgba(128, 128, 128, 0.25);
   border-radius: 6px;
   padding: 8px 12px;
-  box-shadow: var(--tooltip-shadow);
+  box-shadow: none;
   font-family: var(--f);
   font-size: 11px;
   pointer-events: none;

@@ -33,4 +33,34 @@ export declare const BarCell: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const PaginationWrap: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const PageBtn: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+} & {
+    isActive?: boolean;
+}, import("react").DetailedHTMLProps<import("react").ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, {}>;
+export declare const PageEllipsis: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, {}>;
+export declare const PageInput: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>, {}>;
+export declare const RefreshBar: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
+export declare const InlineSpinnerSmall: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, {}>;
+export declare const InlineSpinnerLarge: import("@emotion/styled").StyledComponent<{
+    theme?: import("@emotion/react").Theme;
+    as?: React.ElementType;
+}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, {}>;
 //# sourceMappingURL=styles.d.ts.map
