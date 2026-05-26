@@ -33,6 +33,11 @@ x-superset-volumes:
 x-common-build: &common-build
   context: .
   target: dev
+  args:
+    # Корп-CA для TLS внутри docker build (npm install, apt-get).
+    # Передаётся через shell env var (например через docker/.env-local
+    # подгружается deploy.py перед docker compose up).
+    CORP_CA_CERT_B64: ${CORP_CA_CERT_B64:-}
   cache_from:
     - apache/superset-cache:3.10-slim-bookworm
 

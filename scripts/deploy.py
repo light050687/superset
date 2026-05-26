@@ -318,6 +318,17 @@ def build_plugins(repo_root):
 
 # ─── Docker ───────────────────────────────────────────────────────────────
 def docker_recreate(repo_root):
+    # Подгрузить CORP_CA_CERT_B64 из docker/.env-local в os.environ, чтобы
+    # compose substitution `${CORP_CA_CERT_B64}` в build:args сработал.
+    env_local = repo_root / "docker" / ".env-local"
+    if env_local.exists():
+        for line in env_local.read_text().splitlines():
+            if "=" in line and not line.startswith("#"):
+                k, v = line.split("=", 1)
+                k = k.strip()
+                if k and k not in os.environ:
+                    os.environ[k] = v.strip()
+
     step("docker compose down...")
     run(["docker", "compose", "-f", COMPOSE_FILE, "down"], cwd=repo_root, check=False)
     step("docker compose up -d --build (~5-10 мин)...")

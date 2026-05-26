@@ -61,8 +61,11 @@ ARG NPM_BUILD_CMD="build"
 RUN /app/docker/apt-install.sh build-essential python3 zstd git
 
 # Define environment variables for frontend build
+# PUPPETEER_SKIP_DOWNLOAD — для puppeteer v22+ (legacy var выше — для v21−).
+# Без обоих корп-сеть с MITM ломает install скрипт на скачивании chromium.
 ENV BUILD_CMD=${NPM_BUILD_CMD} \
-    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_SKIP_DOWNLOAD=true
 
 # Run the frontend memory monitoring script
 RUN /app/docker/frontend-mem-nag.sh
