@@ -1445,9 +1445,11 @@ export const RetryButton = styled.button`
   }
 `;
 
-/* Sortable column header — width is dynamic, keeps cursor:pointer */
-export const SortableTh = styled.th<{ widthPx: number }>`
-  width: ${({ widthPx }) => widthPx}px;
+/* Sortable column header — width is dynamic (CSS string '40%' или число px),
+   cursor:pointer. */
+export const SortableTh = styled.th<{ widthPx: number | string }>`
+  width: ${({ widthPx }) =>
+    typeof widthPx === 'number' ? `${widthPx}px` : widthPx};
   cursor: pointer;
 `;
 

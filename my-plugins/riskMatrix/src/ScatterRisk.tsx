@@ -1221,7 +1221,9 @@ const ScatterRisk: React.FC<ScatterRiskProps> = (props) => {
   // DS 2.0 canonical: loading имеет свой раздельный return со своим CardRoot.
   // При переходе loading → loaded React unmount'ит loading-CardRoot и mount'ит
   // новый → cardInKf animation запускается ровно когда юзер видит контент.
-  if (dataState === 'loading') {
+  // NB: dataState типизирован как 'empty'|'partial'|'stale'|'populated', но
+  // Superset chartStatus может прокидывать 'loading' runtime — каст через unknown.
+  if ((dataState as unknown as string) === 'loading') {
     return (
       <CardRoot data-theme={themeMode} role="region" aria-busy="true" data-no-anim="">
         <style>{KEYFRAMES_CSS}</style>
