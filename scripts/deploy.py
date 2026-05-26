@@ -271,7 +271,11 @@ def ensure_repo(script_dir):
 # ─── Build frontend + plugins ─────────────────────────────────────────────
 def npm_install_and_build(pkg_dir, label):
     step(f"  → {label}")
-    rc, _, _ = run(["npm", "install"], cwd=pkg_dir, check=False)
+    # --legacy-peer-deps: плагины используют старый @superset-ui/chart-controls
+    # с peer react^16, при наличии react@18/19 в дереве npm падает на ERESOLVE.
+    # Старое поведение npm — просто warn, новое — error. Восстанавливаем
+    # старое для совместимости со старыми плагинами.
+    rc, _, _ = run(["npm", "install", "--legacy-peer-deps"], cwd=pkg_dir, check=False)
     if rc != 0:
         warn(f"  npm install {label} failed — пропускаю")
         return False
@@ -293,7 +297,7 @@ def build_frontend(repo_root):
     for stale in node_modules.glob("superset-plugin-chart-*"):
         if stale.is_dir():
             shutil.rmtree(stale, ignore_errors=True)
-    run(["npm", "install"], cwd=fe)
+    run(["npm", "install", "--legacy-peer-deps"], cwd=fe)
     run(["npm", "run", "build"], cwd=fe)
     ok("Frontend собран")
 
