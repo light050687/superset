@@ -8,7 +8,16 @@ deploy.py — кросс-платформенный setup / update Superset ст
     python3 scripts/deploy.py setup [опции]      # первичная установка с нуля
     python3 scripts/deploy.py update [опции]     # обновление работающего стенда
 
+Режимы (--mode):
+    host    (default)  npm build на ХОСТЕ + docker compose up --build.
+                       Быстрее для dev-итераций (kombo с delta.py), но требует
+                       Node 20 + zstd на хосте.
+    docker             ВСЁ собирается внутри образа (Dockerfile сам строит
+                       my-plugins + frontend). На хосте нужны только docker + git.
+                       Используй на проде.
+
 Опции setup:
+    --mode {host,docker}        см. выше; default: host
     --corp-ca PATH              путь к корп-CA сертификату (PEM)
     --ca-from-windows-store     авто-извлечение корп-CA из Cert:\LocalMachine\Root
                                 (только Windows; PowerShell helper)
@@ -20,8 +29,9 @@ deploy.py — кросс-платформенный setup / update Superset ст
                                 (timeout 5 мин)
 
 Опции update:
-    --no-build                  только git pull + docker recreate (для случаев
-                                когда меняется только Python/конфиг)
+    --mode {host,docker}        как в setup
+    --no-build                  только git pull + docker recreate (host mode;
+                                в docker mode build всё равно внутри образа)
     --wait-ready                как в setup
 
 Получение корп-CA (если --ca-from-windows-store не работает — например не Windows):
@@ -42,14 +52,18 @@ deploy.py — кросс-платформенный setup / update Superset ст
     Linux:  CA обычно уже в /etc/ssl/certs/. Или экспорт из браузера → корень цепочки.
     Mac:    security find-certificate -a -p > all-roots.pem  (выбери нужный)
 
-Требования (должны стоять на хосте):
-    - Python 3.6+
-    - Docker + Docker Compose v2
+Требования на хосте:
+    Всегда:
+    - Python 3.6+        (сам скрипт)
+    - Docker + Compose v2
     - Git
-    - Node.js 20.x  (npm идёт в комплекте)
-    - zstd          (для simple-zstd в webpack)
 
-Если чего-то нет — скрипт скажет и даст команду установки для твоей ОС.
+    Только если --mode host (default — dev-машина):
+    - Node.js 20.x       (npm идёт в комплекте)
+    - zstd               (для simple-zstd в webpack)
+
+    В --mode docker эти два не нужны — build идёт внутри образа.
+    Если чего-то нет — скрипт скажет и даст команду установки для твоей ОС.
 """
 import argparse
 import base64
@@ -129,8 +143,11 @@ def have(cmd):
 
 
 # ─── Prerequisites ────────────────────────────────────────────────────────
-def check_prereqs():
-    step("Проверка prerequisites...")
+def check_prereqs(mode="host"):
+    """mode='host' (dev-машина): docker + git + node 20 + zstd (для host-build).
+    mode='docker' (prod-сервер): docker + git. Build всего внутри образа.
+    """
+    step(f"Проверка prerequisites (mode={mode})...")
     missing = []
 
     if not have("docker"):
@@ -153,38 +170,41 @@ def check_prereqs():
         _, out, _ = run(["git", "--version"], capture=True)
         ok(f"git: {out}")
 
-    if not have("node"):
-        missing.append(("node 20.x", {
-            "linux": "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt install -y nodejs",
-            "darwin": "brew install node@20",
-            "windows": "https://nodejs.org/dist/v20.18.1/node-v20.18.1-x64.msi",
-        }))
-    else:
-        _, out, _ = run(["node", "--version"], capture=True)
-        major = int(out.lstrip("v").split(".")[0])
-        if major < NODE_MIN_MAJOR:
-            err(f"node: {out} — требуется ≥ v{NODE_MIN_MAJOR}.x")
-            sys.exit(1)
-        elif major != NODE_MIN_MAJOR:
-            warn(f"node: {out} (рекомендуется v{NODE_MIN_MAJOR}.x; v{major} может работать, но npm warn EBADENGINE)")
+    if mode == "host":
+        if not have("node"):
+            missing.append(("node 20.x", {
+                "linux": "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt install -y nodejs",
+                "darwin": "brew install node@20",
+                "windows": "https://nodejs.org/dist/v20.18.1/node-v20.18.1-x64.msi",
+            }))
         else:
-            ok(f"node: {out}")
+            _, out, _ = run(["node", "--version"], capture=True)
+            major = int(out.lstrip("v").split(".")[0])
+            if major < NODE_MIN_MAJOR:
+                err(f"node: {out} — требуется ≥ v{NODE_MIN_MAJOR}.x")
+                sys.exit(1)
+            elif major != NODE_MIN_MAJOR:
+                warn(f"node: {out} (рекомендуется v{NODE_MIN_MAJOR}.x; v{major} может работать, но npm warn EBADENGINE)")
+            else:
+                ok(f"node: {out}")
 
-    if not have("zstd"):
-        missing.append(("zstd", {
-            "linux": "sudo apt install zstd",
-            "darwin": "brew install zstd",
-            "windows": (
-                "1) Скачай https://github.com/facebook/zstd/releases/latest (zstd-vX.Y.Z-win64.zip)\n"
-                "   2) Распакуй в %USERPROFILE%\\Tools\\zstd\\\n"
-                "   3) Добавь в PATH (powershell):\n"
-                "      $p = [Environment]::GetEnvironmentVariable('Path', 'User')\n"
-                "      [Environment]::SetEnvironmentVariable('Path', \"$p;$env:USERPROFILE\\Tools\\zstd\", 'User')"
-            ),
-        }))
+        if not have("zstd"):
+            missing.append(("zstd", {
+                "linux": "sudo apt install zstd",
+                "darwin": "brew install zstd",
+                "windows": (
+                    "1) Скачай https://github.com/facebook/zstd/releases/latest (zstd-vX.Y.Z-win64.zip)\n"
+                    "   2) Распакуй в %USERPROFILE%\\Tools\\zstd\\\n"
+                    "   3) Добавь в PATH (powershell):\n"
+                    "      $p = [Environment]::GetEnvironmentVariable('Path', 'User')\n"
+                    "      [Environment]::SetEnvironmentVariable('Path', \"$p;$env:USERPROFILE\\Tools\\zstd\", 'User')"
+                ),
+            }))
+        else:
+            _, out, _ = run(["zstd", "--version"], capture=True)
+            ok(f"zstd: {out.splitlines()[0]}")
     else:
-        _, out, _ = run(["zstd", "--version"], capture=True)
-        ok(f"zstd: {out.splitlines()[0]}")
+        ok("node/zstd: не требуются (mode=docker, build внутри образа)")
 
     if missing:
         err(f"Отсутствуют: {', '.join(m[0] for m in missing)}")
@@ -481,7 +501,7 @@ def wait_for_health(container=CONTAINER_APP, timeout=300, poll=5):
 
 # ─── Подкоманды ───────────────────────────────────────────────────────────
 def cmd_setup(args):
-    check_prereqs()
+    check_prereqs(mode=args.mode)
 
     if args.corp_tls_off and (args.corp_ca or args.ca_from_windows_store):
         err("Нельзя одновременно --corp-tls-off и --corp-ca / --ca-from-windows-store.")
@@ -510,9 +530,13 @@ def cmd_setup(args):
         corp_ca_pem=corp_ca_pem,
     )
 
-    # 4. Build
-    build_plugins(repo_root)
-    build_frontend(repo_root)
+    # 4. Build (mode=host) — для dev-машины. На проде (mode=docker) build идёт
+    # внутри образа через Dockerfile, npm на хосте не нужен.
+    if args.mode == "host":
+        build_plugins(repo_root)
+        build_frontend(repo_root)
+    else:
+        step("mode=docker: build плагинов и frontend будет внутри образа (см. Dockerfile)")
 
     # 5. Docker
     docker_up(repo_root, recreate=True)
@@ -532,9 +556,12 @@ def cmd_update(args):
     repo_root = ensure_repo(script_dir, allow_clone=False)
     ok(f"Репо: {repo_root}")
 
-    if not args.no_build:
+    # build на хосте только если mode=host и не --no-build
+    if args.mode == "host" and not args.no_build:
         build_plugins(repo_root)
         build_frontend(repo_root)
+    elif args.mode == "docker":
+        step("mode=docker: build идёт внутри образа при docker compose up --build")
 
     docker_up(repo_root, recreate=True)
 
@@ -555,6 +582,9 @@ def main():
     sub = p.add_subparsers(dest="cmd", required=True, metavar="{setup,update}")
 
     s = sub.add_parser("setup", help="первичная установка с нуля")
+    s.add_argument("--mode", choices=["host", "docker"], default="host",
+                   help="host: npm build на хосте (dev, быстро для delta) — default. "
+                        "docker: build внутри образа (prod, нужен только docker + git)")
     s.add_argument("--corp-ca", metavar="PATH", help="путь к корп-CA сертификату (PEM)")
     s.add_argument("--ca-from-windows-store", action="store_true",
                    help="авто-извлечение корп-CA из Cert:\\LocalMachine\\Root (Windows)")
@@ -567,8 +597,11 @@ def main():
     s.set_defaults(func=cmd_setup)
 
     u = sub.add_parser("update", help="обновление работающего стенда")
+    u.add_argument("--mode", choices=["host", "docker"], default="host",
+                   help="host (default) / docker — см. `setup --help`")
     u.add_argument("--no-build", action="store_true",
-                   help="пропустить npm build (только git pull + docker recreate)")
+                   help="пропустить npm build (только git pull + docker recreate). "
+                        "В mode=docker этот флаг бесполезен (build всё равно внутри образа)")
     u.add_argument("--wait-ready", action="store_true",
                    help="ждать superset_app:healthy перед завершением")
     u.set_defaults(func=cmd_update)

@@ -76,14 +76,30 @@ WORKDIR /app/superset-frontend
 RUN mkdir -p /app/superset/static/assets \
              /app/superset/translations
 
+# Build my-plugins FIRST (Tier 1: pure-Docker prod = только docker + git).
+# superset-frontend ссылается на my-plugins/* как `file:../my-plugins/*` в package.json,
+# а webpack потом импортирует esm/index.js каждого плагина. Без pre-build esm/ нет
+# → ENOENT при webpack build. Раньше esm/ собирался на хосте через scripts/deploy.py
+# (требовался Node + zstd на хосте). Теперь делаем внутри образа — на проде нужны
+# только docker + git, без Node/zstd. На dev-машине можно по-прежнему собирать на
+# хосте + использовать delta.py для итераций.
+COPY my-plugins /app/my-plugins
+RUN --mount=type=cache,target=/root/.npm \
+    if [ "$DEV_MODE" = "false" ]; then \
+      for d in /app/my-plugins/*/; do \
+        if [ -f "$d/package.json" ]; then \
+          echo "==> Building plugin: $(basename $d)"; \
+          (cd "$d" && npm install --legacy-peer-deps && npm run build) || exit 1; \
+        fi; \
+      done; \
+    else \
+      echo "Skipping plugin builds in DEV_MODE"; \
+    fi
+
 # Mount package files and install dependencies if not in dev mode
-# NOTE: we mount packages and plugins as they are referenced in package.json as workspaces
-# ideally we'd COPY only their package.json. Here npm ci will be cached as long
-# as the full content of these folders don't change, yielding a decent cache reuse rate.
-# Note that it's not possible to selectively COPY or mount using blobs.
+# my-plugins уже скопированы в layer выше — bind mount для них не нужен.
 RUN --mount=type=bind,source=./superset-frontend/package.json,target=./package.json \
     --mount=type=bind,source=./superset-frontend/package-lock.json,target=./package-lock.json \
-    --mount=type=bind,source=./my-plugins,target=/app/my-plugins \
     --mount=type=cache,target=/root/.cache \
     --mount=type=cache,target=/root/.npm \
     if [ "$DEV_MODE" = "false" ]; then \
@@ -92,9 +108,6 @@ RUN --mount=type=bind,source=./superset-frontend/package.json,target=./package.j
         echo "Skipping 'npm ci' in dev mode"; \
     fi
 
-# Copy our custom Samberi plugins (referenced from package.json as
-# `file:../my-plugins/*`) into the build context so webpack can resolve them.
-COPY my-plugins /app/my-plugins
 # Runs the webpack build process
 COPY superset-frontend /app/superset-frontend
 

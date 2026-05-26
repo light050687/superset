@@ -1,12 +1,26 @@
 # Deploy / Update Superset BI стенд
 
-Кросс-платформенные Python-скрипты для развёртывания нашего форка Apache Superset с кастомными viz-плагинами. Два режима:
+Кросс-платформенные Python-скрипты для развёртывания нашего форка Apache Superset с кастомными viz-плагинами.
 
-| Скрипт                                 | Когда использовать                                                |
-| -------------------------------------- | ----------------------------------------------------------------- |
-| `python scripts/deploy.py setup`       | Первый запуск на чистой машине / новом сервере                    |
-| `python scripts/deploy.py update`      | Подтянуть свежий код + пересобрать на работающем стенде           |
-| `python scripts/delta.py`              | Быстрый цикл «правка плагина → :8088» (~3 сек, без docker restart) |
+## TL;DR
+
+| Сценарий | Команда | Что нужно на хосте |
+| --- | --- | --- |
+| **Прод-сервер (Linux), первый запуск** | `git clone <repo> && cd superset && docker compose -f docker-compose-non-dev.yml up -d --build` | docker + git |
+| **Прод-сервер, обновление** | `git pull && docker compose -f docker-compose-non-dev.yml up -d --build` | docker + git |
+| **Прод через скрипт (с corp-CA, wait-for-health)** | `python scripts/deploy.py setup --mode docker --wait-ready` (или `update --mode docker`) | docker + git + python |
+| **Dev-машина, первый запуск** | `python scripts/deploy.py setup --wait-ready` | docker + git + python + node 20 + zstd |
+| **Dev-машина, обновление** | `python scripts/deploy.py update --wait-ready` | то же |
+| **Dev цикл правка → :8088 (~3 сек)** | `python scripts/delta.py` | nothing нового (поверх dev setup) |
+
+## Два режима build
+
+| Режим | Где собирается frontend + plugins | Кому |
+| --- | --- | --- |
+| **`--mode docker`** | Внутри Docker-образа (Dockerfile) | **прод-сервер** — нужны только `docker + git` |
+| **`--mode host`** (default) | На хосте (`npm run build` в `my-plugins/*` и `superset-frontend/`) | **dev-машина** — нужен Node + zstd, но iteration через `delta.py` за ~3 сек |
+
+Default `host` — потому что dev-цикл важнее количеству пользователей: правка плагина в `host` режиме обновляется через `delta.py` за 3 сек, а в `docker` режиме каждое изменение требует полного rebuild (~30 мин).
 
 ## Что развёртывается
 
@@ -16,31 +30,88 @@
 
 ---
 
-## Prerequisites (на хосте должны стоять)
+## Prerequisites
 
-| Software        | Версия       | Зачем                                  |
-| --------------- | ------------ | -------------------------------------- |
-| Python          | 3.6+         | сам deploy.py / delta.py               |
-| Docker + Compose v2 | latest   | контейнеры                             |
-| Git             | latest       | clone / pull                           |
-| Node.js         | **20.x**     | npm install / npm build плагинов и фронта |
-| zstd            | latest       | webpack uses simple-zstd для bundle compression |
+### Минимум (mode=docker, прод-сервер)
 
-Скрипт сам проверит prerequisites и даст команду установки если чего-то нет.
+| Software            | Версия     | Зачем               |
+| ------------------- | ---------- | ------------------- |
+| Docker + Compose v2 | latest     | контейнеры          |
+| Git                 | latest     | clone / pull        |
+| Python              | 3.6+       | (опц.) для скрипта `deploy.py`. Без скрипта тоже работает — `docker compose up --build` |
+
+### Полный (mode=host, dev-машина)
+
+То же + Node.js **20.x** (npm в комплекте) + **zstd** (для simple-zstd в webpack).
+
+Скрипт сам проверит prerequisites нужного режима и даст команду установки если чего-то нет.
 
 ---
 
-## Linux / Ubuntu — установка с нуля
+## PROD-сервер (Linux) — минимум команд
 
-### 1. Поставить prerequisites
+На прод-машине нужен **только docker + git**. Node + zstd НЕ ставим (build идёт внутри образа).
+
+### Вариант A: чистый docker compose (без скрипта вообще)
 
 ```bash
 # Docker (если ещё нет)
 curl -fsSL https://get.docker.com | sudo sh
 sudo usermod -aG docker $USER
-newgrp docker   # без relogin
+newgrp docker
+sudo apt install -y git
 
-# Node 20.x
+# Клон + поднять
+git clone https://github.com/light050687/superset.git
+cd superset
+
+# (опц.) docker/.env-local — переменные окружения, см. раздел «Production checklist»
+# Минимум — отключить examples:
+echo "SUPERSET_LOAD_EXAMPLES=no" > docker/.env-local
+
+# Build + up (build плагинов и frontend идёт ВНУТРИ образа)
+docker compose -f docker-compose-non-dev.yml up -d --build
+
+# Дождаться healthy
+docker inspect superset_app --format '{{.State.Health.Status}}'   # повтори пока не "healthy"
+```
+
+**Обновление прода:**
+
+```bash
+cd superset
+git pull
+docker compose -f docker-compose-non-dev.yml up -d --build
+```
+
+### Вариант B: через `deploy.py` (с corp-CA setup + wait-for-health)
+
+```bash
+git clone https://github.com/light050687/superset.git
+cd superset
+sudo apt install -y python3 python3-pip
+python3 scripts/deploy.py setup --mode docker --wait-ready
+```
+
+Полезно если на проде корп-MITM:
+
+```bash
+python3 scripts/deploy.py setup --mode docker --corp-ca /path/to/ca.pem --wait-ready
+```
+
+---
+
+## Dev-машина — установка с нуля (mode=host для быстрого dev-цикла)
+
+### 1. Поставить prerequisites (Linux/Ubuntu)
+
+```bash
+# Docker
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Node 20.x — для быстрого host-build (опционально, можно без него на --mode docker)
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
@@ -52,13 +123,11 @@ sudo apt install -y git zstd python3 python3-pip
 
 ```bash
 docker --version && docker compose version
-node --version    # должно быть v20.x
+node --version    # v20.x
 zstd --version
-git --version
-python3 --version
 ```
 
-### 2. Клон + setup
+### 2. Клон + setup (host mode — default)
 
 ```bash
 git clone https://github.com/light050687/superset.git
@@ -68,8 +137,9 @@ python3 scripts/deploy.py setup --wait-ready
 
 Опции:
 
-- `--with-examples` — загрузить demo-датасеты (World Bank, BART и т.п., ~10 MB с CDN). По умолчанию НЕ грузим — на корп-сети медленно/падает, в проде не нужно.
+- `--with-examples` — загрузить demo-датасеты (World Bank, BART, ~10 MB с CDN). По умолчанию НЕ грузим — на корп-сети медленно/падает, в проде не нужно.
 - `--wait-ready` — ждать `superset_app:healthy` (timeout 5 мин) перед завершением.
+- `--mode docker` — перейти в pure-Docker режим (не нужен Node + zstd, build идёт внутри образа; медленнее, но проще).
 
 ### 3. Корп-сеть (MITM proxy с подменой TLS-сертификата)
 
@@ -187,28 +257,32 @@ http://localhost:8088 → admin / admin → смени пароль.
 После того как код обновился в `custom/main`:
 
 ```bash
-# Linux / Mac
-cd superset
-python3 scripts/deploy.py update --wait-ready
+# Прод (Linux, mode=docker — без Node на хосте)
+cd superset && git pull && docker compose -f docker-compose-non-dev.yml up -d --build
+# Или через скрипт (то же + wait-for-health):
+python3 scripts/deploy.py update --mode docker --wait-ready
 
-# Windows
+# Dev-машина (mode=host, default — быстрее iteration)
 cd superset
-python scripts\deploy.py update --wait-ready
+python3 scripts/deploy.py update --wait-ready          # Linux / Mac
+python scripts\deploy.py update --wait-ready           # Windows
 ```
 
-Что делает:
+Что делает `deploy.py update`:
 
 1. `git fetch + pull custom/main` (с auto-stash локальных правок если есть)
-2. Пересборка плагинов (`my-plugins/*`)
-3. Пересборка frontend (`superset-frontend`)
-4. `docker compose down + up -d --build`
+2. (mode=host) Пересборка плагинов (`my-plugins/*`) на хосте
+3. (mode=host) Пересборка frontend (`superset-frontend`) на хосте
+4. `docker compose down + up -d --build` (в mode=docker build плагинов и frontend идёт ВНУТРИ образа)
 5. (опц.) ждать `superset_app:healthy`
 
-Опция `--no-build` — пропустить npm rebuild (если меняется только Python / конфиг):
+Опция `--no-build` — в host mode пропустить npm rebuild (если меняется только Python / конфиг):
 
 ```bash
 python3 scripts/deploy.py update --no-build --wait-ready
 ```
+
+В `--mode docker` флаг `--no-build` не нужен — docker compose сам определит что Dockerfile не изменился и переиспользует кеш.
 
 ---
 
