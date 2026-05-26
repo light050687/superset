@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""
+# ruff: noqa: W605  -- docstring содержит примеры Windows-путей (Cert:\LocalMachine)
+r"""
 deploy.py — кросс-платформенный setup / update Superset стенда.
 
 Использование:
@@ -79,9 +80,18 @@ def err(msg):   print(_color("31", f"✗ {msg}"))
 
 
 def run(cmd, cwd=None, check=True, capture=False, shell=False):
-    """Запустить команду. Возвращает (returncode, stdout, stderr)."""
+    """Запустить команду. Возвращает (returncode, stdout, stderr).
+
+    На Windows резолвим первый аргумент через shutil.which — иначе
+    subprocess не находит .cmd/.bat файлы (npm.cmd, yarn.cmd и т.п.),
+    которые в PATH (PowerShell их подбирает, Python без shell — нет).
+    """
     if isinstance(cmd, str) and not shell:
         cmd = cmd.split()
+    if IS_WIN and not shell and isinstance(cmd, list) and cmd:
+        resolved = shutil.which(cmd[0])
+        if resolved:
+            cmd = [resolved] + cmd[1:]
     if not capture:
         result = subprocess.run(cmd, cwd=cwd, shell=shell)
         if check and result.returncode != 0:
