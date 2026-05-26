@@ -285,6 +285,14 @@ def npm_install_and_build(pkg_dir, label):
 def build_frontend(repo_root):
     step("Build superset-frontend (~15 мин)...")
     fe = repo_root / "superset-frontend"
+    # Удалить наши custom плагины из node_modules, чтобы npm install взял
+    # свежую копию из my-plugins/* (они file:-зависимости в package.json).
+    # Без этого фронт может ссылаться на старые esm/ артефакты с прошлого
+    # клона/npm install — webpack валится на missing ./components/InfoHint.
+    node_modules = fe / "node_modules"
+    for stale in node_modules.glob("superset-plugin-chart-*"):
+        if stale.is_dir():
+            shutil.rmtree(stale, ignore_errors=True)
     run(["npm", "install"], cwd=fe)
     run(["npm", "run", "build"], cwd=fe)
     ok("Frontend собран")
@@ -345,8 +353,11 @@ def main():
         setup_corp_ca(args.corp_ca, repo_root)
 
     if not args.skip_build:
-        build_frontend(repo_root)
+        # Порядок важен: плагины сначала (создают esm/lib артефакты),
+        # потом frontend (npm install копирует свежие my-plugins → node_modules).
+        # Обратный порядок → webpack видит старые esm/ без новых компонент.
         build_plugins(repo_root)
+        build_frontend(repo_root)
 
     docker_recreate(repo_root)
 
