@@ -23,14 +23,18 @@ export interface ColumnDef {
   numberField?: 'avgWriteoff' | 'avgShrinkageCheck';
 }
 
+/* Все колонки на fr-шкалу с минимумами — равномерное растяжение при
+   широкой карточке (не было: avgWo/avgSk и status имели fixed px, оставляя
+   пустоту посередине между bullet и числовыми; lossRate/dual получали
+   избыток fr).
+   Total fr ≈ 9.1 → каждая колонка масштабируется с шириной. */
 export const COLUMNS: ColumnDef[] = [
-  { id: 'tree', label: '', type: 'tree', width: '56px', sortable: false },
-  { id: 'rank', label: '#', type: 'rank', width: '32px', sortable: false },
+  { id: 'tree', label: '', type: 'tree', width: '32px', sortable: false },
   {
     id: 'store',
     label: 'Магазин',
     type: 'store',
-    width: 'minmax(220px, 1.6fr)',
+    width: 'minmax(150px, 2fr)',
     sortKey: 'name',
     defaultSort: 'asc',
   },
@@ -38,7 +42,7 @@ export const COLUMNS: ColumnDef[] = [
     id: 'lossRate',
     label: 'Уровень потерь',
     type: 'bullet-loss',
-    width: 'minmax(140px, 1.1fr)',
+    width: 'minmax(140px, 1.5fr)',
     sortKey: 'lossCombined',
     defaultSort: 'desc',
     align: 'right',
@@ -47,14 +51,14 @@ export const COLUMNS: ColumnDef[] = [
     id: 'dual',
     label: 'Спис. / Нед.',
     type: 'dual-bullet',
-    width: 'minmax(150px, 1.1fr)',
+    width: 'minmax(140px, 1.3fr)',
     sortable: false,
   },
   {
     id: 'avgWo',
-    label: 'Ср. сумма спис.',
+    label: 'Ср. спис.',
     type: 'number',
-    width: '110px',
+    width: 'minmax(80px, 0.7fr)',
     sortKey: 'avgWriteoff',
     defaultSort: 'desc',
     align: 'right',
@@ -62,9 +66,9 @@ export const COLUMNS: ColumnDef[] = [
   },
   {
     id: 'avgSk',
-    label: 'Ср. чек недост.',
+    label: 'Ср. недост.',
     type: 'number',
-    width: '110px',
+    width: 'minmax(80px, 0.7fr)',
     sortKey: 'avgShrinkageCheck',
     defaultSort: 'desc',
     align: 'right',
@@ -74,16 +78,15 @@ export const COLUMNS: ColumnDef[] = [
     id: 'drivers',
     label: 'Основные драйверы',
     type: 'drivers',
-    width: 'minmax(260px, 1.8fr)',
+    width: 'minmax(180px, 2fr)',
     sortable: false,
   },
   {
     id: 'status',
     label: 'Статус',
     type: 'status',
-    width: 'minmax(130px, 140px)',
-    sortKey: 'statusRank',
-    defaultSort: 'desc',
+    width: 'minmax(100px, 0.9fr)',
+    sortable: false,
     align: 'right',
   },
 ];

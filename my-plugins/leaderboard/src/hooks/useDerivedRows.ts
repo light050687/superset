@@ -17,17 +17,25 @@ export interface DerivedRowsInput {
   expanded: Set<string>;
   sortBy: SortKey;
   sortDir: SortDir;
+  /** 0-indexed страница. Если pageSize не задан — игнорируется. */
+  page: number;
+  /** Размер страницы. 0 / undefined → пагинация выключена. */
+  pageSize: number;
 }
 
 export interface DerivedRowsOutput {
-  /** Отфильтрованные и отсортированные магазины (без flatten). */
+  /** Отфильтрованные и отсортированные магазины (весь набор, БЕЗ slice по странице). */
   rankedStores: Store[];
-  /** Плоский список строк для рендера (магазины + раскрытые сегменты). */
+  /** Плоский список строк ТОЛЬКО для текущей страницы (магазины + раскрытые сегменты). */
   flatRows: FlatRow[];
-  /** Количество магазинов после фильтров (для подсчёта «N из total»). */
+  /** Количество магазинов после фильтров, ДО slice по странице. */
   shownCount: number;
   /** Общее число магазинов до фильтров. */
   totalCount: number;
+  /** Общее число страниц для текущего pageSize. Минимум 1. */
+  pageCount: number;
+  /** Валидный (clamped) номер страницы — если state.page > pageCount-1, тут уже скорректировано. */
+  safePage: number;
 }
 
 /**
@@ -45,6 +53,8 @@ export function useDerivedRows(input: DerivedRowsInput): DerivedRowsOutput {
     expanded,
     sortBy,
     sortDir,
+    page,
+    pageSize,
   } = input;
 
   const filtered = useMemo(() => {
@@ -87,14 +97,30 @@ export function useDerivedRows(input: DerivedRowsInput): DerivedRowsOutput {
     return [...p, ...rest];
   }, [sorted, pinned]);
 
+  /* Пагинация: slice rankedStores по странице, потом flatten.
+     Slice по rankedStores (а не по flatRows) — иначе expanded-сегменты
+     «съедают» магазины в конце страницы. */
+  const pageCount = Math.max(
+    1,
+    pageSize > 0 ? Math.ceil(rankedStores.length / pageSize) : 1,
+  );
+  const safePage = Math.min(Math.max(0, page), pageCount - 1);
+
+  const pagedStores = useMemo(() => {
+    if (pageSize <= 0) return rankedStores;
+    const from = safePage * pageSize;
+    return rankedStores.slice(from, from + pageSize);
+  }, [rankedStores, safePage, pageSize]);
+
   const flatRows = useMemo<FlatRow[]>(() => {
     const rows: FlatRow[] = [];
-    rankedStores.forEach((s, i) => {
+    const baseIdx = pageSize > 0 ? safePage * pageSize : 0;
+    pagedStores.forEach((s, i) => {
       rows.push({
         kind: 'store',
         data: s,
         level: 0,
-        displayIdx: i + 1,
+        displayIdx: baseIdx + i + 1,
       });
       if (expanded.has(s.id)) {
         const segs = [...s.segmentsDist].sort(
@@ -112,12 +138,14 @@ export function useDerivedRows(input: DerivedRowsInput): DerivedRowsOutput {
       }
     });
     return rows;
-  }, [rankedStores, expanded]);
+  }, [pagedStores, expanded, safePage, pageSize]);
 
   return {
     rankedStores,
     flatRows,
     shownCount: rankedStores.length,
     totalCount: stores.length,
+    pageCount,
+    safePage,
   };
 }

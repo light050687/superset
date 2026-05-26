@@ -9,7 +9,6 @@ const SORT_CHOICES = [
     ['shrinkage', (0, core_1.t)('% Недостач')],
     ['avgWriteoff', (0, core_1.t)('Ср. сумма списания')],
     ['avgShrinkageCheck', (0, core_1.t)('Ср. чек недостачи')],
-    ['statusRank', (0, core_1.t)('Статус')],
     ['name', (0, core_1.t)('Имя магазина (А-Я)')],
 ];
 const MOCK_PRESET_CHOICES = [
@@ -23,6 +22,12 @@ const ROW_LIMIT_CHOICES = [
     [1000, '1\u00a0000'],
     [5000, '5\u00a0000'],
     [10000, '10\u00a0000'],
+];
+const PAGE_SIZE_CHOICES = [
+    [25, '25'],
+    [50, '50'],
+    [100, '100'],
+    [200, '200'],
 ];
 const config = {
     controlPanelSections: [
@@ -86,6 +91,20 @@ const config = {
                             default: 'lossCombined',
                             choices: SORT_CHOICES,
                             description: (0, core_1.t)('По какому столбцу сортировать таблицу при первой загрузке.'),
+                            renderTrigger: true,
+                        },
+                    },
+                ],
+                [
+                    {
+                        name: 'page_size',
+                        config: {
+                            type: 'SelectControl',
+                            label: (0, core_1.t)('Магазинов на странице'),
+                            default: 50,
+                            choices: PAGE_SIZE_CHOICES,
+                            freeForm: false,
+                            description: (0, core_1.t)('Размер страницы пагинации. Сейчас навигация работает по уже загруженной выборке (row_limit); серверная пагинация — следующий шаг.'),
                             renderTrigger: true,
                         },
                     },

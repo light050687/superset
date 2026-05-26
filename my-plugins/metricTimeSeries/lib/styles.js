@@ -144,6 +144,11 @@ exports.Card = core_1.styled.div `
   position: relative;
   width: 100%;
   height: 100%;
+  /* contain: strict — блокирует propagation children's intrinsic size в
+     parent layout. В Superset dashboard view-mode без contain Card.scrollHeight
+     включает echarts canvas (3000+px при unbounded), что пушит grid-row
+     до этого размера и растягивает соседей. См. leaderboard styles.ts:Card. */
+  contain: strict;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;

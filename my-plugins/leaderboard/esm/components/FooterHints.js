@@ -1,9 +1,13 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { memo } from 'react';
-import { CardFooter } from '../styles';
+import { memo, useCallback } from 'react';
+import { CardFooter, PaginationWrap, PageBtn, PageIndicator, } from '../styles';
 import { InfoHint, InfoHintTopRight } from './InfoHint';
-function FooterHintsInner({ shown, total }) {
-    return (_jsx(CardFooter, { children: _jsxs("div", { role: "status", "aria-live": "polite", children: ["\u041F\u043E\u043A\u0430\u0437\u0430\u043D\u043E ", _jsx("span", { className: "total-right", children: shown }), " \u0438\u0437", ' ', _jsx("span", { className: "total-right", children: total })] }) }));
+function FooterHintsInner({ shown, total, page, pageSize, pageCount, onPageChange, }) {
+    const from = shown === 0 ? 0 : page * pageSize + 1;
+    const to = Math.min((page + 1) * pageSize, shown);
+    const goPrev = useCallback(() => onPageChange(page - 1), [page, onPageChange]);
+    const goNext = useCallback(() => onPageChange(page + 1), [page, onPageChange]);
+    return (_jsx(CardFooter, { children: _jsxs(PaginationWrap, { "aria-label": "\u041F\u0430\u0433\u0438\u043D\u0430\u0446\u0438\u044F", children: [_jsx(PageBtn, { type: "button", onClick: goPrev, disabled: page <= 0, "aria-label": "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0430\u044F \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430", children: _jsx("svg", { viewBox: "0 0 12 12", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round", children: _jsx("polyline", { points: "7.5 2.5 3.5 6 7.5 9.5" }) }) }), _jsxs(PageIndicator, { role: "status", "aria-live": "polite", children: [_jsxs("span", { children: [_jsx("strong", { children: from }), "\u2013", _jsx("strong", { children: to })] }), ' ', _jsx("span", { className: "pg-muted", children: "\u0438\u0437" }), " ", _jsx("strong", { children: shown }), shown !== total && (_jsxs("span", { className: "pg-muted", children: [' ', "(\u0438\u0437 ", total, ")"] })), pageCount > 1 && (_jsxs("span", { className: "pg-muted", children: [' ', "\u00B7 \u0441\u0442\u0440. ", _jsx("strong", { children: page + 1 }), "/", pageCount] }))] }), _jsx(PageBtn, { type: "button", onClick: goNext, disabled: page >= pageCount - 1, "aria-label": "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0430\u044F \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430", children: _jsx("svg", { viewBox: "0 0 12 12", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round", children: _jsx("polyline", { points: "4.5 2.5 8.5 6 4.5 9.5" }) }) })] }) }));
 }
 export default memo(FooterHintsInner);
 /** ControlsHint — i-кнопка для размещения в CardHead Controls. */

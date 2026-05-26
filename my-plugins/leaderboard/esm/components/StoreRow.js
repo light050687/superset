@@ -1,6 +1,6 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { memo } from 'react';
-import { Cell, RankCell, RowEl } from '../styles';
+import { Cell, RowEl } from '../styles';
 import { COLUMNS } from './columns';
 import TreeChevron from './TreeChevron';
 import StoreCell from './StoreCell';
@@ -15,10 +15,8 @@ function StoreRowInner(props) {
             switch (c.type) {
                 case 'tree':
                     return (_jsx(TreeChevron, { level: level, expandable: expandable, expanded: expanded, onToggle: onToggleExpand }, c.id));
-                case 'rank':
-                    return (_jsx(Cell, { "$align": "center", children: _jsx(RankCell, { children: displayIdx }) }, c.id));
                 case 'store':
-                    return (_jsx(Cell, { children: _jsx(StoreCell, { data: data, pinned: pinned, onTogglePin: data.isSegment ? undefined : onTogglePin }) }, c.id));
+                    return (_jsx(Cell, { children: _jsx(StoreCell, { data: data }) }, c.id));
                 case 'bullet-loss':
                     return (_jsx(BulletCell, { value: data.writeoff, plan: data.planWriteoff, globalMax: globalMaxWriteoff, tokens: tokens }, c.id));
                 case 'dual-bullet':

@@ -326,69 +326,94 @@ export function resizeComponentWithShrinkingNeighbors({
     const leftSiblings = siblingIds.slice(0, idx);
     const rightSiblings = siblingIds.slice(idx + 1);
 
-    /* widthOfInCols — mixed-mode safe: читает .widthSub / .freePxWidth /
-       .width в зависимости от того в каком режиме был сохранён сосед.
-       free-mode сосед не сжимается через grid logic (treat as fixed
-       минимальной col-ширины). */
-    const widthOfInCols = sibId => {
+    /* Работаем в UNIT'ах: col-mode → cols (1..12), sub-mode → sub-cells
+       (1..12*sub). Это критично для sub-mode где widthSub=27 при sub=5 =
+       5.4 col; Math.ceil(5.4)=6 ⇒ потеря 0.6 col empty space, и thunk
+       начинает сжимать соседа когда не должен. */
+    const inSubMode = layoutMode === 'sub';
+    const UNIT_TOTAL = inSubMode
+      ? GRID_COLUMN_COUNT * subdivisionsUsed
+      : GRID_COLUMN_COUNT;
+    const UNIT_MIN = inSubMode
+      ? subdivisionsUsed // 1 col в sub-cells
+      : GRID_MIN_COLUMN_COUNT;
+
+    /* widthOfInUnits — возвращает ширину sibling'а в текущих units.
+       Если sibling сохранён в другом режиме, конвертируем:
+       - col-saved sibling в sub-mode: width*sub = sub-cells
+       - sub-saved sibling в col-mode: ceil(widthSub/sub) = cols
+       free-mode sibling — fixed MIN, не сжимается. */
+    const widthOfInUnits = sibId => {
       const m = layout[sibId]?.meta;
       if (!m) return 0;
-      if (m.freePxWidth != null) return GRID_MIN_COLUMN_COUNT;
+      if (m.freePxWidth != null) return UNIT_MIN;
+      if (inSubMode) {
+        if (m.widthSub != null && m.subdivisionsUsed === subdivisionsUsed) {
+          return m.widthSub; // exact sub-cell precision сохраняется
+        }
+        if (m.widthSub != null && m.subdivisionsUsed) {
+          // sibling sub-saved но в другом subdivisionsUsed — конвертация
+          return Math.round((m.widthSub / m.subdivisionsUsed) * subdivisionsUsed);
+        }
+        return (m.width || 0) * subdivisionsUsed;
+      }
       if (m.widthSub != null && m.subdivisionsUsed) {
         return Math.ceil(m.widthSub / m.subdivisionsUsed);
       }
       return m.width || 0;
     };
 
-    const widthLeftCols = leftSiblings.reduce(
-      (s, sId) => s + widthOfInCols(sId),
+    const widthLeftUnits = leftSiblings.reduce(
+      (s, sId) => s + widthOfInUnits(sId),
       0,
     );
-    const currentRightTotalCols = rightSiblings.reduce(
-      (s, sId) => s + widthOfInCols(sId),
+    const widthRightUnits = rightSiblings.reduce(
+      (s, sId) => s + widthOfInUnits(sId),
       0,
     );
 
-    /* Конвертируем входящую ширину в col-units (внутреннее представление).
-       Sub-mode: widthSub / subdivisionsUsed = col-equivalent. */
-    const incomingWidthCols =
-      layoutMode === 'sub'
-        ? Math.max(1, Math.ceil((widthSub || 1) / subdivisionsUsed))
-        : width || GRID_MIN_COLUMN_COUNT;
+    /* incomingWidth в текущих units. */
+    const incomingWidthUnits = inSubMode
+      ? widthSub || UNIT_MIN
+      : width || UNIT_MIN;
 
-    /* Clamp в допустимый диапазон с учётом push-shrink:
-       max_cols = GRID_COLUMN_COUNT - widthLeft - rightSiblings * MIN. */
-    const maxWidthCols = Math.max(
-      GRID_MIN_COLUMN_COUNT,
-      GRID_COLUMN_COUNT -
-        widthLeftCols -
-        rightSiblings.length * GRID_MIN_COLUMN_COUNT,
+    /* Max: 12*sub - (left+right)*MIN sub-cells (sub-mode), или
+       12 - (left+right)*1 cols (col-mode). Push-shrink в обе стороны. */
+    const maxWidthUnits = Math.max(
+      UNIT_MIN,
+      UNIT_TOTAL -
+        (leftSiblings.length + rightSiblings.length) * UNIT_MIN,
     );
-    const clampedWidthCols = Math.min(
-      Math.max(GRID_MIN_COLUMN_COUNT, incomingWidthCols),
-      maxWidthCols,
+    const clampedWidthUnits = Math.min(
+      Math.max(UNIT_MIN, incomingWidthUnits),
+      maxWidthUnits,
     );
-    const availableRightCols =
-      GRID_COLUMN_COUNT - widthLeftCols - clampedWidthCols;
+    const totalSiblingsAfterUnits = UNIT_TOTAL - clampedWidthUnits;
+    const currentSiblingsTotalUnits = widthLeftUnits + widthRightUnits;
+    /* Сжимать соседей нужно ТОЛЬКО если их текущая суммарная ширина
+       превышает доступное место (12 - clampedWidth). Если row имеет
+       empty space — drag заполняет его БЕЗ сжатия соседей. */
+    const needShrinkUnits = Math.max(
+      0,
+      currentSiblingsTotalUnits - totalSiblingsAfterUnits,
+    );
 
-    /* Конвертируем clampedWidthCols обратно в native units для записи. */
+    /* Для col-mode legacy локальных alias (используются ниже в write back). */
+    const clampedWidthCols = inSubMode
+      ? Math.max(GRID_MIN_COLUMN_COUNT, Math.ceil(clampedWidthUnits / subdivisionsUsed))
+      : clampedWidthUnits;
+
+    /* Write-back в native units. */
     const nextMeta = { ...component.meta };
-    if (layoutMode === 'sub') {
-      /* sub-mode: сохраняем widthSub в native sub-cells текущего sub'а.
-         Если входящий widthSub был сжат → конвертация col → sub:
-         sub = col * subdivisionsUsed. */
-      const clampedWidthSub =
-        clampedWidthCols === incomingWidthCols
-          ? widthSub || clampedWidthCols * subdivisionsUsed
-          : clampedWidthCols * subdivisionsUsed;
-      nextMeta.widthSub = Math.max(GRID_MIN_COLUMN_COUNT, clampedWidthSub);
+    if (inSubMode) {
+      nextMeta.widthSub = Math.max(UNIT_MIN, clampedWidthUnits);
       if (heightSub !== undefined) nextMeta.heightSub = heightSub;
       nextMeta.subdivisionsUsed = subdivisionsUsed;
       nextMeta.layoutMode = 'sub';
       delete nextMeta.freePxWidth;
       delete nextMeta.freePxHeight;
     } else {
-      nextMeta.width = clampedWidthCols;
+      nextMeta.width = clampedWidthUnits;
       if (height !== undefined) nextMeta.height = height;
       nextMeta.layoutMode = 'col';
       delete nextMeta.widthSub;
@@ -402,46 +427,59 @@ export function resizeComponentWithShrinkingNeighbors({
       [id]: { ...component, meta: nextMeta },
     };
 
-    if (currentRightTotalCols > availableRightCols) {
-      /* Greedy shrink в col-units: ближайший сосед справа сжимается первым.
-         Записываем результат в режиме каждого соседа (col-saved → meta.width,
-         sub-saved → meta.widthSub в его собственных subdivisionsUsed). */
-      let needToShrinkCols = currentRightTotalCols - availableRightCols;
-      for (
-        let i = 0;
-        i < rightSiblings.length && needToShrinkCols > 0;
-        i += 1
-      ) {
-        const sibId = rightSiblings[i];
-        const sib = layout[sibId];
-        if (!sib) continue;
-        const sibMeta = sib.meta || {};
-        if (sibMeta.freePxWidth != null) continue; // free-mode не сжимаем
-        const currentCols = widthOfInCols(sibId);
-        const canShrinkBy = Math.max(0, currentCols - GRID_MIN_COLUMN_COUNT);
-        if (canShrinkBy <= 0) continue;
-        const shrinkBy = Math.min(canShrinkBy, needToShrinkCols);
-        const newCols = currentCols - shrinkBy;
+    /* Push-shrink ТОЛЬКО если row over-capacity (current siblings total >
+       remaining room). Empty space row заполняется БЕЗ сжатия соседей.
+       Порядок: right closest → left closest. Каждый сосед сжимается до
+       UNIT_MIN, остаток передаётся следующему. */
+    let needShrink = needShrinkUnits;
+    const shrinkSibling = sibId => {
+      const sib = layout[sibId];
+      if (!sib) return 0;
+      const sibMeta = sib.meta || {};
+      if (sibMeta.freePxWidth != null) return 0;
+      const currentUnits = widthOfInUnits(sibId);
+      const canShrinkBy = Math.max(0, currentUnits - UNIT_MIN);
+      if (canShrinkBy <= 0) return 0;
+      const shrinkBy = Math.min(canShrinkBy, needShrink);
+      const newUnits = currentUnits - shrinkBy;
+      /* Write-back в native units соседа (col-saved или sub-saved). */
+      if (inSubMode) {
+        /* В sub-mode units = sub-cells текущего subdivisionsUsed. */
+        if (sibMeta.widthSub != null && sibMeta.subdivisionsUsed === subdivisionsUsed) {
+          updates[sibId] = { ...sib, meta: { ...sibMeta, widthSub: Math.max(UNIT_MIN, newUnits) } };
+        } else if (sibMeta.widthSub != null && sibMeta.subdivisionsUsed) {
+          /* Сосед в другом sub — конвертация newUnits (в нашем sub) → его sub. */
+          const newInSibSub = Math.round((newUnits / subdivisionsUsed) * sibMeta.subdivisionsUsed);
+          updates[sibId] = { ...sib, meta: { ...sibMeta, widthSub: Math.max(sibMeta.subdivisionsUsed, newInSibSub) } };
+        } else {
+          /* col-saved сосед — write в col-units. */
+          const newCols = Math.max(GRID_MIN_COLUMN_COUNT, Math.ceil(newUnits / subdivisionsUsed));
+          updates[sibId] = { ...sib, meta: { ...sibMeta, width: newCols } };
+        }
+      } else {
+        /* col-mode: units = cols. */
         if (sibMeta.widthSub != null && sibMeta.subdivisionsUsed) {
-          /* sub-saved сосед — пересчитываем widthSub пропорционально его
-             собственному subdivisionsUsed. */
           updates[sibId] = {
             ...sib,
-            meta: {
-              ...sibMeta,
-              widthSub: Math.max(
-                GRID_MIN_COLUMN_COUNT,
-                newCols * sibMeta.subdivisionsUsed,
-              ),
-            },
+            meta: { ...sibMeta, widthSub: Math.max(GRID_MIN_COLUMN_COUNT, newUnits * sibMeta.subdivisionsUsed) },
           };
         } else {
-          updates[sibId] = {
-            ...sib,
-            meta: { ...sibMeta, width: newCols },
-          };
+          updates[sibId] = { ...sib, meta: { ...sibMeta, width: newUnits } };
         }
-        needToShrinkCols -= shrinkBy;
+      }
+      return shrinkBy;
+    };
+
+    if (needShrink > 0) {
+      for (let i = 0; i < rightSiblings.length && needShrink > 0; i += 1) {
+        needShrink -= shrinkSibling(rightSiblings[i]);
+      }
+      for (
+        let i = leftSiblings.length - 1;
+        i >= 0 && needShrink > 0;
+        i -= 1
+      ) {
+        needShrink -= shrinkSibling(leftSiblings[i]);
       }
     }
 

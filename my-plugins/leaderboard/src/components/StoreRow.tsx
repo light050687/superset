@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Cell, RankCell, RowEl } from '../styles';
+import { Cell, RowEl } from '../styles';
 import type { Segment, Store } from '../types';
 import type { DsTokens } from '../themeTokens';
 import { COLUMNS } from './columns';
@@ -84,20 +84,10 @@ function StoreRowInner(props: Props) {
                 onToggle={onToggleExpand}
               />
             );
-          case 'rank':
-            return (
-              <Cell key={c.id} $align="center">
-                <RankCell>{displayIdx}</RankCell>
-              </Cell>
-            );
           case 'store':
             return (
               <Cell key={c.id}>
-                <StoreCell
-                  data={data}
-                  pinned={pinned}
-                  onTogglePin={data.isSegment ? undefined : onTogglePin}
-                />
+                <StoreCell data={data} />
               </Cell>
             );
           case 'bullet-loss':

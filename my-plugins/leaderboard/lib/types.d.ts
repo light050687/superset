@@ -119,6 +119,8 @@ export interface RankedStoresFormData extends QueryFormData {
     avgShrinkageCheckMetric?: string;
     rowLimit?: number;
     defaultSort?: SortKey;
+    /** Размер страницы в пагинации (25/50/100/200). */
+    pageSize?: number;
     periodLabel?: string;
     mockModeEnabled?: boolean;
     mockPreset?: MockPreset;
@@ -136,6 +138,7 @@ export interface RankedStoresTransformedProps {
     emitCrossFilters?: boolean;
     periodLabel: string;
     defaultSort: SortKey;
+    pageSize: number;
     /** Имя столбца, по которому пробрасывается cross-filter магазинов. */
     storeIdCol: string;
     /** Имя столбца для cross-filter по сегментам. */
@@ -164,6 +167,8 @@ export interface ChartUiState {
         segmentId: string | null;
     };
     focusedRowId: string | null;
+    /** 0-indexed page number. Сбрасывается в 0 при изменении filters/search/sort. */
+    page: number;
 }
 export type ChartUiAction = {
     type: 'TOGGLE_SORT';
@@ -223,6 +228,9 @@ export type ChartUiAction = {
 } | {
     type: 'FOCUS_ROW';
     payload: string | null;
+} | {
+    type: 'SET_PAGE';
+    payload: number;
 };
 export interface FlatRowStore {
     kind: 'store';

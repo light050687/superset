@@ -10,8 +10,11 @@ const buildQuery_1 = require("./buildQuery");
  * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
  */
 function formatTimeRangeRu(tr) {
+    /* DS: если time_range не задан или 'No filter' — НЕ показываем «за период».
+       Пользователь жаловался, что subtitle в модалке захламляется этим
+       дефолтом, когда time-фильтр не выбран. */
     if (!tr || tr === 'No filter')
-        return 'за период';
+        return '';
     const map = {
         'Last day': 'за день',
         'Last week': 'за неделю',
@@ -116,6 +119,7 @@ function transformProps(chartProps) {
         fd['timeRange'];
     const periodLabel = userPeriodLabel.trim() || formatTimeRangeRu(timeRange);
     const defaultSort = readFd(fd, 'defaultSort', 'default_sort', 'lossCombined');
+    const pageSize = Math.max(1, Math.floor(readFd(fd, 'pageSize', 'page_size', 50)));
     let stores;
     if (mockModeEnabled) {
         stores = (0, generateMockStores_1.generateByPreset)(mockPreset);
@@ -180,6 +184,7 @@ function transformProps(chartProps) {
         emitCrossFilters,
         periodLabel,
         defaultSort,
+        pageSize,
         storeIdCol,
         segmentIdCol,
     };

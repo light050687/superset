@@ -68,10 +68,11 @@ interface ChartHolderProps {
   // grid related
   availableColumnCount: number;
   columnWidth: number;
-  /* widthLeft/rightSiblingsCount — для push-shrink resize в col-mode.
+  /* widthLeft/leftSiblingsCount/rightSiblingsCount — для push-shrink resize в col-mode.
      Передаются из Row.jsx; defaults безопасны (Chart вне Row, например
      внутри Column, ведёт себя как раньше). */
   widthLeft?: number;
+  leftSiblingsCount?: number;
   rightSiblingsCount?: number;
   onResizeStart: ResizeStartCallback;
   onResize: ResizeCallback;
@@ -95,6 +96,7 @@ const ChartHolder = ({
   availableColumnCount,
   columnWidth,
   widthLeft = 0,
+  leftSiblingsCount = 0,
   rightSiblingsCount = 0,
   onResizeStart,
   onResize,
@@ -387,14 +389,16 @@ const ChartHolder = ({
         1,
         Math.round((metaOuter.h + rowGap) / subStepY),
       );
-      /* Push-shrink maxWidth для sub-mode: зеркально col-mode, но в
-         sub-cells. widthLeft (в col-units) умножаем на sub чтобы перейти
-         в sub-cells текущего effectiveSub. */
+      /* Push-shrink maxWidth для sub-mode: зеркально col-mode.
+         Раньше: max = 12*sub - widthLeft*sub - rightCount*MIN — учитывал
+         только сжатие правых соседей (widthLeft = текущая сумма left).
+         Теперь: max = 12*sub - (leftCount + rightCount)*MIN — позволяет
+         сжимать также и левых соседей до MIN. Для последнего чарта в row
+         это даёт возможность расти за счёт левого соседа. */
       const pushShrinkMaxSub =
         parentComponent.type === ROW_TYPE
           ? GRID_COLUMN_COUNT * sub -
-            widthLeft * sub -
-            rightSiblingsCount * GRID_MIN_COLUMN_COUNT
+            (leftSiblingsCount + rightSiblingsCount) * GRID_MIN_COLUMN_COUNT
           : (availableColumnCount + widthMultiple) * sub;
       return {
         widthStep: subCellWidth,
@@ -420,16 +424,16 @@ const ChartHolder = ({
       Math.round((metaOuter.w + GRID_GUTTER_SIZE) / colStep),
     );
     const startColH = Math.max(1, Math.round(metaOuter.h / GRID_BASE_UNIT));
-    /* Push-shrink maxWidth: чарт может расшириться вправо до края Row,
-       сжимая соседей справа до GRID_MIN_COLUMN_COUNT каждый. Когда
-       rightSiblingsCount=0 (один чарт в Row или последний справа), формула
-       сводится к старому поведению (GRID_COLUMN_COUNT - widthLeft = available
-       + widthMultiple). */
+    /* Push-shrink maxWidth: чарт может расшириться до края Row, сжимая
+       соседей с обеих сторон до GRID_MIN_COLUMN_COUNT каждый. Раньше формула
+       учитывала только сжатие правых (max = 12 - widthLeft - rightCount*MIN),
+       что не давало правому чарту расти, если левый сосед был широкий. Теперь
+       max = 12 - (leftCount + rightCount)*MIN — допускает push-shrink в обе
+       стороны (фактическое сжатие в thunk resizeComponentWithShrinkingNeighbors). */
     const pushShrinkMax =
       parentComponent.type === ROW_TYPE
         ? GRID_COLUMN_COUNT -
-          widthLeft -
-          rightSiblingsCount * GRID_MIN_COLUMN_COUNT
+          (leftSiblingsCount + rightSiblingsCount) * GRID_MIN_COLUMN_COUNT
         : availableColumnCount + widthMultiple;
     return {
       widthStep: columnWidth,
@@ -454,6 +458,7 @@ const ChartHolder = ({
     availableColumnCount,
     parentComponent.type,
     widthLeft,
+    leftSiblingsCount,
     rightSiblingsCount,
   ]);
 
