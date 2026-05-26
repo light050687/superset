@@ -3,52 +3,62 @@
 r"""
 deploy.py — кросс-платформенный setup / update Superset стенда.
 
-Использование:
-    python3 scripts/deploy.py                          # default: setup if new, update if exists
-    python3 scripts/deploy.py --update                 # принудительно update (без clone)
-    python3 scripts/deploy.py --skip-prereqs           # пропустить проверку Node/Docker/zstd
-    python3 scripts/deploy.py --skip-build             # только git pull + docker restart
-    python3 scripts/deploy.py --corp-ca corp-ca.pem    # корп-CA правильно (рекомендуется)
-    python3 scripts/deploy.py --corp-tls-off           # workaround: strict-ssl=false (небезопасно)
+Подкоманды:
 
-Получение корп-CA сертификата:
+    python3 scripts/deploy.py setup [опции]      # первичная установка с нуля
+    python3 scripts/deploy.py update [опции]     # обновление работающего стенда
+
+Опции setup:
+    --corp-ca PATH              путь к корп-CA сертификату (PEM)
+    --ca-from-windows-store     авто-извлечение корп-CA из Cert:\LocalMachine\Root
+                                (только Windows; PowerShell helper)
+    --corp-tls-off              workaround: strict-ssl=false (небезопасно)
+    --with-examples             загружать demo-датасеты (World Bank, BART и пр.).
+                                По умолчанию НЕ грузим — на корп-сети через MITM
+                                это медленно/падает, и в проде не нужно.
+    --wait-ready                после `docker compose up` ждать superset_app:healthy
+                                (timeout 5 мин)
+
+Опции update:
+    --no-build                  только git pull + docker recreate (для случаев
+                                когда меняется только Python/конфиг)
+    --wait-ready                как в setup
+
+Получение корп-CA (если --ca-from-windows-store не работает — например не Windows):
     Windows (powershell):
-        Get-ChildItem Cert:\LocalMachine\Root | Where-Object {
+        $pem = ""
+        @('Cert:\LocalMachine\Root', 'Cert:\CurrentUser\Root') | ForEach-Object {
+          Get-ChildItem $_ | Where-Object {
             $_.Issuer -eq $_.Subject -and
             $_.Subject -notmatch "DigiCert|VeriSign|GlobalSign|Microsoft|GoDaddy|Sectigo|Amazon|Comodo|ISRG"
-        } | Format-List Subject, Thumbprint
-        # → найди корп-CA в списке (по имени компании или вендору прокси), скопируй Thumbprint:
-        $cert = Get-ChildItem Cert:\LocalMachine\Root\<THUMBPRINT>
-        "-----BEGIN CERTIFICATE-----`n" +
-          [Convert]::ToBase64String($cert.RawData, [Base64FormattingOptions]::InsertLineBreaks) +
-          "`n-----END CERTIFICATE-----" |
-          Out-File -Encoding ascii corp-ca.pem
+          } | ForEach-Object {
+            $pem += "-----BEGIN CERTIFICATE-----`n"
+            $pem += [Convert]::ToBase64String($_.RawData, [Base64FormattingOptions]::InsertLineBreaks)
+            $pem += "`n-----END CERTIFICATE-----`n"
+          }
+        }
+        $pem | Out-File -Encoding ascii corp-ca.pem
 
     Linux:  CA обычно уже в /etc/ssl/certs/. Или экспорт из браузера → корень цепочки.
     Mac:    security find-certificate -a -p > all-roots.pem  (выбери нужный)
-
-Что делает (полный цикл):
-    1. Проверяет prerequisites: docker, git, node, zstd
-    2. (optional) корп-TLS workaround
-    3. git clone (если репо нет) / git pull (если есть)
-    4. npm install + build для superset-frontend + всех плагинов
-    5. docker compose down/up --build
 
 Требования (должны стоять на хосте):
     - Python 3.6+
     - Docker + Docker Compose v2
     - Git
-    - Node.js 20.x  (npm idёт в комплекте)
+    - Node.js 20.x  (npm идёт в комплекте)
     - zstd          (для simple-zstd в webpack)
 
 Если чего-то нет — скрипт скажет и даст команду установки для твоей ОС.
 """
 import argparse
+import base64
 import os
 import platform
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 # ─── Конфигурация ─────────────────────────────────────────────────────────
@@ -61,6 +71,14 @@ PLUGINS = [
     "drilldownDonut", "paretoAnalysis", "pivotHeatmap", "rankedBars",
     "riskMatrix", "scorecard",
 ]
+# Win32 не пускает env var > 32767 chars (в реальности ARG_MAX exec ~32K общий).
+# CORP_CA_CERT_B64 = full Windows trust store bundle обычно ~470 KB — НЕ влезает.
+# Лимит выбран с запасом для остальных env vars в .env-local.
+CORP_CA_B64_MAX = 30000
+
+CONTAINER_APP = "superset_app"
+CONTAINER_INIT = "superset_init"
+
 IS_WIN = platform.system() == "Windows"
 IS_MAC = platform.system() == "Darwin"
 IS_LINUX = platform.system() == "Linux"
@@ -115,7 +133,6 @@ def check_prereqs():
     step("Проверка prerequisites...")
     missing = []
 
-    # docker
     if not have("docker"):
         missing.append(("docker", {
             "linux": "sudo apt install docker.io docker-compose-plugin  (или https://docs.docker.com/engine/install/)",
@@ -126,7 +143,6 @@ def check_prereqs():
         _, out, _ = run(["docker", "--version"], capture=True)
         ok(f"docker: {out}")
 
-    # git
     if not have("git"):
         missing.append(("git", {
             "linux": "sudo apt install git",
@@ -137,7 +153,6 @@ def check_prereqs():
         _, out, _ = run(["git", "--version"], capture=True)
         ok(f"git: {out}")
 
-    # node 20+
     if not have("node"):
         missing.append(("node 20.x", {
             "linux": "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt install -y nodejs",
@@ -155,7 +170,6 @@ def check_prereqs():
         else:
             ok(f"node: {out}")
 
-    # zstd
     if not have("zstd"):
         missing.append(("zstd", {
             "linux": "sudo apt install zstd",
@@ -194,41 +208,22 @@ def disable_strict_ssl():
     warn("  npm config delete strict-ssl")
 
 
-def setup_corp_ca(cert_path, repo_root):
-    """Правильный путь: подключить корп-CA в git, npm, Node и docker build.
-
-    cert_path  — путь к .pem/.cer (PEM-формат: BEGIN CERTIFICATE...).
-    repo_root  — корень репо для записи docker/.env-local (None — пропустить).
-    """
-    import base64
+def setup_corp_ca_host(cert_path):
+    """Подключить корп-CA в git/npm/Node на хосте. Возвращает absolute Path."""
     p = Path(cert_path).expanduser().resolve()
     if not p.exists():
         err(f"Сертификат не найден: {p}")
         sys.exit(1)
     step(f"Подключаю корп-CA: {p}")
 
-    # 1. git — CA bundle для HTTPS
     run(["git", "config", "--global", "http.sslCAInfo", str(p)])
     ok("git http.sslCAInfo")
 
-    # 2. npm — cafile для TLS
     run(["npm", "config", "set", "cafile", str(p)])
     ok("npm cafile")
 
-    # 3. Node.js — NODE_EXTRA_CA_CERTS для текущей сессии (webpack build)
     os.environ["NODE_EXTRA_CA_CERTS"] = str(p)
     ok(f"NODE_EXTRA_CA_CERTS={p} (в этой сессии)")
-
-    # 4. Docker — CORP_CA_CERT_B64 в .env-local (для websocket Dockerfile)
-    if repo_root is not None:
-        b64 = base64.b64encode(p.read_bytes()).decode("ascii")
-        env_local = repo_root / "docker" / ".env-local"
-        env_local.parent.mkdir(parents=True, exist_ok=True)
-        existing = env_local.read_text() if env_local.exists() else ""
-        lines = [l for l in existing.splitlines() if not l.startswith("CORP_CA_CERT_B64=")]
-        lines.append(f"CORP_CA_CERT_B64={b64}")
-        env_local.write_text("\n".join(lines) + "\n")
-        ok(f"docker/.env-local ← CORP_CA_CERT_B64 ({len(b64)} chars)")
 
     warn("Чтобы NODE_EXTRA_CA_CERTS остался после reboot — добавь в shell rc:")
     if IS_WIN:
@@ -236,31 +231,155 @@ def setup_corp_ca(cert_path, repo_root):
     else:
         warn(f"  echo 'export NODE_EXTRA_CA_CERTS={p}' >> ~/.bashrc")
 
+    return p
+
+
+def extract_corp_ca_from_windows_store(out_path):
+    """Авто-извлечение корп-CA из Windows trust store через PowerShell.
+
+    Фильтр: self-signed (Issuer == Subject) И НЕ из well-known list
+    (DigiCert, VeriSign и т.п.). Это даёт небольшой bundle (~3-10 KB)
+    только с корп-CA организации и вендора прокси.
+
+    Возвращает Path к сгенерированному .pem или None если на хосте нет
+    корп-CA в trust store.
+    """
+    if not IS_WIN:
+        err("--ca-from-windows-store работает только на Windows")
+        sys.exit(1)
+    out = Path(out_path).expanduser().resolve()
+    step(f"Извлекаю корп-CA из Windows trust store → {out}")
+
+    ps_script = r"""
+$wellKnown = 'DigiCert|VeriSign|GlobalSign|Microsoft|GoDaddy|Sectigo|Amazon|Comodo|ISRG|USERTrust|Baltimore|Entrust|Apple|Mozilla|Starfield|Go Daddy|thawte|Equifax|QuoVadis|SwissSign|Atos|Cybertrust|Hellenic|TeliaSonera|Symantec|TWCA|Buypass|NetLock|AffirmTrust|SecureTrust|Trustwave|WoSign|XRamp|ePKI|Hongkong'
+$pem = ''
+$count = 0
+@('Cert:\LocalMachine\Root', 'Cert:\CurrentUser\Root') | ForEach-Object {
+  Get-ChildItem $_ -ErrorAction SilentlyContinue | Where-Object {
+    $_.Issuer -eq $_.Subject -and
+    $_.Subject -notmatch $wellKnown
+  } | ForEach-Object {
+    $pem += "-----BEGIN CERTIFICATE-----`n"
+    $pem += [Convert]::ToBase64String($_.RawData, [Base64FormattingOptions]::InsertLineBreaks)
+    $pem += "`n-----END CERTIFICATE-----`n"
+    $count++
+  }
+}
+$pem | Out-File -Encoding ascii -NoNewline '__OUT__'
+Write-Output $count
+"""
+    ps_script = ps_script.replace("__OUT__", str(out).replace("\\", "\\\\"))
+    rc, stdout, stderr = run(
+        ["powershell", "-NoProfile", "-Command", ps_script],
+        capture=True, check=False,
+    )
+    if rc != 0:
+        err(f"PowerShell вернул код {rc}: {stderr}")
+        sys.exit(1)
+
+    count = stdout.strip().splitlines()[-1] if stdout.strip() else "0"
+    try:
+        n = int(count)
+    except ValueError:
+        n = 0
+    if n == 0 or not out.exists() or out.stat().st_size == 0:
+        err("В trust store не найдено корп-CA (всё well-known). Использовать --corp-tls-off или указать --corp-ca PATH руками.")
+        sys.exit(1)
+    ok(f"Извлечено {n} корп-CA, файл: {out} ({out.stat().st_size} байт)")
+    return out
+
+
+# ─── docker/.env-local ────────────────────────────────────────────────────
+def setup_env_local(repo_root, *, load_examples=False, corp_ca_pem=None):
+    """Создать/обновить docker/.env-local.
+
+    SUPERSET_LOAD_EXAMPLES=no по умолчанию (load_examples=False) — иначе
+    superset-init качает ~10 MB demo с cdn.jsdelivr.net (медленно через
+    корп-MITM, не нужно в проде).
+
+    Если corp_ca_pem передан — записываем CORP_CA_CERT_B64=... с size guard:
+    если base64 > CORP_CA_B64_MAX, отказ + подсказка использовать --ca-from-windows-store
+    (он экстрактит только корп-CA, не весь trust store).
+    """
+    env_local = repo_root / "docker" / ".env-local"
+    env_local.parent.mkdir(parents=True, exist_ok=True)
+    existing = env_local.read_text() if env_local.exists() else ""
+
+    # Сохраняем существующие строки кроме тех что перезаписываем
+    managed_keys = {"SUPERSET_LOAD_EXAMPLES", "CORP_CA_CERT_B64"}
+    lines = [
+        l for l in existing.splitlines()
+        if "=" not in l or l.split("=", 1)[0].strip() not in managed_keys
+    ]
+
+    lines.append(f"SUPERSET_LOAD_EXAMPLES={'yes' if load_examples else 'no'}")
+
+    if corp_ca_pem is not None:
+        b64 = base64.b64encode(Path(corp_ca_pem).read_bytes()).decode("ascii")
+        if len(b64) > CORP_CA_B64_MAX:
+            err(f"CORP_CA_CERT_B64 слишком большой: {len(b64)} chars > limit {CORP_CA_B64_MAX}")
+            err("Windows env var limit ~32 KB. Полный trust store bundle (477 KB) не влезет.")
+            err("Используй --ca-from-windows-store (фильтрует только корп-CA, обычно 3-10 KB).")
+            sys.exit(1)
+        lines.append(f"CORP_CA_CERT_B64={b64}")
+        ok(f"docker/.env-local ← CORP_CA_CERT_B64 ({len(b64)} chars)")
+
+    env_local.write_text("\n".join(lines) + "\n")
+    ok(f"docker/.env-local: SUPERSET_LOAD_EXAMPLES={'yes' if load_examples else 'no'}")
+
 
 # ─── Git ──────────────────────────────────────────────────────────────────
-def ensure_repo(script_dir):
+def git_pull_with_stash(repo_root):
+    """git fetch + checkout + pull с auto-stash при конфликте.
+
+    Локальные правки (например customization Dockerfile под корп-CA)
+    сохраняются в stash → pull → stash pop. При конфликте на pop —
+    warn + продолжаем (юзер разрешит сам).
+    """
+    step("git fetch + pull...")
+    run(["git", "fetch", "origin"], cwd=repo_root)
+    run(["git", "checkout", BRANCH], cwd=repo_root, check=False)
+
+    # Pre-check: есть ли локальные правки?
+    rc, out, _ = run(["git", "status", "--porcelain"], cwd=repo_root, capture=True)
+    has_local = bool(out.strip())
+
+    if has_local:
+        warn("Есть локальные правки — auto-stash перед pull")
+        run(["git", "stash", "push", "-m", "deploy.py auto-stash"], cwd=repo_root)
+
+    rc, _, stderr = run(["git", "pull", "origin", BRANCH], cwd=repo_root, check=False, capture=True)
+    if rc != 0:
+        err("git pull упал:")
+        err(stderr)
+        if has_local:
+            warn("Восстанавливаю локальные правки из stash...")
+            run(["git", "stash", "pop"], cwd=repo_root, check=False)
+        sys.exit(1)
+
+    if has_local:
+        rc, _, _ = run(["git", "stash", "pop"], cwd=repo_root, check=False, capture=True)
+        if rc != 0:
+            warn("git stash pop дал конфликт. Разреши его руками, потом запусти update снова.")
+            warn("Локальные правки в stash сохранены: git stash list")
+
+
+def ensure_repo(script_dir, allow_clone=True):
     """Если скрипт лежит ВНУТРИ репо — pull. Иначе — clone в ./superset."""
     repo_root = script_dir.parent
     if (repo_root / COMPOSE_FILE).exists():
         step(f"Скрипт внутри репо: {repo_root}")
-        step("git fetch + pull...")
-        run(["git", "fetch", "origin"], cwd=repo_root)
-        run(["git", "checkout", BRANCH], cwd=repo_root)
-        rc, _, stderr = run(["git", "pull", "origin", BRANCH], cwd=repo_root, check=False, capture=True)
-        if rc != 0:
-            err("git pull упал — возможно конфликт с локальными правками.")
-            err(stderr)
-            err("Разреши руками или: git stash && python3 scripts/deploy.py --update")
-            sys.exit(1)
+        git_pull_with_stash(repo_root)
         return repo_root
 
-    # Скрипт запущен отдельно — клонируем в текущей директории
+    if not allow_clone:
+        err(f"Репо не найдено: {repo_root}. Запусти `python deploy.py setup` сначала.")
+        sys.exit(1)
+
     target = Path.cwd() / "superset"
     if target.exists() and (target / ".git").exists():
         step(f"Папка {target} уже есть — git pull...")
-        run(["git", "fetch", "origin"], cwd=target)
-        run(["git", "checkout", BRANCH], cwd=target)
-        run(["git", "pull", "origin", BRANCH], cwd=target)
+        git_pull_with_stash(target)
     else:
         step(f"git clone {REPO_URL} → {target}")
         run(["git", "clone", REPO_URL, str(target)])
@@ -273,8 +392,6 @@ def npm_install_and_build(pkg_dir, label):
     step(f"  → {label}")
     # --legacy-peer-deps: плагины используют старый @superset-ui/chart-controls
     # с peer react^16, при наличии react@18/19 в дереве npm падает на ERESOLVE.
-    # Старое поведение npm — просто warn, новое — error. Восстанавливаем
-    # старое для совместимости со старыми плагинами.
     rc, _, _ = run(["npm", "install", "--legacy-peer-deps"], cwd=pkg_dir, check=False)
     if rc != 0:
         warn(f"  npm install {label} failed — пропускаю")
@@ -284,22 +401,6 @@ def npm_install_and_build(pkg_dir, label):
         warn(f"  npm run build {label} failed — пропускаю")
         return False
     return True
-
-
-def build_frontend(repo_root):
-    step("Build superset-frontend (~15 мин)...")
-    fe = repo_root / "superset-frontend"
-    # Удалить наши custom плагины из node_modules, чтобы npm install взял
-    # свежую копию из my-plugins/* (они file:-зависимости в package.json).
-    # Без этого фронт может ссылаться на старые esm/ артефакты с прошлого
-    # клона/npm install — webpack валится на missing ./components/InfoHint.
-    node_modules = fe / "node_modules"
-    for stale in node_modules.glob("superset-plugin-chart-*"):
-        if stale.is_dir():
-            shutil.rmtree(stale, ignore_errors=True)
-    run(["npm", "install", "--legacy-peer-deps"], cwd=fe)
-    run(["npm", "run", "build"], cwd=fe)
-    ok("Frontend собран")
 
 
 def build_plugins(repo_root):
@@ -316,72 +417,164 @@ def build_plugins(repo_root):
     ok(f"Плагинов собрано: {built}/{len(PLUGINS)}")
 
 
-# ─── Docker ───────────────────────────────────────────────────────────────
-def docker_recreate(repo_root):
-    # Подгрузить CORP_CA_CERT_B64 из docker/.env-local в os.environ, чтобы
-    # compose substitution `${CORP_CA_CERT_B64}` в build:args сработал.
-    env_local = repo_root / "docker" / ".env-local"
-    if env_local.exists():
-        for line in env_local.read_text().splitlines():
-            if "=" in line and not line.startswith("#"):
-                k, v = line.split("=", 1)
-                k = k.strip()
-                if k and k not in os.environ:
-                    os.environ[k] = v.strip()
+def build_frontend(repo_root):
+    step("Build superset-frontend (~15 мин)...")
+    fe = repo_root / "superset-frontend"
+    # Удалить наши custom плагины из node_modules, чтобы npm install взял
+    # свежую копию из my-plugins/* (они file:-зависимости в package.json).
+    # Без этого webpack валится на missing ./components/InfoHint (esm/ старый).
+    node_modules = fe / "node_modules"
+    for stale in node_modules.glob("superset-plugin-chart-*"):
+        if stale.is_dir():
+            shutil.rmtree(stale, ignore_errors=True)
+    run(["npm", "install", "--legacy-peer-deps"], cwd=fe)
+    run(["npm", "run", "build"], cwd=fe)
+    ok("Frontend собран")
 
-    step("docker compose down...")
-    run(["docker", "compose", "-f", COMPOSE_FILE, "down"], cwd=repo_root, check=False)
+
+# ─── Docker ───────────────────────────────────────────────────────────────
+def _load_env_local_into_os(repo_root):
+    """Подгрузить CORP_CA_CERT_B64 (и др.) из docker/.env-local в os.environ,
+    чтобы compose substitution `${CORP_CA_CERT_B64}` в build:args сработал."""
+    env_local = repo_root / "docker" / ".env-local"
+    if not env_local.exists():
+        return
+    for line in env_local.read_text().splitlines():
+        if "=" in line and not line.startswith("#"):
+            k, v = line.split("=", 1)
+            k = k.strip()
+            if k and k not in os.environ:
+                os.environ[k] = v.strip()
+
+
+def docker_up(repo_root, recreate=True):
+    _load_env_local_into_os(repo_root)
+    if recreate:
+        step("docker compose down...")
+        run(["docker", "compose", "-f", COMPOSE_FILE, "down"], cwd=repo_root, check=False)
     step("docker compose up -d --build (~5-10 мин)...")
     run(["docker", "compose", "-f", COMPOSE_FILE, "up", "-d", "--build"], cwd=repo_root)
 
 
-# ─── Main ─────────────────────────────────────────────────────────────────
-def main():
-    p = argparse.ArgumentParser(description="Deploy/update Superset BI стенд")
-    p.add_argument("--update", action="store_true", help="Только git pull + rebuild (без проверки prereqs)")
-    p.add_argument("--skip-prereqs", action="store_true", help="Пропустить проверку Docker/Node/zstd")
-    p.add_argument("--skip-build", action="store_true", help="Только git pull + docker recreate")
-    p.add_argument("--corp-tls-off", action="store_true",
-                   help="workaround: strict-ssl=false для npm/git (небезопасно)")
-    p.add_argument("--corp-ca", metavar="PATH",
-                   help="путь к корп-CA сертификату (PEM) — правильное решение")
-    args = p.parse_args()
+def wait_for_health(container=CONTAINER_APP, timeout=300, poll=5):
+    """Polling docker inspect health до 'healthy' или timeout (сек)."""
+    step(f"Жду {container}:healthy (timeout {timeout} сек)...")
+    deadline = time.time() + timeout
+    last_status = ""
+    while time.time() < deadline:
+        rc, out, _ = run(
+            ["docker", "inspect", "--format", "{{.State.Health.Status}}", container],
+            capture=True, check=False,
+        )
+        status = out.strip() if rc == 0 else "missing"
+        if status == "healthy":
+            ok(f"{container} healthy")
+            return True
+        if status != last_status:
+            print(f"  {container}: {status}")
+            last_status = status
+        time.sleep(poll)
+    err(f"{container} не стал healthy за {timeout} сек. Последний статус: {last_status}")
+    err(f"Логи: docker logs {container}")
+    return False
 
-    if not (args.skip_prereqs or args.update):
-        check_prereqs()
 
-    if args.corp_tls_off and args.corp_ca:
-        err("Нельзя одновременно --corp-tls-off и --corp-ca. Выбери один.")
+# ─── Подкоманды ───────────────────────────────────────────────────────────
+def cmd_setup(args):
+    check_prereqs()
+
+    if args.corp_tls_off and (args.corp_ca or args.ca_from_windows_store):
+        err("Нельзя одновременно --corp-tls-off и --corp-ca / --ca-from-windows-store.")
         sys.exit(1)
+
+    # 1. Корп-CA workflow
+    corp_ca_pem = None
     if args.corp_tls_off:
         disable_strict_ssl()
-    if args.corp_ca:
-        # Применить настройки git/npm/Node ДО clone (нужны для https git clone)
-        setup_corp_ca(args.corp_ca, None)
+    elif args.ca_from_windows_store:
+        out = Path.home() / "corp-ca-bundle.pem"
+        corp_ca_pem = extract_corp_ca_from_windows_store(out)
+        setup_corp_ca_host(corp_ca_pem)
+    elif args.corp_ca:
+        corp_ca_pem = setup_corp_ca_host(args.corp_ca)
 
+    # 2. Clone / pull
     script_dir = Path(__file__).resolve().parent
-    repo_root = ensure_repo(script_dir)
+    repo_root = ensure_repo(script_dir, allow_clone=True)
     ok(f"Репо: {repo_root}")
 
-    if args.corp_ca:
-        # Теперь когда репо есть — дописать CORP_CA_CERT_B64 в docker/.env-local
-        setup_corp_ca(args.corp_ca, repo_root)
+    # 3. .env-local: SUPERSET_LOAD_EXAMPLES=no, CORP_CA_CERT_B64 (опц.)
+    setup_env_local(
+        repo_root,
+        load_examples=args.with_examples,
+        corp_ca_pem=corp_ca_pem,
+    )
 
-    if not args.skip_build:
-        # Порядок важен: плагины сначала (создают esm/lib артефакты),
-        # потом frontend (npm install копирует свежие my-plugins → node_modules).
-        # Обратный порядок → webpack видит старые esm/ без новых компонент.
+    # 4. Build
+    build_plugins(repo_root)
+    build_frontend(repo_root)
+
+    # 5. Docker
+    docker_up(repo_root, recreate=True)
+
+    # 6. Wait + print
+    if args.wait_ready:
+        wait_for_health(CONTAINER_APP, timeout=300)
+
+    print()
+    ok("Setup готов!")
+    print("  Логи init:  docker logs -f superset_init")
+    print("  Открой:     http://localhost:8088   (admin / admin)")
+
+
+def cmd_update(args):
+    script_dir = Path(__file__).resolve().parent
+    repo_root = ensure_repo(script_dir, allow_clone=False)
+    ok(f"Репо: {repo_root}")
+
+    if not args.no_build:
         build_plugins(repo_root)
         build_frontend(repo_root)
 
-    docker_recreate(repo_root)
+    docker_up(repo_root, recreate=True)
+
+    if args.wait_ready:
+        wait_for_health(CONTAINER_APP, timeout=300)
 
     print()
-    ok("Готово!")
-    print("  Логи init:")
-    print(f"    docker compose -f {COMPOSE_FILE} logs -f superset-init")
-    print("  Когда увидишь 'exited with code 0' — открой:")
-    print("    http://localhost:8088   (admin / admin)")
+    ok("Update готов!")
+    print("  Открой:  http://localhost:8088")
+
+
+# ─── Main ─────────────────────────────────────────────────────────────────
+def main():
+    p = argparse.ArgumentParser(
+        description="Deploy/update Superset BI стенд",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    sub = p.add_subparsers(dest="cmd", required=True, metavar="{setup,update}")
+
+    s = sub.add_parser("setup", help="первичная установка с нуля")
+    s.add_argument("--corp-ca", metavar="PATH", help="путь к корп-CA сертификату (PEM)")
+    s.add_argument("--ca-from-windows-store", action="store_true",
+                   help="авто-извлечение корп-CA из Cert:\\LocalMachine\\Root (Windows)")
+    s.add_argument("--corp-tls-off", action="store_true",
+                   help="workaround: strict-ssl=false (небезопасно)")
+    s.add_argument("--with-examples", action="store_true",
+                   help="загружать demo-датасеты (default: no — на корп-MITM медленно)")
+    s.add_argument("--wait-ready", action="store_true",
+                   help="ждать superset_app:healthy перед завершением")
+    s.set_defaults(func=cmd_setup)
+
+    u = sub.add_parser("update", help="обновление работающего стенда")
+    u.add_argument("--no-build", action="store_true",
+                   help="пропустить npm build (только git pull + docker recreate)")
+    u.add_argument("--wait-ready", action="store_true",
+                   help="ждать superset_app:healthy перед завершением")
+    u.set_defaults(func=cmd_update)
+
+    args = p.parse_args()
+    args.func(args)
 
 
 if __name__ == "__main__":
