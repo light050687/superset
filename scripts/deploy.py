@@ -3,11 +3,28 @@
 deploy.py — кросс-платформенный setup / update Superset стенда.
 
 Использование:
-    python3 scripts/deploy.py                  # default: setup if new, update if exists
-    python3 scripts/deploy.py --update         # принудительно update (без clone)
-    python3 scripts/deploy.py --skip-prereqs   # пропустить проверку Node/Docker/zstd
-    python3 scripts/deploy.py --skip-build     # только git pull + docker restart
-    python3 scripts/deploy.py --corp-tls-off   # выключить strict-ssl для npm/git (для корп-сетей)
+    python3 scripts/deploy.py                          # default: setup if new, update if exists
+    python3 scripts/deploy.py --update                 # принудительно update (без clone)
+    python3 scripts/deploy.py --skip-prereqs           # пропустить проверку Node/Docker/zstd
+    python3 scripts/deploy.py --skip-build             # только git pull + docker restart
+    python3 scripts/deploy.py --corp-ca corp-ca.pem    # корп-CA правильно (рекомендуется)
+    python3 scripts/deploy.py --corp-tls-off           # workaround: strict-ssl=false (небезопасно)
+
+Получение корп-CA сертификата:
+    Windows (powershell):
+        Get-ChildItem Cert:\LocalMachine\Root | Where-Object {
+            $_.Issuer -eq $_.Subject -and
+            $_.Subject -notmatch "DigiCert|VeriSign|GlobalSign|Microsoft|GoDaddy|Sectigo|Amazon|Comodo|ISRG"
+        } | Format-List Subject, Thumbprint
+        # → найди корп-CA в списке (по имени компании или вендору прокси), скопируй Thumbprint:
+        $cert = Get-ChildItem Cert:\LocalMachine\Root\<THUMBPRINT>
+        "-----BEGIN CERTIFICATE-----`n" +
+          [Convert]::ToBase64String($cert.RawData, [Base64FormattingOptions]::InsertLineBreaks) +
+          "`n-----END CERTIFICATE-----" |
+          Out-File -Encoding ascii corp-ca.pem
+
+    Linux:  CA обычно уже в /etc/ssl/certs/. Или экспорт из браузера → корень цепочки.
+    Mac:    security find-certificate -a -p > all-roots.pem  (выбери нужный)
 
 Что делает (полный цикл):
     1. Проверяет prerequisites: docker, git, node, zstd
@@ -167,6 +184,49 @@ def disable_strict_ssl():
     warn("  npm config delete strict-ssl")
 
 
+def setup_corp_ca(cert_path, repo_root):
+    """Правильный путь: подключить корп-CA в git, npm, Node и docker build.
+
+    cert_path  — путь к .pem/.cer (PEM-формат: BEGIN CERTIFICATE...).
+    repo_root  — корень репо для записи docker/.env-local (None — пропустить).
+    """
+    import base64
+    p = Path(cert_path).expanduser().resolve()
+    if not p.exists():
+        err(f"Сертификат не найден: {p}")
+        sys.exit(1)
+    step(f"Подключаю корп-CA: {p}")
+
+    # 1. git — CA bundle для HTTPS
+    run(["git", "config", "--global", "http.sslCAInfo", str(p)])
+    ok("git http.sslCAInfo")
+
+    # 2. npm — cafile для TLS
+    run(["npm", "config", "set", "cafile", str(p)])
+    ok("npm cafile")
+
+    # 3. Node.js — NODE_EXTRA_CA_CERTS для текущей сессии (webpack build)
+    os.environ["NODE_EXTRA_CA_CERTS"] = str(p)
+    ok(f"NODE_EXTRA_CA_CERTS={p} (в этой сессии)")
+
+    # 4. Docker — CORP_CA_CERT_B64 в .env-local (для websocket Dockerfile)
+    if repo_root is not None:
+        b64 = base64.b64encode(p.read_bytes()).decode("ascii")
+        env_local = repo_root / "docker" / ".env-local"
+        env_local.parent.mkdir(parents=True, exist_ok=True)
+        existing = env_local.read_text() if env_local.exists() else ""
+        lines = [l for l in existing.splitlines() if not l.startswith("CORP_CA_CERT_B64=")]
+        lines.append(f"CORP_CA_CERT_B64={b64}")
+        env_local.write_text("\n".join(lines) + "\n")
+        ok(f"docker/.env-local ← CORP_CA_CERT_B64 ({len(b64)} chars)")
+
+    warn("Чтобы NODE_EXTRA_CA_CERTS остался после reboot — добавь в shell rc:")
+    if IS_WIN:
+        warn(f"  setx NODE_EXTRA_CA_CERTS \"{p}\"")
+    else:
+        warn(f"  echo 'export NODE_EXTRA_CA_CERTS={p}' >> ~/.bashrc")
+
+
 # ─── Git ──────────────────────────────────────────────────────────────────
 def ensure_repo(script_dir):
     """Если скрипт лежит ВНУТРИ репо — pull. Иначе — clone в ./superset."""
@@ -248,18 +308,31 @@ def main():
     p.add_argument("--update", action="store_true", help="Только git pull + rebuild (без проверки prereqs)")
     p.add_argument("--skip-prereqs", action="store_true", help="Пропустить проверку Docker/Node/zstd")
     p.add_argument("--skip-build", action="store_true", help="Только git pull + docker recreate")
-    p.add_argument("--corp-tls-off", action="store_true", help="git/npm strict-ssl=false (корп-сеть с MITM)")
+    p.add_argument("--corp-tls-off", action="store_true",
+                   help="workaround: strict-ssl=false для npm/git (небезопасно)")
+    p.add_argument("--corp-ca", metavar="PATH",
+                   help="путь к корп-CA сертификату (PEM) — правильное решение")
     args = p.parse_args()
 
     if not (args.skip_prereqs or args.update):
         check_prereqs()
 
+    if args.corp_tls_off and args.corp_ca:
+        err("Нельзя одновременно --corp-tls-off и --corp-ca. Выбери один.")
+        sys.exit(1)
     if args.corp_tls_off:
         disable_strict_ssl()
+    if args.corp_ca:
+        # Применить настройки git/npm/Node ДО clone (нужны для https git clone)
+        setup_corp_ca(args.corp_ca, None)
 
     script_dir = Path(__file__).resolve().parent
     repo_root = ensure_repo(script_dir)
     ok(f"Репо: {repo_root}")
+
+    if args.corp_ca:
+        # Теперь когда репо есть — дописать CORP_CA_CERT_B64 в docker/.env-local
+        setup_corp_ca(args.corp_ca, repo_root)
 
     if not args.skip_build:
         build_frontend(repo_root)
