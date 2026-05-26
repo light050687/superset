@@ -46,46 +46,52 @@ function buildQuery(formData) {
     const isMockOn = (getFormDataValue(fd, 'mockModeEnabled', 'mock_mode_enabled') ??
         false) === true;
     return (0, core_1.buildQueryContext)(formData, baseQueryObject => {
-        /* ── Колонки (все optional — если не задано, пропускаем) ── */
-        const seenCols = new Set();
-        const pushCol = (v, fallback) => {
-            const val = v && v.trim() ? v.trim() : fallback;
-            if (val && !seenCols.has(val)) {
-                seenCols.add(val);
-                columns.push(val);
-            }
-        };
         const columns = [];
-        pushCol(getFormDataValue(fd, 'storeIdCol', 'store_id_col'), exports.BUILD_QUERY_DEFAULTS.storeIdCol);
-        pushCol(getFormDataValue(fd, 'storeNameCol', 'store_name_col'), exports.BUILD_QUERY_DEFAULTS.storeNameCol);
-        pushCol(getFormDataValue(fd, 'cityCol', 'city_col'), exports.BUILD_QUERY_DEFAULTS.cityCol);
-        pushCol(getFormDataValue(fd, 'formatCol', 'format_col'), exports.BUILD_QUERY_DEFAULTS.formatCol);
-        pushCol(getFormDataValue(fd, 'formatNameCol', 'format_name_col'), exports.BUILD_QUERY_DEFAULTS.formatNameCol);
-        pushCol(getFormDataValue(fd, 'divisionCol', 'division_col'), exports.BUILD_QUERY_DEFAULTS.divisionCol);
-        pushCol(getFormDataValue(fd, 'toClassCol', 'to_class_col'), exports.BUILD_QUERY_DEFAULTS.toClassCol);
-        /* ── Метрики ── */
         const metrics = [];
-        const seenMetrics = new Set();
-        const pushMetric = (m, fallback) => {
-            const val = m && m.trim() ? m.trim() : fallback;
-            if (val && !seenMetrics.has(val)) {
-                seenMetrics.add(val);
-                metrics.push(val);
-            }
-        };
-        pushMetric(getFormDataValue(fd, 'writeoffMetric', 'writeoff_metric'), exports.BUILD_QUERY_DEFAULTS.writeoffMetric);
-        pushMetric(getFormDataValue(fd, 'shrinkageMetric', 'shrinkage_metric'), exports.BUILD_QUERY_DEFAULTS.shrinkageMetric);
-        pushMetric(getFormDataValue(fd, 'planWriteoffMetric', 'plan_writeoff_metric'), exports.BUILD_QUERY_DEFAULTS.planWriteoffMetric);
-        pushMetric(getFormDataValue(fd, 'planShrinkageMetric', 'plan_shrinkage_metric'), exports.BUILD_QUERY_DEFAULTS.planShrinkageMetric);
-        pushMetric(getFormDataValue(fd, 'avgWriteoffMetric', 'avg_writeoff_metric'), exports.BUILD_QUERY_DEFAULTS.avgWriteoffMetric);
-        pushMetric(getFormDataValue(fd, 'avgShrinkageCheckMetric', 'avg_shrinkage_check_metric'), exports.BUILD_QUERY_DEFAULTS.avgShrinkageCheckMetric);
-        /* ── Mock-fallback ── */
-        if (isMockOn && metrics.length === 0) {
+        if (isMockOn) {
+            /* Mock-режим: transformProps игнорирует queriesData и генерирует Store[]
+               из пресета. Отправляем минимальный safe-запрос — без реальных колонок,
+               чтобы Superset не падал на валидации schema, если в датасете нет
+               store_id / writeoff_pct / ... (типичный случай при первом подключении
+               к чужому датасету для согласования дизайна). */
             metrics.push({
                 expressionType: 'SQL',
                 sqlExpression: 'COUNT(*)',
                 label: '__mock',
             });
+        }
+        else {
+            /* ── Колонки (override → fallback на дефолтное имя) ── */
+            const seenCols = new Set();
+            const pushCol = (v, fallback) => {
+                const val = v && v.trim() ? v.trim() : fallback;
+                if (val && !seenCols.has(val)) {
+                    seenCols.add(val);
+                    columns.push(val);
+                }
+            };
+            pushCol(getFormDataValue(fd, 'storeIdCol', 'store_id_col'), exports.BUILD_QUERY_DEFAULTS.storeIdCol);
+            pushCol(getFormDataValue(fd, 'storeNameCol', 'store_name_col'), exports.BUILD_QUERY_DEFAULTS.storeNameCol);
+            pushCol(getFormDataValue(fd, 'cityCol', 'city_col'), exports.BUILD_QUERY_DEFAULTS.cityCol);
+            pushCol(getFormDataValue(fd, 'formatCol', 'format_col'), exports.BUILD_QUERY_DEFAULTS.formatCol);
+            pushCol(getFormDataValue(fd, 'formatNameCol', 'format_name_col'), exports.BUILD_QUERY_DEFAULTS.formatNameCol);
+            pushCol(getFormDataValue(fd, 'divisionCol', 'division_col'), exports.BUILD_QUERY_DEFAULTS.divisionCol);
+            pushCol(getFormDataValue(fd, 'toClassCol', 'to_class_col'), exports.BUILD_QUERY_DEFAULTS.toClassCol);
+            /* ── Метрики ── */
+            const seenMetrics = new Set();
+            const pushMetric = (m, fallback) => {
+                const val = m && m.trim() ? m.trim() : fallback;
+                if (val && !seenMetrics.has(val)) {
+                    seenMetrics.add(val);
+                    metrics.push(val);
+                }
+            };
+            pushMetric(getFormDataValue(fd, 'writeoffMetric', 'writeoff_metric'), exports.BUILD_QUERY_DEFAULTS.writeoffMetric);
+            pushMetric(getFormDataValue(fd, 'shrinkageMetric', 'shrinkage_metric'), exports.BUILD_QUERY_DEFAULTS.shrinkageMetric);
+            pushMetric(getFormDataValue(fd, 'planWriteoffMetric', 'plan_writeoff_metric'), exports.BUILD_QUERY_DEFAULTS.planWriteoffMetric);
+            pushMetric(getFormDataValue(fd, 'planShrinkageMetric', 'plan_shrinkage_metric'), exports.BUILD_QUERY_DEFAULTS.planShrinkageMetric);
+            pushMetric(getFormDataValue(fd, 'avgWriteoffMetric', 'avg_writeoff_metric'), exports.BUILD_QUERY_DEFAULTS.avgWriteoffMetric);
+            pushMetric(getFormDataValue(fd, 'avgShrinkageCheckMetric', 'avg_shrinkage_check_metric'), exports.BUILD_QUERY_DEFAULTS.avgShrinkageCheckMetric);
         }
         const { time_range, since, until, granularity, filters, extras, applied_time_extras, where, having, annotation_layers, url_params, custom_params, } = baseQueryObject;
         const rowLimit = (getFormDataValue(fd, 'rowLimit', 'row_limit') ?? 1000) || 1000;

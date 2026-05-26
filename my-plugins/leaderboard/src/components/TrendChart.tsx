@@ -134,7 +134,8 @@ function TrendChartInner({ data, tokens }: Props) {
             fontFamily={tokens.fontMono}
             fontSize="10"
             fontWeight="500"
-            fill={tokens.g500}
+            /* DS §10: <14px текст — минимум --g600 (g500 запрещён). */
+            fill={tokens.g600}
             textAnchor="middle"
           >
             {l.label}
@@ -183,20 +184,24 @@ function TrendChartInner({ data, tokens }: Props) {
             position: 'absolute',
             left: `calc(${(hover.x / w) * 100}% + 8px)`,
             top: 6,
-            background: tokens.g100,
-            border: `1px solid ${tokens.g300}`,
-            borderRadius: 8,
-            padding: '6px 10px',
+            /* DS §08 «Тултипы»: тот же chrome что row-tooltip (см. styles.ts
+               TooltipEl) — фон Card surface, border, radius 6px, padding 8x12,
+               без тени. Унифицируем все тултипы плагина. */
+            background: 'var(--s)',
+            border: '1px solid rgba(128, 128, 128, 0.25)',
+            borderRadius: 6,
+            padding: '8px 12px',
             fontFamily: tokens.fontMono,
             pointerEvents: 'none',
-            boxShadow: 'var(--glass-shadow)',
           }}
         >
           <div
             style={{
-              fontSize: 9,
-              color: tokens.g500,
-              letterSpacing: '.06em',
+              /* DS §10: <14px → --g600+. Mono UPPER label. */
+              fontSize: 'var(--fs-micro)',
+              fontWeight: 600,
+              color: 'var(--g600)',
+              letterSpacing: '0.06em',
               textTransform: 'uppercase',
               marginBottom: 3,
             }}
@@ -205,10 +210,11 @@ function TrendChartInner({ data, tokens }: Props) {
           </div>
           <div
             style={{
-              fontSize: 15,
-              fontWeight: 800,
+              fontSize: 'var(--fs-interactive)',
+              fontWeight: 700,
               color: tokens.tangerine,
-              letterSpacing: '-.01em',
+              letterSpacing: '-0.005em',
+              fontVariantNumeric: 'tabular-nums',
             }}
           >
             {nf2(hover.val)} %

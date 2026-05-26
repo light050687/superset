@@ -20,10 +20,8 @@ function StoreRowInner(props) {
             switch (c.type) {
                 case 'tree':
                     return ((0, jsx_runtime_1.jsx)(TreeChevron_1.default, { level: level, expandable: expandable, expanded: expanded, onToggle: onToggleExpand }, c.id));
-                case 'rank':
-                    return ((0, jsx_runtime_1.jsx)(styles_1.Cell, { "$align": "center", children: (0, jsx_runtime_1.jsx)(styles_1.RankCell, { children: displayIdx }) }, c.id));
                 case 'store':
-                    return ((0, jsx_runtime_1.jsx)(styles_1.Cell, { children: (0, jsx_runtime_1.jsx)(StoreCell_1.default, { data: data, pinned: pinned, onTogglePin: data.isSegment ? undefined : onTogglePin }) }, c.id));
+                    return ((0, jsx_runtime_1.jsx)(styles_1.Cell, { children: (0, jsx_runtime_1.jsx)(StoreCell_1.default, { data: data }) }, c.id));
                 case 'bullet-loss':
                     return ((0, jsx_runtime_1.jsx)(BulletCell_1.default, { value: data.writeoff, plan: data.planWriteoff, globalMax: globalMaxWriteoff, tokens: tokens }, c.id));
                 case 'dual-bullet':

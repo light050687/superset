@@ -46,14 +46,12 @@ const useDebouncedValue_1 = require("./hooks/useDebouncedValue");
 const useDerivedRows_1 = require("./hooks/useDerivedRows");
 const useKeyboardNav_1 = require("./hooks/useKeyboardNav");
 const statusRules_1 = require("./utils/statusRules");
-const rankedStoresMock_1 = require("./mocks/rankedStoresMock");
 const crossFilter_1 = require("./utils/crossFilter");
 const colorFromKey_1 = require("./utils/colorFromKey");
 const TableHeader_1 = __importDefault(require("./components/TableHeader"));
 const TableBody_1 = __importDefault(require("./components/TableBody"));
 const MultiSelectDropdown_1 = __importDefault(require("./components/MultiSelectDropdown"));
 const SearchInput_1 = __importDefault(require("./components/SearchInput"));
-const CsvExportButton_1 = __importDefault(require("./components/CsvExportButton"));
 const FooterHints_1 = __importStar(require("./components/FooterHints"));
 const EmptyState_1 = __importDefault(require("./components/EmptyState"));
 const Tooltip_1 = __importDefault(require("./components/Tooltip"));
@@ -78,32 +76,37 @@ function createInitialState(defaultSort) {
         lastClickedIdx: null,
         modal: { kind: null, storeId: null, segmentId: null },
         focusedRowId: null,
+        page: 0,
     };
 }
 function reducer(state, action) {
     switch (action.type) {
         case 'TOGGLE_SORT': {
+            /* DS: смена сортировки → возврат на первую страницу,
+               иначе пользователь видит «пустоту» если был на 8-й странице. */
             if (state.sortBy === action.payload.sortKey) {
                 return {
                     ...state,
                     sortDir: state.sortDir === 'asc' ? 'desc' : 'asc',
+                    page: 0,
                 };
             }
             return {
                 ...state,
                 sortBy: action.payload.sortKey,
                 sortDir: action.payload.defaultDir ?? 'desc',
+                page: 0,
             };
         }
         case 'SET_SEARCH':
-            return { ...state, search: action.payload };
+            return { ...state, search: action.payload, page: 0 };
         case 'TOGGLE_STATUS': {
             const next = new Set(state.statusFilters);
             if (next.has(action.payload))
                 next.delete(action.payload);
             else
                 next.add(action.payload);
-            return { ...state, statusFilters: next };
+            return { ...state, statusFilters: next, page: 0 };
         }
         case 'TOGGLE_FORMAT': {
             const next = new Set(state.formatFilters);
@@ -111,7 +114,7 @@ function reducer(state, action) {
                 next.delete(action.payload);
             else
                 next.add(action.payload);
-            return { ...state, formatFilters: next };
+            return { ...state, formatFilters: next, page: 0 };
         }
         case 'TOGGLE_PIN': {
             const next = new Set(state.pinned);
@@ -195,9 +198,12 @@ function reducer(state, action) {
                 search: '',
                 statusFilters: new Set(),
                 formatFilters: new Set(),
+                page: 0,
             };
         case 'FOCUS_ROW':
             return { ...state, focusedRowId: action.payload };
+        case 'SET_PAGE':
+            return { ...state, page: Math.max(0, action.payload) };
         default:
             return state;
     }
@@ -206,7 +212,7 @@ function reducer(state, action) {
  * Component
  * ================================================================= */
 function RankedStoresChart(props) {
-    const { width, height, stores, hooks, emitCrossFilters, periodLabel, defaultSort, storeIdCol, segmentIdCol, } = props;
+    const { width, height, stores, hooks, emitCrossFilters, periodLabel, defaultSort, pageSize, storeIdCol, segmentIdCol, } = props;
     const { tokens, cssVars, isDark } = (0, useDsThemeTokens_1.useDsThemeTokens)();
     const [state, dispatch] = (0, react_1.useReducer)(reducer, defaultSort, createInitialState);
     /* Sync когда пользователь меняет default_sort в controlPanel — но только
@@ -227,7 +233,7 @@ function RankedStoresChart(props) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [defaultSort]);
     const debouncedSearch = (0, useDebouncedValue_1.useDebouncedValue)(state.search, 250);
-    const { rankedStores, flatRows, shownCount, totalCount, } = (0, useDerivedRows_1.useDerivedRows)({
+    const { rankedStores, flatRows, shownCount, totalCount, pageCount, safePage, } = (0, useDerivedRows_1.useDerivedRows)({
         stores,
         debouncedSearch,
         statusFilters: state.statusFilters,
@@ -236,6 +242,8 @@ function RankedStoresChart(props) {
         expanded: state.expanded,
         sortBy: state.sortBy,
         sortDir: state.sortDir,
+        page: state.page,
+        pageSize,
     });
     /* ----------------- Cross-filter → setDataMask (через ref) -----------------
        hooks — новый объект в каждом рендере, если поместить setDataMask
@@ -279,24 +287,6 @@ function RankedStoresChart(props) {
             label: statusRules_1.STATUSES[key].label,
             color: (0, colorFromKey_1.colorFromKey)(statusRules_1.STATUSES[key].colorKey, tokens),
             count: counts[key],
-        }));
-    }, [stores, tokens]);
-    const formatOptions = (0, react_1.useMemo)(() => {
-        const counts = {
-            express: 0,
-            minimarket: 0,
-            super: 0,
-            home: 0,
-            superstore: 0,
-        };
-        stores.forEach(s => {
-            counts[s.format] += 1;
-        });
-        return rankedStoresMock_1.FORMAT_ORDER.map(code => ({
-            key: code,
-            label: rankedStoresMock_1.FORMATS_META[code].name,
-            color: (0, colorFromKey_1.colorFromKey)(rankedStoresMock_1.FORMATS_META[code].colorKey, tokens),
-            count: counts[code],
         }));
     }, [stores, tokens]);
     /* ----------------- Event handlers ----------------- */
@@ -432,36 +422,13 @@ function RankedStoresChart(props) {
             }
         },
     }, rootRef);
-    return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { ref: rootRef, "$width": width, "$height": height, style: cssVars, className: "leaderboard-card", children: [(0, jsx_runtime_1.jsx)(react_2.Global, { styles: (0, react_2.css)(styles_1.KEYFRAMES_CSS) }), (0, jsx_runtime_1.jsx)(styles_1.Wrap, { children: (0, jsx_runtime_1.jsxs)(styles_1.Card, { "data-info-hint-container": "", children: [(0, jsx_runtime_1.jsxs)(styles_1.CardHead, { children: [(0, jsx_runtime_1.jsxs)(styles_1.TitleBlock, { children: [(0, jsx_runtime_1.jsx)(styles_1.CardTitle, { children: "\u0420\u0435\u0439\u0442\u0438\u043D\u0433 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u043E\u0432" }), (0, jsx_runtime_1.jsxs)(styles_1.CardSub, { children: [(0, jsx_runtime_1.jsxs)("span", { children: [totalCount, " \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u043E\u0432"] }), periodLabel && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("span", { className: "dot" }), (0, jsx_runtime_1.jsx)("span", { children: periodLabel })] })), (0, jsx_runtime_1.jsx)("span", { className: "dot" }), (0, jsx_runtime_1.jsxs)("span", { children: ["\u0421\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u043A\u0430 \u2014 ", sortLabel(state.sortBy)] })] })] }), (0, jsx_runtime_1.jsxs)(styles_1.Controls, { children: [(0, jsx_runtime_1.jsx)(MultiSelectDropdown_1.default, { label: "\u0421\u0442\u0430\u0442\u0443\u0441", options: statusOptions, selected: state.statusFilters, onToggle: k => dispatch({ type: 'TOGGLE_STATUS', payload: k }) }), (0, jsx_runtime_1.jsx)(MultiSelectDropdown_1.default, { label: "\u0424\u043E\u0440\u043C\u0430\u0442\u044B", options: formatOptions, selected: state.formatFilters, onToggle: k => dispatch({ type: 'TOGGLE_FORMAT', payload: k }) }), (0, jsx_runtime_1.jsx)(SearchInput_1.default, { value: state.search, onChange: v => dispatch({ type: 'SET_SEARCH', payload: v }) }), (0, jsx_runtime_1.jsx)(CsvExportButton_1.default, { stores: rankedStores }), (0, jsx_runtime_1.jsx)(FooterHints_1.ControlsHint, {})] })] }), hasAnyFilter && ((0, jsx_runtime_1.jsx)(styles_1.FilterResetRow, { children: (0, jsx_runtime_1.jsx)(styles_1.FilterResetBtn, { type: "button", onClick: () => dispatch({ type: 'RESET_FILTERS' }), children: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0444\u0438\u043B\u044C\u0442\u0440\u044B" }) })), stores.length === 0 ? ((0, jsx_runtime_1.jsx)(EmptyState_1.default, { title: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u043E\u0432", description: 'Включите «Режим проектирования» в настройках для тестовых данных, ' +
-                                'либо настройте Сопоставление колонок под ваш dataset. Ожидаемые поля: ' +
-                                'store_id, store_name, city, format, format_name, division, to_class, ' +
-                                'writeoff_pct, shrinkage_pct, plan_writeoff_pct, plan_shrinkage_pct, ' +
-                                'avg_writeoff_rub, avg_shrinkage_check_rub.' })) : ((0, jsx_runtime_1.jsxs)(styles_1.TableWrap, { role: "table", "aria-label": "\u0420\u0435\u0439\u0442\u0438\u043D\u0433 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u043E\u0432", children: [(0, jsx_runtime_1.jsx)(TableHeader_1.default, { sortBy: state.sortBy, sortDir: state.sortDir, onSort: handleSort }), (0, jsx_runtime_1.jsx)(TableBody_1.default, { rows: flatRows, allStores: stores, crossSelected: state.storeCross, segmentCrossSelected: state.segmentCross, pinned: state.pinned, expanded: state.expanded, focusedRowId: state.focusedRowId, tokens: tokens, onRowClick: handleRowClick, onRowDblClick: handleRowDblClick, onRowMouseEnter: handleRowMouseEnter, onRowMouseMove: handleRowMouseMove, onRowMouseLeave: handleRowMouseLeave, onToggleExpand: handleToggleExpand, onTogglePin: handleTogglePin })] })), (0, jsx_runtime_1.jsx)(FooterHints_1.default, { shown: shownCount, total: totalCount })] }) }), (0, jsx_runtime_1.jsx)(Tooltip_1.default, { visible: tt.store !== null, pos: tt.pos, 
+    return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { ref: rootRef, "$width": width, "$height": height, style: cssVars, className: "leaderboard-card", children: [(0, jsx_runtime_1.jsx)(react_2.Global, { styles: (0, react_2.css)(styles_1.KEYFRAMES_CSS) }), (0, jsx_runtime_1.jsxs)(styles_1.Card, { "data-info-hint-container": "", children: [(0, jsx_runtime_1.jsxs)(styles_1.CardHead, { children: [(0, jsx_runtime_1.jsxs)(styles_1.TitleBlock, { children: [(0, jsx_runtime_1.jsx)(styles_1.CardTitle, { children: "\u0420\u0435\u0439\u0442\u0438\u043D\u0433 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u043E\u0432" }), (0, jsx_runtime_1.jsxs)(styles_1.CardSub, { children: [(0, jsx_runtime_1.jsxs)("span", { children: [totalCount, " \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u043E\u0432"] }), periodLabel && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("span", { className: "dot" }), (0, jsx_runtime_1.jsx)("span", { children: periodLabel })] }))] })] }), (0, jsx_runtime_1.jsxs)(styles_1.Controls, { children: [(0, jsx_runtime_1.jsx)(MultiSelectDropdown_1.default, { label: "\u0421\u0442\u0430\u0442\u0443\u0441", options: statusOptions, selected: state.statusFilters, onToggle: k => dispatch({ type: 'TOGGLE_STATUS', payload: k }) }), (0, jsx_runtime_1.jsx)(SearchInput_1.default, { value: state.search, onChange: v => dispatch({ type: 'SET_SEARCH', payload: v }) }), (0, jsx_runtime_1.jsx)(FooterHints_1.ControlsHint, {})] })] }), hasAnyFilter && ((0, jsx_runtime_1.jsx)(styles_1.FilterResetRow, { children: (0, jsx_runtime_1.jsx)(styles_1.FilterResetBtn, { type: "button", onClick: () => dispatch({ type: 'RESET_FILTERS' }), children: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0444\u0438\u043B\u044C\u0442\u0440\u044B" }) })), stores.length === 0 ? ((0, jsx_runtime_1.jsx)(EmptyState_1.default, { title: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u043E\u0432", description: 'Включите «Режим проектирования» в настройках для тестовых данных, ' +
+                            'либо настройте Сопоставление колонок под ваш dataset. Ожидаемые поля: ' +
+                            'store_id, store_name, city, format, format_name, division, to_class, ' +
+                            'writeoff_pct, shrinkage_pct, plan_writeoff_pct, plan_shrinkage_pct, ' +
+                            'avg_writeoff_rub, avg_shrinkage_check_rub.' })) : ((0, jsx_runtime_1.jsxs)(styles_1.TableWrap, { role: "table", "aria-label": "\u0420\u0435\u0439\u0442\u0438\u043D\u0433 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u043E\u0432", children: [(0, jsx_runtime_1.jsx)(TableHeader_1.default, { sortBy: state.sortBy, sortDir: state.sortDir, onSort: handleSort }), (0, jsx_runtime_1.jsx)(TableBody_1.default, { rows: flatRows, allStores: stores, crossSelected: state.storeCross, segmentCrossSelected: state.segmentCross, pinned: state.pinned, expanded: state.expanded, focusedRowId: state.focusedRowId, tokens: tokens, onRowClick: handleRowClick, onRowDblClick: handleRowDblClick, onRowMouseEnter: handleRowMouseEnter, onRowMouseMove: handleRowMouseMove, onRowMouseLeave: handleRowMouseLeave, onToggleExpand: handleToggleExpand, onTogglePin: handleTogglePin })] })), (0, jsx_runtime_1.jsx)(FooterHints_1.default, { shown: shownCount, total: totalCount, page: safePage, pageSize: pageSize, pageCount: pageCount, onPageChange: p => dispatch({ type: 'SET_PAGE', payload: p }) })] }), (0, jsx_runtime_1.jsx)(Tooltip_1.default, { visible: tt.store !== null, pos: tt.pos, 
                 /* Tooltip того же тона что Card surface (НЕ инверт). */
                 ink: tokens.surface, surface: tokens.ink, border: tokens.g700, children: tt.store && ((0, jsx_runtime_1.jsx)(TooltipContent, { store: tt.store, allStores: stores, tokens: tokens })) }), (0, jsx_runtime_1.jsx)(StoreModal_1.default, { open: state.modal.kind === 'store', store: activeModalStore, allStores: stores, tokens: tokens, onClose: () => dispatch({ type: 'CLOSE_MODAL' }), periodLabel: periodLabel }), (0, jsx_runtime_1.jsx)(SegmentModal_1.default, { open: state.modal.kind === 'segment', parentStore: activeModalStore, segment: activeModalSegment, allStores: stores, tokens: tokens, onClose: () => dispatch({ type: 'CLOSE_MODAL' }), periodLabel: periodLabel })] }));
-}
-/* =================================================================
- * Tooltip content
- * ================================================================= */
-function sortLabel(sortBy) {
-    switch (sortBy) {
-        case 'lossCombined':
-            return 'по уровню потерь';
-        case 'writeoff':
-            return 'по % списаний';
-        case 'shrinkage':
-            return 'по % недостач';
-        case 'avgWriteoff':
-            return 'по ср. сумме списаний';
-        case 'avgShrinkageCheck':
-            return 'по ср. чеку недостач';
-        case 'statusRank':
-            return 'по статусу';
-        case 'name':
-            return 'по имени';
-        default:
-            return '';
-    }
 }
 function TooltipContent({ store, allStores, tokens }) {
     const st = statusRules_1.STATUSES[store.status];

@@ -20,13 +20,11 @@ import {
   Root,
   TableWrap,
   TitleBlock,
-  Wrap,
   KEYFRAMES_CSS,
 } from './styles';
 import type {
   ChartUiAction,
   ChartUiState,
-  FormatCode,
   RankedStoresTransformedProps,
   SortDir,
   SortKey,
@@ -38,10 +36,6 @@ import { useDebouncedValue } from './hooks/useDebouncedValue';
 import { useDerivedRows } from './hooks/useDerivedRows';
 import { useKeyboardNav } from './hooks/useKeyboardNav';
 import { STATUSES } from './utils/statusRules';
-import {
-  FORMAT_ORDER,
-  FORMATS_META,
-} from './mocks/rankedStoresMock';
 import { buildDataMask } from './utils/crossFilter';
 import { colorFromKey } from './utils/colorFromKey';
 
@@ -51,7 +45,6 @@ import MultiSelectDropdown, {
   DropdownOption,
 } from './components/MultiSelectDropdown';
 import SearchInput from './components/SearchInput';
-import CsvExportButton from './components/CsvExportButton';
 import FooterHints, { ControlsHint } from './components/FooterHints';
 import EmptyState from './components/EmptyState';
 import Tooltip from './components/Tooltip';
@@ -78,37 +71,42 @@ function createInitialState(defaultSort: SortKey): ChartUiState {
     lastClickedIdx: null,
     modal: { kind: null, storeId: null, segmentId: null },
     focusedRowId: null,
+    page: 0,
   };
 }
 
 function reducer(state: ChartUiState, action: ChartUiAction): ChartUiState {
   switch (action.type) {
     case 'TOGGLE_SORT': {
+      /* DS: смена сортировки → возврат на первую страницу,
+         иначе пользователь видит «пустоту» если был на 8-й странице. */
       if (state.sortBy === action.payload.sortKey) {
         return {
           ...state,
           sortDir: state.sortDir === 'asc' ? 'desc' : 'asc',
+          page: 0,
         };
       }
       return {
         ...state,
         sortBy: action.payload.sortKey,
         sortDir: action.payload.defaultDir ?? 'desc',
+        page: 0,
       };
     }
     case 'SET_SEARCH':
-      return { ...state, search: action.payload };
+      return { ...state, search: action.payload, page: 0 };
     case 'TOGGLE_STATUS': {
       const next = new Set(state.statusFilters);
       if (next.has(action.payload)) next.delete(action.payload);
       else next.add(action.payload);
-      return { ...state, statusFilters: next };
+      return { ...state, statusFilters: next, page: 0 };
     }
     case 'TOGGLE_FORMAT': {
       const next = new Set(state.formatFilters);
       if (next.has(action.payload)) next.delete(action.payload);
       else next.add(action.payload);
-      return { ...state, formatFilters: next };
+      return { ...state, formatFilters: next, page: 0 };
     }
     case 'TOGGLE_PIN': {
       const next = new Set(state.pinned);
@@ -185,9 +183,12 @@ function reducer(state: ChartUiState, action: ChartUiAction): ChartUiState {
         search: '',
         statusFilters: new Set(),
         formatFilters: new Set(),
+        page: 0,
       };
     case 'FOCUS_ROW':
       return { ...state, focusedRowId: action.payload };
+    case 'SET_PAGE':
+      return { ...state, page: Math.max(0, action.payload) };
     default:
       return state;
   }
@@ -208,6 +209,7 @@ export default function RankedStoresChart(
     emitCrossFilters,
     periodLabel,
     defaultSort,
+    pageSize,
     storeIdCol,
     segmentIdCol,
   } = props;
@@ -240,6 +242,8 @@ export default function RankedStoresChart(
     flatRows,
     shownCount,
     totalCount,
+    pageCount,
+    safePage,
   } = useDerivedRows({
     stores,
     debouncedSearch,
@@ -249,6 +253,8 @@ export default function RankedStoresChart(
     expanded: state.expanded,
     sortBy: state.sortBy,
     sortDir: state.sortDir,
+    page: state.page,
+    pageSize,
   });
 
   /* ----------------- Cross-filter → setDataMask (через ref) -----------------
@@ -297,25 +303,6 @@ export default function RankedStoresChart(
       label: STATUSES[key].label,
       color: colorFromKey(STATUSES[key].colorKey, tokens),
       count: counts[key],
-    }));
-  }, [stores, tokens]);
-
-  const formatOptions: DropdownOption[] = useMemo(() => {
-    const counts: Record<FormatCode, number> = {
-      express: 0,
-      minimarket: 0,
-      super: 0,
-      home: 0,
-      superstore: 0,
-    };
-    stores.forEach(s => {
-      counts[s.format] += 1;
-    });
-    return FORMAT_ORDER.map(code => ({
-      key: code,
-      label: FORMATS_META[code].name,
-      color: colorFromKey(FORMATS_META[code].colorKey, tokens),
-      count: counts[code],
     }));
   }, [stores, tokens]);
 
@@ -488,9 +475,8 @@ export default function RankedStoresChart(
       className="leaderboard-card"
     >
       <Global styles={css(KEYFRAMES_CSS)} />
-      <Wrap>
-        <Card data-info-hint-container="">
-          <CardHead>
+      <Card data-info-hint-container="">
+        <CardHead>
             <TitleBlock>
               <CardTitle>Рейтинг магазинов</CardTitle>
               <CardSub>
@@ -501,8 +487,6 @@ export default function RankedStoresChart(
                     <span>{periodLabel}</span>
                   </>
                 )}
-                <span className="dot" />
-                <span>Сортировка — {sortLabel(state.sortBy)}</span>
               </CardSub>
             </TitleBlock>
             <Controls>
@@ -514,19 +498,10 @@ export default function RankedStoresChart(
                   dispatch({ type: 'TOGGLE_STATUS', payload: k as StatusCode })
                 }
               />
-              <MultiSelectDropdown
-                label="Форматы"
-                options={formatOptions}
-                selected={state.formatFilters as Set<string>}
-                onToggle={k =>
-                  dispatch({ type: 'TOGGLE_FORMAT', payload: k as FormatCode })
-                }
-              />
               <SearchInput
                 value={state.search}
                 onChange={v => dispatch({ type: 'SET_SEARCH', payload: v })}
               />
-              <CsvExportButton stores={rankedStores} />
               <ControlsHint />
             </Controls>
           </CardHead>
@@ -580,9 +555,15 @@ export default function RankedStoresChart(
             </TableWrap>
           )}
 
-          <FooterHints shown={shownCount} total={totalCount} />
-        </Card>
-      </Wrap>
+        <FooterHints
+          shown={shownCount}
+          total={totalCount}
+          page={safePage}
+          pageSize={pageSize}
+          pageCount={pageCount}
+          onPageChange={p => dispatch({ type: 'SET_PAGE', payload: p })}
+        />
+      </Card>
 
       <Tooltip
         visible={tt.store !== null}
@@ -621,27 +602,6 @@ export default function RankedStoresChart(
 /* =================================================================
  * Tooltip content
  * ================================================================= */
-
-function sortLabel(sortBy: SortKey): string {
-  switch (sortBy) {
-    case 'lossCombined':
-      return 'по уровню потерь';
-    case 'writeoff':
-      return 'по % списаний';
-    case 'shrinkage':
-      return 'по % недостач';
-    case 'avgWriteoff':
-      return 'по ср. сумме списаний';
-    case 'avgShrinkageCheck':
-      return 'по ср. чеку недостач';
-    case 'statusRank':
-      return 'по статусу';
-    case 'name':
-      return 'по имени';
-    default:
-      return '';
-  }
-}
 
 interface TooltipContentProps {
   store: Store;

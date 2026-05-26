@@ -63,28 +63,35 @@ function TrendChartInner({ data, tokens }) {
     return ((0, jsx_runtime_1.jsxs)(styles_1.MTrendCard, { children: [(0, jsx_runtime_1.jsxs)("svg", { width: "100%", height: h, viewBox: `0 0 ${w} ${h}`, preserveAspectRatio: "none", overflow: "visible", children: [(0, jsx_runtime_1.jsx)("defs", { children: (0, jsx_runtime_1.jsxs)("linearGradient", { id: gradId, x1: "0", y1: "0", x2: "0", y2: "1", children: [(0, jsx_runtime_1.jsx)("stop", { offset: "0%", stopColor: tokens.tangerine, stopOpacity: 0.35 }), (0, jsx_runtime_1.jsx)("stop", { offset: "100%", stopColor: tokens.tangerine, stopOpacity: 0.02 })] }) }), (0, jsx_runtime_1.jsx)("line", { x1: 10, y1: h - padB, x2: w - 10, y2: h - padB, stroke: tokens.g200, strokeWidth: 1 }), (0, jsx_runtime_1.jsx)("path", { d: areaPath, fill: `url(#${gradId})` }), (0, jsx_runtime_1.jsx)("path", { d: path, fill: "none", stroke: tokens.tangerine, strokeWidth: 2.2, strokeLinecap: "round", strokeLinejoin: "round" }), pts.map((p, i) => {
                         const isLast = i === pts.length - 1;
                         return ((0, jsx_runtime_1.jsx)("circle", { cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: isLast ? 3.5 : 2, fill: tokens.tangerine, stroke: tokens.g50, strokeWidth: isLast ? 2 : 1 }, i));
-                    }), labels.map((l, i) => ((0, jsx_runtime_1.jsx)("text", { x: l.x, y: h - 7, fontFamily: tokens.fontMono, fontSize: "10", fontWeight: "500", fill: tokens.g500, textAnchor: "middle", children: l.label }, i))), hover && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("line", { x1: hover.x, y1: padT, x2: hover.x, y2: h - padB, stroke: tokens.g300, strokeWidth: 1, strokeDasharray: "3 3", opacity: 0.8, pointerEvents: "none" }), (0, jsx_runtime_1.jsx)("circle", { cx: hover.x, cy: hover.y, r: 5.5, fill: tokens.tangerine, stroke: tokens.ink, strokeWidth: 1.5, pointerEvents: "none" })] })), (0, jsx_runtime_1.jsx)("rect", { ref: overlayRef, x: 0, y: 0, width: w, height: h, fill: "white", fillOpacity: 0.001, className: "trend-overlay", onMouseMove: onMove, onMouseLeave: () => setHover(null) })] }), hover && ((0, jsx_runtime_1.jsxs)("div", { style: {
+                    }), labels.map((l, i) => ((0, jsx_runtime_1.jsx)("text", { x: l.x, y: h - 7, fontFamily: tokens.fontMono, fontSize: "10", fontWeight: "500", 
+                        /* DS §10: <14px текст — минимум --g600 (g500 запрещён). */
+                        fill: tokens.g600, textAnchor: "middle", children: l.label }, i))), hover && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("line", { x1: hover.x, y1: padT, x2: hover.x, y2: h - padB, stroke: tokens.g300, strokeWidth: 1, strokeDasharray: "3 3", opacity: 0.8, pointerEvents: "none" }), (0, jsx_runtime_1.jsx)("circle", { cx: hover.x, cy: hover.y, r: 5.5, fill: tokens.tangerine, stroke: tokens.ink, strokeWidth: 1.5, pointerEvents: "none" })] })), (0, jsx_runtime_1.jsx)("rect", { ref: overlayRef, x: 0, y: 0, width: w, height: h, fill: "white", fillOpacity: 0.001, className: "trend-overlay", onMouseMove: onMove, onMouseLeave: () => setHover(null) })] }), hover && ((0, jsx_runtime_1.jsxs)("div", { style: {
                     position: 'absolute',
                     left: `calc(${(hover.x / w) * 100}% + 8px)`,
                     top: 6,
-                    background: tokens.g100,
-                    border: `1px solid ${tokens.g300}`,
-                    borderRadius: 8,
-                    padding: '6px 10px',
+                    /* DS §08 «Тултипы»: тот же chrome что row-tooltip (см. styles.ts
+                       TooltipEl) — фон Card surface, border, radius 6px, padding 8x12,
+                       без тени. Унифицируем все тултипы плагина. */
+                    background: 'var(--s)',
+                    border: '1px solid rgba(128, 128, 128, 0.25)',
+                    borderRadius: 6,
+                    padding: '8px 12px',
                     fontFamily: tokens.fontMono,
                     pointerEvents: 'none',
-                    boxShadow: 'var(--glass-shadow)',
                 }, children: [(0, jsx_runtime_1.jsx)("div", { style: {
-                            fontSize: 9,
-                            color: tokens.g500,
-                            letterSpacing: '.06em',
+                            /* DS §10: <14px → --g600+. Mono UPPER label. */
+                            fontSize: 'var(--fs-micro)',
+                            fontWeight: 600,
+                            color: 'var(--g600)',
+                            letterSpacing: '0.06em',
                             textTransform: 'uppercase',
                             marginBottom: 3,
                         }, children: hoverLabel }), (0, jsx_runtime_1.jsxs)("div", { style: {
-                            fontSize: 15,
-                            fontWeight: 800,
+                            fontSize: 'var(--fs-interactive)',
+                            fontWeight: 700,
                             color: tokens.tangerine,
-                            letterSpacing: '-.01em',
+                            letterSpacing: '-0.005em',
+                            fontVariantNumeric: 'tabular-nums',
                         }, children: [(0, formatRussian_1.nf2)(hover.val), " %"] })] }))] }));
 }
 exports.default = (0, react_1.memo)(TrendChartInner);

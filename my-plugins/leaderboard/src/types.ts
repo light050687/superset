@@ -158,6 +158,8 @@ export interface RankedStoresFormData extends QueryFormData {
 
   rowLimit?: number;
   defaultSort?: SortKey;
+  /** Размер страницы в пагинации (25/50/100/200). */
+  pageSize?: number;
 
   /* Локаль и формат */
   periodLabel?: string; // подпись периода в шапке, напр. "Март 2026"
@@ -180,6 +182,7 @@ export interface RankedStoresTransformedProps {
   emitCrossFilters?: boolean;
   periodLabel: string;
   defaultSort: SortKey;
+  pageSize: number;
   /** Имя столбца, по которому пробрасывается cross-filter магазинов. */
   storeIdCol: string;
   /** Имя столбца для cross-filter по сегментам. */
@@ -211,6 +214,8 @@ export interface ChartUiState {
   lastClickedIdx: number | null;
   modal: { kind: ModalKind; storeId: string | null; segmentId: string | null };
   focusedRowId: string | null;
+  /** 0-indexed page number. Сбрасывается в 0 при изменении filters/search/sort. */
+  page: number;
 }
 
 export type ChartUiAction =
@@ -231,7 +236,8 @@ export type ChartUiAction =
   | { type: 'OPEN_SEGMENT_MODAL'; payload: { storeId: string; segmentId: string } }
   | { type: 'CLOSE_MODAL' }
   | { type: 'RESET_FILTERS' }
-  | { type: 'FOCUS_ROW'; payload: string | null };
+  | { type: 'FOCUS_ROW'; payload: string | null }
+  | { type: 'SET_PAGE'; payload: number };
 
 /* =================================================================
  * Flat row (для рендера таблицы с tree-вложенностью)

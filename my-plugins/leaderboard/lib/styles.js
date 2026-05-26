@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MContextBc = exports.MClose = exports.MSub = exports.MTitle = exports.MTitles = exports.MStatusBar = exports.MHead = exports.Modal = exports.ModalBg = exports.TooltipEl = exports.CardFooter = exports.Chip = exports.ChipCell = exports.DriversCellEl = exports.NumCell = exports.DualBulletEl = exports.BulletCellEl = exports.StoreCellEl = exports.RankCell = exports.PinBtn = exports.ExBtn = exports.TreeBullet = exports.TreeCellEl = exports.Cell = exports.RowEl = exports.TableBodyEl = exports.Th = exports.TableHead = exports.TableWrap = exports.DdItem = exports.DdMenu = exports.CountBadge = exports.DdTrigger = exports.DdWrap = exports.SearchClear = exports.SearchInputEl = exports.SearchIcon = exports.SearchWrap = exports.FilterResetBtn = exports.FilterResetRow = exports.IconButton = exports.Controls = exports.CardSub = exports.CardTitle = exports.TitleBlock = exports.CardHead = exports.Card = exports.Wrap = exports.Root = exports.KEYFRAMES_CSS = void 0;
-exports.SkeletonRow = exports.StateContainer = exports.MTrendLast = exports.MTrendCard = exports.MTrendWrap = exports.MProfile = exports.MRankRow = exports.MRanked = exports.MSectionL = exports.M3Col = exports.MStat = exports.MSummary = void 0;
+exports.MSub = exports.MTitle = exports.MTitles = exports.MStatusBar = exports.MHead = exports.Modal = exports.ModalBg = exports.TooltipEl = exports.CardFooter = exports.PageIndicator = exports.PageBtn = exports.PaginationWrap = exports.Chip = exports.ChipCell = exports.DriversCellEl = exports.NumCell = exports.DualBulletEl = exports.BulletCellEl = exports.StoreCellEl = exports.RankCell = exports.PinBtn = exports.ExBtn = exports.TreeBullet = exports.TreeCellEl = exports.Cell = exports.RowEl = exports.TableBodyEl = exports.Th = exports.TableHead = exports.TableWrap = exports.DdItem = exports.DdMenu = exports.CountBadge = exports.DdTrigger = exports.DdWrap = exports.SearchClear = exports.SearchInputEl = exports.SearchIcon = exports.SearchWrap = exports.FilterResetBtn = exports.FilterResetRow = exports.IconButton = exports.Controls = exports.CardSub = exports.CardTitle = exports.TitleBlock = exports.CardHead = exports.Card = exports.Root = exports.KEYFRAMES_CSS = void 0;
+exports.SkeletonRow = exports.StateContainer = exports.MTrendLast = exports.MTrendCard = exports.MTrendWrap = exports.MProfile = exports.MRankRow = exports.MRanked = exports.MSectionL = exports.M3Col = exports.MStat = exports.MSummary = exports.MContextBc = exports.MClose = void 0;
 const core_1 = require("@superset-ui/core");
 const react_1 = require("@emotion/react");
 /**
@@ -42,28 +42,70 @@ const cardInKf = (0, react_1.keyframes) `
 /* ================================================================
  * ROOT
  * ================================================================ */
+/* Root — explicit px из chartProps.width/height (паттерн paretoAnalysis
+   styled.ts:29-117). Это критично для двух режимов сразу:
+   - view mode: Superset знает height ячейки, Root уважает → таблица скроллится
+     внутри Card (TableWrap flex:1), карточка не растёт unbounded на все строки;
+   - edit mode resize: при drag-resize Superset перерендеривает плагин с новыми
+     props.width/height → styled-component мгновенно подхватывает.
+   `100%/100%` (паттерн rankedBars) зависит от родительского DOM-контекста и
+   в view-mode даёт unbounded growth вниз. */
 exports.Root = core_1.styled.div `
   width: ${p => p.$width}px;
   height: ${p => p.$height}px;
-  /* DS v2.0: container query для fluid типографики */
+  /* DS 2.0 §02 шкала. Жёсткое правило: min 10px (ничего мельче),
+     интерактивный текст ≥ 11px. Конфликт с мокапом (8–9px в db-label/
+     driver-delta/chip) — DS wins, иначе плагин выпадает из общего
+     типографического ритма других визуалов (scorecard, metricTimeSeries,
+     paretoAnalysis тоже на этих токенах). */
+  --fs-nano: 10px;       /* driver-delta, num-cell .u, m-stat-d (DS min) */
+  --fs-micro: 11px;      /* rank-cell, CardSub, store-meta, db-label, badges */
+  --fs-meta: 12px;       /* search input, dd-item, m-rank-name (interactive) */
+  --fs-interactive: 13px;/* bullet-val, num-cell, db-val */
+  --fs-body: 14px;       /* CardTitle */
+  --fs-title: 18px;      /* m-title (modal heading) */
+  --fs-hero: 24px;       /* m-stat-v (modal big KPI) */
+
   container-type: inline-size;
   container-name: leaderboard;
-  overflow: auto;
+  overflow: hidden;
   font-family: var(--f);
-  background: var(--bg);
   color: var(--ink);
   font-feature-settings: 'tnum' 1;
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 
+  /* CSS reset — ТОЛЬКО box-sizing. margin/padding в universal selector overrode
+     emotion styled rules (та же specificity 0,1,0 + ordering), стирая Card padding.
+     Эмоция всё равно сбрасывает margin/padding явно где надо. */
   * {
     box-sizing: border-box;
-    margin: 0;
-    padding: 0;
   }
   button {
     font-family: inherit;
+  }
+  h1, h2, h3, h4, h5, h6, p {
+    margin: 0;
+  }
+
+  /* DS v2.1 §02 fluid: на узких карточках -1px по основным токенам,
+     но строго не ниже 10px / интерактив 11px (DS floor). */
+  @container leaderboard (max-width: 720px) {
+    --fs-body: 13px;
+    --fs-interactive: 12px;
+    --fs-meta: 11px;
+    --fs-micro: 10px;
+  }
+  @container leaderboard (max-width: 480px) {
+    --fs-body: 13px;
+    --fs-interactive: 12px;
+    --fs-meta: 11px;
+    --fs-micro: 10px;
+    --fs-hero: 22px;
   }
 
   @media (prefers-reduced-motion: never-match) {
@@ -73,16 +115,40 @@ exports.Root = core_1.styled.div `
     }
   }
 `;
-exports.Wrap = core_1.styled.div `
-  padding: 16px 16px 24px;
-`;
+/* Card — `height: 100%` + `contain: strict`.
+
+   КРИТИЧНО: `contain: strict` блокирует propagation children's intrinsic
+   size в parent layout. Без этого в Superset dashboard view-mode:
+   1) Superset CSS rule { height: unset !important; min-height: 100% } делает
+      .resizable-container'ы content-driven (=intrinsic от children)
+   2) grid-row высота = max(intrinsic content всех ext-* siblings)
+   3) Наш Card.scrollHeight = 50 rows × ~75px = 3700px+ (TableWrap внутри)
+   4) Row растягивается до 3930px, все cells stretch к этому
+   5) Карточка визуально 3930px вместо saved 491
+   `contain: strict` (= layout + paint + size + style) разрывает цепь:
+   Card.intrinsic = его computed размер, НЕ зависит от content.
+
+   Reference: scorecard plugin DataContainer паттерн `flex:1; min-height:0`,
+   но scorecard работает потому что contains только Big Number (~80px),
+   а у нас 50 rows × 75 = 3700px — нужен явный contain.
+   CSS spec: https://developer.mozilla.org/en-US/docs/Web/CSS/contain
+   `contain: strict` requires explicit width/height — у нас height:100%
+   разрешается через Root explicit px, browser применяет containment. */
 exports.Card = core_1.styled.section `
   position: relative;
+  width: 100%;
+  height: 100%;
+  contain: strict;
   background: var(--s);
   border: 1px solid var(--g200);
-  border-radius: 10px;
-  padding: 16px 24px;
+  /* Mockup .c: padding 18px 22px 16px, radius 14px. */
+  border-radius: 14px;
+  padding: 18px 22px 16px;
   box-shadow: var(--sh);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   /* DS 2.0 mount animation. Эмоция keyframes() гарантирует, что
      animation-name доступен ДО commit'а — без race condition. */
   animation: ${cardInKf} 0.5s ${EASE} both;
@@ -94,7 +160,12 @@ exports.Card = core_1.styled.section `
     opacity: 1 !important;
   }
 `;
+/* DS v2.1 §06.1 Контейнер: заголовочная зона над таблицей.
+   z-index выше TableHead (sticky z:5), чтобы dropdown-меню и поиск всегда
+   были поверх таблицы при скролле/раскрытии. */
 exports.CardHead = core_1.styled.div `
+  position: relative;
+  z-index: 10;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -110,23 +181,23 @@ exports.TitleBlock = core_1.styled.div `
   gap: 4px;
   min-width: 0;
 `;
-/* DS v2.0 fluid: --fs-micro UPPER моно для заголовка секции */
+/* Mockup .c-title: 13px / 800 / 0.04em UPPER, color ink, proportional. */
 exports.CardTitle = core_1.styled.h2 `
-  font-family: var(--m);
-  font-size: var(--fs-micro);
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-family: var(--f);
+  font-size: var(--fs-body);
+  font-weight: 800;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink);
-  line-height: 1.4;
+  line-height: 1.3;
 `;
-/* DS v2.0 fluid: --fs-micro моно для подзаголовка */
+/* Mockup .c-sub: 10px / 500 / mono / g500 / 0.02em. */
 exports.CardSub = core_1.styled.div `
   font-size: var(--fs-micro);
   font-weight: 500;
-  color: var(--g600);
+  color: var(--g500);
   font-family: var(--m);
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -155,18 +226,19 @@ exports.Controls = core_1.styled.div `
 /* ================================================================
  * TOOLBAR (dropdowns, search, export) — DS 2.0: high=32px, radius 6px
  * ================================================================ */
+/* Mockup .export-btn: 30x30 / radius 7 / g500. */
 exports.IconButton = core_1.styled.button `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   background: var(--g100);
   border: 1px solid var(--g200);
-  border-radius: 6px;
-  color: var(--g600);
+  border-radius: 7px;
+  color: var(--g500);
   cursor: pointer;
-  transition: 0.15s var(--ease);
+  transition: 0.12s;
 
   &:hover {
     color: var(--c-sky);
@@ -177,8 +249,8 @@ exports.IconButton = core_1.styled.button `
     outline-offset: 2px;
   }
   svg {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
   }
 `;
 exports.FilterResetRow = core_1.styled.div `
@@ -187,17 +259,17 @@ exports.FilterResetRow = core_1.styled.div `
   justify-content: flex-end;
   margin-bottom: 10px;
 `;
+/* Mockup .filter-reset: 10px / 600 / mono / c-sky / 0.02em. */
 exports.FilterResetBtn = core_1.styled.button `
   background: none;
   border: none;
   font-family: var(--m);
   font-size: var(--fs-micro);
   font-weight: 600;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
   color: var(--c-sky);
   cursor: pointer;
   padding: 4px 8px;
-  min-height: 28px;
 
   &:hover {
     color: var(--ink);
@@ -213,6 +285,7 @@ exports.SearchWrap = core_1.styled.div `
   align-items: center;
   width: 220px;
 `;
+/* Mockup .search-icon: 12x12 / g500. */
 exports.SearchIcon = core_1.styled.svg `
   position: absolute;
   left: 10px;
@@ -220,19 +293,20 @@ exports.SearchIcon = core_1.styled.svg `
   transform: translateY(-50%);
   width: 12px;
   height: 12px;
-  color: var(--g600);
+  color: var(--g500);
   pointer-events: none;
 `;
+/* Mockup .search-input: 30 / radius 7 / g100 / 11px proportional. */
 exports.SearchInputEl = core_1.styled.input `
   width: 100%;
   background: var(--g100);
   border: 1px solid var(--g200);
-  border-radius: 6px;
+  border-radius: 7px;
   padding: 7px 28px 7px 28px;
-  height: 32px;
+  height: 30px;
   color: var(--ink);
   font-family: var(--f);
-  font-size: var(--fs-body);
+  font-size: var(--fs-meta);
   font-weight: 500;
   outline: none;
   transition: border-color 0.15s var(--ease);
@@ -244,9 +318,10 @@ exports.SearchInputEl = core_1.styled.input `
     border-color: var(--c-sky);
   }
   &::placeholder {
-    color: var(--g600);
+    color: var(--g500);
   }
 `;
+/* Mockup .search-clear: 18x18 / g500. */
 exports.SearchClear = core_1.styled.button `
   position: absolute;
   right: 6px;
@@ -254,9 +329,9 @@ exports.SearchClear = core_1.styled.button `
   transform: translateY(-50%);
   background: transparent;
   border: none;
-  color: var(--g600);
-  width: 20px;
-  height: 20px;
+  color: var(--g500);
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -264,8 +339,8 @@ exports.SearchClear = core_1.styled.button `
   cursor: pointer;
 
   svg {
-    width: 10px;
-    height: 10px;
+    width: 9px;
+    height: 9px;
   }
   &:hover {
     color: var(--ink);
@@ -282,23 +357,27 @@ exports.SearchClear = core_1.styled.button `
 exports.DdWrap = core_1.styled.div `
   position: relative;
 `;
+/* Mockup .dd-trigger: 30 / radius 7 / 10px mono / g600 / 0.02em. */
 exports.DdTrigger = core_1.styled.button `
   display: inline-flex;
   align-items: center;
   gap: 6px;
   background: var(--g100);
   border: 1px solid var(--g200);
-  border-radius: 6px;
+  border-radius: 7px;
   padding: 6px 10px;
-  height: 32px;
+  height: 30px;
   font-family: var(--m);
   font-size: var(--fs-micro);
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--g700);
+  letter-spacing: 0.02em;
+  /* line-height: 1 на trigger — иначе текст имеет vertical padding 1.5×
+     от Root global, SVG визуально оказывается выше text base-line даже
+     при align-items:center (box centered, но текст offsetted внутри). */
+  line-height: 1;
+  color: var(--g600);
   cursor: pointer;
-  transition: 0.15s var(--ease);
+  transition: 0.12s;
 
   &:hover {
     border-color: var(--g300);
@@ -311,9 +390,15 @@ exports.DdTrigger = core_1.styled.button `
   svg {
     width: 10px;
     height: 10px;
-    opacity: 0.8;
+    opacity: 0.7;
+    display: block; /* убирает inline baseline gap снизу SVG. */
+  }
+  span {
+    display: inline-flex;
+    align-items: center;
   }
 `;
+/* Mockup .count-badge: 9px / 800 / 0.08em UPPER / radius 10. */
 exports.CountBadge = core_1.styled.span `
   background: var(--c-sky);
   color: var(--on-accent);
@@ -321,10 +406,11 @@ exports.CountBadge = core_1.styled.span `
   padding: 1px 6px;
   font-family: var(--m);
   font-size: var(--fs-nano);
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 `;
+/* Mockup .dd-menu: radius 9 / min-width 200 / shadow 28px. */
 exports.DdMenu = core_1.styled.div `
   display: ${p => (p.$open ? 'block' : 'none')};
   position: absolute;
@@ -332,30 +418,30 @@ exports.DdMenu = core_1.styled.div `
   left: 0;
   background: var(--s);
   border: 1px solid var(--g300);
-  border-radius: 8px;
+  border-radius: 9px;
   padding: 4px;
-  min-width: 220px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+  min-width: 200px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
   z-index: 200;
   animation: rs-dd-fade 0.12s var(--ease);
 `;
+/* Mockup .dd-item: 11px / 600 / ink / hover g100. */
 exports.DdItem = core_1.styled.button `
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   width: 100%;
-  padding: 8px 10px;
+  padding: 7px 10px;
   background: transparent;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-family: var(--f);
-  font-size: var(--fs-interactive);
-  font-weight: 500;
+  font-size: var(--fs-meta);
+  font-weight: 600;
   color: var(--ink);
   text-align: left;
-  transition: background 0.12s var(--ease);
-  min-height: 32px;
+  transition: background 0.12s;
 
   &:hover {
     background: var(--g100);
@@ -395,24 +481,33 @@ exports.DdItem = core_1.styled.button `
     flex: 1;
   }
   .dd-item-count {
+    /* DS мелкая метка минимум: 10px / 600 / g500 mono. */
     font-family: var(--m);
-    font-size: var(--fs-meta);
+    font-size: var(--fs-nano);
     font-weight: 600;
-    color: var(--g600);
+    color: var(--g500);
   }
 `;
 /* ================================================================
  * TABLE
  * ================================================================ */
+/* TableWrap — единый scroll-контейнер для таблицы (по X и Y).
+   Sticky TableHead работает внутри overflow:auto родителя.
+   Card height:100% + flex column ограничивает TableWrap высотой Card.
+   Внутри таблица скроллится когда строк больше чем влезает. */
 exports.TableWrap = core_1.styled.div `
   border: 1px solid var(--g200);
   border-radius: 10px;
-  overflow: hidden;
   background: var(--s);
+  flex: 1 1 auto;
+  min-height: 0;
+  /* Оба направления — горизонтальный включается автоматически,
+     когда content (grid с minmax minimums) > visible width. */
+  overflow: auto;
   /* Cascade enter — body 0.25s. */
   animation: rs-cascade-in 0.5s var(--ease) 0.25s both;
 `;
-/* DS v2.0 fluid: --fs-micro UPPER моно для table-header */
+/* DS 2.0 заголовок столбца: 11px / 600 / 0.06em UPPER / g500 mono. */
 exports.TableHead = core_1.styled.div `
   display: grid;
   grid-template-columns: ${p => p.$cols};
@@ -425,7 +520,7 @@ exports.TableHead = core_1.styled.div `
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--g600);
+  color: var(--g500);
   position: sticky;
   top: 0;
   z-index: 5;
@@ -443,6 +538,11 @@ exports.Th = core_1.styled.div `
     : p.$align === 'center'
         ? 'center'
         : 'flex-start'};
+  /* Доп. text-align: при переносе строки (узкие колонки 'Ср. спис.' и
+     т.п.) justify-content задаёт позицию блока, но внутри блока строки
+     текста flow LTR. Без text-align хедер визуально 'уезжает' влево,
+     значения остаются справа → выравнивание ломается. */
+  text-align: ${p => p.$align ?? 'left'};
   color: ${p => (p.$sorted ? 'var(--c-sky)' : 'inherit')};
 
   &:hover {
@@ -461,8 +561,8 @@ exports.Th = core_1.styled.div `
 exports.TableBodyEl = core_1.styled.div `
   display: flex;
   flex-direction: column;
-  max-height: 720px;
-  overflow-y: auto;
+  /* Скролл теперь в TableWrap (overflow:auto). TableBodyEl просто flow вниз —
+     родительский TableWrap скроллит при превышении высоты/ширины ячейки. */
   --cols: ${p => p.$cols};
 
   &::-webkit-scrollbar {
@@ -579,7 +679,7 @@ exports.PinBtn = core_1.styled.button `
   justify-content: center;
   background: transparent;
   border: none;
-  color: ${p => (p.$active ? 'var(--c-sky)' : 'var(--g500)')};
+  color: ${p => (p.$active ? 'var(--c-sky)' : 'var(--g600)')};
   cursor: pointer;
   transition: 0.12s var(--ease);
   border-radius: 4px;
@@ -598,28 +698,29 @@ exports.PinBtn = core_1.styled.button `
     height: 11px;
   }
 `;
-/* DS v2.0 fluid: --fs-micro моно для rank cell */
+/* Mockup .rank-cell: 10px / 700 / mono / g500. */
 exports.RankCell = core_1.styled.span `
   font-family: var(--m);
   font-size: var(--fs-micro);
-  font-weight: 600;
-  color: var(--g600);
+  font-weight: 700;
+  color: var(--g500);
   display: flex;
   align-items: center;
   gap: 4px;
 `;
-/* Store cell — fluid */
+/* Mockup .store-cell: gap 2px. */
 exports.StoreCellEl = core_1.styled.div `
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 
+  /* DS body 14px / 700 / ink — название магазина = body cell. */
   .store-code {
     display: inline-flex;
-    align-items: center;
+    align-items: baseline;
     gap: 6px;
-    font-size: var(--fs-interactive);
+    font-size: var(--fs-body);
     font-weight: 700;
     color: var(--ink);
     letter-spacing: -0.005em;
@@ -627,28 +728,30 @@ exports.StoreCellEl = core_1.styled.div `
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* Mockup .store-code .code: 10px / 700 / g500 mono / g100 bg / radius 4. */
   .store-code .code {
     font-family: var(--m);
     font-size: var(--fs-micro);
     font-weight: 700;
-    color: var(--g700);
+    color: var(--g500);
     background: var(--g100);
     border-radius: 4px;
     padding: 2px 6px;
     flex-shrink: 0;
   }
+  /* Mockup .store-meta: 9px / 500 / g500 mono / 0.02em. */
   .store-meta {
     font-family: var(--m);
-    font-size: var(--fs-micro);
+    font-size: var(--fs-nano);
     font-weight: 500;
-    color: var(--g600);
-    letter-spacing: 0.01em;
+    color: var(--g500);
+    letter-spacing: 0.02em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 `;
-/* Bullet — 13px число, 10px план */
+/* Mockup .bullet-cell: 12px / 700 number, 9px plan. */
 exports.BulletCellEl = core_1.styled.div `
   display: flex;
   flex-direction: column;
@@ -668,9 +771,9 @@ exports.BulletCellEl = core_1.styled.div `
     font-variant-numeric: tabular-nums;
   }
   .bullet-val .plan {
-    font-size: var(--fs-micro);
+    font-size: var(--fs-nano);
     font-weight: 500;
-    color: var(--g600);
+    color: var(--g500);
   }
   .bullet-track {
     position: relative;
@@ -696,7 +799,7 @@ exports.BulletCellEl = core_1.styled.div `
     border-radius: 1px;
   }
 `;
-/* Dual bullet — 10px label (мин), 11px значение */
+/* Mockup .dual-bullet: 8px label, 10px val. */
 exports.DualBulletEl = core_1.styled.div `
   display: flex;
   flex-direction: column;
@@ -706,15 +809,16 @@ exports.DualBulletEl = core_1.styled.div `
 
   .db-row {
     display: grid;
-    grid-template-columns: 18px minmax(0, 1fr) 52px;
+    grid-template-columns: 14px minmax(0, 1fr) 52px;
     align-items: center;
     gap: 6px;
   }
+  /* DS мелкая метка минимум: 10px / 700 / 0.04em UPPER mono. */
   .db-label {
     font-family: var(--m);
-    font-size: var(--fs-micro);
+    font-size: var(--fs-nano);
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
   }
   .db-track {
@@ -738,6 +842,7 @@ exports.DualBulletEl = core_1.styled.div `
     background: var(--ink);
     border-radius: 1px;
   }
+  /* Mockup .db-val: 10px / 700 / ink mono. */
   .db-val {
     font-family: var(--m);
     font-size: var(--fs-micro);
@@ -748,7 +853,7 @@ exports.DualBulletEl = core_1.styled.div `
     font-variant-numeric: tabular-nums;
   }
 `;
-/* DS v2.0 fluid: --fs-interactive моно 700 для number cell */
+/* Mockup .num-cell: 12px / 700 / ink mono, .u 9px / 500 / g500. */
 exports.NumCell = core_1.styled.span `
   font-family: var(--m);
   font-size: var(--fs-interactive);
@@ -759,17 +864,17 @@ exports.NumCell = core_1.styled.span `
   font-variant-numeric: tabular-nums;
 
   .u {
-    font-size: var(--fs-micro);
+    font-size: var(--fs-nano);
     font-weight: 500;
-    color: var(--g600);
+    color: var(--g500);
     margin-left: 2px;
   }
 `;
-/* Drivers — fluid */
+/* DS body cell для драйверов: 11px mono, gap 4 (уменьшаем плотность). */
 exports.DriversCellEl = core_1.styled.div `
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
   width: 100%;
 
@@ -777,10 +882,10 @@ exports.DriversCellEl = core_1.styled.div `
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto;
     align-items: baseline;
-    gap: 8px;
+    gap: 10px;
     font-family: var(--m);
     font-size: var(--fs-micro);
-    line-height: 1.35;
+    line-height: 1.4;
   }
   .driver-name {
     color: var(--g700);
@@ -794,7 +899,7 @@ exports.DriversCellEl = core_1.styled.div `
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    margin-right: 5px;
+    margin-right: 6px;
     vertical-align: middle;
   }
   .driver-pct {
@@ -812,7 +917,7 @@ exports.DriversCellEl = core_1.styled.div `
     color: var(--dn);
   }
   .driver-delta.wn {
-    color: var(--g700);
+    color: var(--g500);
   }
 `;
 /* Status chip — DS: 10px моно 600 UPPERCASE, pill-radius */
@@ -820,6 +925,7 @@ exports.ChipCell = core_1.styled.div `
   display: flex;
   justify-content: flex-end;
 `;
+/* DS 2.0 статусный бейдж: 10px / 700 / mono / 0.02em / radius 12 / padding 4 10. */
 exports.Chip = core_1.styled.span `
   display: inline-flex;
   align-items: center;
@@ -832,10 +938,8 @@ exports.Chip = core_1.styled.span `
   font-size: var(--fs-nano);
   font-weight: 700;
   color: ${p => p.$color};
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   white-space: nowrap;
-  min-height: 20px;
 
   .dot {
     width: 6px;
@@ -845,11 +949,66 @@ exports.Chip = core_1.styled.span `
     flex-shrink: 0;
   }
 `;
-/* Footer */
+/* Pagination — DS §06.2 «Элемент управления»: 32px high, radius 6, mono UPPER */
+exports.PaginationWrap = core_1.styled.div `
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+`;
+exports.PageBtn = core_1.styled.button `
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--g100);
+  border: 1px solid var(--g200);
+  border-radius: 6px;
+  color: var(--g700);
+  cursor: pointer;
+  transition: 0.12s var(--ease);
+  font-family: var(--m);
+  font-size: var(--fs-interactive);
+  font-weight: 700;
+  line-height: 1;
+
+  &:hover:not(:disabled) {
+    border-color: var(--g300);
+    color: var(--ink);
+  }
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  &:focus-visible {
+    outline: 2px solid var(--c-sky);
+    outline-offset: 2px;
+  }
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+`;
+exports.PageIndicator = core_1.styled.span `
+  font-family: var(--m);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  color: var(--g700);
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  padding: 0 6px;
+  white-space: nowrap;
+
+  .pg-muted {
+    color: var(--g600);
+    font-weight: 500;
+  }
+`;
+/* Footer — пагинация по центру. */
 exports.CardFooter = core_1.styled.footer `
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 12px;
   margin-top: 14px;
   padding-top: 12px;
@@ -859,8 +1018,8 @@ exports.CardFooter = core_1.styled.footer `
   font-family: var(--m);
   font-size: var(--fs-micro);
   font-weight: 500;
-  color: var(--g600);
-  letter-spacing: 0.01em;
+  color: var(--g500);
+  letter-spacing: 0.02em;
 
   .hint {
     display: flex;
@@ -966,7 +1125,7 @@ exports.TooltipEl = core_1.styled.div `
   .tt-sub {
     font-size: 11px;
     font-weight: 400;
-    color: var(--g500);
+    color: var(--g600);
     font-family: var(--m);
     line-height: 1.4;
   }
@@ -981,7 +1140,7 @@ exports.TooltipEl = core_1.styled.div `
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--g500);
+    color: var(--g600);
     font-family: var(--m);
     margin-bottom: 3px;
   }
@@ -996,7 +1155,7 @@ exports.TooltipEl = core_1.styled.div `
   .tt-l {
     font-size: 11px;
     font-weight: 600;
-    color: var(--g500);
+    color: var(--g600);
     letter-spacing: 0.06em;
     text-transform: uppercase;
   }
@@ -1150,7 +1309,7 @@ exports.MContextBc = core_1.styled.div `
     font-weight: 700;
   }
   .bc-sep {
-    color: var(--g500);
+    color: var(--g600);
   }
   .bc-current {
     color: var(--c-sky);
