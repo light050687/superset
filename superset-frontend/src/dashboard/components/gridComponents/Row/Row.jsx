@@ -344,13 +344,15 @@ const Row = props => {
           {rowItems.length > 0 &&
             rowItems.map((componentId, itemIndex) => {
               /* widthLeft = сумма ширин ВСЕХ соседей слева;
+                 leftSiblingsCount = число соседей слева (для push-shrink);
                  rightSiblingsCount = число соседей справа.
                  Используются ChartHolder'ом для расчёта maxWidthMultiple
-                 (push-shrink) и для нового thunk при onResizeStop. */
+                 (push-shrink в обе стороны) и для thunk при onResizeStop. */
               let widthLeft = 0;
               for (let i = 0; i < itemIndex; i += 1) {
                 widthLeft += rowChildWidths[i] || 0;
               }
+              const leftSiblingsCount = itemIndex;
               const rightSiblingsCount = rowItems.length - itemIndex - 1;
               return (
                 <Fragment key={componentId}>
@@ -363,6 +365,7 @@ const Row = props => {
                     availableColumnCount={remainColumnCount}
                     columnWidth={columnWidth}
                     widthLeft={widthLeft}
+                    leftSiblingsCount={leftSiblingsCount}
                     rightSiblingsCount={rightSiblingsCount}
                     onResizeStart={onResizeStart}
                     onResize={onResize}
