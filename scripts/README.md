@@ -65,11 +65,10 @@ sudo apt install -y git
 git clone https://github.com/light050687/superset.git
 cd superset
 
-# (опц.) docker/.env-local — переменные окружения, см. раздел «Production checklist»
-# Минимум — отключить examples:
-echo "SUPERSET_LOAD_EXAMPLES=no" > docker/.env-local
-
-# Build + up (build плагинов и frontend идёт ВНУТРИ образа)
+# Build + up (build плагинов и frontend идёт ВНУТРИ образа).
+# Examples (~10 MB demo с CDN) по умолчанию НЕ грузятся — это override в
+# docker-compose-non-dev.yml: `SUPERSET_LOAD_EXAMPLES: ${SUPERSET_LOAD_EXAMPLES:-no}`.
+# Если нужны — export SUPERSET_LOAD_EXAMPLES=yes перед `docker compose up`.
 docker compose -f docker-compose-non-dev.yml up -d --build
 
 # Дождаться healthy

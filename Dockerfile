@@ -57,8 +57,18 @@ ARG NPM_BUILD_CMD="build"
 
 # Install system dependencies required for node-gyp. `git` is needed because
 # one of our deps (`dom-to-pdf` → `dom-to-image@github:dmapper/dom-to-image`)
-# is installed from a git URL — npm ci shells out to `git` to fetch it.
+# is installed from a git URL — npm install shells out to `git` to fetch it.
 RUN /app/docker/apt-install.sh build-essential python3 zstd git
+
+# Заставляем git клонировать через HTTPS вместо SSH — `dom-to-image@github:...`
+# при `npm install` (не `npm ci`) пытается `git ls-remote ssh://git@github.com/...`,
+# а в slim-образе нет openssh-client. HTTPS работает с любой стандартной cert chain
+# (либо корп-CA через CORP_CA_CERT_B64, либо strict-ssl=false fallback ниже).
+RUN git config --global url."https://github.com/".insteadOf "ssh://git@github.com/" \
+    && git config --global url."https://github.com/".insteadOf "git@github.com:" \
+    && if [ -z "$CORP_CA_CERT_B64" ]; then \
+         git config --global http.sslVerify false; \
+       fi
 
 # Define environment variables for frontend build
 # PUPPETEER_SKIP_DOWNLOAD — для puppeteer v22+ (legacy var выше — для v21−).
@@ -96,16 +106,21 @@ RUN --mount=type=cache,target=/root/.npm \
       echo "Skipping plugin builds in DEV_MODE"; \
     fi
 
-# Mount package files and install dependencies if not in dev mode
+# Install frontend dependencies if not in dev mode.
 # my-plugins уже скопированы в layer выше — bind mount для них не нужен.
-RUN --mount=type=bind,source=./superset-frontend/package.json,target=./package.json \
-    --mount=type=bind,source=./superset-frontend/package-lock.json,target=./package-lock.json \
-    --mount=type=cache,target=/root/.cache \
+# COPY package files (а не bind mount) — `npm install` пишет в lockfile при
+# out-of-sync состоянии (после upstream Apache merges), bind в buildkit read-only.
+# COPY делает их writable в layer (только в образе, host не трогается).
+# Без --no-package-lock потому что транзитивные devDeps (@types/urijs и т.п.)
+# приходят только из lockfile.
+COPY superset-frontend/package.json /app/superset-frontend/package.json
+COPY superset-frontend/package-lock.json /app/superset-frontend/package-lock.json
+RUN --mount=type=cache,target=/root/.cache \
     --mount=type=cache,target=/root/.npm \
     if [ "$DEV_MODE" = "false" ]; then \
-        npm ci --legacy-peer-deps; \
+        npm install --legacy-peer-deps; \
     else \
-        echo "Skipping 'npm ci' in dev mode"; \
+        echo "Skipping 'npm install' in dev mode"; \
     fi
 
 # Runs the webpack build process
