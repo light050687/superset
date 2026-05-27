@@ -3,7 +3,7 @@ import {
   sections,
   sharedControls,
 } from '@superset-ui/chart-controls';
-import { t, validateNonEmpty } from '@superset-ui/core';
+import { t } from '@superset-ui/core';
 import CategoryColorMapControl from '../controls/CategoryColorMapControl';
 
 // ═══════════════════════════════════════
@@ -42,7 +42,7 @@ const config: ControlPanelConfig = {
                 'Показывает тестовые данные из прототипа для согласования дизайна. ' +
                   'Выключите, когда реальные данные будут готовы.',
               ),
-              default: false,
+              default: true,
               renderTrigger: true,
             },
           },
@@ -88,7 +88,7 @@ const config: ControlPanelConfig = {
     // ── 3. Данные ──
     {
       label: t('Данные'),
-      expanded: true,
+      expanded: false,
       controlSetRows: [
         ['adhoc_filters'],
         [
@@ -97,9 +97,9 @@ const config: ControlPanelConfig = {
             config: {
               ...sharedControls.groupby,
               label: t('Категория'),
-              description: t('Колонка верхнего уровня иерархии (обязательна)'),
+              description: t('Колонка верхнего уровня иерархии. Валидация в transformProps.'),
               multi: false,
-              validators: [validateNonEmpty],
+              validators: [],
             },
           },
         ],

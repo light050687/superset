@@ -17,9 +17,6 @@ type ControlsMap = { controls: Record<string, { value?: unknown }> };
 const isMockEnabled = ({ controls }: ControlsMap): boolean =>
   controls?.mock_mode_enabled?.value === true;
 
-const isRealData = ({ controls }: ControlsMap): boolean =>
-  controls?.mock_mode_enabled?.value !== true;
-
 const DEFAULT_FORMAT_MAPPING = JSON.stringify(
   {
     express: { name: 'Экспресс', color: 'c-sky', plan: 2.09 },
@@ -77,7 +74,7 @@ const config: ControlPanelConfig = {
     // ── Запрос к БД ──
     {
       label: t('Запрос'),
-      expanded: true,
+      expanded: false,
       controlSetRows: [
         ['adhoc_filters'],
         [
@@ -90,7 +87,6 @@ const config: ControlPanelConfig = {
                 'Сумма потерь за период (обычно SUM(loss_rub)).',
               ),
               validators: [],
-              visibility: isRealData,
             },
           },
         ],
@@ -104,7 +100,6 @@ const config: ControlPanelConfig = {
                 'Товарооборот (ТО) — нужен для расчёта % к ТО.',
               ),
               validators: [],
-              visibility: isRealData,
             },
           },
         ],
@@ -117,7 +112,6 @@ const config: ControlPanelConfig = {
               description: t('Уникальный код магазина, напр. Д123.'),
               multi: false,
               validators: [],
-              visibility: isRealData,
             },
           },
         ],
@@ -130,7 +124,6 @@ const config: ControlPanelConfig = {
               description: t('Короткое название магазина для отображения.'),
               multi: false,
               validators: [],
-              visibility: isRealData,
             },
           },
         ],
@@ -142,7 +135,6 @@ const config: ControlPanelConfig = {
               label: t('Город'),
               multi: false,
               validators: [],
-              visibility: isRealData,
             },
           },
         ],
@@ -158,7 +150,6 @@ const config: ControlPanelConfig = {
               ),
               multi: false,
               validators: [],
-              visibility: isRealData,
             },
           },
         ],
@@ -176,17 +167,17 @@ const config: ControlPanelConfig = {
               ),
               multi: false,
               validators: [],
-              visibility: isRealData,
             },
           },
         ],
+        ['row_limit'],
       ],
     },
 
     // ── Отображение ──
     {
       label: t('Отображение'),
-      expanded: true,
+      expanded: false,
       controlSetRows: [
         [
           {

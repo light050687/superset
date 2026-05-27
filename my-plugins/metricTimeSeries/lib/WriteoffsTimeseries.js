@@ -38,6 +38,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = __importStar(require("react"));
+const react_dom_1 = require("react-dom");
 const echarts_for_react_1 = __importDefault(require("echarts-for-react"));
 const buildOption_1 = require("./chart/buildOption");
 const styles_1 = require("./styles");
@@ -56,37 +57,73 @@ const IconClick = () => ((0, jsx_runtime_1.jsx)("svg", { viewBox: "0 0 16 16", f
 const IconBack = () => ((0, jsx_runtime_1.jsx)("svg", { viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: (0, jsx_runtime_1.jsx)("path", { d: "M10 3 L5 8 L10 13" }) }));
 function Dropdown({ value, options, onChange, ariaLabel, }) {
     const [open, setOpen] = (0, react_1.useState)(false);
-    const rootRef = (0, react_1.useRef)(null);
+    const triggerRef = (0, react_1.useRef)(null);
+    const menuRef = (0, react_1.useRef)(null);
+    const [menuPos, setMenuPos] = (0, react_1.useState)({
+        left: 0, top: 0, width: 30,
+    });
     const active = options.find(o => o.value === value) ?? options[0];
+    /* Позиционируем portal-меню под trigger через viewport-coords (position: fixed).
+       top = trigger.bottom - 1 (overlap на 1px чтобы убрать gap между bottom-border
+       trigger и top-border menu — получается визуально один блок). */
+    (0, react_1.useLayoutEffect)(() => {
+        if (!open || !triggerRef.current)
+            return;
+        const r = triggerRef.current.getBoundingClientRect();
+        setMenuPos({
+            left: Math.round(r.left),
+            top: Math.round(r.bottom) - 1,
+            width: Math.round(r.width),
+        });
+    }, [open]);
+    /* Outside-click + Escape для закрытия. Учитываем target и в trigger, и в portal-menu.
+       ВАЖНО: НЕ закрываем по scroll/resize — ECharts при mount/update вызывает scroll
+       events на внутренних контейнерах (canvas resize → bubble), что закрывает menu
+       сразу после открытия. Если нужна re-позиция при resize окна — лучше repositionировать,
+       не закрывать. */
     (0, react_1.useEffect)(() => {
         if (!open)
             return undefined;
         const onDown = (e) => {
-            if (!rootRef.current)
-                return;
-            if (!rootRef.current.contains(e.target))
+            const target = e.target;
+            const inTrigger = triggerRef.current && triggerRef.current.contains(target);
+            const inMenu = menuRef.current && menuRef.current.contains(target);
+            if (!inTrigger && !inMenu)
                 setOpen(false);
         };
         const onKey = (e) => {
             if (e.key === 'Escape') {
-                // Close the dropdown and stop propagation so the global ESC handler
-                // (which resets the selection) doesn't also fire.
                 setOpen(false);
                 e.stopPropagation();
             }
         };
+        /* Re-позиция при window resize (menu — position:fixed, остаётся в viewport
+           coord но trigger мог сдвинуться). */
+        const onResize = () => {
+            if (!triggerRef.current)
+                return;
+            const r = triggerRef.current.getBoundingClientRect();
+            setMenuPos({
+                left: Math.round(r.left),
+                top: Math.round(r.bottom) - 1,
+                width: Math.round(r.width),
+            });
+        };
         document.addEventListener('mousedown', onDown);
-        // Capture phase so we see ESC before the selection-reset handler.
         document.addEventListener('keydown', onKey, true);
+        window.addEventListener('resize', onResize);
         return () => {
             document.removeEventListener('mousedown', onDown);
             document.removeEventListener('keydown', onKey, true);
+            window.removeEventListener('resize', onResize);
         };
     }, [open]);
-    return ((0, jsx_runtime_1.jsx)(styles_1.DropdownRoot, { ref: rootRef, children: (0, jsx_runtime_1.jsxs)(styles_1.DropdownPanel, { open: open, "data-open": open, children: [(0, jsx_runtime_1.jsx)(styles_1.IconButton, { type: "button", "aria-haspopup": "listbox", "aria-expanded": open, "aria-label": ariaLabel, onClick: () => setOpen(o => !o), children: active.icon }), open && ((0, jsx_runtime_1.jsx)(styles_1.DropdownMenu, { role: "listbox", "aria-label": ariaLabel, children: options.map(opt => ((0, jsx_runtime_1.jsx)(styles_1.DropdownItem, { type: "button", active: opt.value === value, role: "option", "aria-selected": opt.value === value, "aria-label": opt.label, title: opt.label, onClick: () => {
-                            onChange(opt.value);
-                            setOpen(false);
-                        }, children: (0, jsx_runtime_1.jsx)(styles_1.DropdownItemIcon, { children: opt.icon }) }, opt.value))) }))] }) }));
+    const handleSelect = (0, react_1.useCallback)((v) => {
+        onChange(v);
+        setOpen(false);
+    }, [onChange]);
+    return ((0, jsx_runtime_1.jsxs)(styles_1.DropdownRoot, { children: [(0, jsx_runtime_1.jsx)(styles_1.DropdownTrigger, { ref: triggerRef, type: "button", open: open, "aria-haspopup": "listbox", "aria-expanded": open, "aria-label": ariaLabel, title: active.label, onClick: () => setOpen(o => !o), children: active.icon }), open &&
+                (0, react_dom_1.createPortal)((0, jsx_runtime_1.jsx)(styles_1.DropdownMenuPortal, { ref: menuRef, role: "listbox", "aria-label": ariaLabel, style: { left: menuPos.left, top: menuPos.top, minWidth: menuPos.width }, children: options.map(opt => ((0, jsx_runtime_1.jsx)(styles_1.DropdownItem, { type: "button", active: opt.value === value, role: "option", "aria-selected": opt.value === value, "aria-label": opt.label, title: opt.label, onClick: () => handleSelect(opt.value), children: (0, jsx_runtime_1.jsx)(styles_1.DropdownItemIcon, { children: opt.icon }) }, opt.value))) }), document.body)] }));
 }
 /* ──────────────── Legend helpers ──────────────── */
 const LineMark = ({ color, type }) => {
@@ -366,13 +403,13 @@ function WriteoffsTimeseriesInner(props) {
     }, [timePoints, selection.from, selection.to]);
     // ── States ──
     if (dataState === 'loading') {
-        return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { width: props.width, height: props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: styles_1.CARD_CLASS, children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsx)(styles_1.Card, { "data-no-anim": "", children: (0, jsx_runtime_1.jsxs)(styles_1.SkeletonWrap, { children: [(0, jsx_runtime_1.jsx)(styles_1.SkeletonBlock, { w: "40%", h: 14 }), (0, jsx_runtime_1.jsx)(styles_1.SkeletonBlock, { h: 200 }), (0, jsx_runtime_1.jsx)(styles_1.SkeletonBlock, { w: "60%", h: 12 })] }) })] }));
+        return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { "$width": props.width, "$height": props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: styles_1.CARD_CLASS, children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsx)(styles_1.Card, { "data-no-anim": "", children: (0, jsx_runtime_1.jsxs)(styles_1.SkeletonWrap, { children: [(0, jsx_runtime_1.jsx)(styles_1.SkeletonBlock, { w: "40%", h: 14 }), (0, jsx_runtime_1.jsx)(styles_1.SkeletonBlock, { h: 200 }), (0, jsx_runtime_1.jsx)(styles_1.SkeletonBlock, { w: "60%", h: 12 })] }) })] }));
     }
     if (dataState === 'error') {
-        return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { width: props.width, height: props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: styles_1.CARD_CLASS, children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsx)(styles_1.Card, { "data-no-anim": "", children: (0, jsx_runtime_1.jsxs)(styles_1.ErrorStateWrap, { children: [(0, jsx_runtime_1.jsx)(styles_1.ErrorStateIcon, {}), (0, jsx_runtime_1.jsx)(styles_1.ErrorStateText, { children: errorMessage || 'Ошибка отображения' })] }) })] }));
+        return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { "$width": props.width, "$height": props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: styles_1.CARD_CLASS, children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsx)(styles_1.Card, { "data-no-anim": "", children: (0, jsx_runtime_1.jsxs)(styles_1.ErrorStateWrap, { children: [(0, jsx_runtime_1.jsx)(styles_1.ErrorStateIcon, {}), (0, jsx_runtime_1.jsx)(styles_1.ErrorStateText, { children: errorMessage || 'Ошибка отображения' })] }) })] }));
     }
     if (dataState === 'empty') {
-        return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { width: props.width, height: props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: styles_1.CARD_CLASS, children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsx)(styles_1.SrLive, { "aria-live": "polite", children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445" }), (0, jsx_runtime_1.jsx)(styles_1.Card, { "data-no-anim": "", children: (0, jsx_runtime_1.jsxs)(styles_1.EmptyStateWrap, { children: [(0, jsx_runtime_1.jsx)(styles_1.EmptyStateIcon, { children: "\u2014" }), (0, jsx_runtime_1.jsxs)(styles_1.EmptyStateText, { children: ["\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u0437\u0430 \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434.", (0, jsx_runtime_1.jsx)("br", {}), "\u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u0444\u0438\u043B\u044C\u0442\u0440\u044B \u0438 \u0432\u0440\u0435\u043C\u0435\u043D\u043D\u043E\u0439 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D."] })] }) })] }));
+        return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { "$width": props.width, "$height": props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: styles_1.CARD_CLASS, children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsx)(styles_1.SrLive, { "aria-live": "polite", children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445" }), (0, jsx_runtime_1.jsx)(styles_1.Card, { "data-no-anim": "", children: (0, jsx_runtime_1.jsxs)(styles_1.EmptyStateWrap, { children: [(0, jsx_runtime_1.jsx)(styles_1.EmptyStateIcon, { children: "\u2014" }), (0, jsx_runtime_1.jsxs)(styles_1.EmptyStateText, { children: ["\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u0437\u0430 \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434.", (0, jsx_runtime_1.jsx)("br", {}), "\u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u0444\u0438\u043B\u044C\u0442\u0440\u044B \u0438 \u0432\u0440\u0435\u043C\u0435\u043D\u043D\u043E\u0439 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D."] })] }) })] }));
     }
     const isPartial = dataState === 'partial';
     const isStale = dataState === 'stale';
@@ -383,7 +420,7 @@ function WriteoffsTimeseriesInner(props) {
             : isStale
                 ? 'Данные устарели'
                 : '';
-    return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { width: props.width, height: props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: styles_1.CARD_CLASS, role: "figure", "aria-label": headerText, children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsx)(styles_1.SrLive, { "aria-live": "polite", "aria-atomic": "true", children: liveMessage }), (0, jsx_runtime_1.jsxs)(styles_1.Card, { "data-info-hint-container": "", ref: cardContainerRef, children: [isStale && (0, jsx_runtime_1.jsx)(styles_1.StaleBar, { "aria-hidden": "true" }), (0, jsx_runtime_1.jsxs)(styles_1.CardHead, { children: [(0, jsx_runtime_1.jsxs)(styles_1.TitleWrap, { children: [(0, jsx_runtime_1.jsxs)(styles_1.Title, { children: [headerText, mockModeEnabled && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [' ', (0, jsx_runtime_1.jsx)(styles_1.MockBadge, { children: "\u0422\u0415\u0421\u0422" })] })), isPartial && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [' ', (0, jsx_runtime_1.jsx)(styles_1.PartialBadge, { title: "\u0427\u0430\u0441\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0445 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430", children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u043E" })] }))] }), (0, jsx_runtime_1.jsxs)(styles_1.Breadcrumb, { children: [!isFullRange && ((0, jsx_runtime_1.jsx)(styles_1.BreadcrumbBack, { type: "button", "aria-label": "\u0412\u0435\u0440\u043D\u0443\u0442\u044C\u0441\u044F \u043A\u043E \u0432\u0441\u0435\u043C\u0443 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D\u0443", title: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u044B\u0434\u0435\u043B\u0435\u043D\u0438\u0435 (Esc)", onClick: resetSelection, children: "\u25C2" })), (0, jsx_runtime_1.jsxs)("span", { children: [subtitleText && `${subtitleText} · `, hierarchyText, " \u00B7 ", rangeText] })] })] }), (0, jsx_runtime_1.jsxs)(styles_1.Controls, { children: [(0, jsx_runtime_1.jsx)(Dropdown, { ariaLabel: "\u0413\u0440\u0430\u043D\u0443\u043B\u044F\u0440\u043D\u043E\u0441\u0442\u044C", value: gran, onChange: (v) => {
+    return ((0, jsx_runtime_1.jsxs)(styles_1.Root, { "$width": props.width, "$height": props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: styles_1.CARD_CLASS, role: "figure", "aria-label": headerText, children: [(0, jsx_runtime_1.jsx)("style", { children: styles_1.KEYFRAMES_CSS }), (0, jsx_runtime_1.jsx)(styles_1.SrLive, { "aria-live": "polite", "aria-atomic": "true", children: liveMessage }), (0, jsx_runtime_1.jsxs)(styles_1.Card, { "data-info-hint-container": "", ref: cardContainerRef, children: [isStale && (0, jsx_runtime_1.jsx)(styles_1.StaleBar, { "aria-hidden": "true" }), (0, jsx_runtime_1.jsxs)(styles_1.CardHead, { children: [(0, jsx_runtime_1.jsxs)(styles_1.TitleWrap, { children: [(0, jsx_runtime_1.jsxs)(styles_1.Title, { children: [headerText, mockModeEnabled && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [' ', (0, jsx_runtime_1.jsx)(styles_1.MockBadge, { children: "\u0422\u0415\u0421\u0422" })] })), isPartial && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [' ', (0, jsx_runtime_1.jsx)(styles_1.PartialBadge, { title: "\u0427\u0430\u0441\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0445 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430", children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u043E" })] }))] }), (0, jsx_runtime_1.jsxs)(styles_1.Breadcrumb, { children: [!isFullRange && ((0, jsx_runtime_1.jsx)(styles_1.BreadcrumbBack, { type: "button", "aria-label": "\u0412\u0435\u0440\u043D\u0443\u0442\u044C\u0441\u044F \u043A\u043E \u0432\u0441\u0435\u043C\u0443 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D\u0443", title: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u044B\u0434\u0435\u043B\u0435\u043D\u0438\u0435 (Esc)", onClick: resetSelection, children: "\u25C2" })), (0, jsx_runtime_1.jsxs)("span", { children: [subtitleText && `${subtitleText} · `, hierarchyText, " \u00B7 ", rangeText] })] })] }), (0, jsx_runtime_1.jsxs)(styles_1.Controls, { children: [(0, jsx_runtime_1.jsx)(Dropdown, { ariaLabel: "\u0413\u0440\u0430\u043D\u0443\u043B\u044F\u0440\u043D\u043E\u0441\u0442\u044C", value: gran, onChange: (v) => {
                                             setGran(v);
                                             if (v === 'year' || v === 'month') {
                                                 if (selection.from === selection.to) {

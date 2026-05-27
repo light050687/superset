@@ -1363,9 +1363,10 @@ export const RetryButton = styled.button `
     outline-offset: 2px;
   }
 `;
-/* Sortable column header — width is dynamic, keeps cursor:pointer */
+/* Sortable column header — width is dynamic (CSS string '40%' или число px),
+   cursor:pointer. */
 export const SortableTh = styled.th `
-  width: ${({ widthPx }) => widthPx}px;
+  width: ${({ widthPx }) => typeof widthPx === 'number' ? `${widthPx}px` : widthPx};
   cursor: pointer;
 `;
 /* Footer-hint inline icon helper */

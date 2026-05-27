@@ -103,6 +103,19 @@ export type SortKey = 'name' | 'lossCombined' | 'writeoff' | 'shrinkage' | 'avgW
 export type SortDir = 'asc' | 'desc';
 export type MockPreset = 'losses_400' | 'losses_50' | 'empty';
 export interface RankedStoresFormData extends QueryFormData {
+    groupbyStoreId?: unknown;
+    groupbyStoreName?: unknown;
+    groupbyCity?: unknown;
+    groupbyFormat?: unknown;
+    groupbyFormatName?: unknown;
+    groupbyDivision?: unknown;
+    groupbyToClass?: unknown;
+    metricWriteoff?: unknown;
+    metricShrinkage?: unknown;
+    metricPlanWriteoff?: unknown;
+    metricPlanShrinkage?: unknown;
+    metricAvgWriteoff?: unknown;
+    metricAvgShrinkageCheck?: unknown;
     storeIdCol?: string;
     storeNameCol?: string;
     cityCol?: string;

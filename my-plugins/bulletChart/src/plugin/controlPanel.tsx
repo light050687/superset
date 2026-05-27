@@ -44,7 +44,7 @@ const config: ControlPanelConfig = {
                 'Показывает тестовые данные для согласования дизайна дашборда. ' +
                 'Выключите когда реальные данные будут готовы.',
               ),
-              default: false,
+              default: true,
               renderTrigger: true,
             },
           },
@@ -83,6 +83,7 @@ const config: ControlPanelConfig = {
               ),
               default: '[]',
               language: 'json',
+              renderTrigger: true,
               visibility: isMockCustom,
             },
           },
@@ -93,7 +94,7 @@ const config: ControlPanelConfig = {
     // ── 2. Запрос — Данные ──
     {
       label: t('Запрос — Данные'),
-      expanded: true,
+      expanded: false,
       controlSetRows: [
         ['adhoc_filters'],
         [

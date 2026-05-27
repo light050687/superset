@@ -55,7 +55,7 @@ const config: ControlPanelConfig = {
                 'Показывает синтетические данные (400 магазинов) для согласования ' +
                   'дизайна без подключения датасета.',
               ),
-              default: false,
+              default: true,
               renderTrigger: true,
             },
           },
@@ -79,7 +79,7 @@ const config: ControlPanelConfig = {
     // ── Запрос ──
     {
       label: t('Запрос'),
-      expanded: true,
+      expanded: false,
       controlSetRows: [
         [
           {
@@ -129,6 +129,7 @@ const config: ControlPanelConfig = {
               ...sharedControls.metric,
               label: t('Метрика X'),
               description: t('Горизонтальная ось (например, % списаний).'),
+              validators: [],
             },
           },
         ],
@@ -139,6 +140,7 @@ const config: ControlPanelConfig = {
               ...sharedControls.metric,
               label: t('Метрика Y'),
               description: t('Вертикальная ось (например, % недостач).'),
+              validators: [],
             },
           },
         ],
@@ -201,7 +203,7 @@ const config: ControlPanelConfig = {
     // ── Отображение ──
     {
       label: t('Отображение'),
-      expanded: true,
+      expanded: false,
       controlSetRows: [
         [
           {

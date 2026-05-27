@@ -28,7 +28,7 @@ const config = {
                             label: (0, core_1.t)('Включить режим проектирования'),
                             description: (0, core_1.t)('Показывает тестовые данные из прототипа для согласования дизайна. ' +
                                 'Выключите, когда реальные данные будут готовы.'),
-                            default: false,
+                            default: true,
                             renderTrigger: true,
                         },
                     },
@@ -71,7 +71,7 @@ const config = {
         // ── 3. Данные ──
         {
             label: (0, core_1.t)('Данные'),
-            expanded: true,
+            expanded: false,
             controlSetRows: [
                 ['adhoc_filters'],
                 [
@@ -80,9 +80,9 @@ const config = {
                         config: {
                             ...chart_controls_1.sharedControls.groupby,
                             label: (0, core_1.t)('Категория'),
-                            description: (0, core_1.t)('Колонка верхнего уровня иерархии (обязательна)'),
+                            description: (0, core_1.t)('Колонка верхнего уровня иерархии. Валидация в transformProps.'),
                             multi: false,
-                            validators: [core_1.validateNonEmpty],
+                            validators: [],
                         },
                     },
                 ],

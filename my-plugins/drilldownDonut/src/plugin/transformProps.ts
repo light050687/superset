@@ -60,7 +60,7 @@ export default function transformProps(chartProps: ChartProps): StructureDonutPr
 
   // Header + subtitle (UI строки на русском — по умолчанию из прототипа)
   const headerText = fd.headerText?.trim() || 'Структура потерь';
-  const subtitleText = fd.subtitleText?.trim() || 'за год';
+  const subtitleText = fd.subtitleText?.trim() || '';
 
   // Style props
   const padAngle = typeof fd.padAngle === 'number' ? fd.padAngle : 1.5;

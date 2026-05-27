@@ -1,10 +1,12 @@
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsReactProps } from 'echarts-for-react';
 import type * as echarts from 'echarts';
@@ -26,12 +28,11 @@ import {
   Breadcrumb,
   BreadcrumbBack,
   Controls,
-  IconButton,
   UnitToggleGroup,
   UnitButton,
   DropdownRoot,
-  DropdownPanel,
-  DropdownMenu,
+  DropdownTrigger,
+  DropdownMenuPortal,
   DropdownItem,
   DropdownItemIcon,
   ChartWrap,
@@ -134,7 +135,12 @@ const IconBack = () => (
   </svg>
 );
 
-/* ──────────────── Dropdown ──────────────── */
+/* ──────────────── Dropdown (portal-based, v2) ────────────────
+ * Меню рендерится через React Portal в document.body — выходит за
+ * Card overflow:hidden + contain:strict, не зависит от z-index
+ * stacking context. Кнопка-trigger остаётся внутри DropdownRoot
+ * (30x30 inline-block).
+ */
 
 interface DropdownOpt<T extends string> {
   value: T;
@@ -154,46 +160,96 @@ function Dropdown<T extends string>({
   ariaLabel: string;
 }) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{ left: number; top: number; width: number }>({
+    left: 0, top: 0, width: 30,
+  });
   const active = options.find(o => o.value === value) ?? options[0];
 
+  /* Позиционируем portal-меню под trigger через viewport-coords (position: fixed).
+     top = trigger.bottom - 1 (overlap на 1px чтобы убрать gap между bottom-border
+     trigger и top-border menu — получается визуально один блок). */
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const r = triggerRef.current.getBoundingClientRect();
+    setMenuPos({
+      left: Math.round(r.left),
+      top: Math.round(r.bottom) - 1,
+      width: Math.round(r.width),
+    });
+  }, [open]);
+
+  /* Outside-click + Escape для закрытия. Учитываем target и в trigger, и в portal-menu.
+     ВАЖНО: НЕ закрываем по scroll/resize — ECharts при mount/update вызывает scroll
+     events на внутренних контейнерах (canvas resize → bubble), что закрывает menu
+     сразу после открытия. Если нужна re-позиция при resize окна — лучше repositionировать,
+     не закрывать. */
   useEffect(() => {
     if (!open) return undefined;
     const onDown = (e: MouseEvent) => {
-      if (!rootRef.current) return;
-      if (!rootRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      const inTrigger = triggerRef.current && triggerRef.current.contains(target);
+      const inMenu = menuRef.current && menuRef.current.contains(target);
+      if (!inTrigger && !inMenu) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        // Close the dropdown and stop propagation so the global ESC handler
-        // (which resets the selection) doesn't also fire.
         setOpen(false);
         e.stopPropagation();
       }
     };
+    /* Re-позиция при window resize (menu — position:fixed, остаётся в viewport
+       coord но trigger мог сдвинуться). */
+    const onResize = () => {
+      if (!triggerRef.current) return;
+      const r = triggerRef.current.getBoundingClientRect();
+      setMenuPos({
+        left: Math.round(r.left),
+        top: Math.round(r.bottom) - 1,
+        width: Math.round(r.width),
+      });
+    };
     document.addEventListener('mousedown', onDown);
-    // Capture phase so we see ESC before the selection-reset handler.
     document.addEventListener('keydown', onKey, true);
+    window.addEventListener('resize', onResize);
     return () => {
       document.removeEventListener('mousedown', onDown);
       document.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('resize', onResize);
     };
   }, [open]);
 
+  const handleSelect = useCallback(
+    (v: T) => {
+      onChange(v);
+      setOpen(false);
+    },
+    [onChange],
+  );
+
   return (
-    <DropdownRoot ref={rootRef}>
-      <DropdownPanel open={open} data-open={open}>
-        <IconButton
-          type="button"
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          aria-label={ariaLabel}
-          onClick={() => setOpen(o => !o)}
-        >
-          {active.icon}
-        </IconButton>
-        {open && (
-          <DropdownMenu role="listbox" aria-label={ariaLabel}>
+    <DropdownRoot>
+      <DropdownTrigger
+        ref={triggerRef}
+        type="button"
+        open={open}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={ariaLabel}
+        title={active.label}
+        onClick={() => setOpen(o => !o)}
+      >
+        {active.icon}
+      </DropdownTrigger>
+      {open &&
+        createPortal(
+          <DropdownMenuPortal
+            ref={menuRef}
+            role="listbox"
+            aria-label={ariaLabel}
+            style={{ left: menuPos.left, top: menuPos.top, minWidth: menuPos.width }}
+          >
             {options.map(opt => (
               <DropdownItem
                 key={opt.value}
@@ -203,17 +259,14 @@ function Dropdown<T extends string>({
                 aria-selected={opt.value === value}
                 aria-label={opt.label}
                 title={opt.label}
-                onClick={() => {
-                  onChange(opt.value);
-                  setOpen(false);
-                }}
+                onClick={() => handleSelect(opt.value)}
               >
                 <DropdownItemIcon>{opt.icon}</DropdownItemIcon>
               </DropdownItem>
             ))}
-          </DropdownMenu>
+          </DropdownMenuPortal>,
+          document.body,
         )}
-      </DropdownPanel>
     </DropdownRoot>
   );
 }
@@ -562,8 +615,8 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
   if (dataState === 'loading') {
     return (
       <Root
-        width={props.width}
-        height={props.height}
+        $width={props.width}
+        $height={props.height}
         data-theme={isDarkMode ? 'dark' : 'light'}
         className={CARD_CLASS}
       >
@@ -582,8 +635,8 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
   if (dataState === 'error') {
     return (
       <Root
-        width={props.width}
-        height={props.height}
+        $width={props.width}
+        $height={props.height}
         data-theme={isDarkMode ? 'dark' : 'light'}
         className={CARD_CLASS}
       >
@@ -601,8 +654,8 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
   if (dataState === 'empty') {
     return (
       <Root
-        width={props.width}
-        height={props.height}
+        $width={props.width}
+        $height={props.height}
         data-theme={isDarkMode ? 'dark' : 'light'}
         className={CARD_CLASS}
       >
@@ -635,8 +688,8 @@ function WriteoffsTimeseriesInner(props: WriteoffsTSProps) {
 
   return (
     <Root
-      width={props.width}
-      height={props.height}
+      $width={props.width}
+      $height={props.height}
       data-theme={isDarkMode ? 'dark' : 'light'}
         className={CARD_CLASS}
       role="figure"

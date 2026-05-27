@@ -1,10 +1,32 @@
 import {
   buildQueryContext,
   QueryFormData,
+  QueryFormMetric,
   QueryFormOrderBy,
   QueryObject,
 } from '@superset-ui/core';
 import type { RankedBarsFormData } from '../types';
+
+/** Безопасный fallback-запрос для mock-режима — отправляем COUNT(*) чтобы
+   Superset не падал на «Empty query?» при отсутствии metric. Результат
+   игнорируется в transformProps (там данные генерируются из mock-пресета). */
+function buildMockSafeQuery(baseQueryObject: QueryObject): QueryObject[] {
+  return [
+    {
+      ...baseQueryObject,
+      metrics: [
+        {
+          expressionType: 'SQL',
+          sqlExpression: 'COUNT(*)',
+          label: '__mock',
+        } as QueryFormMetric,
+      ],
+      columns: [],
+      row_limit: 1,
+      is_timeseries: false,
+    },
+  ];
+}
 
 /**
  * Builds the query context for Ranked Bars.
@@ -18,9 +40,18 @@ import type { RankedBarsFormData } from '../types';
  */
 export default function buildQuery(formData: QueryFormData) {
   const fd = formData as unknown as RankedBarsFormData;
+  const fdAny = formData as unknown as Record<string, unknown>;
+  const isMockOn =
+    (fdAny.mockModeEnabled ?? fdAny.mock_mode_enabled) === true;
+
   return buildQueryContext(
     formData,
     (baseQueryObject: QueryObject): QueryObject[] => {
+      /* Mock-режим — отправляем безопасный COUNT(*) fallback, transformProps
+         игнорит результат и генерит данные из mock-пресета. */
+      if (isMockOn) {
+        return buildMockSafeQuery(baseQueryObject);
+      }
       const metric = fd.metric;
       if (!metric) {
         // Superset will surface a "Missing required metric" error; no further querying.

@@ -2,6 +2,26 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = buildQuery;
 const core_1 = require("@superset-ui/core");
+/** Безопасный fallback-запрос для mock-режима — отправляем COUNT(*) чтобы
+   Superset не падал на «Empty query?» при отсутствии metric. Результат
+   игнорируется в transformProps (там данные генерируются из mock-пресета). */
+function buildMockSafeQuery(baseQueryObject) {
+    return [
+        {
+            ...baseQueryObject,
+            metrics: [
+                {
+                    expressionType: 'SQL',
+                    sqlExpression: 'COUNT(*)',
+                    label: '__mock',
+                },
+            ],
+            columns: [],
+            row_limit: 1,
+            is_timeseries: false,
+        },
+    ];
+}
 /**
  * Builds the query context for Ranked Bars.
  *
@@ -14,7 +34,14 @@ const core_1 = require("@superset-ui/core");
  */
 function buildQuery(formData) {
     const fd = formData;
+    const fdAny = formData;
+    const isMockOn = (fdAny.mockModeEnabled ?? fdAny.mock_mode_enabled) === true;
     return (0, core_1.buildQueryContext)(formData, (baseQueryObject) => {
+        /* Mock-режим — отправляем безопасный COUNT(*) fallback, transformProps
+           игнорит результат и генерит данные из mock-пресета. */
+        if (isMockOn) {
+            return buildMockSafeQuery(baseQueryObject);
+        }
         const metric = fd.metric;
         if (!metric) {
             // Superset will surface a "Missing required metric" error; no further querying.

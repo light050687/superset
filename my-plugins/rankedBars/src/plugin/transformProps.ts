@@ -175,13 +175,7 @@ export default function transformProps(chartProps: ChartProps): RankedBarsProps 
   // переводим в русский («Last year» → «за год»). DS 2.0 канон.
   const userSubtitle = formData.headerSubtitlePrefix as string | undefined;
   const fdRec = formData as unknown as Record<string, unknown>;
-  const headerSubtitlePrefix =
-    userSubtitle?.trim() ||
-    formatTimeRangeRu(
-      (fdRec['time_range'] as string | undefined) ??
-        (fdRec['timeRange'] as string | undefined),
-    ) ||
-    'Топ по сумме';
+  const headerSubtitlePrefix = userSubtitle?.trim() || '';
   const showSparkline = formData.showSparkline ?? true;
   const showTotalInHeader = formData.showTotalInHeader ?? true;
   const showGhostPrevBar = formData.showGhostPrevBar ?? true;

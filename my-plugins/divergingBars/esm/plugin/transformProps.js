@@ -102,7 +102,7 @@ export default function transformProps(chartProps) {
         formData.subtitleText;
     const timeRange = formData.time_range ??
         formData.timeRange;
-    const subtitleText = (userSubtitle?.trim() || formatTimeRangeRu(timeRange));
+    const subtitleText = userSubtitle?.trim() || '';
     // ── Comparison mode resolution ───────────────────────────
     // 1) Явный new key: default_comparison_mode.
     // 2) Legacy: default_horizon → migrate.

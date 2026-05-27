@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const chart_controls_1 = require("@superset-ui/chart-controls");
 const core_1 = require("@superset-ui/core");
 const isMockEnabled = ({ controls }) => controls?.mock_mode_enabled?.value === true;
-const isRealData = ({ controls }) => controls?.mock_mode_enabled?.value !== true;
 const DEFAULT_FORMAT_MAPPING = JSON.stringify({
     express: { name: 'Экспресс', color: 'c-sky', plan: 2.09 },
     minimarket: { name: 'Минимаркет', color: 'c-tangerine', plan: 2.25 },
@@ -52,7 +51,7 @@ const config = {
         // ── Запрос к БД ──
         {
             label: (0, core_1.t)('Запрос'),
-            expanded: true,
+            expanded: false,
             controlSetRows: [
                 ['adhoc_filters'],
                 [
@@ -63,7 +62,6 @@ const config = {
                             label: (0, core_1.t)('Метрика потерь'),
                             description: (0, core_1.t)('Сумма потерь за период (обычно SUM(loss_rub)).'),
                             validators: [],
-                            visibility: isRealData,
                         },
                     },
                 ],
@@ -75,7 +73,6 @@ const config = {
                             label: (0, core_1.t)('Метрика товарооборота'),
                             description: (0, core_1.t)('Товарооборот (ТО) — нужен для расчёта % к ТО.'),
                             validators: [],
-                            visibility: isRealData,
                         },
                     },
                 ],
@@ -88,7 +85,6 @@ const config = {
                             description: (0, core_1.t)('Уникальный код магазина, напр. Д123.'),
                             multi: false,
                             validators: [],
-                            visibility: isRealData,
                         },
                     },
                 ],
@@ -101,7 +97,6 @@ const config = {
                             description: (0, core_1.t)('Короткое название магазина для отображения.'),
                             multi: false,
                             validators: [],
-                            visibility: isRealData,
                         },
                     },
                 ],
@@ -113,7 +108,6 @@ const config = {
                             label: (0, core_1.t)('Город'),
                             multi: false,
                             validators: [],
-                            visibility: isRealData,
                         },
                     },
                 ],
@@ -127,7 +121,6 @@ const config = {
                                 'Маппинг на русские названия и цвет — в секции «Форматы магазинов».'),
                             multi: false,
                             validators: [],
-                            visibility: isRealData,
                         },
                     },
                 ],
@@ -143,16 +136,16 @@ const config = {
                                 'Если не задана — модалка покажет только Было/Стало без графика.'),
                             multi: false,
                             validators: [],
-                            visibility: isRealData,
                         },
                     },
                 ],
+                ['row_limit'],
             ],
         },
         // ── Отображение ──
         {
             label: (0, core_1.t)('Отображение'),
-            expanded: true,
+            expanded: false,
             controlSetRows: [
                 [
                     {

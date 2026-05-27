@@ -341,7 +341,7 @@ export declare const SortableTh: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
 } & {
-    widthPx: number;
+    widthPx: number | string;
 }, import("react").DetailedHTMLProps<import("react").ThHTMLAttributes<HTMLTableHeaderCellElement>, HTMLTableHeaderCellElement>, {}>;
 export declare const FooterHintIcon: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;

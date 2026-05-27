@@ -88,13 +88,7 @@ export default function transformProps(chartProps: ChartProps): BulletChartProps
   // DS 2.0: subheader fallback на локализованный time_range («Last year» → «за год»).
   const userSubheader = formData.subheaderText as string | undefined;
   const fdRecAll = formData as unknown as Record<string, unknown>;
-  const subheaderText =
-    userSubheader?.trim() ||
-    formatTimeRangeRu(
-      (fdRecAll['time_range'] as string | undefined) ??
-        (fdRecAll['timeRange'] as string | undefined),
-    ) ||
-    'Факт vs план vs ПГ';
+  const subheaderText = userSubheader?.trim() || '';
 
   const formatters = makeFormatters({
     decimals,

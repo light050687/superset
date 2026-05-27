@@ -383,9 +383,7 @@ export default function transformProps(chartProps) {
         enableQuadrantAnnotations: formData.enableQuadrantAnnotations ?? true,
         enableWorstStar: formData.enableWorstStar ?? true,
         title: formData.title || 'Матрица рисков',
-        subtitle: formData.subtitle?.trim() ||
-            formatTimeRangeRu(formData.time_range ??
-                formData.timeRange),
+        subtitle: formData.subtitle?.trim() || '',
         xLabel,
         yLabel,
         xUnit,

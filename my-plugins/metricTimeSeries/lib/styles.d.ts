@@ -4,8 +4,8 @@ export declare const Root: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
 } & {
-    width: number;
-    height: number;
+    $width: number;
+    $height: number;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
 export declare const Card: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
@@ -55,20 +55,16 @@ export declare const DropdownRoot: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
-export declare const DropdownPanel: import("@emotion/styled").StyledComponent<{
+export declare const DropdownTrigger: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
 } & {
     open?: boolean;
-}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
-export declare const DropdownMenu: import("@emotion/styled").StyledComponent<{
+}, import("react").DetailedHTMLProps<import("react").ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, {}>;
+export declare const DropdownMenuPortal: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;
 }, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLDivElement>, HTMLDivElement>, {}>;
-export declare const DropdownItemRow: import("@emotion/styled").StyledComponent<{
-    theme?: import("@emotion/react").Theme;
-    as?: React.ElementType;
-}, import("react").DetailedHTMLProps<import("react").HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, {}>;
 export declare const DropdownItemIcon: import("@emotion/styled").StyledComponent<{
     theme?: import("@emotion/react").Theme;
     as?: React.ElementType;

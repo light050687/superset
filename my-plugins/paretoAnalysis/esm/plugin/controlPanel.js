@@ -8,7 +8,7 @@ const config = {
         // ── 2. Режим проектирования ──
         {
             label: t('Режим проектирования'),
-            expanded: true,
+            expanded: false,
             controlSetRows: [
                 [
                     {
@@ -60,7 +60,7 @@ const config = {
         // ── 3. Запрос ──
         {
             label: t('Запрос'),
-            expanded: true,
+            expanded: false,
             controlSetRows: [
                 [
                     {

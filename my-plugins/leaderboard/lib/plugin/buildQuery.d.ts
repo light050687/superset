@@ -1,6 +1,7 @@
 import type { RankedStoresFormData } from '../types';
 /**
- * Дефолтные имена колонок/метрик в dataset. Перекрываются через controlPanel overrides.
+ * Дефолтные имена колонок/метрик в dataset. Используются как fallback,
+ * если D&D-поле в controlPanel оставлено пустым.
  *
  * В DsData: поля приходят и как snake_case (оригинал), и как camelCase
  * (авто-конверсия Superset через lodash). Читаем оба варианта.
@@ -21,6 +22,28 @@ export declare const BUILD_QUERY_DEFAULTS: {
     readonly avgShrinkageCheckMetric: "avg_shrinkage_check_rub";
 };
 /**
+ * Резолв D&D-column-zone в строку имени столбца.
+ * D&D отдаёт массив (multi=false → массив с одним элементом) либо строку.
+ * Возвращает fallback если zone пустой.
+ */
+declare function resolveColumn(fd: Record<string, unknown>, camelKey: string, snakeKey: string, fallback: string, legacyTextKey?: {
+    camel: string;
+    snake: string;
+}): string;
+/**
+ * Резолв D&D-metric-zone в строку имени метрики (label).
+ * Может быть строкой (saved metric), либо объектом AdhocMetric с .label.
+ */
+declare function resolveMetric(fd: Record<string, unknown>, camelKey: string, snakeKey: string, fallback: string, legacyTextKey?: {
+    camel: string;
+    snake: string;
+}): string;
+/** Public helper — те же resolvers экспортируем для transformProps. */
+export declare const resolvers: {
+    resolveColumn: typeof resolveColumn;
+    resolveMetric: typeof resolveMetric;
+};
+/**
  * Собирает запрос к dataset.
  *
  * columns — набор dimensions, которые таблица рисует в колонке «Магазин».
@@ -31,4 +54,5 @@ export declare const BUILD_QUERY_DEFAULTS: {
  * Результат такого запроса игнорируется в transformProps.
  */
 export default function buildQuery(formData: RankedStoresFormData): import("@superset-ui/core").QueryContext;
+export {};
 //# sourceMappingURL=buildQuery.d.ts.map

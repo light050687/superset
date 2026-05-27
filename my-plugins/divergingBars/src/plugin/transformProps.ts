@@ -135,7 +135,7 @@ export default function transformProps(
   const timeRange =
     (formData as unknown as { time_range?: string; timeRange?: string }).time_range ??
     (formData as unknown as { timeRange?: string }).timeRange;
-  const subtitleText = (userSubtitle?.trim() || formatTimeRangeRu(timeRange));
+  const subtitleText = userSubtitle?.trim() || '';
 
   // ── Comparison mode resolution ───────────────────────────
   // 1) Явный new key: default_comparison_mode.

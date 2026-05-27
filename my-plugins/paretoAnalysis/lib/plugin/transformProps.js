@@ -57,7 +57,7 @@ function transformProps(chartProps) {
         : formData.dimension;
     const isDarkMode = detectDarkMode(theme);
     const timeRange = formData.time_range;
-    const subtitleText = formData.subtitleText?.trim() || formatTimeRangeRu(timeRange);
+    const subtitleText = formData.subtitleText?.trim() || '';
     // ── Mock mode — early return ──
     if (formData.mockModeEnabled) {
         const preset = (0, presets_1.getParetoPreset)(formData.mockPreset, formData.mockCustomJson);

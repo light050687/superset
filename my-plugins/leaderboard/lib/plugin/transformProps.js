@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = transformProps;
-const core_1 = require("@superset-ui/core");
 const storeEnrichment_1 = require("../mocks/storeEnrichment");
 const rankedStoresMock_1 = require("../mocks/rankedStoresMock");
 const generateMockStores_1 = require("../mocks/generateMockStores");
@@ -86,29 +85,22 @@ function normalizeFormat(raw) {
 function transformProps(chartProps) {
     const { width, height, formData, queriesData, hooks = {}, filterState, } = chartProps;
     const fd = formData;
-    /* ── Mapping ── */
-    const storeIdCol = readFd(fd, 'storeIdCol', 'store_id_col', buildQuery_1.BUILD_QUERY_DEFAULTS.storeIdCol);
-    const storeNameCol = readFd(fd, 'storeNameCol', 'store_name_col', buildQuery_1.BUILD_QUERY_DEFAULTS.storeNameCol);
-    const cityCol = readFd(fd, 'cityCol', 'city_col', buildQuery_1.BUILD_QUERY_DEFAULTS.cityCol);
-    const formatCol = readFd(fd, 'formatCol', 'format_col', buildQuery_1.BUILD_QUERY_DEFAULTS.formatCol);
-    const formatNameCol = readFd(fd, 'formatNameCol', 'format_name_col', buildQuery_1.BUILD_QUERY_DEFAULTS.formatNameCol);
-    const divisionCol = readFd(fd, 'divisionCol', 'division_col', buildQuery_1.BUILD_QUERY_DEFAULTS.divisionCol);
-    const toClassCol = readFd(fd, 'toClassCol', 'to_class_col', buildQuery_1.BUILD_QUERY_DEFAULTS.toClassCol);
+    /* ── Mapping: D&D zone → legacy text-override → дефолтное имя ── */
+    const storeIdCol = buildQuery_1.resolvers.resolveColumn(fd, 'groupbyStoreId', 'groupby_store_id', buildQuery_1.BUILD_QUERY_DEFAULTS.storeIdCol, { camel: 'storeIdCol', snake: 'store_id_col' });
+    const storeNameCol = buildQuery_1.resolvers.resolveColumn(fd, 'groupbyStoreName', 'groupby_store_name', buildQuery_1.BUILD_QUERY_DEFAULTS.storeNameCol, { camel: 'storeNameCol', snake: 'store_name_col' });
+    const cityCol = buildQuery_1.resolvers.resolveColumn(fd, 'groupbyCity', 'groupby_city', buildQuery_1.BUILD_QUERY_DEFAULTS.cityCol, { camel: 'cityCol', snake: 'city_col' });
+    const formatCol = buildQuery_1.resolvers.resolveColumn(fd, 'groupbyFormat', 'groupby_format', buildQuery_1.BUILD_QUERY_DEFAULTS.formatCol, { camel: 'formatCol', snake: 'format_col' });
+    const formatNameCol = buildQuery_1.resolvers.resolveColumn(fd, 'groupbyFormatName', 'groupby_format_name', buildQuery_1.BUILD_QUERY_DEFAULTS.formatNameCol, { camel: 'formatNameCol', snake: 'format_name_col' });
+    const divisionCol = buildQuery_1.resolvers.resolveColumn(fd, 'groupbyDivision', 'groupby_division', buildQuery_1.BUILD_QUERY_DEFAULTS.divisionCol, { camel: 'divisionCol', snake: 'division_col' });
+    const toClassCol = buildQuery_1.resolvers.resolveColumn(fd, 'groupbyToClass', 'groupby_to_class', buildQuery_1.BUILD_QUERY_DEFAULTS.toClassCol, { camel: 'toClassCol', snake: 'to_class_col' });
     const segmentIdCol = readFd(fd, 'segmentIdCol', 'segment_id_col', 'segment_id');
     /* ── Метрики (имена колонок в data-row) ── */
-    const resolveMetric = (v, fallback) => {
-        if (!v)
-            return fallback;
-        if (typeof v === 'string')
-            return v;
-        return (0, core_1.getMetricLabel)(v) ?? fallback;
-    };
-    const writeoffKey = resolveMetric(readFd(fd, 'writeoffMetric', 'writeoff_metric', buildQuery_1.BUILD_QUERY_DEFAULTS.writeoffMetric), buildQuery_1.BUILD_QUERY_DEFAULTS.writeoffMetric);
-    const shrinkageKey = resolveMetric(readFd(fd, 'shrinkageMetric', 'shrinkage_metric', buildQuery_1.BUILD_QUERY_DEFAULTS.shrinkageMetric), buildQuery_1.BUILD_QUERY_DEFAULTS.shrinkageMetric);
-    const planWriteoffKey = resolveMetric(readFd(fd, 'planWriteoffMetric', 'plan_writeoff_metric', buildQuery_1.BUILD_QUERY_DEFAULTS.planWriteoffMetric), buildQuery_1.BUILD_QUERY_DEFAULTS.planWriteoffMetric);
-    const planShrinkageKey = resolveMetric(readFd(fd, 'planShrinkageMetric', 'plan_shrinkage_metric', buildQuery_1.BUILD_QUERY_DEFAULTS.planShrinkageMetric), buildQuery_1.BUILD_QUERY_DEFAULTS.planShrinkageMetric);
-    const avgWriteoffKey = resolveMetric(readFd(fd, 'avgWriteoffMetric', 'avg_writeoff_metric', buildQuery_1.BUILD_QUERY_DEFAULTS.avgWriteoffMetric), buildQuery_1.BUILD_QUERY_DEFAULTS.avgWriteoffMetric);
-    const avgShrinkageKey = resolveMetric(readFd(fd, 'avgShrinkageCheckMetric', 'avg_shrinkage_check_metric', buildQuery_1.BUILD_QUERY_DEFAULTS.avgShrinkageCheckMetric), buildQuery_1.BUILD_QUERY_DEFAULTS.avgShrinkageCheckMetric);
+    const writeoffKey = buildQuery_1.resolvers.resolveMetric(fd, 'metricWriteoff', 'metric_writeoff', buildQuery_1.BUILD_QUERY_DEFAULTS.writeoffMetric, { camel: 'writeoffMetric', snake: 'writeoff_metric' });
+    const shrinkageKey = buildQuery_1.resolvers.resolveMetric(fd, 'metricShrinkage', 'metric_shrinkage', buildQuery_1.BUILD_QUERY_DEFAULTS.shrinkageMetric, { camel: 'shrinkageMetric', snake: 'shrinkage_metric' });
+    const planWriteoffKey = buildQuery_1.resolvers.resolveMetric(fd, 'metricPlanWriteoff', 'metric_plan_writeoff', buildQuery_1.BUILD_QUERY_DEFAULTS.planWriteoffMetric, { camel: 'planWriteoffMetric', snake: 'plan_writeoff_metric' });
+    const planShrinkageKey = buildQuery_1.resolvers.resolveMetric(fd, 'metricPlanShrinkage', 'metric_plan_shrinkage', buildQuery_1.BUILD_QUERY_DEFAULTS.planShrinkageMetric, { camel: 'planShrinkageMetric', snake: 'plan_shrinkage_metric' });
+    const avgWriteoffKey = buildQuery_1.resolvers.resolveMetric(fd, 'metricAvgWriteoff', 'metric_avg_writeoff', buildQuery_1.BUILD_QUERY_DEFAULTS.avgWriteoffMetric, { camel: 'avgWriteoffMetric', snake: 'avg_writeoff_metric' });
+    const avgShrinkageKey = buildQuery_1.resolvers.resolveMetric(fd, 'metricAvgShrinkageCheck', 'metric_avg_shrinkage_check', buildQuery_1.BUILD_QUERY_DEFAULTS.avgShrinkageCheckMetric, { camel: 'avgShrinkageCheckMetric', snake: 'avg_shrinkage_check_metric' });
     /* ── Режим проектирования: возвращаем моки ── */
     const mockModeEnabled = readFd(fd, 'mockModeEnabled', 'mock_mode_enabled', false);
     const mockPreset = readFd(fd, 'mockPreset', 'mock_preset', 'losses_400');
@@ -117,7 +109,7 @@ function transformProps(chartProps) {
     // переводим в русский («Last year» → «за год»). DS 2.0 канон.
     const timeRange = fd['time_range'] ??
         fd['timeRange'];
-    const periodLabel = userPeriodLabel.trim() || formatTimeRangeRu(timeRange);
+    const periodLabel = userPeriodLabel.trim() || '';
     const defaultSort = readFd(fd, 'defaultSort', 'default_sort', 'lossCombined');
     const pageSize = Math.max(1, Math.floor(readFd(fd, 'pageSize', 'page_size', 50)));
     let stores;

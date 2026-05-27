@@ -1,4 +1,4 @@
-import { ChartProps, getMetricLabel } from '@superset-ui/core';
+import { ChartProps } from '@superset-ui/core';
 import type {
   FormatCode,
   MockPreset,
@@ -10,7 +10,7 @@ import type {
 import { enrichStoreWithMocks, StoreBase } from '../mocks/storeEnrichment';
 import { DIVISION_BY_FORMAT, FORMATS_META } from '../mocks/rankedStoresMock';
 import { generateByPreset } from '../mocks/generateMockStores';
-import { BUILD_QUERY_DEFAULTS as D } from './buildQuery';
+import { BUILD_QUERY_DEFAULTS as D, resolvers } from './buildQuery';
 
 /**
  * DS 2.0 локализация Superset time_range пресетов в русский subtitle.
@@ -105,46 +105,23 @@ export default function transformProps(
   } = chartProps;
   const fd = formData as unknown as Record<string, unknown>;
 
-  /* ── Mapping ── */
-  const storeIdCol = readFd<string>(fd, 'storeIdCol', 'store_id_col', D.storeIdCol);
-  const storeNameCol = readFd<string>(fd, 'storeNameCol', 'store_name_col', D.storeNameCol);
-  const cityCol = readFd<string>(fd, 'cityCol', 'city_col', D.cityCol);
-  const formatCol = readFd<string>(fd, 'formatCol', 'format_col', D.formatCol);
-  const formatNameCol = readFd<string>(fd, 'formatNameCol', 'format_name_col', D.formatNameCol);
-  const divisionCol = readFd<string>(fd, 'divisionCol', 'division_col', D.divisionCol);
-  const toClassCol = readFd<string>(fd, 'toClassCol', 'to_class_col', D.toClassCol);
+  /* ── Mapping: D&D zone → legacy text-override → дефолтное имя ── */
+  const storeIdCol = resolvers.resolveColumn(fd, 'groupbyStoreId', 'groupby_store_id', D.storeIdCol, { camel: 'storeIdCol', snake: 'store_id_col' });
+  const storeNameCol = resolvers.resolveColumn(fd, 'groupbyStoreName', 'groupby_store_name', D.storeNameCol, { camel: 'storeNameCol', snake: 'store_name_col' });
+  const cityCol = resolvers.resolveColumn(fd, 'groupbyCity', 'groupby_city', D.cityCol, { camel: 'cityCol', snake: 'city_col' });
+  const formatCol = resolvers.resolveColumn(fd, 'groupbyFormat', 'groupby_format', D.formatCol, { camel: 'formatCol', snake: 'format_col' });
+  const formatNameCol = resolvers.resolveColumn(fd, 'groupbyFormatName', 'groupby_format_name', D.formatNameCol, { camel: 'formatNameCol', snake: 'format_name_col' });
+  const divisionCol = resolvers.resolveColumn(fd, 'groupbyDivision', 'groupby_division', D.divisionCol, { camel: 'divisionCol', snake: 'division_col' });
+  const toClassCol = resolvers.resolveColumn(fd, 'groupbyToClass', 'groupby_to_class', D.toClassCol, { camel: 'toClassCol', snake: 'to_class_col' });
   const segmentIdCol = readFd<string>(fd, 'segmentIdCol', 'segment_id_col', 'segment_id');
 
   /* ── Метрики (имена колонок в data-row) ── */
-  const resolveMetric = (v: unknown, fallback: string): string => {
-    if (!v) return fallback;
-    if (typeof v === 'string') return v;
-    return getMetricLabel(v as never) ?? fallback;
-  };
-  const writeoffKey = resolveMetric(
-    readFd(fd, 'writeoffMetric', 'writeoff_metric', D.writeoffMetric),
-    D.writeoffMetric,
-  );
-  const shrinkageKey = resolveMetric(
-    readFd(fd, 'shrinkageMetric', 'shrinkage_metric', D.shrinkageMetric),
-    D.shrinkageMetric,
-  );
-  const planWriteoffKey = resolveMetric(
-    readFd(fd, 'planWriteoffMetric', 'plan_writeoff_metric', D.planWriteoffMetric),
-    D.planWriteoffMetric,
-  );
-  const planShrinkageKey = resolveMetric(
-    readFd(fd, 'planShrinkageMetric', 'plan_shrinkage_metric', D.planShrinkageMetric),
-    D.planShrinkageMetric,
-  );
-  const avgWriteoffKey = resolveMetric(
-    readFd(fd, 'avgWriteoffMetric', 'avg_writeoff_metric', D.avgWriteoffMetric),
-    D.avgWriteoffMetric,
-  );
-  const avgShrinkageKey = resolveMetric(
-    readFd(fd, 'avgShrinkageCheckMetric', 'avg_shrinkage_check_metric', D.avgShrinkageCheckMetric),
-    D.avgShrinkageCheckMetric,
-  );
+  const writeoffKey = resolvers.resolveMetric(fd, 'metricWriteoff', 'metric_writeoff', D.writeoffMetric, { camel: 'writeoffMetric', snake: 'writeoff_metric' });
+  const shrinkageKey = resolvers.resolveMetric(fd, 'metricShrinkage', 'metric_shrinkage', D.shrinkageMetric, { camel: 'shrinkageMetric', snake: 'shrinkage_metric' });
+  const planWriteoffKey = resolvers.resolveMetric(fd, 'metricPlanWriteoff', 'metric_plan_writeoff', D.planWriteoffMetric, { camel: 'planWriteoffMetric', snake: 'plan_writeoff_metric' });
+  const planShrinkageKey = resolvers.resolveMetric(fd, 'metricPlanShrinkage', 'metric_plan_shrinkage', D.planShrinkageMetric, { camel: 'planShrinkageMetric', snake: 'plan_shrinkage_metric' });
+  const avgWriteoffKey = resolvers.resolveMetric(fd, 'metricAvgWriteoff', 'metric_avg_writeoff', D.avgWriteoffMetric, { camel: 'avgWriteoffMetric', snake: 'avg_writeoff_metric' });
+  const avgShrinkageKey = resolvers.resolveMetric(fd, 'metricAvgShrinkageCheck', 'metric_avg_shrinkage_check', D.avgShrinkageCheckMetric, { camel: 'avgShrinkageCheckMetric', snake: 'avg_shrinkage_check_metric' });
 
   /* ── Режим проектирования: возвращаем моки ── */
   const mockModeEnabled = readFd<boolean>(fd, 'mockModeEnabled', 'mock_mode_enabled', false);
@@ -156,7 +133,7 @@ export default function transformProps(
   const timeRange =
     (fd['time_range'] as string | undefined) ??
     (fd['timeRange'] as string | undefined);
-  const periodLabel = userPeriodLabel.trim() || formatTimeRangeRu(timeRange);
+  const periodLabel = userPeriodLabel.trim() || '';
   const defaultSort = readFd<SortKey>(fd, 'defaultSort', 'default_sort', 'lossCombined');
   const pageSize = Math.max(
     1,

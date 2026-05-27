@@ -1,8 +1,9 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
-import React, { useCallback, useEffect, useMemo, useRef, useState, } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, } from 'react';
+import { createPortal } from 'react-dom';
 import ReactECharts from 'echarts-for-react';
 import { buildOption } from './chart/buildOption';
-import { Root, Card, CardHead, TitleWrap, Title, Breadcrumb, BreadcrumbBack, Controls, IconButton, UnitToggleGroup, UnitButton, DropdownRoot, DropdownPanel, DropdownMenu, DropdownItem, DropdownItemIcon, ChartWrap, ChartInner, BrushButton, CardFooter, LegendRow, LegendItem, LegendMark, LegendLabel, LegendSeparator, FooterSpacer, SkeletonWrap, SkeletonBlock, EmptyStateWrap, EmptyStateIcon, EmptyStateText, ErrorStateWrap, ErrorStateIcon, ErrorStateText, MockBadge, PartialBadge, StaleBar, SrLive, KEYFRAMES_CSS, CARD_CLASS, } from './styles';
+import { Root, Card, CardHead, TitleWrap, Title, Breadcrumb, BreadcrumbBack, Controls, UnitToggleGroup, UnitButton, DropdownRoot, DropdownTrigger, DropdownMenuPortal, DropdownItem, DropdownItemIcon, ChartWrap, ChartInner, BrushButton, CardFooter, LegendRow, LegendItem, LegendMark, LegendLabel, LegendSeparator, FooterSpacer, SkeletonWrap, SkeletonBlock, EmptyStateWrap, EmptyStateIcon, EmptyStateText, ErrorStateWrap, ErrorStateIcon, ErrorStateText, MockBadge, PartialBadge, StaleBar, SrLive, KEYFRAMES_CSS, CARD_CLASS, } from './styles';
 import { InfoHint, InfoHintTopRight } from './components/InfoHint';
 import { ruMonthShort } from './utils/dateHelpers';
 /* ──────────────── Icons ──────────────── */
@@ -18,37 +19,73 @@ const IconClick = () => (_jsx("svg", { viewBox: "0 0 16 16", fill: "currentColor
 const IconBack = () => (_jsx("svg", { viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: _jsx("path", { d: "M10 3 L5 8 L10 13" }) }));
 function Dropdown({ value, options, onChange, ariaLabel, }) {
     const [open, setOpen] = useState(false);
-    const rootRef = useRef(null);
+    const triggerRef = useRef(null);
+    const menuRef = useRef(null);
+    const [menuPos, setMenuPos] = useState({
+        left: 0, top: 0, width: 30,
+    });
     const active = options.find(o => o.value === value) ?? options[0];
+    /* Позиционируем portal-меню под trigger через viewport-coords (position: fixed).
+       top = trigger.bottom - 1 (overlap на 1px чтобы убрать gap между bottom-border
+       trigger и top-border menu — получается визуально один блок). */
+    useLayoutEffect(() => {
+        if (!open || !triggerRef.current)
+            return;
+        const r = triggerRef.current.getBoundingClientRect();
+        setMenuPos({
+            left: Math.round(r.left),
+            top: Math.round(r.bottom) - 1,
+            width: Math.round(r.width),
+        });
+    }, [open]);
+    /* Outside-click + Escape для закрытия. Учитываем target и в trigger, и в portal-menu.
+       ВАЖНО: НЕ закрываем по scroll/resize — ECharts при mount/update вызывает scroll
+       events на внутренних контейнерах (canvas resize → bubble), что закрывает menu
+       сразу после открытия. Если нужна re-позиция при resize окна — лучше repositionировать,
+       не закрывать. */
     useEffect(() => {
         if (!open)
             return undefined;
         const onDown = (e) => {
-            if (!rootRef.current)
-                return;
-            if (!rootRef.current.contains(e.target))
+            const target = e.target;
+            const inTrigger = triggerRef.current && triggerRef.current.contains(target);
+            const inMenu = menuRef.current && menuRef.current.contains(target);
+            if (!inTrigger && !inMenu)
                 setOpen(false);
         };
         const onKey = (e) => {
             if (e.key === 'Escape') {
-                // Close the dropdown and stop propagation so the global ESC handler
-                // (which resets the selection) doesn't also fire.
                 setOpen(false);
                 e.stopPropagation();
             }
         };
+        /* Re-позиция при window resize (menu — position:fixed, остаётся в viewport
+           coord но trigger мог сдвинуться). */
+        const onResize = () => {
+            if (!triggerRef.current)
+                return;
+            const r = triggerRef.current.getBoundingClientRect();
+            setMenuPos({
+                left: Math.round(r.left),
+                top: Math.round(r.bottom) - 1,
+                width: Math.round(r.width),
+            });
+        };
         document.addEventListener('mousedown', onDown);
-        // Capture phase so we see ESC before the selection-reset handler.
         document.addEventListener('keydown', onKey, true);
+        window.addEventListener('resize', onResize);
         return () => {
             document.removeEventListener('mousedown', onDown);
             document.removeEventListener('keydown', onKey, true);
+            window.removeEventListener('resize', onResize);
         };
     }, [open]);
-    return (_jsx(DropdownRoot, { ref: rootRef, children: _jsxs(DropdownPanel, { open: open, "data-open": open, children: [_jsx(IconButton, { type: "button", "aria-haspopup": "listbox", "aria-expanded": open, "aria-label": ariaLabel, onClick: () => setOpen(o => !o), children: active.icon }), open && (_jsx(DropdownMenu, { role: "listbox", "aria-label": ariaLabel, children: options.map(opt => (_jsx(DropdownItem, { type: "button", active: opt.value === value, role: "option", "aria-selected": opt.value === value, "aria-label": opt.label, title: opt.label, onClick: () => {
-                            onChange(opt.value);
-                            setOpen(false);
-                        }, children: _jsx(DropdownItemIcon, { children: opt.icon }) }, opt.value))) }))] }) }));
+    const handleSelect = useCallback((v) => {
+        onChange(v);
+        setOpen(false);
+    }, [onChange]);
+    return (_jsxs(DropdownRoot, { children: [_jsx(DropdownTrigger, { ref: triggerRef, type: "button", open: open, "aria-haspopup": "listbox", "aria-expanded": open, "aria-label": ariaLabel, title: active.label, onClick: () => setOpen(o => !o), children: active.icon }), open &&
+                createPortal(_jsx(DropdownMenuPortal, { ref: menuRef, role: "listbox", "aria-label": ariaLabel, style: { left: menuPos.left, top: menuPos.top, minWidth: menuPos.width }, children: options.map(opt => (_jsx(DropdownItem, { type: "button", active: opt.value === value, role: "option", "aria-selected": opt.value === value, "aria-label": opt.label, title: opt.label, onClick: () => handleSelect(opt.value), children: _jsx(DropdownItemIcon, { children: opt.icon }) }, opt.value))) }), document.body)] }));
 }
 /* ──────────────── Legend helpers ──────────────── */
 const LineMark = ({ color, type }) => {
@@ -328,13 +365,13 @@ function WriteoffsTimeseriesInner(props) {
     }, [timePoints, selection.from, selection.to]);
     // ── States ──
     if (dataState === 'loading') {
-        return (_jsxs(Root, { width: props.width, height: props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: CARD_CLASS, children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsx(Card, { "data-no-anim": "", children: _jsxs(SkeletonWrap, { children: [_jsx(SkeletonBlock, { w: "40%", h: 14 }), _jsx(SkeletonBlock, { h: 200 }), _jsx(SkeletonBlock, { w: "60%", h: 12 })] }) })] }));
+        return (_jsxs(Root, { "$width": props.width, "$height": props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: CARD_CLASS, children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsx(Card, { "data-no-anim": "", children: _jsxs(SkeletonWrap, { children: [_jsx(SkeletonBlock, { w: "40%", h: 14 }), _jsx(SkeletonBlock, { h: 200 }), _jsx(SkeletonBlock, { w: "60%", h: 12 })] }) })] }));
     }
     if (dataState === 'error') {
-        return (_jsxs(Root, { width: props.width, height: props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: CARD_CLASS, children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsx(Card, { "data-no-anim": "", children: _jsxs(ErrorStateWrap, { children: [_jsx(ErrorStateIcon, {}), _jsx(ErrorStateText, { children: errorMessage || 'Ошибка отображения' })] }) })] }));
+        return (_jsxs(Root, { "$width": props.width, "$height": props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: CARD_CLASS, children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsx(Card, { "data-no-anim": "", children: _jsxs(ErrorStateWrap, { children: [_jsx(ErrorStateIcon, {}), _jsx(ErrorStateText, { children: errorMessage || 'Ошибка отображения' })] }) })] }));
     }
     if (dataState === 'empty') {
-        return (_jsxs(Root, { width: props.width, height: props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: CARD_CLASS, children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsx(SrLive, { "aria-live": "polite", children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445" }), _jsx(Card, { "data-no-anim": "", children: _jsxs(EmptyStateWrap, { children: [_jsx(EmptyStateIcon, { children: "\u2014" }), _jsxs(EmptyStateText, { children: ["\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u0437\u0430 \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434.", _jsx("br", {}), "\u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u0444\u0438\u043B\u044C\u0442\u0440\u044B \u0438 \u0432\u0440\u0435\u043C\u0435\u043D\u043D\u043E\u0439 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D."] })] }) })] }));
+        return (_jsxs(Root, { "$width": props.width, "$height": props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: CARD_CLASS, children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsx(SrLive, { "aria-live": "polite", children: "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445" }), _jsx(Card, { "data-no-anim": "", children: _jsxs(EmptyStateWrap, { children: [_jsx(EmptyStateIcon, { children: "\u2014" }), _jsxs(EmptyStateText, { children: ["\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u0437\u0430 \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434.", _jsx("br", {}), "\u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u0444\u0438\u043B\u044C\u0442\u0440\u044B \u0438 \u0432\u0440\u0435\u043C\u0435\u043D\u043D\u043E\u0439 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D."] })] }) })] }));
     }
     const isPartial = dataState === 'partial';
     const isStale = dataState === 'stale';
@@ -345,7 +382,7 @@ function WriteoffsTimeseriesInner(props) {
             : isStale
                 ? 'Данные устарели'
                 : '';
-    return (_jsxs(Root, { width: props.width, height: props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: CARD_CLASS, role: "figure", "aria-label": headerText, children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsx(SrLive, { "aria-live": "polite", "aria-atomic": "true", children: liveMessage }), _jsxs(Card, { "data-info-hint-container": "", ref: cardContainerRef, children: [isStale && _jsx(StaleBar, { "aria-hidden": "true" }), _jsxs(CardHead, { children: [_jsxs(TitleWrap, { children: [_jsxs(Title, { children: [headerText, mockModeEnabled && (_jsxs(_Fragment, { children: [' ', _jsx(MockBadge, { children: "\u0422\u0415\u0421\u0422" })] })), isPartial && (_jsxs(_Fragment, { children: [' ', _jsx(PartialBadge, { title: "\u0427\u0430\u0441\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0445 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430", children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u043E" })] }))] }), _jsxs(Breadcrumb, { children: [!isFullRange && (_jsx(BreadcrumbBack, { type: "button", "aria-label": "\u0412\u0435\u0440\u043D\u0443\u0442\u044C\u0441\u044F \u043A\u043E \u0432\u0441\u0435\u043C\u0443 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D\u0443", title: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u044B\u0434\u0435\u043B\u0435\u043D\u0438\u0435 (Esc)", onClick: resetSelection, children: "\u25C2" })), _jsxs("span", { children: [subtitleText && `${subtitleText} · `, hierarchyText, " \u00B7 ", rangeText] })] })] }), _jsxs(Controls, { children: [_jsx(Dropdown, { ariaLabel: "\u0413\u0440\u0430\u043D\u0443\u043B\u044F\u0440\u043D\u043E\u0441\u0442\u044C", value: gran, onChange: (v) => {
+    return (_jsxs(Root, { "$width": props.width, "$height": props.height, "data-theme": isDarkMode ? 'dark' : 'light', className: CARD_CLASS, role: "figure", "aria-label": headerText, children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsx(SrLive, { "aria-live": "polite", "aria-atomic": "true", children: liveMessage }), _jsxs(Card, { "data-info-hint-container": "", ref: cardContainerRef, children: [isStale && _jsx(StaleBar, { "aria-hidden": "true" }), _jsxs(CardHead, { children: [_jsxs(TitleWrap, { children: [_jsxs(Title, { children: [headerText, mockModeEnabled && (_jsxs(_Fragment, { children: [' ', _jsx(MockBadge, { children: "\u0422\u0415\u0421\u0422" })] })), isPartial && (_jsxs(_Fragment, { children: [' ', _jsx(PartialBadge, { title: "\u0427\u0430\u0441\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0445 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430", children: "\u0427\u0430\u0441\u0442\u0438\u0447\u043D\u043E" })] }))] }), _jsxs(Breadcrumb, { children: [!isFullRange && (_jsx(BreadcrumbBack, { type: "button", "aria-label": "\u0412\u0435\u0440\u043D\u0443\u0442\u044C\u0441\u044F \u043A\u043E \u0432\u0441\u0435\u043C\u0443 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D\u0443", title: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u044B\u0434\u0435\u043B\u0435\u043D\u0438\u0435 (Esc)", onClick: resetSelection, children: "\u25C2" })), _jsxs("span", { children: [subtitleText && `${subtitleText} · `, hierarchyText, " \u00B7 ", rangeText] })] })] }), _jsxs(Controls, { children: [_jsx(Dropdown, { ariaLabel: "\u0413\u0440\u0430\u043D\u0443\u043B\u044F\u0440\u043D\u043E\u0441\u0442\u044C", value: gran, onChange: (v) => {
                                             setGran(v);
                                             if (v === 'year' || v === 'month') {
                                                 if (selection.from === selection.to) {

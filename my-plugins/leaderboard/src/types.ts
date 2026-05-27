@@ -138,7 +138,24 @@ export type SortDir = 'asc' | 'desc';
 export type MockPreset = 'losses_400' | 'losses_50' | 'empty';
 
 export interface RankedStoresFormData extends QueryFormData {
-  /* Column-name overrides (все с fallback в transformProps) */
+  /* D&D groupby zones (QueryFormColumn[] | string | undefined) */
+  groupbyStoreId?: unknown;
+  groupbyStoreName?: unknown;
+  groupbyCity?: unknown;
+  groupbyFormat?: unknown;
+  groupbyFormatName?: unknown;
+  groupbyDivision?: unknown;
+  groupbyToClass?: unknown;
+
+  /* D&D metric zones (QueryFormMetric | string | undefined) */
+  metricWriteoff?: unknown;
+  metricShrinkage?: unknown;
+  metricPlanWriteoff?: unknown;
+  metricPlanShrinkage?: unknown;
+  metricAvgWriteoff?: unknown;
+  metricAvgShrinkageCheck?: unknown;
+
+  /* Legacy text-overrides — сохранены для backward compat со старыми saved charts. */
   storeIdCol?: string;
   storeNameCol?: string;
   cityCol?: string;
@@ -147,8 +164,6 @@ export interface RankedStoresFormData extends QueryFormData {
   divisionCol?: string;
   toClassCol?: string;
   segmentIdCol?: string;
-
-  /* Метрики (ожидаются в queriesData[0].data) */
   writeoffMetric?: string;
   shrinkageMetric?: string;
   planWriteoffMetric?: string;

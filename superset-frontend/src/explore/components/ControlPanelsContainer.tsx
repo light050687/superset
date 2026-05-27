@@ -640,6 +640,12 @@ export const ControlPanelsContainer = (props: ControlPanelsContainerProps) => {
       children: PanelChildren,
       className: section.label ? '' : 'hidden-collapse-header',
       style: { visibility: isVisible ? 'visible' : 'hidden' },
+      /* forceRender:true заставляет AntD Collapse монтировать children
+         даже когда panel collapsed по умолчанию. Без этого свёрнутые секции
+         с D&D zones (sharedControls.metric/groupby) не регистрируют свои
+         validators в DropzoneContext → DatasourcePanel не показывает relevant
+         columns/metrics до раскрытия секции вручную. */
+      forceRender: true,
     };
   };
 

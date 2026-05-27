@@ -26,7 +26,7 @@ const config = {
                             label: (0, core_1.t)('Включить режим проектирования'),
                             description: (0, core_1.t)('Показывает тестовые данные для согласования дизайна дашборда. ' +
                                 'Выключите когда реальные данные будут готовы.'),
-                            default: false,
+                            default: true,
                             renderTrigger: true,
                         },
                     },
@@ -53,7 +53,7 @@ const config = {
         // ── 3. Query ──
         {
             label: (0, core_1.t)('Запрос'),
-            expanded: true,
+            expanded: false,
             controlSetRows: [
                 ['adhoc_filters'],
                 [

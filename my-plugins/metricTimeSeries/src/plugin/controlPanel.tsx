@@ -36,7 +36,7 @@ const config: ControlPanelConfig = {
                 'Показывает тестовые данные для согласования дизайна дашборда. ' +
                   'Выключите когда реальные данные будут готовы.',
               ),
-              default: false,
+              default: true,
               renderTrigger: true,
             },
           },
@@ -64,7 +64,7 @@ const config: ControlPanelConfig = {
     // ── 3. Query ──
     {
       label: t('Запрос'),
-      expanded: true,
+      expanded: false,
       controlSetRows: [
         ['adhoc_filters'],
         [

@@ -10,7 +10,7 @@
  *
  * Не делает никаких side-effect'ов и не трогает window/document.
  */
-import { zoneColor } from '../utils/zoneColors';
+import { zoneColor, toRgba } from '../utils/zoneColors';
 const nf1 = new Intl.NumberFormat('ru-RU', {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
@@ -112,10 +112,11 @@ export function buildEChartsOption({ computed, state, tokens, }) {
         animationDelay: (idx) => idx * 60,
         animationEasing: 'backOut',
     });
-    // 2. Прошлый период — опционально (ghost bars).
-    // barGap:'-50%' — как в прототипе: ghost-бары наполовину выглядывают из-за
-    // current-баров, z:1 кладёт их под current. Получаем «current впереди,
-    // prev как рамка сзади со сдвигом».
+    // 2. Прошлый период — ghost bars в стиле ПГ из metricTimeSeries (stack-bar mode):
+    // полупрозрачная violet заливка (rgba 0.35) + dashed violet outline.
+    // barGap:'-50%' — ghost-бары наполовину выглядывают из-за current-баров,
+    // z:1 кладёт их под current. Цвет фиолетовый (tokens.cViolet) — единый
+    // визуальный язык с ПГ в других плагинах.
     if (state.prevOverlay) {
         series.push({
             name: 'bars-prev',
@@ -127,13 +128,13 @@ export function buildEChartsOption({ computed, state, tokens, }) {
             z: 1,
             silent: true,
             itemStyle: {
-                color: 'transparent',
+                color: toRgba(tokens.cViolet, 0.35),
                 borderRadius: [3, 3, 0, 0],
-                borderColor: tokens.g400,
+                borderColor: tokens.cViolet,
                 borderWidth: 1,
                 borderType: 'dashed',
-                opacity: 0.75,
             },
+            emphasis: { disabled: true },
         });
     }
     // 3. Кумулятивная линия + markLine на thresholds.

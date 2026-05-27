@@ -240,12 +240,7 @@ export default function transformProps(chartProps: ChartProps): WriteoffsTSProps
   const headerText = formData.headerText || 'Динамика списаний';
   const fdRec = formData as unknown as Record<string, unknown>;
   const userSubtitle = formData.subtitleText as string | undefined;
-  const subtitleText =
-    userSubtitle?.trim() ||
-    formatTimeRangeRu(
-      (fdRec['time_range'] as string | undefined) ??
-        (fdRec['timeRange'] as string | undefined),
-    );
+  const subtitleText = userSubtitle?.trim() || '';
 
   // Number formatting: auto-scaling by magnitude (тыс/млн/млрд) + user suffix.
   // Default suffix is "₽" — fmtSmart applies the correct prefix based on value magnitude.

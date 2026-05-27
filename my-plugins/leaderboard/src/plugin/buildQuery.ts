@@ -1,12 +1,14 @@
 import {
   buildQueryContext,
+  getMetricLabel,
   QueryFormColumn,
   QueryFormMetric,
 } from '@superset-ui/core';
 import type { RankedStoresFormData } from '../types';
 
 /**
- * Дефолтные имена колонок/метрик в dataset. Перекрываются через controlPanel overrides.
+ * Дефолтные имена колонок/метрик в dataset. Используются как fallback,
+ * если D&D-поле в controlPanel оставлено пустым.
  *
  * В DsData: поля приходят и как snake_case (оригинал), и как camelCase
  * (авто-конверсия Superset через lodash). Читаем оба варианта.
@@ -41,6 +43,85 @@ function getFormDataValue<T = unknown>(
 }
 
 /**
+ * Резолв D&D-column-zone в строку имени столбца.
+ * D&D отдаёт массив (multi=false → массив с одним элементом) либо строку.
+ * Возвращает fallback если zone пустой.
+ */
+function resolveColumn(
+  fd: Record<string, unknown>,
+  camelKey: string,
+  snakeKey: string,
+  fallback: string,
+  legacyTextKey?: { camel: string; snake: string },
+): string {
+  const v = getFormDataValue<unknown>(fd, camelKey, snakeKey);
+  if (Array.isArray(v) && v.length > 0) {
+    const first = v[0];
+    if (typeof first === 'string' && first.trim()) return first.trim();
+    if (first && typeof first === 'object' && 'label' in first) {
+      const lbl = (first as { label?: string }).label;
+      if (lbl && lbl.trim()) return lbl.trim();
+    }
+  }
+  if (typeof v === 'string' && v.trim()) return v.trim();
+  // legacy text-override fallback (для backward compat со старыми saved charts)
+  if (legacyTextKey) {
+    const legacy = getFormDataValue<string>(fd, legacyTextKey.camel, legacyTextKey.snake);
+    if (legacy && legacy.trim()) return legacy.trim();
+  }
+  return fallback;
+}
+
+/**
+ * Резолв D&D-metric-zone в строку имени метрики (label).
+ * Может быть строкой (saved metric), либо объектом AdhocMetric с .label.
+ */
+function resolveMetric(
+  fd: Record<string, unknown>,
+  camelKey: string,
+  snakeKey: string,
+  fallback: string,
+  legacyTextKey?: { camel: string; snake: string },
+): string {
+  const v = getFormDataValue<unknown>(fd, camelKey, snakeKey);
+  if (v) {
+    if (typeof v === 'string' && v.trim()) return v.trim();
+    const lbl = getMetricLabel(v as never);
+    if (lbl && lbl.trim()) return lbl.trim();
+  }
+  if (legacyTextKey) {
+    const legacy = getFormDataValue<string>(fd, legacyTextKey.camel, legacyTextKey.snake);
+    if (legacy && legacy.trim()) return legacy.trim();
+  }
+  return fallback;
+}
+
+/**
+ * Резолв D&D-metric-zone в QueryFormMetric (для отправки в БД).
+ * Если выбрана adhoc/saved-метрика — возвращаем как есть. Если пусто — строка-имя (fallback).
+ */
+function resolveMetricForQuery(
+  fd: Record<string, unknown>,
+  camelKey: string,
+  snakeKey: string,
+  fallback: string,
+  legacyTextKey?: { camel: string; snake: string },
+): QueryFormMetric {
+  const v = getFormDataValue<unknown>(fd, camelKey, snakeKey);
+  if (v && (typeof v === 'object' || (typeof v === 'string' && v.trim()))) {
+    return v as QueryFormMetric;
+  }
+  if (legacyTextKey) {
+    const legacy = getFormDataValue<string>(fd, legacyTextKey.camel, legacyTextKey.snake);
+    if (legacy && legacy.trim()) return legacy.trim() as QueryFormMetric;
+  }
+  return fallback as QueryFormMetric;
+}
+
+/** Public helper — те же resolvers экспортируем для transformProps. */
+export const resolvers = { resolveColumn, resolveMetric };
+
+/**
  * Собирает запрос к dataset.
  *
  * columns — набор dimensions, которые таблица рисует в колонке «Магазин».
@@ -73,77 +154,43 @@ export default function buildQuery(formData: RankedStoresFormData) {
         label: '__mock',
       } as QueryFormMetric);
     } else {
-      /* ── Колонки (override → fallback на дефолтное имя) ── */
+      /* ── Колонки (D&D zone → legacy text-override → дефолт) ── */
       const seenCols = new Set<string>();
-      const pushCol = (v: string | undefined, fallback: string): void => {
-        const val = v && v.trim() ? v.trim() : fallback;
+      const pushCol = (val: string): void => {
         if (val && !seenCols.has(val)) {
           seenCols.add(val);
-          columns.push(val);
+          columns.push(val as QueryFormColumn);
         }
       };
-      pushCol(
-        getFormDataValue<string>(fd, 'storeIdCol', 'store_id_col'),
-        BUILD_QUERY_DEFAULTS.storeIdCol,
-      );
-      pushCol(
-        getFormDataValue<string>(fd, 'storeNameCol', 'store_name_col'),
-        BUILD_QUERY_DEFAULTS.storeNameCol,
-      );
-      pushCol(
-        getFormDataValue<string>(fd, 'cityCol', 'city_col'),
-        BUILD_QUERY_DEFAULTS.cityCol,
-      );
-      pushCol(
-        getFormDataValue<string>(fd, 'formatCol', 'format_col'),
-        BUILD_QUERY_DEFAULTS.formatCol,
-      );
-      pushCol(
-        getFormDataValue<string>(fd, 'formatNameCol', 'format_name_col'),
-        BUILD_QUERY_DEFAULTS.formatNameCol,
-      );
-      pushCol(
-        getFormDataValue<string>(fd, 'divisionCol', 'division_col'),
-        BUILD_QUERY_DEFAULTS.divisionCol,
-      );
-      pushCol(
-        getFormDataValue<string>(fd, 'toClassCol', 'to_class_col'),
-        BUILD_QUERY_DEFAULTS.toClassCol,
-      );
+      pushCol(resolveColumn(fd, 'groupbyStoreId', 'groupby_store_id', BUILD_QUERY_DEFAULTS.storeIdCol, { camel: 'storeIdCol', snake: 'store_id_col' }));
+      pushCol(resolveColumn(fd, 'groupbyStoreName', 'groupby_store_name', BUILD_QUERY_DEFAULTS.storeNameCol, { camel: 'storeNameCol', snake: 'store_name_col' }));
+      pushCol(resolveColumn(fd, 'groupbyCity', 'groupby_city', BUILD_QUERY_DEFAULTS.cityCol, { camel: 'cityCol', snake: 'city_col' }));
+      pushCol(resolveColumn(fd, 'groupbyFormat', 'groupby_format', BUILD_QUERY_DEFAULTS.formatCol, { camel: 'formatCol', snake: 'format_col' }));
+      pushCol(resolveColumn(fd, 'groupbyFormatName', 'groupby_format_name', BUILD_QUERY_DEFAULTS.formatNameCol, { camel: 'formatNameCol', snake: 'format_name_col' }));
+      pushCol(resolveColumn(fd, 'groupbyDivision', 'groupby_division', BUILD_QUERY_DEFAULTS.divisionCol, { camel: 'divisionCol', snake: 'division_col' }));
+      pushCol(resolveColumn(fd, 'groupbyToClass', 'groupby_to_class', BUILD_QUERY_DEFAULTS.toClassCol, { camel: 'toClassCol', snake: 'to_class_col' }));
 
-      /* ── Метрики ── */
-      const seenMetrics = new Set<string>();
-      const pushMetric = (m: string | undefined, fallback: string): void => {
-        const val = m && m.trim() ? m.trim() : fallback;
-        if (val && !seenMetrics.has(val)) {
-          seenMetrics.add(val);
-          metrics.push(val as QueryFormMetric);
+      /* ── Метрики (D&D zone → legacy text-override → дефолт) ── */
+      const seenMetricLabels = new Set<string>();
+      const pushMetric = (
+        camel: string,
+        snake: string,
+        fallback: string,
+        legacy?: { camel: string; snake: string },
+      ): void => {
+        const m = resolveMetricForQuery(fd, camel, snake, fallback, legacy);
+        const lbl = typeof m === 'string' ? m : getMetricLabel(m as never) ?? '';
+        if (lbl && !seenMetricLabels.has(lbl)) {
+          seenMetricLabels.add(lbl);
+          metrics.push(m);
         }
       };
-      pushMetric(
-        getFormDataValue<string>(fd, 'writeoffMetric', 'writeoff_metric'),
-        BUILD_QUERY_DEFAULTS.writeoffMetric,
-      );
-      pushMetric(
-        getFormDataValue<string>(fd, 'shrinkageMetric', 'shrinkage_metric'),
-        BUILD_QUERY_DEFAULTS.shrinkageMetric,
-      );
-      pushMetric(
-        getFormDataValue<string>(fd, 'planWriteoffMetric', 'plan_writeoff_metric'),
-        BUILD_QUERY_DEFAULTS.planWriteoffMetric,
-      );
-      pushMetric(
-        getFormDataValue<string>(fd, 'planShrinkageMetric', 'plan_shrinkage_metric'),
-        BUILD_QUERY_DEFAULTS.planShrinkageMetric,
-      );
-      pushMetric(
-        getFormDataValue<string>(fd, 'avgWriteoffMetric', 'avg_writeoff_metric'),
-        BUILD_QUERY_DEFAULTS.avgWriteoffMetric,
-      );
-      pushMetric(
-        getFormDataValue<string>(fd, 'avgShrinkageCheckMetric', 'avg_shrinkage_check_metric'),
-        BUILD_QUERY_DEFAULTS.avgShrinkageCheckMetric,
-      );
+      pushMetric('metricWriteoff', 'metric_writeoff', BUILD_QUERY_DEFAULTS.writeoffMetric, { camel: 'writeoffMetric', snake: 'writeoff_metric' });
+      pushMetric('metricShrinkage', 'metric_shrinkage', BUILD_QUERY_DEFAULTS.shrinkageMetric, { camel: 'shrinkageMetric', snake: 'shrinkage_metric' });
+      pushMetric('metricPlanWriteoff', 'metric_plan_writeoff', BUILD_QUERY_DEFAULTS.planWriteoffMetric, { camel: 'planWriteoffMetric', snake: 'plan_writeoff_metric' });
+      pushMetric('metricPlanShrinkage', 'metric_plan_shrinkage', BUILD_QUERY_DEFAULTS.planShrinkageMetric, { camel: 'planShrinkageMetric', snake: 'plan_shrinkage_metric' });
+      pushMetric('metricAvgWriteoff', 'metric_avg_writeoff', BUILD_QUERY_DEFAULTS.avgWriteoffMetric, { camel: 'avgWriteoffMetric', snake: 'avg_writeoff_metric' });
+      pushMetric('metricAvgShrinkageCheck', 'metric_avg_shrinkage_check', BUILD_QUERY_DEFAULTS.avgShrinkageCheckMetric, { camel: 'avgShrinkageCheckMetric', snake: 'avg_shrinkage_check_metric' });
     }
 
     const {

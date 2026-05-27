@@ -71,10 +71,7 @@ export default function transformProps(chartProps) {
     // DS 2.0: subheader fallback на локализованный time_range («Last year» → «за год»).
     const userSubheader = formData.subheaderText;
     const fdRecAll = formData;
-    const subheaderText = userSubheader?.trim() ||
-        formatTimeRangeRu(fdRecAll['time_range'] ??
-            fdRecAll['timeRange']) ||
-        'Факт vs план vs ПГ';
+    const subheaderText = userSubheader?.trim() || '';
     const formatters = makeFormatters({
         decimals,
         suffix: valueSuffix,

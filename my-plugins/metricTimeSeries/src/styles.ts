@@ -60,7 +60,12 @@ export const KEYFRAMES_CSS = `
 
 /* ── Root ── */
 
-export const Root = styled.div<{ width: number; height: number }>`
+/* DS v2.0: $width/$height (transient props). Superset Explore не задаёт
+   parent (.ext_writeoffs_timeseries) explicit height — % размеры
+   коллапсируют до intrinsic content size (CardHead = 32px). Только
+   explicit px от ChartProps надёжно растягивает Root до outer
+   ResizableContainer. Reference: leaderboard styles.ts:Root. */
+export const Root = styled.div<{ $width: number; $height: number }>`
   --bg: ${L.bg};
   --s: ${L.s};
   --ink: ${L.ink};
@@ -123,8 +128,8 @@ export const Root = styled.div<{ width: number; height: number }>`
     --sh: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
 
-  width: 100%;
-  height: 100%;
+  width: ${p => p.$width}px;
+  height: ${p => p.$height}px;
   /* DS v2.0: container query для fluid типографики */
   container-type: inline-size;
   container-name: mts;
@@ -348,6 +353,16 @@ export const UnitButton = styled.button<{ active?: boolean }>`
    внутренняя absolute-панель содержит trigger + options как единый
    блок (общий border, bg, radius — без зазора между ними). */
 
+/* ── Dropdown (portal-based, v2) ──
+ *
+ * Trigger — icon-only кнопка 30x30 (DropdownTrigger). Меню рендерится
+ * через React Portal в document.body (DropdownMenuPortal) — выходит
+ * за Card overflow:hidden + contain:strict, никакой z-index возни.
+ *
+ * Visual паттерн 1-в-1 с старым DropdownPanel (g100 bg, g200 border).
+ * Хитрого скрытия active option больше нет — он показан выделенным.
+ */
+
 export const DropdownRoot = styled.div`
   position: relative;
   display: inline-block;
@@ -356,38 +371,70 @@ export const DropdownRoot = styled.div`
   vertical-align: top;
 `;
 
-export const DropdownPanel = styled.div<{ open?: boolean }>`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+/* Trigger 30×30. При open=true low-radius/border-bottom убираются —
+   склеивается с portal-меню в один блок (см. DropdownMenuPortal). */
+export const DropdownTrigger = styled.button<{ open?: boolean }>`
+  box-sizing: border-box;
+  appearance: none;
   background: var(--g100);
   border: 1px solid ${({ open }) => (open ? 'var(--g300)' : 'var(--g200)')};
   border-radius: 6px;
-  overflow: hidden;
-  transition: border-color 0.15s ${EASE};
-  z-index: ${({ open }) => (open ? 200 : 1)};
+  ${({ open }) =>
+    open &&
+    `
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-color: transparent;
+  `}
+  color: var(--g600);
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: border-color 0.15s ${EASE}, color 0.15s ${EASE};
 
-  /* При открытом меню trigger отделяется от options тонкой линией. */
-  &[data-open='true'] > button:first-child {
-    border-bottom: 1px solid var(--g200);
+  &:hover:not(:disabled) {
+    border-color: var(--g300);
+    color: var(--ink);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-sky);
+    outline-offset: -2px;
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
   }
 `;
 
-export const DropdownMenu = styled.div`
-  /* Icon-only options stack — внутри DropdownPanel под trigger'ом, БЕЗ
-     position absolute (часть нормального flow внутри Panel). bg/border/
-     radius даёт Panel. Анимация только при появлении options. */
+/* Меню в portal. Top без радиусов и без верхней рамки — стыкуется
+   с DropdownTrigger в единый блок. Position задаётся inline-style
+   ровно под trigger (top = trigger.bottom, без gap). */
+export const DropdownMenuPortal = styled.div`
+  position: fixed;
+  box-sizing: border-box;
+  background: var(--g100);
+  border: 1px solid var(--g300);
+  border-top: 1px solid var(--g200);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
   display: flex;
   flex-direction: column;
-  width: 100%;
   animation: wo-dd-fade 0.12s ${EASE};
-`;
 
-export const DropdownItemRow = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  &[data-theme='dark'] {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
 `;
 
 export const DropdownItemIcon = styled.span`
@@ -403,13 +450,13 @@ export const DropdownItemIcon = styled.span`
   }
 `;
 
+/* Active option скрыт в menu — он уже показан в trigger. Остаются
+   только не-active варианты, как в исходном мокапе. */
 export const DropdownItem = styled.button<{ active?: boolean }>`
-  /* 1-в-1 с мокапом .icon-dd-item: активный пункт СКРЫТ (он уже
-     показан в trigger вверху), остальные — transparent с hover-bg. */
   appearance: none;
   border: none;
   background: transparent;
-  color: var(--g500);
+  color: var(--g600);
   cursor: pointer;
   width: 100%;
   height: 28px;
@@ -418,7 +465,7 @@ export const DropdownItem = styled.button<{ active?: boolean }>`
   justify-content: center;
   padding: 0;
   border-radius: 0;
-  transition: all 0.12s ${EASE};
+  transition: background 0.12s ${EASE}, color 0.12s ${EASE};
 
   &:hover {
     background: var(--g200);

@@ -9,10 +9,13 @@ import { t } from '@superset-ui/core';
  * ControlPanel плагина «Рейтинг магазинов».
  *
  * Секции:
- *   1. Time — стандартные time_range / granularity_sqla / adhoc_filters.
- *   2. Режим проектирования — mock-данные для согласования дизайна.
- *   3. Настройки отображения — row_limit, default_sort, period_label.
- *   4. Сопоставление колонок — text-overrides имён полей/метрик.
+ *   1. Time — стандартные time_range / granularity_sqla (Данные).
+ *   2. Запрос — adhoc_filters + row_limit (Данные, стандарт Superset).
+ *   3. Режим проектирования — mock-данные для согласования дизайна (Кастомизация).
+ *   4. Отображение — default_sort, page_size, period_label (Кастомизация).
+ *
+ * Имена столбцов/метрик в dataset — дефолтные (см. BUILD_QUERY_DEFAULTS в
+ * buildQuery.ts: store_id, store_name, writeoff_pct и т.д.).
  *
  * Весь UI-текст на русском (правило CLAUDE.md).
  */
@@ -56,10 +59,196 @@ const config: ControlPanelConfig = {
   controlPanelSections: [
     sections.legacyTimeseriesTime,
 
-    // ── 1. Режим проектирования ───────────────────────────────────
+    // ── 1. Запрос (Данные) ───────────────────────────────────────
+    {
+      label: t('Запрос'),
+      expanded: false,
+      description: t(
+        'Перетащите столбцы и метрики из левой панели. Если поле оставить пустым — ' +
+          'плагин использует дефолтное имя из dataset (см. описание каждого поля).',
+      ),
+      controlSetRows: [
+        ['adhoc_filters'],
+
+        // ── Метрики ──
+        [
+          {
+            name: 'metric_writeoff',
+            config: {
+              ...sharedControls.metric,
+              label: t('% Списаний'),
+              description: t('Дефолт: writeoff_pct'),
+              validators: [],
+            },
+          },
+        ],
+        [
+          {
+            name: 'metric_shrinkage',
+            config: {
+              ...sharedControls.metric,
+              label: t('% Недостач'),
+              description: t('Дефолт: shrinkage_pct'),
+              validators: [],
+            },
+          },
+        ],
+        [
+          {
+            name: 'metric_plan_writeoff',
+            config: {
+              ...sharedControls.metric,
+              label: t('План % списаний'),
+              description: t('Дефолт: plan_writeoff_pct'),
+              validators: [],
+            },
+          },
+        ],
+        [
+          {
+            name: 'metric_plan_shrinkage',
+            config: {
+              ...sharedControls.metric,
+              label: t('План % недостач'),
+              description: t('Дефолт: plan_shrinkage_pct'),
+              validators: [],
+            },
+          },
+        ],
+        [
+          {
+            name: 'metric_avg_writeoff',
+            config: {
+              ...sharedControls.metric,
+              label: t('Ср. сумма списания (₽)'),
+              description: t('Дефолт: avg_writeoff_rub'),
+              validators: [],
+            },
+          },
+        ],
+        [
+          {
+            name: 'metric_avg_shrinkage_check',
+            config: {
+              ...sharedControls.metric,
+              label: t('Ср. чек недостачи (₽)'),
+              description: t('Дефолт: avg_shrinkage_check_rub'),
+              validators: [],
+            },
+          },
+        ],
+
+        // ── Измерения ──
+        [
+          {
+            name: 'groupby_store_id',
+            config: {
+              ...sharedControls.groupby,
+              label: t('ID магазина'),
+              description: t('Дефолт: store_id'),
+              multi: false,
+              validators: [],
+            },
+          },
+        ],
+        [
+          {
+            name: 'groupby_store_name',
+            config: {
+              ...sharedControls.groupby,
+              label: t('Название магазина'),
+              description: t('Дефолт: store_name'),
+              multi: false,
+              validators: [],
+            },
+          },
+        ],
+        [
+          {
+            name: 'groupby_city',
+            config: {
+              ...sharedControls.groupby,
+              label: t('Город'),
+              description: t('Дефолт: city'),
+              multi: false,
+              validators: [],
+            },
+          },
+        ],
+        [
+          {
+            name: 'groupby_format',
+            config: {
+              ...sharedControls.groupby,
+              label: t('Формат (код)'),
+              description: t(
+                'Код формата: express / minimarket / super / home / superstore. ' +
+                  'Дефолт: format',
+              ),
+              multi: false,
+              validators: [],
+            },
+          },
+        ],
+        [
+          {
+            name: 'groupby_format_name',
+            config: {
+              ...sharedControls.groupby,
+              label: t('Название формата'),
+              description: t('Дефолт: format_name'),
+              multi: false,
+              validators: [],
+            },
+          },
+        ],
+        [
+          {
+            name: 'groupby_division',
+            config: {
+              ...sharedControls.groupby,
+              label: t('Дивизион'),
+              description: t('Дефолт: division'),
+              multi: false,
+              validators: [],
+            },
+          },
+        ],
+        [
+          {
+            name: 'groupby_to_class',
+            config: {
+              ...sharedControls.groupby,
+              label: t('ТО (млн ₽)'),
+              description: t('Дефолт: to_class'),
+              multi: false,
+              validators: [],
+            },
+          },
+        ],
+
+        // ── Лимит ──
+        [
+          {
+            name: 'row_limit',
+            config: {
+              ...sharedControls.row_limit,
+              label: t('Лимит строк'),
+              default: 1000,
+              choices: ROW_LIMIT_CHOICES,
+              description: t(
+                'Максимальное число магазинов, загружаемых из dataset.',
+              ),
+            },
+          },
+        ],
+      ],
+    },
+
+    // ── 2. Режим проектирования (Кастомизация) ───────────────────
     {
       label: t('Режим проектирования'),
-      expanded: true,
+      expanded: false,
       controlSetRows: [
         [
           {
@@ -92,25 +281,11 @@ const config: ControlPanelConfig = {
       ],
     },
 
-    // ── 2. Отображение ───────────────────────────────────────────
+    // ── 3. Отображение (Кастомизация) ────────────────────────────
     {
       label: t('Отображение'),
-      expanded: true,
+      expanded: false,
       controlSetRows: [
-        [
-          {
-            name: 'row_limit',
-            config: {
-              ...sharedControls.row_limit,
-              label: t('Лимит строк'),
-              default: 1000,
-              choices: ROW_LIMIT_CHOICES,
-              description: t(
-                'Максимальное число магазинов, загружаемых из dataset.',
-              ),
-            },
-          },
-        ],
         [
           {
             name: 'default_sort',
@@ -160,160 +335,6 @@ const config: ControlPanelConfig = {
       ],
     },
 
-    // ── 3. Сопоставление колонок dataset ─────────────────────────
-    {
-      label: t('Сопоставление колонок'),
-      expanded: false,
-      description: t(
-        'Имена столбцов и метрик, если они отличаются от дефолтов. ' +
-          'По умолчанию плагин ожидает: store_id, store_name, city, format, ' +
-          'format_name, division, to_class, writeoff_pct, shrinkage_pct, ' +
-          'plan_writeoff_pct, plan_shrinkage_pct, avg_writeoff_rub, ' +
-          'avg_shrinkage_check_rub.',
-      ),
-      controlSetRows: [
-        [
-          {
-            name: 'store_id_col',
-            config: {
-              type: 'TextControl',
-              label: t('Столбец ID магазина'),
-              default: 'store_id',
-              renderTrigger: false,
-            },
-          },
-          {
-            name: 'store_name_col',
-            config: {
-              type: 'TextControl',
-              label: t('Столбец названия'),
-              default: 'store_name',
-              renderTrigger: false,
-            },
-          },
-        ],
-        [
-          {
-            name: 'city_col',
-            config: {
-              type: 'TextControl',
-              label: t('Столбец города'),
-              default: 'city',
-              renderTrigger: false,
-            },
-          },
-          {
-            name: 'format_col',
-            config: {
-              type: 'TextControl',
-              label: t('Столбец формата'),
-              default: 'format',
-              renderTrigger: false,
-            },
-          },
-        ],
-        [
-          {
-            name: 'format_name_col',
-            config: {
-              type: 'TextControl',
-              label: t('Столбец названия формата'),
-              default: 'format_name',
-              renderTrigger: false,
-            },
-          },
-          {
-            name: 'division_col',
-            config: {
-              type: 'TextControl',
-              label: t('Столбец дивизиона'),
-              default: 'division',
-              renderTrigger: false,
-            },
-          },
-        ],
-        [
-          {
-            name: 'to_class_col',
-            config: {
-              type: 'TextControl',
-              label: t('Столбец ТО (млн ₽)'),
-              default: 'to_class',
-              renderTrigger: false,
-            },
-          },
-          {
-            name: 'segment_id_col',
-            config: {
-              type: 'TextControl',
-              label: t('Столбец ID сегмента (для cross-filter)'),
-              default: 'segment_id',
-              renderTrigger: false,
-            },
-          },
-        ],
-        [
-          {
-            name: 'writeoff_metric',
-            config: {
-              type: 'TextControl',
-              label: t('Метрика % списаний'),
-              default: 'writeoff_pct',
-              renderTrigger: false,
-            },
-          },
-          {
-            name: 'shrinkage_metric',
-            config: {
-              type: 'TextControl',
-              label: t('Метрика % недостач'),
-              default: 'shrinkage_pct',
-              renderTrigger: false,
-            },
-          },
-        ],
-        [
-          {
-            name: 'plan_writeoff_metric',
-            config: {
-              type: 'TextControl',
-              label: t('Метрика плана списаний'),
-              default: 'plan_writeoff_pct',
-              renderTrigger: false,
-            },
-          },
-          {
-            name: 'plan_shrinkage_metric',
-            config: {
-              type: 'TextControl',
-              label: t('Метрика плана недостач'),
-              default: 'plan_shrinkage_pct',
-              renderTrigger: false,
-            },
-          },
-        ],
-        [
-          {
-            name: 'avg_writeoff_metric',
-            config: {
-              type: 'TextControl',
-              label: t('Метрика ср. суммы списания (₽)'),
-              default: 'avg_writeoff_rub',
-              renderTrigger: false,
-            },
-          },
-          {
-            name: 'avg_shrinkage_check_metric',
-            config: {
-              type: 'TextControl',
-              label: t('Метрика ср. чека недостачи (₽)'),
-              default: 'avg_shrinkage_check_rub',
-              renderTrigger: false,
-            },
-          },
-        ],
-      ],
-    },
   ],
 };
 

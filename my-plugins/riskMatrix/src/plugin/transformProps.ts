@@ -494,12 +494,7 @@ export default function transformProps(chartProps: ChartProps): ScatterRiskProps
     enableQuadrantAnnotations: (formData.enableQuadrantAnnotations as boolean | undefined) ?? true,
     enableWorstStar: (formData.enableWorstStar as boolean | undefined) ?? true,
     title: (formData.title as string | undefined) || 'Матрица рисков',
-    subtitle:
-      (formData.subtitle as string | undefined)?.trim() ||
-      formatTimeRangeRu(
-        (formData.time_range as string | undefined) ??
-          (formData.timeRange as string | undefined),
-      ),
+    subtitle: (formData.subtitle as string | undefined)?.trim() || '',
     xLabel,
     yLabel,
     xUnit,

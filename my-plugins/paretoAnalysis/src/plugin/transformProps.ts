@@ -69,8 +69,7 @@ export default function transformProps(chartProps: ChartProps): ParetoCardProps 
   const timeRange = (formData as Record<string, unknown>).time_range as
     | string
     | undefined;
-  const subtitleText =
-    formData.subtitleText?.trim() || formatTimeRangeRu(timeRange);
+  const subtitleText = formData.subtitleText?.trim() || '';
 
   // ── Mock mode — early return ──
   if (formData.mockModeEnabled) {

@@ -267,9 +267,7 @@ export default function transformProps(chartProps) {
         autoFormatRussian: fd.autoFormatRussian ?? true,
         showTotalsDefault: fd.showTotals ?? false,
         headerText: fd.headerText ?? 'Heatmap Pivot',
-        headerSubtitle: fd.headerSubtitle ??
-            formatTimeRangeRu(fdRec.time_range ??
-                fdRec.timeRange),
+        headerSubtitle: fd.headerSubtitle ?? '',
         emitFilter,
         setDataMask,
         drillQueryParams,

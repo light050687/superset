@@ -7,7 +7,7 @@ const config = {
         // ── Режим проектирования ──
         {
             label: t('Режим проектирования'),
-            expanded: true,
+            expanded: false,
             controlSetRows: [
                 [
                     {
@@ -39,7 +39,7 @@ const config = {
         // ── Запрос ──
         {
             label: t('Запрос'),
-            expanded: true,
+            expanded: false,
             controlSetRows: [
                 ['adhoc_filters'],
                 [

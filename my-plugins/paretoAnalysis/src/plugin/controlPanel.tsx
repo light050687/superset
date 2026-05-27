@@ -21,7 +21,7 @@ const config: ControlPanelConfig = {
     // ── 2. Режим проектирования ──
     {
       label: t('Режим проектирования'),
-      expanded: true,
+      expanded: false,
       controlSetRows: [
         [
           {
@@ -78,7 +78,7 @@ const config: ControlPanelConfig = {
     // ── 3. Запрос ──
     {
       label: t('Запрос'),
-      expanded: true,
+      expanded: false,
       controlSetRows: [
         [
           {

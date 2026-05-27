@@ -13,7 +13,7 @@ const config = {
         // ── 2. Query ───────────────────────────────────────────────────────────
         {
             label: t('Запрос'),
-            expanded: true,
+            expanded: false,
             controlSetRows: [
                 [
                     {
@@ -23,7 +23,10 @@ const config = {
                             label: t('Измерение (категория)'),
                             description: t('Основное измерение — например, «Причина списания» или «Категория товара».'),
                             multi: false,
-                            required: true,
+                            /* НЕ required — валидация в transformProps. Плагин работает на mock
+                               без БД-метрик; обязательность ломает первый mount (state.controls
+                               ещё не имеет default mock_mode_enabled=true → false warning). */
+                            validators: [],
                         },
                     },
                 ],
@@ -72,7 +75,8 @@ const config = {
                             ...sharedControls.metric,
                             label: t('Основная метрика'),
                             description: t('Численное значение для ранжирования — например SUM(loss_amount).'),
-                            required: true,
+                            /* НЕ required — валидация в transformProps. */
+                            validators: [],
                         },
                     },
                 ],
@@ -84,7 +88,7 @@ const config = {
                             label: t('Метрика прошлого периода'),
                             description: t('Значение для расчёта дельты и пунктирного ghost-бара. ' +
                                 'Если не задано — сортировка по дельте и ghost-бар недоступны.'),
-                            required: false,
+                            validators: [],
                         },
                     },
                 ],
@@ -105,7 +109,7 @@ const config = {
         // ── 3. Ranking ─────────────────────────────────────────────────────────
         {
             label: t('Рейтинг и сортировка'),
-            expanded: true,
+            expanded: false,
             controlSetRows: [
                 [
                     {
@@ -160,7 +164,7 @@ const config = {
         // ── 4. Display ─────────────────────────────────────────────────────────
         {
             label: t('Отображение'),
-            expanded: true,
+            expanded: false,
             controlSetRows: [
                 [
                     {
@@ -412,7 +416,7 @@ const config = {
                             label: t('Включить режим проектирования'),
                             description: t('Показывает тестовые данные (22 причины списаний или 16 категорий расходов) ' +
                                 'для согласования дизайна без БД.'),
-                            default: false,
+                            default: true,
                             renderTrigger: true,
                         },
                     },

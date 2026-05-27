@@ -193,9 +193,7 @@ function transformProps(chartProps) {
     const headerText = formData.headerText || 'Динамика списаний';
     const fdRec = formData;
     const userSubtitle = formData.subtitleText;
-    const subtitleText = userSubtitle?.trim() ||
-        formatTimeRangeRu(fdRec['time_range'] ??
-            fdRec['timeRange']);
+    const subtitleText = userSubtitle?.trim() || '';
     // Number formatting: auto-scaling by magnitude (тыс/млн/млрд) + user suffix.
     // Default suffix is "₽" — fmtSmart applies the correct prefix based on value magnitude.
     const userSuffix = formData.valueSuffix ?? '₽';

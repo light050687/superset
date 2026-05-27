@@ -29,7 +29,7 @@ const config: ControlPanelConfig = {
     // ── 2. Query ───────────────────────────────────────────────────────────
     {
       label: t('Запрос'),
-      expanded: true,
+      expanded: false,
       controlSetRows: [
         [
           {
@@ -41,7 +41,10 @@ const config: ControlPanelConfig = {
                 'Основное измерение — например, «Причина списания» или «Категория товара».',
               ),
               multi: false,
-              required: true,
+              /* НЕ required — валидация в transformProps. Плагин работает на mock
+                 без БД-метрик; обязательность ломает первый mount (state.controls
+                 ещё не имеет default mock_mode_enabled=true → false warning). */
+              validators: [],
             },
           },
         ],
@@ -98,7 +101,8 @@ const config: ControlPanelConfig = {
               description: t(
                 'Численное значение для ранжирования — например SUM(loss_amount).',
               ),
-              required: true,
+              /* НЕ required — валидация в transformProps. */
+              validators: [],
             },
           },
         ],
@@ -112,7 +116,7 @@ const config: ControlPanelConfig = {
                 'Значение для расчёта дельты и пунктирного ghost-бара. ' +
                   'Если не задано — сортировка по дельте и ghost-бар недоступны.',
               ),
-              required: false,
+              validators: [],
             },
           },
         ],
@@ -136,7 +140,7 @@ const config: ControlPanelConfig = {
     // ── 3. Ranking ─────────────────────────────────────────────────────────
     {
       label: t('Рейтинг и сортировка'),
-      expanded: true,
+      expanded: false,
       controlSetRows: [
         [
           {
@@ -194,7 +198,7 @@ const config: ControlPanelConfig = {
     // ── 4. Display ─────────────────────────────────────────────────────────
     {
       label: t('Отображение'),
-      expanded: true,
+      expanded: false,
       controlSetRows: [
         [
           {
@@ -466,7 +470,7 @@ const config: ControlPanelConfig = {
                 'Показывает тестовые данные (22 причины списаний или 16 категорий расходов) ' +
                   'для согласования дизайна без БД.',
               ),
-              default: false,
+              default: true,
               renderTrigger: true,
             },
           },

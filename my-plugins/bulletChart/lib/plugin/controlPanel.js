@@ -26,7 +26,7 @@ const config = {
                             label: (0, core_1.t)('Включить режим проектирования'),
                             description: (0, core_1.t)('Показывает тестовые данные для согласования дизайна дашборда. ' +
                                 'Выключите когда реальные данные будут готовы.'),
-                            default: false,
+                            default: true,
                             renderTrigger: true,
                         },
                     },
@@ -63,6 +63,7 @@ const config = {
                                 '"plan":2.0,"py":2.5,"spark":[1,2,3,4,5,6,7,8]}, ...]'),
                             default: '[]',
                             language: 'json',
+                            renderTrigger: true,
                             visibility: isMockCustom,
                         },
                     },
@@ -72,7 +73,7 @@ const config = {
         // ── 2. Запрос — Данные ──
         {
             label: (0, core_1.t)('Запрос — Данные'),
-            expanded: true,
+            expanded: false,
             controlSetRows: [
                 ['adhoc_filters'],
                 [

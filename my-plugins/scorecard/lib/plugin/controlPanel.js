@@ -36,7 +36,7 @@ const config = {
                             label: (0, core_1.t)('Включить режим проектирования'),
                             description: (0, core_1.t)('Показывает тестовые данные для согласования дизайна дашборда. ' +
                                 'Выключите когда реальные данные будут готовы.'),
-                            default: false,
+                            default: true,
                             renderTrigger: true,
                         },
                     },
@@ -73,6 +73,7 @@ const config = {
                                 '"groupCount": 20, "childrenPerGroup": 5}'),
                             default: '{}',
                             language: 'json',
+                            renderTrigger: true,
                             visibility: isMockCustom,
                         },
                     },
@@ -82,7 +83,7 @@ const config = {
         // ── Section 3: Query — Mode A ──
         {
             label: (0, core_1.t)('Запрос — Режим А'),
-            expanded: true,
+            expanded: false,
             controlSetRows: [
                 ['adhoc_filters'], // DnD validator for columns+metrics → DatasourcePanel shows data
                 [

@@ -42,7 +42,7 @@ function transformProps(chartProps) {
     const tokens = isDarkMode ? themeTokens_1.DARK_TOKENS : themeTokens_1.LIGHT_TOKENS;
     // Header + subtitle (UI строки на русском — по умолчанию из прототипа)
     const headerText = fd.headerText?.trim() || 'Структура потерь';
-    const subtitleText = fd.subtitleText?.trim() || 'за год';
+    const subtitleText = fd.subtitleText?.trim() || '';
     // Style props
     const padAngle = typeof fd.padAngle === 'number' ? fd.padAngle : 1.5;
     const borderRadius = typeof fd.borderRadius === 'number' ? fd.borderRadius : 2;

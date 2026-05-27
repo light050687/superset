@@ -35,7 +35,7 @@ const config = {
                             label: t('Включить режим проектирования'),
                             description: t('Показывает синтетические данные (400 магазинов) для согласования ' +
                                 'дизайна без подключения датасета.'),
-                            default: false,
+                            default: true,
                             renderTrigger: true,
                         },
                     },
@@ -58,7 +58,7 @@ const config = {
         // ── Запрос ──
         {
             label: t('Запрос'),
-            expanded: true,
+            expanded: false,
             controlSetRows: [
                 [
                     {
@@ -104,6 +104,7 @@ const config = {
                             ...sharedControls.metric,
                             label: t('Метрика X'),
                             description: t('Горизонтальная ось (например, % списаний).'),
+                            validators: [],
                         },
                     },
                 ],
@@ -114,6 +115,7 @@ const config = {
                             ...sharedControls.metric,
                             label: t('Метрика Y'),
                             description: t('Вертикальная ось (например, % недостач).'),
+                            validators: [],
                         },
                     },
                 ],
@@ -169,7 +171,7 @@ const config = {
         // ── Отображение ──
         {
             label: t('Отображение'),
-            expanded: true,
+            expanded: false,
             controlSetRows: [
                 [
                     {

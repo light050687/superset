@@ -1017,6 +1017,8 @@ const ScatterRisk = (props) => {
     // DS 2.0 canonical: loading имеет свой раздельный return со своим CardRoot.
     // При переходе loading → loaded React unmount'ит loading-CardRoot и mount'ит
     // новый → cardInKf animation запускается ровно когда юзер видит контент.
+    // NB: dataState типизирован как 'empty'|'partial'|'stale'|'populated', но
+    // Superset chartStatus может прокидывать 'loading' runtime — каст через unknown.
     if (dataState === 'loading') {
         return (_jsxs(CardRoot, { "data-theme": themeMode, role: "region", "aria-busy": "true", "data-no-anim": "", children: [_jsx("style", { children: KEYFRAMES_CSS }), _jsx(CardHead, { children: _jsx(TitleBlock, { children: _jsxs(CardTitle, { children: [title, mockModeEnabled && _jsx(MockBadge, { children: "\u0422\u0415\u0421\u0422" })] }) }) }), _jsx("div", { role: "status", "aria-label": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430", style: { flex: 1 } })] }));
     }

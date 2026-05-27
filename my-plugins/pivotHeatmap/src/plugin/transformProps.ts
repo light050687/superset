@@ -358,12 +358,7 @@ export default function transformProps(
     autoFormatRussian: fd.autoFormatRussian ?? true,
     showTotalsDefault: fd.showTotals ?? false,
     headerText: fd.headerText ?? 'Heatmap Pivot',
-    headerSubtitle:
-      fd.headerSubtitle ??
-      formatTimeRangeRu(
-        (fdRec.time_range as string | undefined) ??
-          (fdRec.timeRange as string | undefined),
-      ),
+    headerSubtitle: fd.headerSubtitle ?? '',
     emitFilter,
     setDataMask,
     drillQueryParams,

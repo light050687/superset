@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SrLive = exports.StaleLabel = exports.StaleBar = exports.PartialBadge = exports.MockBadge = exports.ErrorStateText = exports.ErrorStateIcon = exports.ErrorStateWrap = exports.EmptyStateText = exports.EmptyStateIcon = exports.EmptyStateWrap = exports.SkeletonBlock = exports.SkeletonWrap = exports.FooterSpacer = exports.LegendSeparator = exports.LegendLabel = exports.LegendMark = exports.LegendItem = exports.LegendRow = exports.HintItem = exports.Hint = exports.CardFooter = exports.BrushButton = exports.ChartInner = exports.ChartWrap = exports.DropdownItem = exports.DropdownItemIcon = exports.DropdownItemRow = exports.DropdownMenu = exports.DropdownPanel = exports.DropdownRoot = exports.UnitButton = exports.UnitToggleGroup = exports.IconButton = exports.Controls = exports.BreadcrumbBack = exports.Breadcrumb = exports.Title = exports.TitleWrap = exports.CardHead = exports.Card = exports.Root = exports.KEYFRAMES_CSS = exports.CARD_CLASS = void 0;
+exports.SrLive = exports.StaleLabel = exports.StaleBar = exports.PartialBadge = exports.MockBadge = exports.ErrorStateText = exports.ErrorStateIcon = exports.ErrorStateWrap = exports.EmptyStateText = exports.EmptyStateIcon = exports.EmptyStateWrap = exports.SkeletonBlock = exports.SkeletonWrap = exports.FooterSpacer = exports.LegendSeparator = exports.LegendLabel = exports.LegendMark = exports.LegendItem = exports.LegendRow = exports.HintItem = exports.Hint = exports.CardFooter = exports.BrushButton = exports.ChartInner = exports.ChartWrap = exports.DropdownItem = exports.DropdownItemIcon = exports.DropdownMenuPortal = exports.DropdownTrigger = exports.DropdownRoot = exports.UnitButton = exports.UnitToggleGroup = exports.IconButton = exports.Controls = exports.BreadcrumbBack = exports.Breadcrumb = exports.Title = exports.TitleWrap = exports.CardHead = exports.Card = exports.Root = exports.KEYFRAMES_CSS = exports.CARD_CLASS = void 0;
 const core_1 = require("@superset-ui/core");
 const react_1 = require("@emotion/react");
 const themeTokens_1 = require("./themeTokens");
@@ -55,6 +55,11 @@ exports.KEYFRAMES_CSS = `
 }
 `;
 /* ── Root ── */
+/* DS v2.0: $width/$height (transient props). Superset Explore не задаёт
+   parent (.ext_writeoffs_timeseries) explicit height — % размеры
+   коллапсируют до intrinsic content size (CardHead = 32px). Только
+   explicit px от ChartProps надёжно растягивает Root до outer
+   ResizableContainer. Reference: leaderboard styles.ts:Root. */
 exports.Root = core_1.styled.div `
   --bg: ${themeTokens_1.LIGHT_TOKENS.bg};
   --s: ${themeTokens_1.LIGHT_TOKENS.s};
@@ -118,8 +123,8 @@ exports.Root = core_1.styled.div `
     --sh: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
 
-  width: 100%;
-  height: 100%;
+  width: ${p => p.$width}px;
+  height: ${p => p.$height}px;
   /* DS v2.0: container query для fluid типографики */
   container-type: inline-size;
   container-name: mts;
@@ -330,6 +335,15 @@ exports.UnitButton = core_1.styled.button `
    .icon-dd-wrap + .icon-dd: внешняя обёртка фиксирует layout 30x30,
    внутренняя absolute-панель содержит trigger + options как единый
    блок (общий border, bg, radius — без зазора между ними). */
+/* ── Dropdown (portal-based, v2) ──
+ *
+ * Trigger — icon-only кнопка 30x30 (DropdownTrigger). Меню рендерится
+ * через React Portal в document.body (DropdownMenuPortal) — выходит
+ * за Card overflow:hidden + contain:strict, никакой z-index возни.
+ *
+ * Visual паттерн 1-в-1 с старым DropdownPanel (g100 bg, g200 border).
+ * Хитрого скрытия active option больше нет — он показан выделенным.
+ */
 exports.DropdownRoot = core_1.styled.div `
   position: relative;
   display: inline-block;
@@ -337,36 +351,68 @@ exports.DropdownRoot = core_1.styled.div `
   height: 30px;
   vertical-align: top;
 `;
-exports.DropdownPanel = core_1.styled.div `
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+/* Trigger 30×30. При open=true low-radius/border-bottom убираются —
+   склеивается с portal-меню в один блок (см. DropdownMenuPortal). */
+exports.DropdownTrigger = core_1.styled.button `
+  box-sizing: border-box;
+  appearance: none;
   background: var(--g100);
   border: 1px solid ${({ open }) => (open ? 'var(--g300)' : 'var(--g200)')};
   border-radius: 6px;
-  overflow: hidden;
-  transition: border-color 0.15s ${EASE};
-  z-index: ${({ open }) => (open ? 200 : 1)};
-
-  /* При открытом меню trigger отделяется от options тонкой линией. */
-  &[data-open='true'] > button:first-child {
-    border-bottom: 1px solid var(--g200);
-  }
-`;
-exports.DropdownMenu = core_1.styled.div `
-  /* Icon-only options stack — внутри DropdownPanel под trigger'ом, БЕЗ
-     position absolute (часть нормального flow внутри Panel). bg/border/
-     radius даёт Panel. Анимация только при появлении options. */
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  animation: wo-dd-fade 0.12s ${EASE};
-`;
-exports.DropdownItemRow = core_1.styled.span `
+  ${({ open }) => open &&
+    `
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-color: transparent;
+  `}
+  color: var(--g600);
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  padding: 0;
+  transition: border-color 0.15s ${EASE}, color 0.15s ${EASE};
+
+  &:hover:not(:disabled) {
+    border-color: var(--g300);
+    color: var(--ink);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-sky);
+    outline-offset: -2px;
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+`;
+/* Меню в portal. Top без радиусов и без верхней рамки — стыкуется
+   с DropdownTrigger в единый блок. Position задаётся inline-style
+   ровно под trigger (top = trigger.bottom, без gap). */
+exports.DropdownMenuPortal = core_1.styled.div `
+  position: fixed;
+  box-sizing: border-box;
+  background: var(--g100);
+  border: 1px solid var(--g300);
+  border-top: 1px solid var(--g200);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  animation: wo-dd-fade 0.12s ${EASE};
+
+  &[data-theme='dark'] {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
 `;
 exports.DropdownItemIcon = core_1.styled.span `
   width: 14px;
@@ -380,13 +426,13 @@ exports.DropdownItemIcon = core_1.styled.span `
     height: 100%;
   }
 `;
+/* Active option скрыт в menu — он уже показан в trigger. Остаются
+   только не-active варианты, как в исходном мокапе. */
 exports.DropdownItem = core_1.styled.button `
-  /* 1-в-1 с мокапом .icon-dd-item: активный пункт СКРЫТ (он уже
-     показан в trigger вверху), остальные — transparent с hover-bg. */
   appearance: none;
   border: none;
   background: transparent;
-  color: var(--g500);
+  color: var(--g600);
   cursor: pointer;
   width: 100%;
   height: 28px;
@@ -395,7 +441,7 @@ exports.DropdownItem = core_1.styled.button `
   justify-content: center;
   padding: 0;
   border-radius: 0;
-  transition: all 0.12s ${EASE};
+  transition: background 0.12s ${EASE}, color 0.12s ${EASE};
 
   &:hover {
     background: var(--g200);

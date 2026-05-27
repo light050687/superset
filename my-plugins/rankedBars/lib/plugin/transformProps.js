@@ -141,10 +141,7 @@ function transformProps(chartProps) {
     // переводим в русский («Last year» → «за год»). DS 2.0 канон.
     const userSubtitle = formData.headerSubtitlePrefix;
     const fdRec = formData;
-    const headerSubtitlePrefix = userSubtitle?.trim() ||
-        formatTimeRangeRu(fdRec['time_range'] ??
-            fdRec['timeRange']) ||
-        'Топ по сумме';
+    const headerSubtitlePrefix = userSubtitle?.trim() || '';
     const showSparkline = formData.showSparkline ?? true;
     const showTotalInHeader = formData.showTotalInHeader ?? true;
     const showGhostPrevBar = formData.showGhostPrevBar ?? true;
