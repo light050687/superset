@@ -33,6 +33,7 @@ import {
   type FC,
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -227,16 +228,22 @@ export const FilterValueModalSelect: FC<FilterValueModalSelectProps> = ({
      добавляются в draft. Сбрасывается при изменении search. */
   const lastClickedIdxRef = useRef<number | null>(null);
 
-  /* Синхронизация draft с внешним value при открытии модалки:
+  /* Синхронизация draft с внешним value при ОТКРЫТИИ модалки:
      если юзер закрыл modal (cancel), а потом снова открыл, draft
      должен показывать текущий committed value, а не последнюю
-     неприменённую правку. */
+     неприменённую правку.
+     Зависимость только от `open` (НЕ от `value`!) — иначе при каждом
+     ре-рендере parent'а, который создаёт новый value-array ref'ом
+     (типичная история с useSelector), эффект пере-стрелит setDraft
+     поверх пользовательской правки, что превращает каждый клик
+     в потенциальный re-render-storm. */
   useEffect(() => {
     if (open) {
       setDraft(toArray(value));
       lastClickedIdxRef.current = null;
     }
-  }, [open, value]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -254,37 +261,42 @@ export const FilterValueModalSelect: FC<FilterValueModalSelectProps> = ({
     lastClickedIdxRef.current = null;
   }, [search]);
 
-  const isSelected = (v: any) => draft.some(d => d === v);
+  /* Set-индекс выбранных значений: O(1) lookup в isSelected вместо
+     O(N) `.some()` на каждый OptionRow (избегаем O(N²) при больших
+     списках). Пересчитывается только при изменении draft. */
+  const selectedSet = useMemo(() => new Set(draft), [draft]);
+  const isSelected = useCallback((v: any) => selectedSet.has(v), [selectedSet]);
 
-  const toggleAt = (idx: number, shiftKey: boolean) => {
-    const opt = filtered[idx];
-    if (!opt) return;
-    const v = opt.value;
+  const toggleAt = useCallback(
+    (idx: number, shiftKey: boolean) => {
+      const opt = filtered[idx];
+      if (!opt) return;
+      const v = opt.value;
 
-    if (!multiSelect) {
-      onChange([v]);
-      setOpen(false);
-      return;
-    }
+      if (!multiSelect) {
+        onChange([v]);
+        setOpen(false);
+        return;
+      }
 
-    if (shiftKey && lastClickedIdxRef.current !== null) {
-      /* Range-select: добавляем в draft все опции от last-clicked-idx
-         до текущего idx (включительно). Если что-то уже выбрано —
-         оставляем; range-action всегда ADD'итивная, не toggle. Это
-         match'ит привычное поведение из Gmail/Finder/etc. */
-      const start = Math.min(lastClickedIdxRef.current, idx);
-      const end = Math.max(lastClickedIdxRef.current, idx);
-      const rangeValues = filtered.slice(start, end + 1).map(o => o.value);
-      const merged = Array.from(new Set([...draft, ...rangeValues]));
-      setDraft(merged);
-    } else {
-      /* Обычный toggle. */
-      setDraft(
-        draft.some(d => d === v) ? draft.filter(d => d !== v) : [...draft, v],
-      );
-    }
-    lastClickedIdxRef.current = idx;
-  };
+      if (shiftKey && lastClickedIdxRef.current !== null) {
+        /* Range-select: добавляем в draft все опции от last-clicked-idx
+           до текущего idx (включительно). Range-action всегда ADD'итивная. */
+        const start = Math.min(lastClickedIdxRef.current, idx);
+        const end = Math.max(lastClickedIdxRef.current, idx);
+        const rangeValues = filtered.slice(start, end + 1).map(o => o.value);
+        setDraft(prev => Array.from(new Set([...prev, ...rangeValues])));
+      } else {
+        /* Обычный toggle через functional setDraft — никогда не
+           зависим от stale draft из замыкания. */
+        setDraft(prev =>
+          prev.some(d => d === v) ? prev.filter(d => d !== v) : [...prev, v],
+        );
+      }
+      lastClickedIdxRef.current = idx;
+    },
+    [filtered, multiSelect, onChange],
+  );
 
   /* Combined select-all checkbox: checked когда все выбраны;
      indeterminate когда часть выбрана; unchecked когда ничего.
@@ -292,24 +304,24 @@ export const FilterValueModalSelect: FC<FilterValueModalSelectProps> = ({
   const allChecked = options.length > 0 && draft.length === options.length;
   const someChecked = draft.length > 0 && draft.length < options.length;
 
-  const toggleAll = () => {
+  const toggleAll = useCallback(() => {
     if (allChecked) {
       setDraft([]);
     } else {
       setDraft(options.map(o => o.value));
     }
     lastClickedIdxRef.current = null;
-  };
+  }, [allChecked, options]);
 
-  const apply = () => {
+  const apply = useCallback(() => {
     onChange(draft);
     setOpen(false);
-  };
+  }, [draft, onChange]);
 
-  const cancel = () => {
+  const cancel = useCallback(() => {
     setOpen(false);
     setSearch('');
-  };
+  }, []);
 
   /* Trigger display:
        0           → placeholder
