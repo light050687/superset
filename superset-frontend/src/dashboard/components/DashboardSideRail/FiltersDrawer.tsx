@@ -19,7 +19,7 @@
  * когда юзер открывает drawer — side-effects safe.
  */
 import { css, styled, t } from '@superset-ui/core';
-import { Input } from 'antd';
+import { Input } from '@superset-ui/core/components';
 import {
   type FC,
   useCallback,

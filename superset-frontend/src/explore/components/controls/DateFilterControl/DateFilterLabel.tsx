@@ -86,7 +86,7 @@ const ContentStyleWrapper = styled.div`
     .section-title {
       font-style: normal;
       font-weight: ${theme.fontWeightStrong};
-      font-size: 15px;
+      font-size: var(--fs-subtitle);
       line-height: 24px;
       margin-bottom: 8px;
     }

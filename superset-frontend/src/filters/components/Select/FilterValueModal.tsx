@@ -27,12 +27,7 @@
  *  Если потребуется — добавим в следующей итерации.
  */
 import { css, styled, t } from '@superset-ui/core';
-import {
-  Checkbox,
-  Input,
-  Loading,
-  Modal,
-} from '@superset-ui/core/components';
+import { Checkbox, Input, Loading, Modal } from '@superset-ui/core/components';
 import { Icons } from '@superset-ui/core/components/Icons';
 import {
   type FC,
@@ -131,8 +126,12 @@ const OptionsList = styled.div`
     margin-top: ${theme.sizeUnit}px;
     scrollbar-width: thin;
     scrollbar-color: var(--g300) transparent;
-    &::-webkit-scrollbar { width: 10px; }
-    &::-webkit-scrollbar-track { background: transparent; }
+    &::-webkit-scrollbar {
+      width: 10px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
     &::-webkit-scrollbar-thumb {
       background: var(--g300);
       border-radius: 5px;
@@ -160,7 +159,9 @@ const OptionRow = styled.button<{ $selected: boolean }>`
       border-bottom: 0;
     }
     &:hover {
-      background: ${$selected ? theme.colorPrimaryBgHover : theme.colorBgTextHover};
+      background: ${$selected
+        ? theme.colorPrimaryBgHover
+        : theme.colorBgTextHover};
     }
     &:focus-visible {
       outline: 2px solid ${theme.colorPrimaryBorder};
@@ -181,8 +182,10 @@ const CheckBox = styled.span<{ $checked: boolean }>`
     align-items: center;
     justify-content: center;
     color: ${theme.colorWhite};
-    font-size: 12px;
-    transition: background 100ms ease, border-color 100ms ease;
+    font-size: var(--fs-micro);
+    transition:
+      background 100ms ease,
+      border-color 100ms ease;
   `}
 `;
 
