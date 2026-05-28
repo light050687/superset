@@ -45,6 +45,7 @@ import { areObjectsEqual } from '../reduxUtils';
 type FilterWithExtaFromData = Filter & {
   extraFormData?: ExtraFormData;
   filterState?: FilterState;
+  ownState?: Record<string, unknown>;
 };
 
 export function getInitialDataMask(
@@ -105,8 +106,17 @@ function updateDataMaskForFilterChanges(
 ) {
   const dataMask = initialDataMask || {};
 
+  /* Сохраняем пользовательский выбор (filterState/extraFormData/ownState)
+     для ВСЕХ фильтров, существовавших до save-операции. Раньше тут
+     был ресет к value.defaultDataMask — это сбрасывало выбранные
+     значения при ЛЮБОМ изменении конфигурации (rename/add/delete
+     другого фильтра). Юзер ожидает, что rename фильтра B не должен
+     обнулять выбор фильтра A. */
   Object.entries(dataMask).forEach(([key, value]) => {
-    mergedDataMask[key] = { ...value, ...value.defaultDataMask };
+    const existing = draftDataMask[key];
+    mergedDataMask[key] = existing
+      ? { ...value, ...existing }
+      : { ...value, ...value.defaultDataMask };
   });
 
   filterChanges.deleted.forEach((filterId: string) => {
@@ -116,24 +126,23 @@ function updateDataMaskForFilterChanges(
   filterChanges.modified.forEach((filter: Filter) => {
     const existingFilter = draftDataMask[filter.id] as FilterWithExtaFromData;
 
-    // Check if targets are equal
+    // Targets equal → старый filterState совместим с новым target'ом.
     const areTargetsEqual = isEqual(existingFilter?.targets, filter?.targets);
 
-    // Preserve state only if filter exists, has enableEmptyFilter=true and targets match
-    const shouldPreserveState =
-      existingFilter &&
-      areTargetsEqual &&
-      (filter.controlValues?.enableEmptyFilter ||
-        filter.controlValues?.defaultToFirstItem);
+    /* preserveState: раньше требовался enableEmptyFilter/defaultToFirstItem.
+       Сейчас — ЛЮБОЙ существующий фильтр с теми же targets'ами сохраняет
+       выбор. Покрывает обычный случай rename / config-change без смены
+       column'ы / datasetа, где user's selection должна выжить. */
+    const shouldPreserveState = existingFilter && areTargetsEqual;
 
     mergedDataMask[filter.id] = {
       ...getInitialDataMask(filter.id),
       ...filter.defaultDataMask,
       ...filter,
-      // Preserve extraFormData and filterState if conditions match
       ...(shouldPreserveState && {
         extraFormData: existingFilter.extraFormData,
         filterState: existingFilter.filterState,
+        ownState: existingFilter.ownState,
       }),
     };
   });

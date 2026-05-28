@@ -31,23 +31,16 @@ import {
   tn,
   styled,
 } from '@superset-ui/core';
-import { debounce, isUndefined } from 'lodash';
+import { isUndefined } from 'lodash';
+import { useSelector } from 'react-redux';
 import { useImmerReducer } from 'use-immer';
-import {
-  FormItem,
-  LabeledValue,
-  Select,
-  Space,
-  Constants,
-} from '@superset-ui/core/components';
-import {
-  hasOption,
-  propertyComparator,
-} from '@superset-ui/core/components/Select/utils';
-import { FilterBarOrientation } from 'src/dashboard/types';
+import { FormItem, Select, Space } from '@superset-ui/core/components';
+import { hasOption } from '@superset-ui/core/components/Select/utils';
+import { FilterBarOrientation, RootState } from 'src/dashboard/types';
 import { getDataRecordFormatter, getSelectExtraFormData } from '../../utils';
 import { FilterPluginStyle, StatusMessage } from '../common';
 import { PluginFilterSelectProps, SelectValue } from './types';
+import { FilterValueModalSelect } from './FilterValueModal';
 
 type DataMaskAction =
   | { type: 'ownState'; ownState: JsonObject }
@@ -128,27 +121,21 @@ export default function PluginFilterSelect(props: PluginFilterSelectProps) {
     isRefreshing,
     width,
     setDataMask,
-    setHoveredFilter,
-    unsetHoveredFilter,
-    setFocusedFilter,
-    unsetFocusedFilter,
-    setFilterActive,
+    /* setHoveredFilter / setFocusedFilter / unsetFocusedFilter /
+       setFilterActive / parentRef / inputRef / showOverflow /
+       sortComparator / creatable / showSearch — больше не используем,
+       заменили AntD Select на FilterValueModalSelect, которая не
+       пробрасывает hover/focus/serverSearch events наружу. */
     appSection,
-    showOverflow,
-    parentRef,
-    inputRef,
     filterBarOrientation,
     clearAllTrigger,
     onClearAllComplete,
   } = props;
   const {
     enableEmptyFilter,
-    creatable,
     multiSelect,
-    showSearch,
     inverseSelection,
     defaultToFirstItem,
-    searchAllOptions,
   } = formData;
 
   const groupby = useMemo(
@@ -156,7 +143,8 @@ export default function PluginFilterSelect(props: PluginFilterSelectProps) {
     [formData.groupby],
   );
   const [col] = groupby;
-  const [initialColtypeMap] = useState(coltypeMap);
+  /* initialColtypeMap был для server-side search ownState dispatch.
+     В FilterValueModal не используется. */
   const [search, setSearch] = useState('');
   const isChangedByUser = useRef(false);
   const prevDataRef = useRef(data);
@@ -181,6 +169,14 @@ export default function PluginFilterSelect(props: PluginFilterSelectProps) {
   const prevExcludeFilterValues = useRef(excludeFilterValues);
 
   const hasOnlyOrientationChanged = useRef(false);
+
+  /* Имя фильтра (для заголовка FilterValueModalSelect). Достаём из Redux
+     по nativeFilterId — у плагина в formData есть только id, а имя
+     живёт в native_filter_configuration на уровне фильтра. */
+  const filterName = useSelector<RootState, string>(state => {
+    const f = (state as any).nativeFilters?.filters?.[formData.nativeFilterId];
+    return f && typeof f === 'object' && 'name' in f ? String(f.name) : '';
+  });
 
   useEffect(() => {
     // Get previous orientation for this specific filter
@@ -249,28 +245,11 @@ export default function PluginFilterSelect(props: PluginFilterSelectProps) {
   const isDisabled =
     appSection === AppSection.FilterConfigModal && defaultToFirstItem;
 
-  const onSearch = useMemo(
-    () =>
-      debounce((search: string) => {
-        setSearch(search);
-        if (searchAllOptions) {
-          dispatchDataMask({
-            type: 'ownState',
-            ownState: {
-              coltypeMap: initialColtypeMap,
-              search,
-            },
-          });
-        }
-      }, Constants.SLOW_DEBOUNCE),
-    [dispatchDataMask, initialColtypeMap, searchAllOptions],
-  );
-
-  const handleBlur = useCallback(() => {
-    unsetFocusedFilter();
-    onSearch('');
-  }, [onSearch, unsetFocusedFilter]);
-
+  /* Раньше: onSearch (debounce → setSearch + dispatchDataMask ownState
+     для serverSide search). FilterValueModalSelect делает локальный
+     search внутри модалки, поэтому AntD-Select-style onSearch не нужен.
+     Если в будущем включим searchAllOptions=true (server-side), нужно
+     прокинуть search-callback из FilterValueModal обратно сюда. */
   const handleChange = useCallback(
     (value?: SelectValue | number | string) => {
       const values = value === null ? [null] : ensureIsArray(value);
@@ -304,11 +283,19 @@ export default function PluginFilterSelect(props: PluginFilterSelectProps) {
 
   const uniqueOptions = useMemo(() => {
     const allOptions = new Set([...data.map(el => el[col])]);
-    return [...allOptions].map((value: string) => ({
-      label: labelFormatter(value, datatype),
-      value,
-      isNewOption: false,
-    }));
+    return [...allOptions].map((value: string) => {
+      /* null / undefined / <NULL>-строка из backend'а → русифицированный
+         плейсхолдер "(пусто)". Сам value сохраняем как есть, чтобы
+         сравнение значений на стороне сервера осталось корректным. */
+      const rawLabel = labelFormatter(value, datatype);
+      const isNullish =
+        value === null || value === undefined || rawLabel === '<NULL>';
+      return {
+        label: isNullish ? t('(пусто)') : rawLabel,
+        value,
+        isNewOption: false,
+      };
+    });
   }, [data, datatype, col, labelFormatter]);
 
   const options = useMemo(() => {
@@ -322,23 +309,11 @@ export default function PluginFilterSelect(props: PluginFilterSelectProps) {
     return uniqueOptions;
   }, [multiSelect, search, uniqueOptions]);
 
-  const sortComparator = useCallback(
-    (a: LabeledValue, b: LabeledValue) => {
-      // When sortMetric is specified, the backend already sorted the data correctly
-      // Don't override the backend's metric-based sorting with frontend alphabetical sorting
-      if (formData.sortMetric) {
-        return 0; // Preserve the original order from the backend
-      }
-
-      // Only apply alphabetical sorting when no sortMetric is specified
-      const labelComparator = propertyComparator('label');
-      if (formData.sortAscending) {
-        return labelComparator(a, b);
-      }
-      return labelComparator(b, a);
-    },
-    [formData.sortAscending, formData.sortMetric],
-  );
+  /* sortComparator был для AntD Select.sortComparator. FilterValueModal
+     не поддерживает custom-sort сейчас — опции рендерятся в порядке
+     прихода. backend-сортировка (sortMetric) сохраняется естественно
+     через порядок в `data`. Если нужна frontend-сортировка по label —
+     прокинем в FilterValueModalSelect в следующей итерации. */
 
   // Use effect for initialisation for filter plugin
   // this should run only once when filter is configured & saved
@@ -518,38 +493,20 @@ export default function PluginFilterSelect(props: PluginFilterSelectProps) {
               onChange={handleExclusionToggle}
             />
           )}
-          <Select
-            name={formData.nativeFilterId}
-            allowClear
-            allowNewOptions={!searchAllOptions && creatable !== false}
-            allowSelectAll={!searchAllOptions}
-            value={filterState.value || []}
-            disabled={isDisabled}
-            getPopupContainer={
-              showOverflow
-                ? () => (parentRef?.current as HTMLElement) || document.body
-                : (trigger: HTMLElement) =>
-                    (trigger?.parentNode as HTMLElement) || document.body
-            }
-            showSearch={showSearch}
-            mode={multiSelect ? 'multiple' : 'single'}
-            placeholder={placeholderText}
-            onClear={() => onSearch('')}
-            onSearch={onSearch}
-            onBlur={handleBlur}
-            onFocus={setFocusedFilter}
-            onMouseEnter={setHoveredFilter}
-            onMouseLeave={unsetHoveredFilter}
-            // @ts-ignore
-            onChange={handleChange}
-            ref={inputRef}
-            loading={isRefreshing}
-            oneLine={filterBarOrientation === FilterBarOrientation.Horizontal}
-            invertSelection={inverseSelection && excludeFilterValues}
+          {/* Модальный селектор значений: trigger → Modal с поиском +
+              чекбоксами + Apply/Cancel. См. FilterValueModal.tsx за
+              мотивацию (drawer click-outside + comfort UI). Заменяет
+              AntD Select для filter_select в Kanban drawer'е. */}
+          <FilterValueModalSelect
+            value={filterState.value as any[] | null | undefined}
             options={options}
-            sortComparator={sortComparator}
-            onOpenChange={setFilterActive}
-            className="select-container"
+            multiSelect={Boolean(multiSelect)}
+            disabled={isDisabled}
+            isRefreshing={isRefreshing}
+            loading={isRefreshing}
+            placeholder={placeholderText}
+            title={filterName || placeholderText}
+            onChange={values => handleChange(values)}
           />
         </StyledSpace>
       </FormItem>

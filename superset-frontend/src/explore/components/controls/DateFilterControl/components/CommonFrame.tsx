@@ -39,7 +39,7 @@ export function CommonFrame(props: FrameComponentProps) {
   return (
     <>
       <div className="section-title" data-test={DateFilterTestKey.CommonFrame}>
-        {t('Configure Time Range: Last...')}
+        {t('Установить временной интервал: последний...')}
       </div>
       <Radio.GroupWrapper
         spaceConfig={{

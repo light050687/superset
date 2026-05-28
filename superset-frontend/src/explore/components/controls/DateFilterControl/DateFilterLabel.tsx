@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { ReactNode, useState, useEffect, useMemo } from 'react';
+import { ReactNode, useContext, useState, useEffect, useMemo } from 'react';
 import {
   css,
   styled,
@@ -31,6 +31,7 @@ import {
   Button,
   Constants,
   Divider,
+  Modal,
   Tooltip,
   Select,
 } from '@superset-ui/core/components';
@@ -40,6 +41,7 @@ import { useDebouncedEffect } from 'src/explore/exploreUtils';
 import { noOp } from 'src/utils/common';
 import ControlPopover from '../ControlPopover/ControlPopover';
 
+import { DateFilterOverlayContext } from './DateFilterOverlayContext';
 import { DateFilterControlProps, FrameType } from './types';
 import {
   DateFilterTestKey,
@@ -138,6 +140,27 @@ const getTooltipTitle = (
     range || null
   );
 
+/* ADR (actual datetime range) от backend'а приходит длинной строкой
+   вида "2026-05-21T02:24:45 ≤ col < 2026-05-28T02:24:45" — это
+   математическое выражение, читать в маленькой filter-card сложно.
+   Извлекаем два ISO-дня (без time) и форматируем как
+   "дд.ММ.гггг — дд.ММ.гггг". Если паттерн не совпал — возвращаем
+   исходную строку (fallback, безопасно). */
+const ADR_PATTERN =
+  /^(\d{4}-\d{2}-\d{2})(?:T[\d:.]+)?\s*[≤<≥>]+\s*col\s*[≤<≥>]+\s*(\d{4}-\d{2}-\d{2})/;
+
+const isoToHuman = (iso: string): string => {
+  const [y, m, d] = iso.split('-');
+  return `${d}.${m}.${y}`;
+};
+
+const formatADR = (adr: string | undefined): string | undefined => {
+  if (!adr) return adr;
+  const match = adr.match(ADR_PATTERN);
+  if (!match) return adr;
+  return `${isoToHuman(match[1])} — ${isoToHuman(match[2])}`;
+};
+
 export default function DateFilterLabel(props: DateFilterControlProps) {
   const {
     name,
@@ -160,6 +183,24 @@ export default function DateFilterLabel(props: DateFilterControlProps) {
   const [evalResponse, setEvalResponse] = useState<string>(value);
   const [tooltipTitle, setTooltipTitle] = useState<ReactNode | null>(value);
   const theme = useTheme();
+  /* overlayMode='modal' инжектится FiltersDrawer'ом (см.
+     DateFilterOverlayContext.tsx). Default 'popover' для Explore. */
+  const overlayMode = useContext(DateFilterOverlayContext);
+  /* Стиль для AntD-tooltip над DateLabel: на тёмном фоне dashboard'а
+     дефолтный tooltip визуально сливается. Добавляем явный bg, бордер
+     и тень из DS-токенов, чтобы tooltip читался как «всплывающий
+     info-блок», а не часть фона. */
+  const tooltipInnerStyle = useMemo(
+    () => ({
+      background: theme.colorBgElevated,
+      color: theme.colorText,
+      border: `1px solid ${theme.colorBorder}`,
+      borderRadius: theme.borderRadius,
+      boxShadow: theme.boxShadow,
+      padding: `${theme.sizeUnit * 2}px ${theme.sizeUnit * 3}px`,
+    }),
+    [theme],
+  );
   const [labelRef, labelIsTruncated] = useCSSTextTruncation<HTMLSpanElement>();
 
   useEffect(() => {
@@ -186,6 +227,10 @@ export default function DateFilterLabel(props: DateFilterControlProps) {
           | tooltip      | ADR  | ADR      | HRT    | HRT      |   ADR     |
           +--------------+------+----------+--------+----------+-----------+
         */
+        /* formatADR парсит ADR ("ISO ≤ col < ISO") в короткое
+           "дд.ММ.гггг — дд.ММ.гггг"; не-ADR строки возвращаются как
+           есть (HRT-выражения вроде DATEADD остаются нетронутыми). */
+        const shortRange = formatADR(actualRange);
         if (
           guessedFrame === 'Common' ||
           guessedFrame === 'Calendar' ||
@@ -193,14 +238,10 @@ export default function DateFilterLabel(props: DateFilterControlProps) {
           guessedFrame === 'No filter'
         ) {
           setActualTimeRange(value);
-          setTooltipTitle(
-            getTooltipTitle(labelIsTruncated, value, actualRange),
-          );
+          setTooltipTitle(getTooltipTitle(labelIsTruncated, value, shortRange));
         } else {
-          setActualTimeRange(actualRange || '');
-          setTooltipTitle(
-            getTooltipTitle(labelIsTruncated, actualRange, value),
-          );
+          setActualTimeRange(shortRange || '');
+          setTooltipTitle(getTooltipTitle(labelIsTruncated, shortRange, value));
         }
         setValidTimeRange(true);
       }
@@ -277,6 +318,10 @@ export default function DateFilterLabel(props: DateFilterControlProps) {
         options={FRAME_OPTIONS}
         value={frame}
         onChange={onChangeFrame}
+        /* Portal в document.body: внутри Modal'а dropdown
+           обрезается высотой Modal-body и flip'ается вверх,
+           ломая layout. document.body снимает clipping. */
+        getPopupContainer={() => document.body}
       />
       {frame !== 'No filter' && <Divider />}
       {frame === 'Common' && (
@@ -366,7 +411,12 @@ export default function DateFilterLabel(props: DateFilterControlProps) {
       }
       overlayClassName="time-range-popover"
     >
-      <Tooltip placement="top" title={tooltipTitle}>
+      <Tooltip
+        placement="top"
+        title={tooltipTitle}
+        overlayClassName="time-range-pill-tooltip"
+        overlayInnerStyle={tooltipInnerStyle}
+      >
         <DateLabel
           name={name}
           aria-labelledby={`filter-name-${props.name}`}
@@ -381,10 +431,57 @@ export default function DateFilterLabel(props: DateFilterControlProps) {
     </ControlPopover>
   );
 
+  /* Modal-вариант для filter-drawer'а: trigger остаётся тот же DateLabel,
+     но overlayContent рендерится внутри центральной Modal с backdrop.
+     Cancel/Apply кнопки внутри overlayContent (см. footer выше) уже
+     управляют тем же `show` state — onSave/onHide работают для обоих
+     режимов одинаково. Modal-backdrop изолирует click-пространство,
+     поэтому Shell-drawer не принимает Apply-клик за «клик снаружи» и
+     не закрывается. */
+  const modalContent = (
+    <>
+      <Tooltip
+        placement="top"
+        title={tooltipTitle}
+        overlayClassName="time-range-pill-tooltip"
+        overlayInnerStyle={tooltipInnerStyle}
+      >
+        <DateLabel
+          onClick={toggleOverlay}
+          name={name}
+          aria-labelledby={`filter-name-${props.name}`}
+          aria-describedby={`date-label-${props.name}`}
+          label={actualTimeRange}
+          isActive={show}
+          isPlaceholder={actualTimeRange === NO_TIME_RANGE}
+          data-test={DateFilterTestKey.PopoverOverlay}
+          ref={labelRef}
+        />
+      </Tooltip>
+      <Modal
+        show={show}
+        onHide={onHide}
+        title={
+          <IconWrapper>
+            <Icons.EditOutlined />
+            <span className="text">{t('Edit time range')}</span>
+          </IconWrapper>
+        }
+        width={880}
+        centered
+        destroyOnHidden
+        hideFooter
+        name="time-range-modal"
+      >
+        {overlayContent}
+      </Modal>
+    </>
+  );
+
   return (
     <>
       <ControlHeader {...props} />
-      {popoverContent}
+      {overlayMode === 'modal' ? modalContent : popoverContent}
     </>
   );
 }

@@ -39,7 +39,7 @@ export function CurrentCalendarFrame({ onChange, value }: FrameComponentProps) {
   return (
     <>
       <div className="section-title">
-        {t('Configure Time Range: Current...')}
+        {t('Установить временной интервал: текущий...')}
       </div>
       <Radio.GroupWrapper
         spaceConfig={{

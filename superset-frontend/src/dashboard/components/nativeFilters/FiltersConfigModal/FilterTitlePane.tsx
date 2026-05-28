@@ -92,10 +92,13 @@ const FilterTitlePane: FC<React.PropsWithChildren<Props>> = ({
           restoreFilter={restoreFilter}
         />
       </div>
+      {/* «Add divider» намеренно убран: Kanban-колонки в drawer'е
+          выполняют визуальную группировку лучше, чем dividers внутри
+          линейного списка. Оставляем только «Add filter». */}
       <div
         css={{
           display: 'flex',
-          justifyContent: 'space-around',
+          justifyContent: 'center',
           alignItems: 'flex-start',
           paddingTop: theme.sizeUnit * 3,
           position: 'sticky',
@@ -112,20 +115,6 @@ const FilterTitlePane: FC<React.PropsWithChildren<Props>> = ({
           onClick={() => handleOnAdd(NativeFilterType.NativeFilter)}
         >
           {t('Add filter')}
-        </Button>
-        <Button
-          buttonSize="default"
-          buttonStyle="secondary"
-          icon={
-            <Icons.PicCenterOutlined
-              iconColor={theme.colorPrimary}
-              iconSize="m"
-            />
-          }
-          data-test="add-new-divider-button"
-          onClick={() => handleOnAdd(NativeFilterType.Divider)}
-        >
-          {t('Add divider')}
         </Button>
       </div>
     </TabsContainer>

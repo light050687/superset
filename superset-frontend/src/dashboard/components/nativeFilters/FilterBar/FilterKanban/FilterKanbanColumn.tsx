@@ -19,7 +19,10 @@ import {
   useState,
 } from 'react';
 import { useDrop } from 'react-dnd';
-import FilterKanbanCard, { FILTER_CARD_DND_TYPE } from './FilterKanbanCard';
+import FilterKanbanCard, {
+  FILTER_CARD_DND_TYPE,
+  type FilterCardMetadataItem,
+} from './FilterKanbanCard';
 
 const Column = styled.div<{ $isOver: boolean }>`
   ${({ theme, $isOver }) => css`
@@ -189,6 +192,18 @@ interface FilterKanbanColumnProps {
   /** Кастомный контент (для пресетов). Если задан — карточки не
    *  рендерятся, DnD-drop отключён. */
   customContent?: ReactNode;
+  /** Per-card handlers (rename/edit/delete + metadata). Если задан —
+   *  результат spread'ится в FilterKanbanCard для конкретного filterId.
+   *  Введён, чтобы экшены поднимались на уровень FilterKanban (доступ к
+   *  dispatch и modal-opener'у), без зависимости от prop-drilling через
+   *  все колонки или Redux-чтения внутри карточки. */
+  getCardProps?: (filterId: string) => {
+    filterName?: string;
+    onRename?: (newName: string) => void;
+    onEdit?: () => void;
+    onDelete?: () => void;
+    metadata?: FilterCardMetadataItem[];
+  };
   /** Callback ➕ «Добавить фильтр» — открывает `FiltersConfigModal`
    *  для создания/редактирования фильтров. Если undefined — кнопка скрыта
    *  (preset/default колонки). */
@@ -211,6 +226,7 @@ const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
   customContent,
   onAddFilter,
   headerActions,
+  getCardProps,
 }) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(title);
@@ -339,7 +355,11 @@ const FilterKanbanColumn: FC<FilterKanbanColumnProps> = ({
           </EmptyHint>
         ) : (
           filterIds.map(filterId => (
-            <FilterKanbanCard key={filterId} filterId={filterId}>
+            <FilterKanbanCard
+              key={filterId}
+              filterId={filterId}
+              {...(getCardProps?.(filterId) ?? {})}
+            >
               {renderFilterNode(filterId)}
             </FilterKanbanCard>
           ))

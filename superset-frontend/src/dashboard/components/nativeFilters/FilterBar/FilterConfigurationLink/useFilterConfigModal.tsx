@@ -31,7 +31,10 @@ interface UseFilterConfigModalProps {
 
 interface UseFilterConfigModalReturn {
   isFilterConfigModalOpen: boolean;
-  openFilterConfigModal: () => void;
+  /** Без аргумента — создать новый фильтр (modal сразу показывает форму
+   *  пустого нового filter'а в single-mode).
+   *  С аргументом — открыть форму редактирования конкретного фильтра. */
+  openFilterConfigModal: (filterId?: string) => void;
   closeFilterConfigModal: () => void;
   handleFilterSave: (filterChanges: SaveFilterChangesType) => Promise<void>;
   FilterConfigModalComponent: JSX.Element | null;
@@ -44,8 +47,23 @@ export const useFilterConfigModal = ({
 }: UseFilterConfigModalProps): UseFilterConfigModalReturn => {
   const dispatch = useDispatch();
   const [isFilterConfigModalOpen, setIsFilterConfigModalOpen] = useState(false);
+  /* pendingFilterId — override initialFilterId per вызов openFilterConfigModal(id).
+     Если не передан — fallback на initialFilterId из хук-пропсов. */
+  const [pendingFilterId, setPendingFilterId] = useState<string | undefined>(
+    undefined,
+  );
+  /* shouldCreateNew — выставляется в true, когда openFilterConfigModal()
+     вызван БЕЗ filterId (т.е. это «+ Add Filter» в drawer'е). Прокидывается
+     в FiltersConfigModal как createNewOnOpen, который автоматически
+     добавляет пустой filter и фокусит форму на нём. */
+  const [shouldCreateNew, setShouldCreateNew] = useState(false);
 
-  const openFilterConfigModal = useCallback(() => {
+  const openFilterConfigModal = useCallback((filterId?: string) => {
+    /* Defensive: при привязке к JSX onClick React передаёт SyntheticEvent.
+       Без проверки event-объект бы трактовался как filterId. */
+    const id = typeof filterId === 'string' ? filterId : undefined;
+    setPendingFilterId(id);
+    setShouldCreateNew(id === undefined);
     setIsFilterConfigModalOpen(true);
   }, []);
 
@@ -67,8 +85,16 @@ export const useFilterConfigModal = ({
       onSave={handleFilterSave}
       onCancel={closeFilterConfigModal}
       key={`filters-for-${dashboardId}`}
-      createNewOnOpen={createNewOnOpen}
-      initialFilterId={initialFilterId}
+      /* createNewOnOpen — true когда «+ Add filter» (открытие без filterId).
+         FiltersConfigModal автоматически добавит пустой новый filter
+         и установит его текущим. */
+      createNewOnOpen={createNewOnOpen || shouldCreateNew}
+      initialFilterId={pendingFilterId ?? initialFilterId}
+      /* singleFilterMode ВСЕГДА true в нашем Kanban flow: список фильтров
+         уже виден в drawer'е (Kanban-колонки), повторно показывать его
+         в модалке избыточно. Modal становится «edit only this filter»
+         (или «create new and immediately edit»). */
+      singleFilterMode
     />
   ) : null;
 

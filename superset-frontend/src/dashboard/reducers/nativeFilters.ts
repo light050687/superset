@@ -60,13 +60,23 @@ function handleFilterChangesComplete(
   state: NativeFiltersState,
   filters: Filter[],
 ) {
-  const modifiedFilters = { ...state.filters };
+  /* ВАЖНО: backend возвращает в response.result ПОЛНЫЙ новый список
+     фильтров (после применения modified/deleted/reordered). Старая
+     реализация мерджила { ...state.filters, ...newOnes } — это
+     оставляло удалённые фильтры в Redux'е до hard-refresh страницы.
+     В UI (useFilters → drawer-карточки) фильтр продолжал показываться
+     после успешного PUT.
+     Сейчас: строим новую map ТОЛЬКО из ответа backend'а. Это
+     эффективно REPLACE — отсутствующие в response фильтры выпадают
+     из state. chartsInScope/tabsInScope сохраняем из старого state,
+     если backend их не вернул (то же, что и раньше). */
+  const newFilters: Record<string, Filter> = {};
   filters.forEach(filter => {
     if (filter.chartsInScope != null && filter.tabsInScope != null) {
-      modifiedFilters[filter.id] = filter;
+      newFilters[filter.id] = filter;
     } else {
-      const existingFilter = modifiedFilters[filter.id];
-      modifiedFilters[filter.id] = {
+      const existingFilter = state.filters[filter.id];
+      newFilters[filter.id] = {
         ...filter,
         chartsInScope: filter.chartsInScope ?? existingFilter?.chartsInScope,
         tabsInScope: filter.tabsInScope ?? existingFilter?.tabsInScope,
@@ -76,7 +86,7 @@ function handleFilterChangesComplete(
 
   return {
     ...state,
-    filters: modifiedFilters,
+    filters: newFilters,
   } as NativeFiltersState;
 }
 

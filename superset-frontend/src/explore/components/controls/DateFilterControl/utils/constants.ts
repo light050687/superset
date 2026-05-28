@@ -35,77 +35,82 @@ import {
 import { CheckboxOptionType } from '@superset-ui/core/components/Radio';
 import { extendedDayjs } from '@superset-ui/core/utils/dates';
 
+/* Метки frame-опций и radio'в — RU. Значения (value) остаются исходными
+   английскими, потому что они уходят в Superset backend и сериализуются
+   в `time_range` параметр запроса. Меняем ТОЛЬКО `label`. */
 export const FRAME_OPTIONS: SelectOptionType[] = [
-  { value: 'Common', label: t('Last') },
-  { value: 'Calendar', label: t('Previous') },
-  { value: 'Current', label: t('Current') },
-  { value: 'Custom', label: t('Custom') },
-  { value: 'Advanced', label: t('Advanced') },
-  { value: 'No filter', label: t('No filter') },
+  { value: 'Common', label: t('Последние') },
+  { value: 'Calendar', label: t('Прошлый календарный') },
+  { value: 'Current', label: t('Текущий') },
+  { value: 'Custom', label: t('Произвольный') },
+  { value: 'Advanced', label: t('Расширенный') },
+  { value: 'No filter', label: t('Без фильтрации') },
 ];
 
 export const COMMON_RANGE_OPTIONS: CheckboxOptionType[] = [
-  { value: 'Last day', label: t('Last day') },
-  { value: 'Last week', label: t('Last week') },
-  { value: 'Last month', label: t('Last month') },
-  { value: 'Last quarter', label: t('Last quarter') },
-  { value: 'Last year', label: t('Last year') },
+  { value: 'Last day', label: t('Последний день') },
+  { value: 'Last week', label: t('Последняя неделя') },
+  { value: 'Last month', label: t('Последний месяц') },
+  { value: 'Last quarter', label: t('Последний квартал') },
+  { value: 'Last year', label: t('Последний год') },
 ];
 export const COMMON_RANGE_VALUES_SET = new Set(
   COMMON_RANGE_OPTIONS.map(value => value.value),
 );
 
 export const CALENDAR_RANGE_OPTIONS: CheckboxOptionType[] = [
-  { value: PreviousCalendarWeek, label: t('previous calendar week') },
-  { value: PreviousCalendarMonth, label: t('previous calendar month') },
-  { value: PreviousCalendarQuarter, label: t('previous calendar quarter') },
-  { value: PreviousCalendarYear, label: t('previous calendar year') },
+  { value: PreviousCalendarWeek, label: t('Прошлая календарная неделя') },
+  { value: PreviousCalendarMonth, label: t('Прошлый календарный месяц') },
+  { value: PreviousCalendarQuarter, label: t('Прошлый календарный квартал') },
+  { value: PreviousCalendarYear, label: t('Прошлый календарный год') },
 ];
 export const CALENDAR_RANGE_VALUES_SET = new Set(
   CALENDAR_RANGE_OPTIONS.map(value => value.value),
 );
 
 export const CURRENT_RANGE_OPTIONS: CheckboxOptionType[] = [
-  { value: CurrentDay, label: t('Current day') },
-  { value: CurrentWeek, label: t('Current week') },
-  { value: CurrentMonth, label: t('Current month') },
-  { value: CurrentQuarter, label: t('Current quarter') },
-  { value: CurrentYear, label: t('Current year') },
+  { value: CurrentDay, label: t('Текущий день') },
+  { value: CurrentWeek, label: t('Текущая неделя') },
+  { value: CurrentMonth, label: t('Текущий месяц') },
+  { value: CurrentQuarter, label: t('Текущий квартал') },
+  { value: CurrentYear, label: t('Текущий год') },
 ];
 export const CURRENT_RANGE_VALUES_SET = new Set(
   CURRENT_RANGE_OPTIONS.map(value => value.value),
 );
 
+/* GRAIN-опции для Advanced/Custom фреймов: переведено в RU. %s — слово
+   «До»/«После» подставится первым в строку. */
 const GRAIN_OPTIONS = [
-  { value: 'second', label: (rel: string) => t('Seconds %s', rel) },
-  { value: 'minute', label: (rel: string) => t('Minutes %s', rel) },
-  { value: 'hour', label: (rel: string) => t('Hours %s', rel) },
-  { value: 'day', label: (rel: string) => t('Days %s', rel) },
-  { value: 'week', label: (rel: string) => t('Weeks %s', rel) },
-  { value: 'month', label: (rel: string) => t('Months %s', rel) },
-  { value: 'quarter', label: (rel: string) => t('Quarters %s', rel) },
-  { value: 'year', label: (rel: string) => t('Years %s', rel) },
+  { value: 'second', label: (rel: string) => t('%s секунд', rel) },
+  { value: 'minute', label: (rel: string) => t('%s минут', rel) },
+  { value: 'hour', label: (rel: string) => t('%s часов', rel) },
+  { value: 'day', label: (rel: string) => t('%s дней', rel) },
+  { value: 'week', label: (rel: string) => t('%s недель', rel) },
+  { value: 'month', label: (rel: string) => t('%s месяцев', rel) },
+  { value: 'quarter', label: (rel: string) => t('%s кварталов', rel) },
+  { value: 'year', label: (rel: string) => t('%s лет', rel) },
 ];
 
 export const SINCE_GRAIN_OPTIONS: SelectOptionType[] = GRAIN_OPTIONS.map(
   item => ({
     value: item.value,
-    label: item.label(t('Before')),
+    label: item.label(t('До')),
   }),
 );
 
 export const UNTIL_GRAIN_OPTIONS: SelectOptionType[] = GRAIN_OPTIONS.map(
   item => ({
     value: item.value,
-    label: item.label(t('After')),
+    label: item.label(t('После')),
   }),
 );
 
 export const SINCE_MODE_OPTIONS: SelectOptionType[] = [
-  { value: 'specific', label: t('Specific Date/Time') },
-  { value: 'relative', label: t('Relative Date/Time') },
-  { value: 'now', label: t('Now') },
-  { value: 'today', label: t('Midnight') },
+  { value: 'specific', label: t('Конкретная дата/время') },
+  { value: 'relative', label: t('Относительная дата/время') },
+  { value: 'now', label: t('Сейчас') },
+  { value: 'today', label: t('Полночь') },
 ];
 
 export const UNTIL_MODE_OPTIONS: SelectOptionType[] =
