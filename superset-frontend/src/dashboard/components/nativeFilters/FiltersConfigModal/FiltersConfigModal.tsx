@@ -64,7 +64,33 @@ import {
 import DividerConfigForm from './DividerConfigForm';
 
 const MODAL_MARGIN = 16;
-const MIN_WIDTH = 880;
+const MIN_WIDTH = 1200;
+const MIN_HEIGHT = 720;
+
+/* DS 2.0 scrollbar — единый паттерн с ShellMain/DrawerBody/FilterKanbanColumn.
+   thin серый с прозрачным track'ом, hover → g400. Применяем ко всем
+   ant-modal-body и внутренним overflow:auto контейнерам. */
+const DS_SCROLLBAR = css`
+  scrollbar-width: thin;
+  scrollbar-color: var(--g300) transparent;
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--g300);
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--g400);
+    background-clip: padding-box;
+  }
+`;
 
 const StyledModalWrapper = styled(StyledModal)<{ expanded: boolean }>`
   min-width: ${MIN_WIDTH}px;
@@ -78,6 +104,26 @@ const StyledModalWrapper = styled(StyledModal)<{ expanded: boolean }>`
   .ant-modal-body {
     padding: 0px;
     overflow: auto;
+    ${DS_SCROLLBAR}
+  }
+
+  /* DS scrollbar также для любых вложенных overflow:auto pane'ов. */
+  & *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  & *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  & *::-webkit-scrollbar-thumb {
+    background: var(--g300);
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  & *::-webkit-scrollbar-thumb:hover {
+    background: var(--g400);
+    background-clip: padding-box;
   }
 
   ${({ expanded }) =>
@@ -96,11 +142,14 @@ const StyledModalWrapper = styled(StyledModal)<{ expanded: boolean }>`
 
 export const StyledModalBody = styled.div<{ expanded: boolean }>`
   display: flex;
-  height: ${({ expanded }) => (expanded ? '100%' : '700px')};
+  height: ${({ expanded }) => (expanded ? '100%' : `${MIN_HEIGHT}px`)};
   flex-direction: row;
   flex: 1;
+  /* filters-list был ${'`theme.sizeUnit * 50`'} = 200px при modal=1200,
+     оставляя form-pane ~1000px — визуально несбалансировано. Расширил
+     до 320px для лучшей пропорции (~27% list / ~73% form). */
   .filters-list {
-    width: ${({ theme }) => theme.sizeUnit * 50}px;
+    width: ${({ theme }) => theme.sizeUnit * 80}px;
     overflow: auto;
   }
 `;
@@ -124,6 +173,10 @@ export interface FiltersConfigModalProps {
   createNewOnOpen?: boolean;
   onSave: (filterChanges: SaveFilterChangesType) => Promise<void>;
   onCancel: () => void;
+  /** Если true, скрываем filter-list (FilterTitlePane) — modal становится
+   *  «edit only this filter». Срабатывает когда модалку открывают
+   *  gear-иконкой карточки в Kanban drawer'е (filterId известен заранее). */
+  singleFilterMode?: boolean;
 }
 export const ALLOW_DEPENDENCIES = [
   'filter_range',
@@ -156,6 +209,7 @@ function FiltersConfigModal({
   createNewOnOpen,
   onSave,
   onCancel,
+  singleFilterMode = false,
 }: FiltersConfigModalProps) {
   const dispatch = useDispatch();
   const theme = useTheme();
@@ -744,11 +798,21 @@ function FiltersConfigModal({
     resetFilterChanges();
   }, []);
 
+  /* Динамический title: в single-mode + createNewOnOpen = «Добавить
+     фильтр»; в single-mode без createNewOnOpen = «Изменить фильтр»
+     (gear-иконка). Без single-mode = стандартный «Add and edit filters»
+     (тесты Superset upstream опираются на этот текст). */
+  const modalTitle = singleFilterMode
+    ? createNewOnOpen
+      ? t('Добавить фильтр')
+      : t('Изменить фильтр')
+    : t('Add and edit filters');
+
   return (
     <StyledModalWrapper
       open={isOpen}
       maskClosable={false}
-      title={t('Add and edit filters')}
+      title={modalTitle}
       expanded={expanded}
       destroyOnHidden
       onCancel={handleCancel}
@@ -791,20 +855,28 @@ function FiltersConfigModal({
             onValuesChange={handleValuesChange}
             layout="vertical"
           >
-            <FilterConfigurePane
-              erroredFilters={erroredFilters}
-              onRemove={handleRemoveItem}
-              onAdd={addFilter}
-              onChange={handleTabChange}
-              getFilterTitle={getFilterTitle}
-              currentFilterId={currentFilterId}
-              removedFilters={removedFilters}
-              restoreFilter={restoreFilter}
-              onRearrange={handleRearrange}
-              filters={orderedFilters}
-            >
-              {formList}
-            </FilterConfigurePane>
+            {singleFilterMode ? (
+              /* singleFilterMode: рендерим ТОЛЬКО форму редактирования,
+                 без FilterConfigurePane (он рендерит список фильтров +
+                 add/delete контролы). Юзер пришёл с конкретным
+                 filterId через gear-иконку — список ему не нужен. */
+              formList
+            ) : (
+              <FilterConfigurePane
+                erroredFilters={erroredFilters}
+                onRemove={handleRemoveItem}
+                onAdd={addFilter}
+                onChange={handleTabChange}
+                getFilterTitle={getFilterTitle}
+                currentFilterId={currentFilterId}
+                removedFilters={removedFilters}
+                restoreFilter={restoreFilter}
+                onRearrange={handleRearrange}
+                filters={orderedFilters}
+              >
+                {formList}
+              </FilterConfigurePane>
+            )}
           </StyledForm>
         </StyledModalBody>
       </ErrorBoundary>

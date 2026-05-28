@@ -27,7 +27,9 @@ import {
   styled,
   t,
 } from '@superset-ui/core';
-import { type FC, useMemo } from 'react';
+import { type FC, useCallback, useMemo } from 'react';
+import { useDispatch } from 'react-redux';
+import { setFilterConfiguration } from 'src/dashboard/actions/nativeFilters';
 import { FilterBarOrientation } from 'src/dashboard/types';
 import FilterControl from '../FilterControls/FilterControl';
 import FilterDivider from '../FilterControls/FilterDivider';
@@ -116,9 +118,89 @@ const FilterKanban: FC<FilterKanbanProps> = ({
      открывает её по клику ➕ в любой колонке kanban'а (unified add-
      flow). После Save новые фильтры автоматом попадают в «Нераспре-
      делённые» (как нераспределённые — юзер dragg'ает в нужную
-     колонку либо использует ➕ выбрать категорию). */
+     колонку либо использует ➕ выбрать категорию).
+     `openFilterConfigModal(filterId?)` принимает optional filterId
+     для editing-режима — карточка передаёт свой ID, чтобы открыть
+     модалку с фокусом на этом фильтре. */
   const { openFilterConfigModal, FilterConfigModalComponent } =
     useFilterConfigModal({ dashboardId });
+
+  const dispatch = useDispatch();
+
+  /* Per-card handlers: rename / delete через setFilterConfiguration.
+     Карточка вызывает их с filterId внутри, чтобы dispatch'и
+     централизованы здесь (хук-доступ к dispatch). */
+  const renameFilter = useCallback(
+    (filterId: string, newName: string) => {
+      const filter = filters[filterId];
+      if (!filter || isFilterDivider(filter)) return;
+      dispatch(
+        setFilterConfiguration({
+          modified: [{ ...(filter as Filter), name: newName }],
+          deleted: [],
+          reordered: [],
+        }) as any,
+      );
+    },
+    [dispatch, filters],
+  );
+
+  const deleteFilter = useCallback(
+    (filterId: string) => {
+      dispatch(
+        setFilterConfiguration({
+          modified: [],
+          deleted: [filterId],
+          reordered: [],
+        }) as any,
+      );
+    },
+    [dispatch],
+  );
+
+  /* Лейблы типа фильтра — отображаются в info-popover'е карточки.
+     Маппинг не использует t() для устойчивости (это известные строки). */
+  const FILTER_TYPE_LABELS: Record<string, string> = {
+    filter_select: t('Выбор значения'),
+    filter_time: t('Time filter'),
+    filter_range: t('Числовой диапазон'),
+    filter_timegrain: t('Гранулярность времени'),
+    filter_timecolumn: t('Временная колонка'),
+  };
+
+  /* Описание scope (видимости фильтра на чартах): если excluded пуст
+     или не задан — фильтр применяется ко всем чартам. */
+  const describeScope = (filter: Filter): string => {
+    const excluded = filter.scope?.excluded;
+    if (!excluded || excluded.length === 0) return t('Все чарты');
+    return t('Выборочно (исключено: %s)', excluded.length);
+  };
+
+  const getCardProps = useCallback(
+    (filterId: string) => {
+      const filter = filters[filterId];
+      if (!filter || isFilterDivider(filter)) return {};
+      const f = filter as Filter;
+      return {
+        filterName: f.name,
+        onRename: (newName: string) => renameFilter(filterId, newName),
+        onEdit: () => openFilterConfigModal(filterId),
+        onDelete: () => deleteFilter(filterId),
+        metadata: [
+          {
+            label: t('Тип фильтра'),
+            value: FILTER_TYPE_LABELS[f.filterType] || f.filterType,
+          },
+          { label: t('Область'), value: describeScope(f) },
+          ...(f.description
+            ? [{ label: t('Описание'), value: f.description }]
+            : []),
+        ],
+      };
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filters, renameFilter, deleteFilter, openFilterConfigModal],
+  );
 
   const {
     categories,
@@ -174,7 +256,14 @@ const FilterKanban: FC<FilterKanbanProps> = ({
         dataMaskSelected={dataMaskSelected}
         filter={{ ...filter, dataMask: dataMaskSelected[filter.id] }}
         onFilterSelectionChange={onFilterSelectionChange}
-        inView={false}
+        // ВАЖНО: inView обязан быть true. В FilterValue это lazy-render
+        // gate (inViewFirstTime): если false → getChartDataRequest никогда
+        // не запустится → isLoading навсегда true → бесконечный спиннер.
+        // В обычном FilterControls тот же false из useFilterControlFactory
+        // переписывается на true через <OutPortal ... inView /> (react-
+        // reverse-portal пробрасывает props). В Kanban OutPortal'а нет,
+        // поэтому inView обязан быть true прямо здесь.
+        inView
         orientation={FilterBarOrientation.Vertical}
         overflow={false}
         clearAllTrigger={clearAllTriggers?.[filter.id]}
@@ -209,6 +298,7 @@ const FilterKanban: FC<FilterKanbanProps> = ({
         onDelete={null}
         isDefault
         onAddFilter={openFilterConfigModal}
+        getCardProps={getCardProps}
       />
       {categories.map(cat => {
         const validIds = cat.filterIds.filter(id => filters[id]);
@@ -226,6 +316,7 @@ const FilterKanban: FC<FilterKanbanProps> = ({
             onRename={name => renameCategory(cat.id, name)}
             onDelete={() => deleteCategory(cat.id)}
             onAddFilter={openFilterConfigModal}
+            getCardProps={getCardProps}
           />
         );
       })}

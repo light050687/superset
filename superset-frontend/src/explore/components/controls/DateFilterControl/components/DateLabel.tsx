@@ -20,7 +20,6 @@
 import { forwardRef, MouseEvent, ReactNode, RefObject } from 'react';
 
 import { css, styled, t } from '@superset-ui/core';
-import { Icons } from '@superset-ui/core/components/Icons';
 
 export type DateLabelProps = {
   name?: string;
@@ -87,7 +86,6 @@ export const DateLabel = forwardRef(
       >
         {typeof props.label === 'string' ? t(props.label) : props.label}
       </span>
-      <Icons.CalendarOutlined iconSize="s" />
     </LabelContainer>
   ),
 );

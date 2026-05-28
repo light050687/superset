@@ -34,6 +34,7 @@ import { DS2_VARS } from 'src/theme/ds2';
 import FilterBar from 'src/dashboard/components/nativeFilters/FilterBar';
 import FilterBarSettings from 'src/dashboard/components/nativeFilters/FilterBar/FilterBarSettings';
 import { FilterSearchContext } from 'src/dashboard/components/nativeFilters/FilterBar/FilterKanban/FilterSearchContext';
+import { DateFilterOverlayContext } from 'src/explore/components/controls/DateFilterControl/DateFilterOverlayContext';
 import { FilterBarOrientation, type RootState } from 'src/dashboard/types';
 import { PAGES_TYPE } from 'src/dashboard/util/componentTypes';
 import {
@@ -61,7 +62,8 @@ const DrawerBody = styled.div`
 `;
 
 export const FiltersDrawer: FC = () => {
-  const { closeDrawer } = useShell();
+  /* `closeDrawer` больше не нужен — drawer закрывается только Shell'овским
+     крестиком в шапке. Apply больше не сворачивает drawer (см. ниже). */
 
   /* Глобальный поиск по всем колонкам (pre-sets + filters). Inject'им
      input в центр drawer-шапки через Portal (DRAWER_HEAD_CENTER_ID),
@@ -108,63 +110,70 @@ export const FiltersDrawer: FC = () => {
     state => state.dashboardState?.editMode ?? false,
   );
 
-  /* Drawer может быть закрыт двумя способами: клик по иконке в
-     DashboardSideRail → toggleDrawer, или любой внешний click /
-     Esc → closeDrawer. FilterBar'у передаём toggleFiltersBar, который
-     мапится на closeDrawer — так кнопка «Закрыть» внутри FilterBar
-     reused естественно. */
-  const toggleFiltersBar = useCallback(
-    (open: boolean) => {
-      if (!open) closeDrawer();
-    },
-    [closeDrawer],
-  );
+  /* toggleFiltersBar = no-op: drawer закрывается ТОЛЬКО кликом по
+     крестику Shell'а в шапке drawer'а. Раньше Apply внутри FilterBar
+     дёргал toggleFiltersBar(false) → closeDrawer → drawer сворачивался
+     после применения значений. Пользователь хочет, чтобы drawer
+     оставался открытым, и закрывал его сам. */
+  const toggleFiltersBar = useCallback(() => {
+    /* intentionally empty */
+  }, []);
 
   return (
-    <FilterSearchContext.Provider value={searchCtx}>
-      <DrawerBody
-        ref={bodyRef}
-        css={css`
-          /* Убираем внутренние рамки FilterBar'а: он рассчитан на sidebar
+    /* Все DateFilterControl'ы внутри drawer'а рендерятся центральной
+       Modal (не side-popover'ом): popover портально вылетает в
+       document.body, и Apply-клик в нём ловится Shell-drawer'ом как
+       «клик снаружи», закрывая весь drawer. Modal-backdrop изолирует
+       клик-пространство. Дефолт 'popover' остаётся в Explore. */
+    <DateFilterOverlayContext.Provider value="modal">
+      <FilterSearchContext.Provider value={searchCtx}>
+        <DrawerBody
+          ref={bodyRef}
+          css={css`
+            /* Убираем внутренние рамки FilterBar'а: он рассчитан на sidebar
              со своей границей, внутри drawer'а это лишние линии. */
-          & .css-0 > div[role='navigation'] {
-            display: none !important;
-          }
-          /* filterBar'овский Bar внутри — делаем full-width чтобы занимал
+            & .css-0 > div[role='navigation'] {
+              display: none !important;
+            }
+            /* filterBar'овский Bar внутри — делаем full-width чтобы занимал
              всю ширину drawer'а. */
-          & > div > div {
-            position: relative !important;
-            width: 100% !important;
-          }
-        `}
-      >
-        <FilterBar
-          orientation={FilterBarOrientation.Vertical}
-          verticalConfig={{
-            filtersOpen: true,
-            toggleFiltersBar,
-            width: barWidth,
-            height: 560,
-            offset: 0,
-            topLevelPages,
-            editMode,
-            /* Внутренний Header FilterBar'а («Фильтры» + шестерёнка + ×)
+            & > div > div {
+              position: relative !important;
+              width: 100% !important;
+            }
+          `}
+        >
+          <FilterBar
+            orientation={FilterBarOrientation.Vertical}
+            verticalConfig={{
+              filtersOpen: true,
+              toggleFiltersBar,
+              width: barWidth,
+              height: 560,
+              offset: 0,
+              topLevelPages,
+              editMode,
+              /* Внутренний Header FilterBar'а («Фильтры» + шестерёнка + ×)
                скрываем — у drawer'а есть свой заголовок «ФИЛЬТРЫ ДАШБОРДА»
                и своя кнопка закрытия. Шестерёнку (FilterBarSettings)
                рендерим ниже через Portal в шапку drawer'а. */
-            hideInternalHeader: true,
-            /* Kanban-grid: фильтры распределены по колонкам-категориям с
+              hideInternalHeader: true,
+              /* Kanban-grid: фильтры распределены по колонкам-категориям с
                drag-drop; колонки юзер создаёт/переименовывает/удаляет. */
-            useKanban: true,
-          }}
-        />
-        {/* Portal: unified-search в центр drawer-шапки. */}
-        <DrawerHeadSearchPortal query={searchQuery} setQuery={setSearchQuery} />
-        {/* Portal: шестерёнка (FilterBarSettings) в правую часть drawer-
+              useKanban: true,
+            }}
+          />
+          {/* Portal: unified-search в центр drawer-шапки. */}
+          <DrawerHeadSearchPortal
+            query={searchQuery}
+            setQuery={setSearchQuery}
+          />
+          {/* Portal: шестерёнка (FilterBarSettings) в правую часть drawer-
             шапки, рядом с крестиком. */}
-        <DrawerHeadSettingsPortal />
-      </DrawerBody>
-    </FilterSearchContext.Provider>
+          <DrawerHeadSettingsPortal />
+        </DrawerBody>
+      </FilterSearchContext.Provider>
+    </DateFilterOverlayContext.Provider>
   );
 };
 
