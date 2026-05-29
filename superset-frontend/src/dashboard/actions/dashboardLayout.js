@@ -353,7 +353,9 @@ export function resizeComponentWithShrinkingNeighbors({
         }
         if (m.widthSub != null && m.subdivisionsUsed) {
           // sibling sub-saved но в другом subdivisionsUsed — конвертация
-          return Math.round((m.widthSub / m.subdivisionsUsed) * subdivisionsUsed);
+          return Math.round(
+            (m.widthSub / m.subdivisionsUsed) * subdivisionsUsed,
+          );
         }
         return (m.width || 0) * subdivisionsUsed;
       }
@@ -381,8 +383,7 @@ export function resizeComponentWithShrinkingNeighbors({
        12 - (left+right)*1 cols (col-mode). Push-shrink в обе стороны. */
     const maxWidthUnits = Math.max(
       UNIT_MIN,
-      UNIT_TOTAL -
-        (leftSiblings.length + rightSiblings.length) * UNIT_MIN,
+      UNIT_TOTAL - (leftSiblings.length + rightSiblings.length) * UNIT_MIN,
     );
     const clampedWidthUnits = Math.min(
       Math.max(UNIT_MIN, incomingWidthUnits),
@@ -400,7 +401,10 @@ export function resizeComponentWithShrinkingNeighbors({
 
     /* Для col-mode legacy локальных alias (используются ниже в write back). */
     const clampedWidthCols = inSubMode
-      ? Math.max(GRID_MIN_COLUMN_COUNT, Math.ceil(clampedWidthUnits / subdivisionsUsed))
+      ? Math.max(
+          GRID_MIN_COLUMN_COUNT,
+          Math.ceil(clampedWidthUnits / subdivisionsUsed),
+        )
       : clampedWidthUnits;
 
     /* Write-back в native units. */
@@ -445,15 +449,32 @@ export function resizeComponentWithShrinkingNeighbors({
       /* Write-back в native units соседа (col-saved или sub-saved). */
       if (inSubMode) {
         /* В sub-mode units = sub-cells текущего subdivisionsUsed. */
-        if (sibMeta.widthSub != null && sibMeta.subdivisionsUsed === subdivisionsUsed) {
-          updates[sibId] = { ...sib, meta: { ...sibMeta, widthSub: Math.max(UNIT_MIN, newUnits) } };
+        if (
+          sibMeta.widthSub != null &&
+          sibMeta.subdivisionsUsed === subdivisionsUsed
+        ) {
+          updates[sibId] = {
+            ...sib,
+            meta: { ...sibMeta, widthSub: Math.max(UNIT_MIN, newUnits) },
+          };
         } else if (sibMeta.widthSub != null && sibMeta.subdivisionsUsed) {
           /* Сосед в другом sub — конвертация newUnits (в нашем sub) → его sub. */
-          const newInSibSub = Math.round((newUnits / subdivisionsUsed) * sibMeta.subdivisionsUsed);
-          updates[sibId] = { ...sib, meta: { ...sibMeta, widthSub: Math.max(sibMeta.subdivisionsUsed, newInSibSub) } };
+          const newInSibSub = Math.round(
+            (newUnits / subdivisionsUsed) * sibMeta.subdivisionsUsed,
+          );
+          updates[sibId] = {
+            ...sib,
+            meta: {
+              ...sibMeta,
+              widthSub: Math.max(sibMeta.subdivisionsUsed, newInSibSub),
+            },
+          };
         } else {
           /* col-saved сосед — write в col-units. */
-          const newCols = Math.max(GRID_MIN_COLUMN_COUNT, Math.ceil(newUnits / subdivisionsUsed));
+          const newCols = Math.max(
+            GRID_MIN_COLUMN_COUNT,
+            Math.ceil(newUnits / subdivisionsUsed),
+          );
           updates[sibId] = { ...sib, meta: { ...sibMeta, width: newCols } };
         }
       } else {
@@ -461,7 +482,13 @@ export function resizeComponentWithShrinkingNeighbors({
         if (sibMeta.widthSub != null && sibMeta.subdivisionsUsed) {
           updates[sibId] = {
             ...sib,
-            meta: { ...sibMeta, widthSub: Math.max(GRID_MIN_COLUMN_COUNT, newUnits * sibMeta.subdivisionsUsed) },
+            meta: {
+              ...sibMeta,
+              widthSub: Math.max(
+                GRID_MIN_COLUMN_COUNT,
+                newUnits * sibMeta.subdivisionsUsed,
+              ),
+            },
           };
         } else {
           updates[sibId] = { ...sib, meta: { ...sibMeta, width: newUnits } };
@@ -474,11 +501,7 @@ export function resizeComponentWithShrinkingNeighbors({
       for (let i = 0; i < rightSiblings.length && needShrink > 0; i += 1) {
         needShrink -= shrinkSibling(rightSiblings[i]);
       }
-      for (
-        let i = leftSiblings.length - 1;
-        i >= 0 && needShrink > 0;
-        i -= 1
-      ) {
+      for (let i = leftSiblings.length - 1; i >= 0 && needShrink > 0; i -= 1) {
         needShrink -= shrinkSibling(leftSiblings[i]);
       }
     }
