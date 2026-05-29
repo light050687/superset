@@ -39,6 +39,43 @@ import isDashboardEmpty from '../util/isDashboardEmpty';
 import { getAffectedOwnDataCharts } from '../util/charts/getOwnDataCharts';
 import { getRelatedCharts } from '../util/getRelatedCharts';
 
+const hasNonEmptyValue = v => {
+  if (v == null) return false;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === 'object') return Object.keys(v).length > 0;
+  if (typeof v === 'string') return v.length > 0;
+  return true; // numbers, booleans
+};
+
+/**
+ * Whether a dashboard filter carries an effective value, i.e. one that actually
+ * narrows a chart's query. A filter only affects charts when its `values`
+ * (the `extraFormData` it contributes) has real content.
+ *
+ * This must look *inside* `extraFormData`: an unset native filter is `{}`, but
+ * an unset cross-filter is `{ filters: [] }` — an object with a key whose value
+ * is empty. A shallow `Object.keys(...).length > 0` check wrongly treats the
+ * latter as "has value".
+ *
+ * Why it matters: native filters land in `activeFilters` (and get their
+ * `chartsInScope` computed), and cross-filter charts publish their (empty)
+ * `extraFormData`, only AFTER the filter bar / charts mount — i.e. after charts
+ * already fetched on page load. Treating those empty settles as add / remove /
+ * scope-change / value-change re-triggered a redundant, byte-identical fetch for
+ * every in-scope chart on every reload (the dashboard "refreshes twice" bug).
+ * Gating refreshes on a real value removes the double-fetch while genuine value
+ * changes (set, clear, user interaction) still refresh.
+ */
+const filterHasValue = filter => {
+  const values = filter?.values;
+  if (values == null) return false;
+  if (Array.isArray(values)) return values.length > 0;
+  if (typeof values === 'object') {
+    return Object.values(values).some(hasNonEmptyValue);
+  }
+  return Boolean(values);
+};
+
 const propTypes = {
   actions: PropTypes.shape({
     addSliceToDashboard: PropTypes.func.isRequired,
@@ -230,19 +267,32 @@ class Dashboard extends PureComponent {
         !currFilterKeys.includes(filterKey) &&
         appliedFilterKeys.includes(filterKey)
       ) {
-        // filterKey is removed?
-        affectedChartIds.push(
-          ...getRelatedCharts(filterKey, appliedFilters[filterKey], slices),
-        );
+        // filterKey is removed? Only refetch if it actually carried a value —
+        // removing an empty filter changes no chart's query.
+        if (filterHasValue(appliedFilters[filterKey])) {
+          affectedChartIds.push(
+            ...getRelatedCharts(filterKey, appliedFilters[filterKey], slices),
+          );
+        }
       } else if (!appliedFilterKeys.includes(filterKey)) {
-        // filterKey is newly added?
-        affectedChartIds.push(
-          ...getRelatedCharts(filterKey, activeFilters[filterKey], slices),
-        );
+        // filterKey is newly added? Only refetch if it carries a value — an
+        // empty native filter settling into activeFilters after mount must not
+        // re-trigger queries (caused the on-load double-fetch).
+        if (filterHasValue(activeFilters[filterKey])) {
+          affectedChartIds.push(
+            ...getRelatedCharts(filterKey, activeFilters[filterKey], slices),
+          );
+        }
       } else {
-        // if filterKey changes value,
-        // update charts in its scope
+        // if filterKey changes value, update charts in its scope — but only
+        // when a real value is involved. A cross-filter chart publishes its
+        // (empty) extraFormData after mount: `{}` -> `{ filters: [] }`, which
+        // `areObjectsEqual` sees as a change yet narrows nothing. Skipping the
+        // empty->empty case removes the on-load double-fetch; setting OR
+        // clearing a real value (either side non-empty) still refreshes.
         if (
+          (filterHasValue(appliedFilters[filterKey]) ||
+            filterHasValue(activeFilters[filterKey])) &&
           !areObjectsEqual(
             appliedFilters[filterKey].values,
             activeFilters[filterKey].values,
@@ -257,8 +307,12 @@ class Dashboard extends PureComponent {
         }
 
         // if filterKey changes scope,
-        // update all charts in its scope
+        // update all charts in its scope — but only when the filter carries a
+        // value, since an empty filter's (lazily-computed) scope settling after
+        // mount does not change any chart's query.
         if (
+          (filterHasValue(activeFilters[filterKey]) ||
+            filterHasValue(appliedFilters[filterKey])) &&
           !areObjectsEqual(
             appliedFilters[filterKey].scope,
             activeFilters[filterKey].scope,
