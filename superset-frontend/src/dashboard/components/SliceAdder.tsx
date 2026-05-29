@@ -45,7 +45,7 @@ import {
   NEW_CHART_ID,
   NEW_COMPONENTS_SOURCE_ID,
 } from 'src/dashboard/util/constants';
-import { debounce, pickBy } from 'lodash';
+import { debounce } from 'lodash';
 import { Dispatch } from 'redux';
 import { Slice } from 'src/dashboard/types';
 import { withTheme, Theme } from '@emotion/react';
@@ -224,12 +224,12 @@ class SliceAdder extends Component<SliceAdderProps, SliceAdderState> {
   }
 
   componentWillUnmount() {
-    // Clears the redux store keeping only selected items
-    const selectedSlices = pickBy(this.props.slices, (value: Slice) =>
-      this.state.selectedSliceIdsSet.has(value.slice_id),
-    );
-
-    this.props.updateSlices(selectedSlices);
+    // НЕ чистим redux store от незанятых слайсов при unmount.
+    // Upstream-логика вызывала updateSlices(pickBy(slices, selectedIds)) →
+    // SET_SLICES (полная замена). Если selectedSliceIdsSet пустой
+    // (mount/unmount до получения props.selectedSliceIds) — state.slices
+    // обнулялся и Chart.jsx видел EMPTY_OBJECT → MissingChart placeholder.
+    // Stale метаданные слайсов в store — несколько KB, безопасно.
     if (this.slicesRequest instanceof AbortController) {
       this.slicesRequest.abort();
     }
