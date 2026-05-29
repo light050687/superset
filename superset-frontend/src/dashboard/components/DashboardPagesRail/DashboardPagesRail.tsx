@@ -827,7 +827,7 @@ export const DashboardPagesRail: FC = () => {
             $dragOver={isDragOver}
             $dropPosition={isDragOver ? dropPosition : null}
             $dragging={draggedId === pageId}
-            draggable={!isEditing}
+            draggable={editMode && !isEditing}
             onClick={() => !isEditing && handlePageClick(pageId)}
             onDoubleClick={() => editMode && handleStartRename(pageId)}
             onDragStart={e => handleDragStart(e, pageId)}
@@ -849,59 +849,63 @@ export const DashboardPagesRail: FC = () => {
             ) : (
               <>
                 <PageName>{name}</PageName>
-                <PillActions data-pill-actions>
-                  <PillActionBtn
-                    type="button"
-                    aria-label={t('Переименовать')}
-                    title={t('Переименовать')}
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleStartRename(pageId);
-                    }}
-                  >
-                    <IconEdit />
-                  </PillActionBtn>
-                  <PillActionBtn
-                    type="button"
-                    aria-label={t('Дублировать')}
-                    title={t('Дублировать')}
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleCopyPage(pageId);
-                    }}
-                  >
-                    <IconCopy />
-                  </PillActionBtn>
-                  {canDelete && (
+                {editMode && (
+                  <PillActions data-pill-actions>
                     <PillActionBtn
                       type="button"
-                      $danger
-                      aria-label={t('Удалить')}
-                      title={t('Удалить')}
+                      aria-label={t('Переименовать')}
+                      title={t('Переименовать')}
                       onClick={e => {
                         e.stopPropagation();
-                        handleDeletePage(pageId);
+                        handleStartRename(pageId);
                       }}
                     >
-                      <IconDelete />
+                      <IconEdit />
                     </PillActionBtn>
-                  )}
-                </PillActions>
+                    <PillActionBtn
+                      type="button"
+                      aria-label={t('Дублировать')}
+                      title={t('Дублировать')}
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleCopyPage(pageId);
+                      }}
+                    >
+                      <IconCopy />
+                    </PillActionBtn>
+                    {canDelete && (
+                      <PillActionBtn
+                        type="button"
+                        $danger
+                        aria-label={t('Удалить')}
+                        title={t('Удалить')}
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleDeletePage(pageId);
+                        }}
+                      >
+                        <IconDelete />
+                      </PillActionBtn>
+                    )}
+                  </PillActions>
+                )}
               </>
             )}
           </PagePill>
         );
       })}
 
-      <AddPageBtn
-        type="button"
-        onClick={handleAddPage}
-        aria-label={t('Добавить страницу')}
-        title={t('Добавить страницу')}
-        style={plusStyle}
-      >
-        <IconPlus />
-      </AddPageBtn>
+      {editMode && (
+        <AddPageBtn
+          type="button"
+          onClick={handleAddPage}
+          aria-label={t('Добавить страницу')}
+          title={t('Добавить страницу')}
+          style={plusStyle}
+        >
+          <IconPlus />
+        </AddPageBtn>
+      )}
     </Rail>
   );
 };
