@@ -326,5 +326,108 @@ describe('Dashboard', () => {
       // Since getRelatedCharts returns empty array, no charts should be refreshed
       expect(mockTriggerQuery).not.toHaveBeenCalled();
     });
+
+    // Regression: dashboard-load double-fetch. A native filter's entry/scope
+    // settles AFTER charts already fetched on mount. While the filter carries
+    // no value it must not re-trigger queries (otherwise every chart fetches
+    // twice with a byte-identical body on every page load).
+    it('should not refresh when a native filter with no value is newly added', () => {
+      getRelatedCharts.mockReturnValue([1, 2]); // would refresh if not guarded
+      const { rerender } = renderDashboard({ activeFilters: {} });
+
+      const emptyNativeFilter = {
+        'NATIVE_FILTER-empty': {
+          values: {}, // extraFormData — empty: filter carries no value
+          scope: [1, 2],
+          filterType: 'filter_select',
+        },
+      };
+
+      rerender(
+        <PluginContext.Provider value={{ loading: false }}>
+          <Dashboard {...props} activeFilters={emptyNativeFilter}>
+            <ChildrenComponent />
+          </Dashboard>
+        </PluginContext.Provider>,
+      );
+
+      expect(mockTriggerQuery).not.toHaveBeenCalled();
+    });
+
+    it('should not refresh when only the scope of an empty native filter settles', () => {
+      getRelatedCharts.mockReturnValue([1, 2]); // would refresh if not guarded
+      const emptyFilterProvisional = {
+        'NATIVE_FILTER-empty': {
+          values: {},
+          scope: [1, 2, 3],
+          filterType: 'filter_select',
+        },
+      };
+      const { rerender } = renderDashboard({
+        activeFilters: emptyFilterProvisional,
+      });
+
+      const emptyFilterSettled = {
+        'NATIVE_FILTER-empty': {
+          values: {},
+          scope: [1, 2], // chartsInScope settled to a different value
+          filterType: 'filter_select',
+        },
+      };
+
+      rerender(
+        <PluginContext.Provider value={{ loading: false }}>
+          <Dashboard {...props} activeFilters={emptyFilterSettled}>
+            <ChildrenComponent />
+          </Dashboard>
+        </PluginContext.Provider>,
+      );
+
+      expect(mockTriggerQuery).not.toHaveBeenCalled();
+    });
+
+    it('should not refresh when a cross-filter publishes an empty value after mount', () => {
+      // The real on-load double-fetch: a cross-filter chart publishes its
+      // extraFormData after mount as `{ filters: [] }` — areObjectsEqual sees a
+      // change from `{}` yet nothing is actually filtered.
+      getRelatedCharts.mockReturnValue([1, 2]); // would refresh if not guarded
+      const emptyAtMount = { 53: { values: {}, scope: [1, 2] } };
+      const { rerender } = renderDashboard({ activeFilters: emptyAtMount });
+
+      const emptyPublished = { 53: { values: { filters: [] }, scope: [1, 2] } };
+      rerender(
+        <PluginContext.Provider value={{ loading: false }}>
+          <Dashboard {...props} activeFilters={emptyPublished}>
+            <ChildrenComponent />
+          </Dashboard>
+        </PluginContext.Provider>,
+      );
+
+      expect(mockTriggerQuery).not.toHaveBeenCalled();
+    });
+
+    it('should refresh when a filter gains a real value via extraFormData', () => {
+      // Guard must not over-suppress: a genuine value (non-empty filters array)
+      // still refreshes the related charts.
+      getRelatedCharts.mockReturnValue([1]);
+      const empty = { 53: { values: { filters: [] }, scope: [1] } };
+      const { rerender } = renderDashboard({ activeFilters: empty });
+
+      const withValue = {
+        53: {
+          values: { filters: [{ col: 'a', op: 'IN', val: ['x'] }] },
+          scope: [1],
+        },
+      };
+      rerender(
+        <PluginContext.Provider value={{ loading: false }}>
+          <Dashboard {...props} activeFilters={withValue}>
+            <ChildrenComponent />
+          </Dashboard>
+        </PluginContext.Provider>,
+      );
+
+      expect(mockTriggerQuery).toHaveBeenCalled();
+    });
   });
 });
