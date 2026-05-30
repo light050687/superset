@@ -15,5 +15,7 @@ module.exports = {
     '^@superset-ui/core$': '<rootDir>/test/__mocks__/@superset-ui/core.ts',
     '^@superset-ui/core/components$': '<rootDir>/test/__mocks__/@superset-ui/core.ts',
     '^@superset-ui/chart-controls$': '<rootDir>/test/__mocks__/@superset-ui/chart-controls.ts',
+    // echarts/core — ESM, node-jest не парсит. Нужен только format.encodeHTML.
+    '^echarts/core$': '<rootDir>/test/__mocks__/echarts/core.ts',
   },
 };

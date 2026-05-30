@@ -4,6 +4,7 @@ exports.getCurrentItems = getCurrentItems;
 exports.applyChildShades = applyChildShades;
 exports.computeHero = computeHero;
 exports.buildOption = buildOption;
+const core_1 = require("echarts/core");
 const themeTokens_1 = require("../themeTokens");
 const toRgba_1 = require("./toRgba");
 const formatRussian_1 = require("./formatRussian");
@@ -146,8 +147,14 @@ function buildOption(args) {
                 const cntLine = cntStr
                     ? `<div style="${rowStyle}"><span style="${labelStyle}">Операций</span><span style="${valueStyle}">${cntStr}</span></div>`
                     : '';
+                // item.name — значение измерения из warehouse (DB-derived). ECharts
+                // присваивает результат formatter'а в innerHTML, поэтому имя ОБЯЗАНО
+                // быть HTML-escaped, иначе DOM/stored-XSS (напр. имя `<img src=x
+                // onerror=...>`). Паттерн повторяет upstream Superset: sanitizeHtml()
+                // = echarts format.encodeHTML (Pie/Funnel/BoxPlot/Graph transformProps,
+                // см. plugins/plugin-chart-echarts/src/utils/series.ts:568).
                 return `
-          <div style="${headerStyle}">${dot}${item.name}</div>
+          <div style="${headerStyle}">${dot}${core_1.format.encodeHTML(item.name)}</div>
           <div style="${rowStyle}"><span style="${labelStyle}">Сумма</span><span style="${valueStyle}">${rubStr}</span></div>
           <div style="${rowStyle}"><span style="${labelStyle}">Доля</span><span style="${valueStyle}">${pctStr}</span></div>
           ${cntLine}
