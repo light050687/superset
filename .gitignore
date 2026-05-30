@@ -148,3 +148,6 @@ PROJECT.md
 # my-plugins/ теперь tracked в репо (физическая папка superset/my-plugins/).
 # Внутренние node_modules/lib build-кэш исключаются через my-plugins/.gitignore.
 .claude/
+
+# audit artifacts
+audit_out.json
