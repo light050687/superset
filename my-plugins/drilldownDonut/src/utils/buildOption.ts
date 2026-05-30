@@ -1,4 +1,4 @@
-import type { EChartsCoreOption } from 'echarts/core';
+import { format, type EChartsCoreOption } from 'echarts/core';
 import { BuildOptionState, CategoryNode, SubcategoryNode } from '../types';
 import { Tokens, FONTS } from '../themeTokens';
 import { toRgba } from './toRgba';
@@ -201,8 +201,14 @@ export function buildOption(args: {
         const cntLine = cntStr
           ? `<div style="${rowStyle}"><span style="${labelStyle}">Операций</span><span style="${valueStyle}">${cntStr}</span></div>`
           : '';
+        // item.name — значение измерения из warehouse (DB-derived). ECharts
+        // присваивает результат formatter'а в innerHTML, поэтому имя ОБЯЗАНО
+        // быть HTML-escaped, иначе DOM/stored-XSS (напр. имя `<img src=x
+        // onerror=...>`). Паттерн повторяет upstream Superset: sanitizeHtml()
+        // = echarts format.encodeHTML (Pie/Funnel/BoxPlot/Graph transformProps,
+        // см. plugins/plugin-chart-echarts/src/utils/series.ts:568).
         return `
-          <div style="${headerStyle}">${dot}${item.name}</div>
+          <div style="${headerStyle}">${dot}${format.encodeHTML(item.name)}</div>
           <div style="${rowStyle}"><span style="${labelStyle}">Сумма</span><span style="${valueStyle}">${rubStr}</span></div>
           <div style="${rowStyle}"><span style="${labelStyle}">Доля</span><span style="${valueStyle}">${pctStr}</span></div>
           ${cntLine}

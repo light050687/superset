@@ -1,4 +1,4 @@
-import type { EChartsCoreOption } from 'echarts/core';
+import { type EChartsCoreOption } from 'echarts/core';
 import { BuildOptionState, CategoryNode } from '../types';
 import { Tokens } from '../themeTokens';
 /**
