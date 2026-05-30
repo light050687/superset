@@ -6,6 +6,7 @@ exports.defaultCsvFileName = defaultCsvFileName;
 exports.downloadCsv = downloadCsv;
 const formatRussian_1 = require("./formatRussian");
 const statusRules_1 = require("./statusRules");
+const sanitizeCsvCell_1 = require("./sanitizeCsvCell");
 /**
  * Экспортирует отфильтрованный и отсортированный список магазинов в CSV.
  * Формат совместим с Excel RU locale: BOM, ';', кириллица без проблем.
@@ -65,7 +66,7 @@ function buildCsvRow(s, idx) {
     ];
 }
 const esc = (v) => {
-    const str = String(v);
+    const str = (0, sanitizeCsvCell_1.sanitizeCsvCell)(v);
     if (/["\n;,]/.test(str))
         return `"${str.replace(/"/g, '""')}"`;
     return str;

@@ -23,6 +23,7 @@ import {
   resolveSortTarget,
 } from './utils/detailApi';
 import type { FormatRowOpts } from './utils/detailApi';
+import { sanitizeCsvCell } from './utils/sanitizeCsvCell';
 import { getPreset } from './mocks/presets';
 import { generateMockGroups, generateMockChildren } from './mocks/mockDetailGenerator';
 import {
@@ -123,7 +124,8 @@ async function exportToCsv(
     }
   }
 
-  const escape = (cell: string): string => `"${cell.replace(/"/g, '""')}"`;
+  const escape = (cell: string): string =>
+    `"${sanitizeCsvCell(cell).replace(/"/g, '""')}"`;
   const csv =
     BOM +
     [headers, ...rows].map(row => row.map(escape).join(';')).join('\n');

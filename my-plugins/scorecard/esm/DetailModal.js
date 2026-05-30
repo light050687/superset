@@ -2,6 +2,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import React, { useState, useCallback, useEffect, useRef, } from 'react';
 import { SupersetClient } from '@superset-ui/core';
 import { buildGroupsPayload, buildChildrenPayload, buildCountPayload, buildExportPayload, formatServerRow, resolveSortTarget, } from './utils/detailApi';
+import { sanitizeCsvCell } from './utils/sanitizeCsvCell';
 import { getPreset } from './mocks/presets';
 import { generateMockGroups, generateMockChildren } from './mocks/mockDetailGenerator';
 import { KEYFRAMES_CSS, Overlay, Modal, ModalHead, TitleBlock, TitleRow, ModalTitle, ModalValue, CloseButton, ModalToolbar, SearchBox, SearchIcon, SearchInput, SearchScopeToggle, SearchScopeButton, ExactMatchLabel, FlipButton, FlipLabel, ResultsCount, TableWrap, DetailTable, THead, THRow, GroupRow, ChildRow, Chevron, TablePill, EmptyRow, PaginationWrap, PageBtn, PageEllipsis, PageInput, ModalFoot, FooterHint, ExportButton, RefreshBar, InlineSpinnerSmall, InlineSpinnerLarge, LoaderRowInner, ErrorRowInner, RetryButton, SortableTh, FooterHintIcon, } from './styles';
@@ -40,7 +41,7 @@ fileHandle) {
             rows.push(row);
         }
     }
-    const escape = (cell) => `"${cell.replace(/"/g, '""')}"`;
+    const escape = (cell) => `"${sanitizeCsvCell(cell).replace(/"/g, '""')}"`;
     const csv = BOM +
         [headers, ...rows].map(row => row.map(escape).join(';')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });

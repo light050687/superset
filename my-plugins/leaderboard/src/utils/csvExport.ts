@@ -1,6 +1,7 @@
 import { nf0, nf1, nf2 } from './formatRussian';
 import { STATUSES } from './statusRules';
 import type { Store } from '../types';
+import { sanitizeCsvCell } from './sanitizeCsvCell';
 
 /**
  * Экспортирует отфильтрованный и отсортированный список магазинов в CSV.
@@ -63,7 +64,7 @@ export function buildCsvRow(s: Store, idx: number): (string | number)[] {
 }
 
 const esc = (v: string | number): string => {
-  const str = String(v);
+  const str = sanitizeCsvCell(v);
   if (/["\n;,]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
   return str;
 };
