@@ -7,6 +7,7 @@ const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = require("react");
 const react_dom_1 = require("react-dom");
 const core_1 = require("@superset-ui/core");
+const sanitizeCsvCell_1 = require("./sanitizeCsvCell");
 // @ts-ignore — subpath resolves в runtime через Superset webpack aliases.
 // Подмена на 'antd' ломает runtime потому что antd не зарегистрирован как dep плагина.
 // @ts-ignore — antd доступен через peerDep `@superset-ui/core` в Superset frontend.
@@ -661,7 +662,7 @@ const VelocityDiverging = ({ width, height, headerText, subtitleText, dataState,
             fmtVal(x.absDelta),
         ]);
         const esc = (v) => {
-            const str = String(v);
+            const str = (0, sanitizeCsvCell_1.sanitizeCsvCell)(v);
             return /[";\n,]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
         };
         const csv = [headers, ...rows].map(r => r.map(esc).join(';')).join('\r\n');

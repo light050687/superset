@@ -37,6 +37,7 @@ const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = __importStar(require("react"));
 const core_1 = require("@superset-ui/core");
 const detailApi_1 = require("./utils/detailApi");
+const sanitizeCsvCell_1 = require("./utils/sanitizeCsvCell");
 const presets_1 = require("./mocks/presets");
 const mockDetailGenerator_1 = require("./mocks/mockDetailGenerator");
 const styles_1 = require("./styles");
@@ -75,7 +76,7 @@ fileHandle) {
             rows.push(row);
         }
     }
-    const escape = (cell) => `"${cell.replace(/"/g, '""')}"`;
+    const escape = (cell) => `"${(0, sanitizeCsvCell_1.sanitizeCsvCell)(cell).replace(/"/g, '""')}"`;
     const csv = BOM +
         [headers, ...rows].map(row => row.map(escape).join(';')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });

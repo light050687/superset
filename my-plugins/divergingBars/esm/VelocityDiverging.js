@@ -2,6 +2,7 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
 import { useCallback, useEffect, useMemo, useRef, useState, } from 'react';
 import { createPortal } from 'react-dom';
 import { SupersetClient, t } from '@superset-ui/core';
+import { sanitizeCsvCell } from './sanitizeCsvCell';
 // @ts-ignore — subpath resolves в runtime через Superset webpack aliases.
 // Подмена на 'antd' ломает runtime потому что antd не зарегистрирован как dep плагина.
 // @ts-ignore — antd доступен через peerDep `@superset-ui/core` в Superset frontend.
@@ -656,7 +657,7 @@ const VelocityDiverging = ({ width, height, headerText, subtitleText, dataState,
             fmtVal(x.absDelta),
         ]);
         const esc = (v) => {
-            const str = String(v);
+            const str = sanitizeCsvCell(v);
             return /[";\n,]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
         };
         const csv = [headers, ...rows].map(r => r.map(esc).join(';')).join('\r\n');
